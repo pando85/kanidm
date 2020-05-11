@@ -14,6 +14,7 @@ jobs:
     - name: Commit files
       id: commit
       run: |
+        git fetch --depth=1 origin +refs/tags/*:refs/tags/*
         if git diff --exit-code $(git describe --tags --abbrev=0 HEAD)..HEAD -- VERSION;
           then exit 0;
         fi
