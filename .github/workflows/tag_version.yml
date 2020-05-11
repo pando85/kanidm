@@ -27,7 +27,7 @@ jobs:
         VERSION=$(cat VERSION)
         git commit -m "v${VERSION}"
         git tag "v${VERSION}"
-        export PUSH=true
+        echo ::set-output name=PUSH::true
     - name: Push changes
       uses: ad-m/github-push-action@master
       with:
