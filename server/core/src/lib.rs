@@ -29,6 +29,7 @@ extern crate kanidmd_lib;
 
 mod actors;
 pub mod admin;
+pub mod backup;
 pub mod config;
 mod crypto;
 mod https;
@@ -40,6 +41,7 @@ mod utils;
 
 use crate::actors::{QueryServerReadV1, QueryServerWriteV1};
 use crate::admin::AdminActor;
+use crate::backup::S3ClientWrapper;
 use crate::config::Configuration;
 use crate::interval::IntervalActor;
 use crate::utils::touch_file_or_quit;
@@ -48,7 +50,7 @@ use crypto_glue::{
     s256::{Sha256, Sha256Output},
     traits::Digest,
 };
-use kanidm_proto::backup::BackupCompression;
+use kanidm_proto::backup::{BackupCompression, S3Config};
 use kanidm_proto::config::ServerRole;
 use kanidm_proto::internal::OperationError;
 use kanidm_proto::scim_v1::client::ScimAssertGeneric;
@@ -476,6 +478,98 @@ pub async fn restore_server_core(config: &Configuration, dst_path: &Path) {
     reindex_inner(be, schema, config).await;
 
     info!("✅ Restore Success!");
+}
+
+pub async fn restore_from_s3_core(config: &Configuration, s3_config: &S3Config, object_key: &str) {
+    info!("Restoring backup from S3: {}", object_key);
+
+    if let Some(db_path) = config.db_path.as_ref() {
+        touch_file_or_quit(db_path);
+    }
+
+    let schema = match Schema::new() {
+        Ok(s) => s,
+        Err(e) => {
+            error!("Failed to setup in memory schema: {:?}", e);
+            std::process::exit(1);
+        }
+    };
+
+    let be = match setup_backend(config, &schema) {
+        Ok(be) => be,
+        Err(e) => {
+            error!("Failed to setup backend: {:?}", e);
+            return;
+        }
+    };
+
+    let s3_client = match S3ClientWrapper::new(s3_config.clone()).await {
+        Ok(client) => client,
+        Err(e) => {
+            error!("Failed to create S3 client: {}", e);
+            std::process::exit(1);
+        }
+    };
+
+    let (backup_data, metadata) = match s3_client.download_backup(object_key).await {
+        Ok(data) => data,
+        Err(e) => {
+            error!("Failed to download backup from S3: {}", e);
+            std::process::exit(1);
+        }
+    };
+
+    info!("Downloaded backup from S3 ({} bytes), checksum verified", backup_data.len());
+
+    let mut be_wr_txn = match be.write() {
+        Ok(txn) => txn,
+        Err(err) => {
+            error!(?err, "Unable to proceed, backend write transaction failure.");
+            return;
+        }
+    };
+
+    let cursor = std::io::Cursor::new(&backup_data);
+    let r = be_wr_txn
+        .restore(cursor, metadata.compression)
+        .and_then(|_| be_wr_txn.commit());
+
+    if r.is_err() {
+        error!("Failed to restore database: {:?}", r);
+        std::process::exit(1);
+    }
+    info!("Database loaded successfully");
+
+    reindex_inner(be, schema, config).await;
+
+    info!("✅ Restore from S3 Success!");
+}
+
+pub async fn verify_s3_backup_core(s3_config: &S3Config, object_key: &str) -> bool {
+    info!("Verifying S3 backup: {}", object_key);
+
+    let s3_client = match S3ClientWrapper::new(s3_config.clone()).await {
+        Ok(client) => client,
+        Err(e) => {
+            error!("Failed to create S3 client: {}", e);
+            return false;
+        }
+    };
+
+    match s3_client.verify_backup(object_key).await {
+        Ok(valid) => {
+            if valid {
+                info!("✅ S3 backup verified successfully");
+            } else {
+                error!("❌ S3 backup verification failed");
+            }
+            valid
+        }
+        Err(e) => {
+            error!("Failed to verify S3 backup: {}", e);
+            false
+        }
+    }
 }
 
 pub async fn reindex_server_core(config: &Configuration) {

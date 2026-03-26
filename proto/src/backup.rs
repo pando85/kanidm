@@ -1,10 +1,11 @@
 //! Relates to backup functionality in the Server
 use std::{fmt::Display, path::Path, str::FromStr};
 
+use serde::{Deserialize, Serialize};
 use serde_with::DeserializeFromStr;
 use sketching::tracing::warn;
 
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, DeserializeFromStr)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, DeserializeFromStr, Serialize)]
 /// Compression types for backups, defaults to Gzip
 pub enum BackupCompression {
     NoCompression,
@@ -100,6 +101,95 @@ fn test_backup_compression_identify() {
                 BackupCompression::from_str(i).expect("Threw an error?"),
                 expected
             );
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+pub struct S3Config {
+    pub bucket: String,
+    #[serde(default)]
+    pub region: Option<String>,
+    #[serde(default)]
+    pub endpoint: Option<String>,
+    #[serde(default)]
+    pub path_prefix: Option<String>,
+    #[serde(default)]
+    pub credentials: Option<S3Credentials>,
+    #[serde(default)]
+    pub server_side_encryption: Option<S3ServerSideEncryption>,
+    #[serde(default = "default_s3_storage_class")]
+    pub storage_class: String,
+}
+
+fn default_s3_storage_class() -> String {
+    "STANDARD".to_string()
+}
+
+impl Display for S3Config {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "S3Config {{ bucket: {}, region: {:?}, endpoint: {:?} }}",
+            self.bucket, self.region, self.endpoint
+        )
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+pub struct S3Credentials {
+    pub access_key_id: String,
+    pub secret_access_key: String,
+    #[serde(default)]
+    pub session_token: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+pub struct S3ServerSideEncryption {
+    #[serde(default)]
+    pub algorithm: Option<S3EncryptionAlgorithm>,
+    #[serde(default)]
+    pub kms_key_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Default)]
+pub enum S3EncryptionAlgorithm {
+    #[serde(rename = "AES256")]
+    Aes256,
+    #[default]
+    #[serde(rename = "aws:kms")]
+    AwsKms,
+}
+
+impl Display for S3EncryptionAlgorithm {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            S3EncryptionAlgorithm::Aes256 => write!(f, "AES256"),
+            S3EncryptionAlgorithm::AwsKms => write!(f, "aws:kms"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+pub struct S3BackupMetadata {
+    pub checksum_sha256: String,
+    pub timestamp: String,
+    pub compression: BackupCompression,
+    pub size_bytes: u64,
+}
+
+impl S3BackupMetadata {
+    pub fn new(
+        checksum_sha256: String,
+        timestamp: String,
+        compression: BackupCompression,
+        size_bytes: u64,
+    ) -> Self {
+        Self {
+            checksum_sha256,
+            timestamp,
+            compression,
+            size_bytes,
         }
     }
 }
