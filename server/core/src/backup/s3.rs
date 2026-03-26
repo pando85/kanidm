@@ -35,7 +35,11 @@ impl std::fmt::Display for S3BackupError {
             S3BackupError::DownloadError(msg) => write!(f, "S3 download error: {}", msg),
             S3BackupError::CredentialsError(msg) => write!(f, "S3 credentials error: {}", msg),
             S3BackupError::InvalidChecksum { expected, actual } => {
-                write!(f, "Checksum mismatch: expected {}, got {}", expected, actual)
+                write!(
+                    f,
+                    "Checksum mismatch: expected {}, got {}",
+                    expected, actual
+                )
             }
             S3BackupError::IoError(e) => write!(f, "IO error: {}", e),
             S3BackupError::SdkError(msg) => write!(f, "AWS SDK error: {}", msg),
@@ -104,18 +108,14 @@ impl S3ClientWrapper {
         let size = data.len() as u64;
         let checksum = hex_encode(Sha256::digest(&data));
         let object_key = self.build_object_key(key);
-        
+
         #[allow(clippy::expect_used)]
         let timestamp = time::OffsetDateTime::now_utc()
             .format(&time::format_description::well_known::Rfc3339)
             .expect("Failed to format timestamp");
 
-        let metadata = S3BackupMetadata::new(
-            checksum.clone(),
-            timestamp.clone(),
-            compression,
-            size,
-        );
+        let metadata =
+            S3BackupMetadata::new(checksum.clone(), timestamp.clone(), compression, size);
 
         if size > MULTIPART_THRESHOLD {
             self.upload_multipart(&data, &object_key, &metadata).await?;
@@ -169,9 +169,7 @@ impl S3ClientWrapper {
         let mut part_number: i32 = 1;
 
         for chunk in data.chunks(MULTIPART_CHUNK_SIZE) {
-            let part = self
-                .upload_part(key, upload_id, part_number, chunk)
-                .await?;
+            let part = self.upload_part(key, upload_id, part_number, chunk).await?;
             parts.push(
                 CompletedPart::builder()
                     .part_number(part_number)
@@ -181,7 +179,8 @@ impl S3ClientWrapper {
             part_number += 1;
         }
 
-        self.complete_multipart_upload(key, upload_id, parts).await?;
+        self.complete_multipart_upload(key, upload_id, parts)
+            .await?;
         info!("Completed multipart upload to S3: {}", key);
         Ok(())
     }
@@ -203,10 +202,9 @@ impl S3ClientWrapper {
 
         builder = self.apply_encryption_multipart(builder);
 
-        builder
-            .send()
-            .await
-            .map_err(|e| S3BackupError::UploadError(format!("Failed to create multipart upload: {}", e)))
+        builder.send().await.map_err(|e| {
+            S3BackupError::UploadError(format!("Failed to create multipart upload: {}", e))
+        })
     }
 
     async fn upload_part(
@@ -225,7 +223,9 @@ impl S3ClientWrapper {
             .body(ByteStream::from(data.to_vec()))
             .send()
             .await
-            .map_err(|e| S3BackupError::UploadError(format!("Failed to upload part {}: {}", part_number, e)))
+            .map_err(|e| {
+                S3BackupError::UploadError(format!("Failed to upload part {}: {}", part_number, e))
+            })
     }
 
     async fn complete_multipart_upload(
@@ -246,7 +246,9 @@ impl S3ClientWrapper {
             .multipart_upload(completed_upload)
             .send()
             .await
-            .map_err(|e| S3BackupError::UploadError(format!("Failed to complete multipart upload: {}", e)))?;
+            .map_err(|e| {
+                S3BackupError::UploadError(format!("Failed to complete multipart upload: {}", e))
+            })?;
 
         Ok(())
     }
@@ -257,8 +259,9 @@ impl S3ClientWrapper {
         metadata: &S3BackupMetadata,
     ) -> Result<(), S3BackupError> {
         let metadata_key = format!("{}.metadata.json", backup_key);
-        let metadata_json = serde_json::to_string(metadata)
-            .map_err(|e| S3BackupError::UploadError(format!("Failed to serialize metadata: {}", e)))?;
+        let metadata_json = serde_json::to_string(metadata).map_err(|e| {
+            S3BackupError::UploadError(format!("Failed to serialize metadata: {}", e))
+        })?;
 
         self.client
             .put_object()
@@ -293,7 +296,8 @@ impl S3ClientWrapper {
     fn apply_encryption_multipart(
         &self,
         mut builder: aws_sdk_s3::operation::create_multipart_upload::builders::CreateMultipartUploadFluentBuilder,
-    ) -> aws_sdk_s3::operation::create_multipart_upload::builders::CreateMultipartUploadFluentBuilder {
+    ) -> aws_sdk_s3::operation::create_multipart_upload::builders::CreateMultipartUploadFluentBuilder
+    {
         if let Some(sse) = &self.config.server_side_encryption {
             let sse_type = match &sse.algorithm {
                 Some(S3EncryptionAlgorithm::Aes256) => ServerSideEncryption::Aes256,
@@ -307,20 +311,26 @@ impl S3ClientWrapper {
         builder
     }
 
-    pub async fn download_backup(&self, key: &str) -> Result<(Vec<u8>, S3BackupMetadata), S3BackupError> {
+    pub async fn download_backup(
+        &self,
+        key: &str,
+    ) -> Result<(Vec<u8>, S3BackupMetadata), S3BackupError> {
         let object_key = self.build_object_key(key);
         let metadata = self.download_metadata(&object_key).await?;
-        
-        let output = self.client
+
+        let output = self
+            .client
             .get_object()
             .bucket(&self.config.bucket)
             .key(&object_key)
             .send()
             .await
-            .map_err(|e| S3BackupError::DownloadError(format!("Failed to download backup: {}", e)))?;
+            .map_err(|e| {
+                S3BackupError::DownloadError(format!("Failed to download backup: {}", e))
+            })?;
 
         let data = self.collect_stream(output).await?;
-        
+
         let actual_checksum = hex_encode(Sha256::digest(&data));
         if actual_checksum != metadata.checksum_sha256 {
             return Err(S3BackupError::InvalidChecksum {
@@ -335,32 +345,40 @@ impl S3ClientWrapper {
 
     async fn download_metadata(&self, backup_key: &str) -> Result<S3BackupMetadata, S3BackupError> {
         let metadata_key = format!("{}.metadata.json", backup_key);
-        
-        let output = self.client
+
+        let output = self
+            .client
             .get_object()
             .bucket(&self.config.bucket)
             .key(&metadata_key)
             .send()
             .await
-            .map_err(|e| S3BackupError::DownloadError(format!("Failed to download metadata: {}", e)))?;
+            .map_err(|e| {
+                S3BackupError::DownloadError(format!("Failed to download metadata: {}", e))
+            })?;
 
         let data = self.collect_stream(output).await?;
-        let metadata: S3BackupMetadata = serde_json::from_slice(&data)
-            .map_err(|e| S3BackupError::DownloadError(format!("Failed to parse metadata: {}", e)))?;
+        let metadata: S3BackupMetadata = serde_json::from_slice(&data).map_err(|e| {
+            S3BackupError::DownloadError(format!("Failed to parse metadata: {}", e))
+        })?;
 
         Ok(metadata)
     }
 
     async fn collect_stream(&self, output: GetObjectOutput) -> Result<Vec<u8>, S3BackupError> {
-        let body = output.body.collect().await
+        let body = output
+            .body
+            .collect()
+            .await
             .map_err(|e| S3BackupError::DownloadError(format!("Stream error: {}", e)))?;
         Ok(body.into_bytes().to_vec())
     }
 
     pub async fn list_backups(&self) -> Result<Vec<String>, S3BackupError> {
         let prefix = self.config.path_prefix.clone().unwrap_or_default();
-        
-        let output = self.client
+
+        let output = self
+            .client
             .list_objects_v2()
             .bucket(&self.config.bucket)
             .prefix(&prefix)
@@ -414,8 +432,9 @@ impl S3ClientWrapper {
     pub async fn verify_backup(&self, key: &str) -> Result<bool, S3BackupError> {
         let object_key = self.build_object_key(key);
         let metadata = self.download_metadata(&object_key).await?;
-        
-        let head = self.client
+
+        let head = self
+            .client
             .head_object()
             .bucket(&self.config.bucket)
             .key(&object_key)
@@ -424,9 +443,12 @@ impl S3ClientWrapper {
             .map_err(|e| S3BackupError::SdkError(format!("Failed to head object: {}", e)))?;
 
         let actual_size = head.content_length().unwrap_or(0) as u64;
-        
+
         if actual_size != metadata.size_bytes {
-            warn!("Backup size mismatch: expected {}, got {}", metadata.size_bytes, actual_size);
+            warn!(
+                "Backup size mismatch: expected {}, got {}",
+                metadata.size_bytes, actual_size
+            );
             return Ok(false);
         }
 
@@ -522,7 +544,7 @@ mod tests {
         let mut writer = ChecksumWriter::new(Vec::new());
         writer.write_all(b"hello world").unwrap();
         let (data, checksum) = writer.finalize();
-        
+
         assert_eq!(data, b"hello world");
         assert_eq!(checksum.len(), 64);
     }
@@ -534,7 +556,7 @@ mod tests {
         let mut output = Vec::new();
         reader.read_to_end(&mut output).unwrap();
         let (_, checksum) = reader.finalize();
-        
+
         assert_eq!(output, b"hello world");
         assert_eq!(checksum.len(), 64);
     }

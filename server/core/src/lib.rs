@@ -519,12 +519,18 @@ pub async fn restore_from_s3_core(config: &Configuration, s3_config: &S3Config, 
         }
     };
 
-    info!("Downloaded backup from S3 ({} bytes), checksum verified", backup_data.len());
+    info!(
+        "Downloaded backup from S3 ({} bytes), checksum verified",
+        backup_data.len()
+    );
 
     let mut be_wr_txn = match be.write() {
         Ok(txn) => txn,
         Err(err) => {
-            error!(?err, "Unable to proceed, backend write transaction failure.");
+            error!(
+                ?err,
+                "Unable to proceed, backend write transaction failure."
+            );
             return;
         }
     };

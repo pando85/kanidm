@@ -202,12 +202,14 @@ impl QueryServerReadV1 {
 
         #[allow(clippy::unwrap_used)]
         let timestamp = now.format(&Rfc3339).unwrap();
-        
+
         // Handle S3 backup
         if let Some(s3) = s3_client {
-            return self.handle_s3_backup(&msg, &timestamp, compression, s3).await;
+            return self
+                .handle_s3_backup(&msg, &timestamp, compression, s3)
+                .await;
         }
-        
+
         // Handle local file backup
         let dest_file = outpath.join(format!("backup-{timestamp}.json{}", compression.suffix()));
 
@@ -333,7 +335,7 @@ impl QueryServerReadV1 {
 
         Ok(())
     }
-    
+
     #[instrument(
         level = "info",
         name = "s3_backup",
@@ -348,9 +350,9 @@ impl QueryServerReadV1 {
         s3_client: S3ClientWrapper,
     ) -> Result<(), OperationError> {
         trace!(eventid = ?msg.eventid, "Begin S3 backup event");
-        
+
         let mut backup_data = Vec::new();
-        
+
         // Scope to limit the read txn and collect backup data
         {
             let mut idms_prox_read = self.idms.proxy_read().await?;
@@ -363,9 +365,9 @@ impl QueryServerReadV1 {
                     OperationError::InvalidState
                 })?;
         }
-        
+
         let object_key = format!("backup-{timestamp}.json{}", compression.suffix());
-        
+
         s3_client
             .upload_backup(backup_data, &object_key, compression)
             .await
@@ -373,7 +375,7 @@ impl QueryServerReadV1 {
                 error!("S3 backup upload failed: {}", e);
                 OperationError::InvalidState
             })?;
-        
+
         info!("S3 backup uploaded successfully: {}", object_key);
         Ok(())
     }

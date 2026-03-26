@@ -72,12 +72,12 @@ impl IntervalActor {
         let outpath = online_backup_config.path.to_owned();
         let has_local_path = outpath.is_some();
         let has_s3_config = online_backup_config.s3.is_some();
-        
+
         if !has_local_path && !has_s3_config {
             error!("Online backup output path is not set and S3 is not configured.");
             return Err(());
         }
-        
+
         let versions = online_backup_config.versions;
         let crono_expr = online_backup_config.schedule.as_str().to_string();
         let mut crono_expr_values = crono_expr.split_ascii_whitespace().collect::<Vec<&str>>();
@@ -175,7 +175,7 @@ impl IntervalActor {
                                 error!(?e, "An online backup error occurred.");
                             }
                         }
-                        
+
                         // Perform S3 backup if configured
                         if let Some(s3_cfg) = &s3_config {
                             match S3ClientWrapper::new(s3_cfg.clone()).await {
