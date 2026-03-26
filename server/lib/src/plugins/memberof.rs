@@ -17,22 +17,44 @@ use crate::entry::{Entry, EntryCommitted, EntrySealed};
 use crate::event::{CreateEvent, DeleteEvent, ModifyEvent};
 use crate::plugins::Plugin;
 use crate::prelude::*;
-use crate::value::PartialValue;
+use crate::value::{PartialValue, TimeBoundedMember};
+use time::OffsetDateTime;
 
 pub struct MemberOf;
+
+fn get_valid_time_bounded_members(
+    entry: &Arc<Entry<EntrySealed, EntryCommitted>>,
+    now: OffsetDateTime,
+) -> BTreeSet<Uuid> {
+    entry
+        .get_ava_set(Attribute::TimeBoundedMemberAttr)
+        .and_then(|vs| vs.as_time_bounded_member_set())
+        .map(|map| {
+            map.values()
+                .filter(|m: &&TimeBoundedMember| m.is_valid_at(now))
+                .map(|m| m.uuid)
+                .collect()
+        })
+        .unwrap_or_default()
+}
 
 fn do_group_memberof(
     qs: &mut QueryServerWriteTransaction,
     uuid: Uuid,
     tgte: &mut EntryInvalidCommitted,
 ) -> Result<(), OperationError> {
-    //  search where we are member
+    let now = OffsetDateTime::now_utc();
+
     let groups = qs
         .internal_search(filter!(f_and!([
             f_eq(Attribute::Class, EntryClass::Group.into()),
             f_or!([
                 f_eq(Attribute::Member, PartialValue::Refer(uuid)),
-                f_eq(Attribute::DynMember, PartialValue::Refer(uuid))
+                f_eq(Attribute::DynMember, PartialValue::Refer(uuid)),
+                f_eq(
+                    Attribute::TimeBoundedMemberAttr,
+                    PartialValue::TimeBoundedMember(uuid)
+                )
             ])
         ])))
         .map_err(|e| {
@@ -40,18 +62,57 @@ fn do_group_memberof(
             e
         })?;
 
-    // Ensure we are MO capable. We only add this if it's not already present.
+    let groups_with_valid_time_bounded: BTreeSet<Uuid> = groups
+        .iter()
+        .filter_map(|g| {
+            let time_bounded = g
+                .get_ava_set(Attribute::TimeBoundedMemberAttr)
+                .and_then(|vs| vs.as_time_bounded_member_set())?;
+            let valid_member = time_bounded
+                .values()
+                .any(|m: &TimeBoundedMember| m.uuid == uuid && m.is_valid_at(now));
+            if valid_member {
+                Some(g.get_uuid())
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    let groups_with_permanent_membership: BTreeSet<Uuid> = groups
+        .iter()
+        .filter(|g| {
+            let is_member = g
+                .get_ava_refer(Attribute::Member)
+                .map(|set| set.contains(&uuid))
+                .unwrap_or(false);
+            let is_dynmember = g
+                .get_ava_refer(Attribute::DynMember)
+                .map(|set| set.contains(&uuid))
+                .unwrap_or(false);
+            is_member || is_dynmember
+        })
+        .map(|g| g.get_uuid())
+        .collect();
+
     tgte.add_ava_if_not_exist(Attribute::Class, EntryClass::MemberOf.into());
-    // Clear the dmo + mos, we will recreate them now.
-    // This is how we handle deletes/etc.
     tgte.purge_ava(Attribute::MemberOf);
     tgte.purge_ava(Attribute::DirectMemberOf);
 
-    // What are our direct and indirect mos?
-    let dmo = ValueSetRefer::from_iter(groups.iter().map(|g| g.get_uuid()));
+    let all_direct_members: BTreeSet<Uuid> = groups_with_permanent_membership
+        .union(&groups_with_valid_time_bounded)
+        .copied()
+        .collect();
+
+    let dmo = ValueSetRefer::from_iter(all_direct_members.iter().copied());
+
+    let groups_for_mo: Vec<_> = groups
+        .iter()
+        .filter(|g| all_direct_members.contains(&g.get_uuid()))
+        .collect();
 
     let mut mo = ValueSetRefer::from_iter(
-        groups
+        groups_for_mo
             .iter()
             .filter_map(|g| {
                 g.get_ava_set(Attribute::MemberOf)
@@ -62,17 +123,13 @@ fn do_group_memberof(
             .copied(),
     );
 
-    // Add all the direct mo's and mos.
     if let Some(dmo) = dmo {
-        // We need to clone this else type checker gets real sad.
         tgte.set_ava_set(&Attribute::DirectMemberOf, dmo.clone());
 
         if let Some(mo) = &mut mo {
             let dmo = dmo as ValueSet;
             mo.merge(&dmo)?;
         } else {
-            // Means MO is empty, so we need to duplicate dmo to allow things to
-            // proceed.
             mo = Some(dmo);
         };
     };
@@ -134,12 +191,18 @@ fn do_leaf_memberof(
     // because the affected entries could still be a DMO/MO of a group that *wasn't* in the
     // change set, and we still need to reflect that they exist.
 
-    let mut groups_or = Vec::with_capacity(leaf_entries.len() * 2);
+    let mut groups_or = Vec::with_capacity(leaf_entries.len() * 3);
 
     for uuid in leaf_entries.keys().copied() {
         groups_or.push(f_eq(Attribute::Member, PartialValue::Refer(uuid)));
         groups_or.push(f_eq(Attribute::DynMember, PartialValue::Refer(uuid)));
+        groups_or.push(f_eq(
+            Attribute::TimeBoundedMemberAttr,
+            PartialValue::TimeBoundedMember(uuid),
+        ));
     }
+
+    let now = OffsetDateTime::now_utc();
 
     let all_groups = qs
         .internal_search(filter!(f_and!([
@@ -189,14 +252,15 @@ fn do_leaf_memberof(
         let member_ref = group.get_ava_refer(Attribute::Member);
         let dynmember_ref = group.get_ava_refer(Attribute::DynMember);
 
+        let time_bounded_valid_members = get_valid_time_bounded_members(&group, now);
+
         let dir_members = member_ref
             .iter()
             .flat_map(|set| set.iter())
             .chain(dynmember_ref.iter().flat_map(|set| set.iter()))
+            .chain(time_bounded_valid_members.iter())
             .copied();
 
-        // These are the entries that are direct members and need to reflect the group
-        // as mo and it's mo for indirect mo.
         for dir_member in dir_members {
             if let Some((_pre, tgte)) = leaf_entries.get_mut(&dir_member) {
                 trace!(?dir_member, entry_id = ?tgte.get_display_id());
