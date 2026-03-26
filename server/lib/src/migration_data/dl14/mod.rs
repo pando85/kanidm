@@ -131,6 +131,11 @@ pub fn phase_1_schema_attrs() -> Vec<EntryInitNew> {
         SCHEMA_ATTR_ACCOUNT_SOFTLOCK_EXPIRE.clone().into(),
         // DL14
         SCHEMA_ATTR_PASSWORD_CHANGED_TIME.clone().into(),
+        // Time-bounded access
+        SCHEMA_ATTR_MEMBER_VALID_FROM.clone().into(),
+        SCHEMA_ATTR_MEMBER_VALID_UNTIL.clone().into(),
+        SCHEMA_ATTR_MAX_GRANT_DURATION.clone().into(),
+        SCHEMA_ATTR_TIME_BOUNDED_MEMBER.clone().into(),
     ]
 }
 
@@ -180,6 +185,8 @@ pub fn phase_2_schema_classes() -> Vec<EntryInitNew> {
         SCHEMA_CLASS_ASSERTION_NONCE.clone().into(),
         SCHEMA_CLASS_KEY_OBJECT_JWT_HS256_DL6.clone().into(),
         SCHEMA_CLASS_ASSERTION_NONCE.clone().into(),
+        // Time-bounded access
+        SCHEMA_CLASS_TIME_BOUNDED_GRANT.clone().into(),
     ]
 }
 

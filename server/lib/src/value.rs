@@ -501,6 +501,7 @@ impl SyntaxType {
             SyntaxType::Json => &[],
             SyntaxType::Message => &[],
             SyntaxType::Sha256 => &[IndexType::Equality],
+            SyntaxType::TimeBoundedMember => &[IndexType::Equality, IndexType::Presence],
         }
     }
 }
@@ -1050,6 +1051,7 @@ impl PartialValue {
             PartialValue::HexString(hexstr) => hexstr.to_string(),
             PartialValue::Json => "_".to_string(),
             PartialValue::Sha256(bytes) => hex::encode(bytes),
+            PartialValue::TimeBoundedMember(u) => u.as_hyphenated().to_string(),
         }
     }
 
@@ -2356,7 +2358,8 @@ impl Value {
             | Value::CredentialType(_)
             | Value::Json(_)
             | Value::Sha256(_)
-            | Value::WebauthnAttestationCaList(_) => true,
+            | Value::WebauthnAttestationCaList(_)
+            | Value::TimeBoundedMember(_) => true,
         }
     }
 

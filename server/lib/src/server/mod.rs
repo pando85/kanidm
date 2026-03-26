@@ -794,6 +794,7 @@ pub trait QueryServerTransaction<'a> {
                     SyntaxType::Json => Err(OperationError::InvalidAttribute("Json values can not be supplied through modification".to_string())),
                     SyntaxType::Sha256 => Err(OperationError::InvalidAttribute("SHA256 values can not be supplied through modification".to_string())),
                     SyntaxType::Message => Err(OperationError::InvalidAttribute("Message values can not be supplied through modification".to_string())),
+                    SyntaxType::TimeBoundedMember => Err(OperationError::InvalidAttribute("TimeBoundedMember values can not be supplied through modification".to_string())),
                 }
             }
             None => {
@@ -946,6 +947,9 @@ pub trait QueryServerTransaction<'a> {
                     )),
                     SyntaxType::Message => Err(OperationError::InvalidAttribute(
                         "Message values can not be validated by this interface".to_string(),
+                    )),
+                    SyntaxType::TimeBoundedMember => Err(OperationError::InvalidAttribute(
+                        "TimeBoundedMember values can not be validated by this interface".to_string(),
                     )),
                 }
             }

@@ -2,8 +2,8 @@ use crate::be::dbvalue::DbValueTimeBoundedMemberV1;
 use crate::prelude::*;
 use crate::schema::SchemaAttribute;
 use crate::value::TimeBoundedMember;
-use crate::valueset::{DbValueSetV2, ValueSet};
-use std::collections::BTreeMap;
+use crate::valueset::{DbValueSetV2, ScimResolveStatus, ValueSet};
+use std::collections::{BTreeMap, BTreeSet};
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
 
@@ -172,6 +172,12 @@ impl ValueSetT for ValueSetTimeBoundedMember {
                 })
                 .collect(),
         )
+    }
+
+    fn to_scim_value(&self) -> Option<ScimResolveStatus> {
+        Some(ScimResolveStatus::Resolved(ScimValueKanidm::ArrayString(
+            self.to_proto_string_clone_iter().collect(),
+        )))
     }
 
     fn to_partialvalue_iter(&self) -> Box<dyn Iterator<Item = PartialValue> + '_> {

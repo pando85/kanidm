@@ -517,6 +517,9 @@ impl QueryServerWriteTransaction<'_> {
             SyntaxType::ApplicationPassword => Err(OperationError::InvalidAttribute(
                 "Application Passwords are not able to be set.".to_string(),
             )),
+            SyntaxType::TimeBoundedMember => Err(OperationError::InvalidAttribute(
+                "TimeBoundedMember values are not able to be set.".to_string(),
+            )),
         }?;
 
         match resolve_status {
