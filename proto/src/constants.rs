@@ -238,6 +238,7 @@ pub const ATTR_SYSTEMMAY: &str = "systemmay";
 pub const ATTR_SYSTEMMUST: &str = "systemmust";
 pub const ATTR_SYSTEMSUPPLEMENTS: &str = "systemsupplements";
 pub const ATTR_TERM: &str = "term";
+pub const ATTR_TIME_BOUNDED_MEMBER: &str = "time_bounded_member";
 pub const ATTR_UID: &str = "uid";
 pub const ATTR_UIDNUMBER: &str = "uidnumber";
 pub const ATTR_UNIQUE: &str = "unique";

@@ -1550,12 +1550,26 @@ pub static SCHEMA_ATTR_MAX_GRANT_DURATION: LazyLock<SchemaAttribute> =
         ..Default::default()
     });
 
+pub static SCHEMA_ATTR_TIME_BOUNDED_MEMBER: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_TIME_BOUNDED_MEMBER,
+        name: Attribute::TimeBoundedMemberAttr,
+        description: "A time-bounded group member with validity period".to_string(),
+        indexed: true,
+        multivalue: true,
+        syntax: SyntaxType::TimeBoundedMember,
+        ..Default::default()
+    });
+
 pub static SCHEMA_CLASS_TIME_BOUNDED_GRANT: LazyLock<SchemaClass> = LazyLock::new(|| SchemaClass {
     uuid: UUID_SCHEMA_CLASS_TIME_BOUNDED_GRANT,
     name: EntryClass::TimeBoundedGrant.into(),
     description: "A time-bounded access grant that automatically expires".to_string(),
-    systemmust: vec![Attribute::Member, Attribute::MemberValidUntil],
-    systemmay: vec![Attribute::MemberValidFrom, Attribute::Description],
+    systemmust: vec![],
+    systemmay: vec![
+        Attribute::TimeBoundedMemberAttr,
+        Attribute::MaxGrantDuration,
+    ],
     systemsupplements: vec![EntryClass::Group.into()],
     ..Default::default()
 });

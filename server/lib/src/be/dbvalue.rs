@@ -653,6 +653,16 @@ pub enum DbValueSession {
     },
 }
 
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+pub struct DbValueTimeBoundedMemberV1 {
+    #[serde(rename = "u")]
+    pub uuid: Uuid,
+    #[serde(rename = "f")]
+    pub valid_from: Option<String>,
+    #[serde(rename = "t")]
+    pub valid_until: String,
+}
+
 #[derive(Serialize, Deserialize, Debug, Default, PartialEq, Eq)]
 pub enum DbValueApiTokenScopeV1 {
     #[serde(rename = "r")]
@@ -886,6 +896,8 @@ pub enum DbValueSetV2 {
     Message(OutboundMessage),
     #[serde(rename = "S256")]
     Sha256(BTreeSet<Sha256Output>),
+    #[serde(rename = "TB")]
+    TimeBoundedMember(Vec<DbValueTimeBoundedMemberV1>),
 }
 
 impl DbValueSetV2 {
@@ -942,6 +954,7 @@ impl DbValueSetV2 {
             DbValueSetV2::Certificate(set) => set.len(),
             DbValueSetV2::ApplicationPassword(set) => set.len(),
             DbValueSetV2::Sha256(set) => set.len(),
+            DbValueSetV2::TimeBoundedMember(set) => set.len(),
             DbValueSetV2::Json(_) | DbValueSetV2::Message(_) => 1,
         }
     }

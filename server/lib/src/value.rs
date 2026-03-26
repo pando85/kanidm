@@ -157,6 +157,33 @@ pub enum IntentTokenState {
     },
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TimeBoundedMember {
+    pub uuid: Uuid,
+    pub valid_from: Option<OffsetDateTime>,
+    pub valid_until: OffsetDateTime,
+}
+
+impl TimeBoundedMember {
+    pub fn new(
+        uuid: Uuid,
+        valid_from: Option<OffsetDateTime>,
+        valid_until: OffsetDateTime,
+    ) -> Self {
+        Self {
+            uuid,
+            valid_from,
+            valid_until,
+        }
+    }
+
+    pub fn is_valid_at(&self, when: OffsetDateTime) -> bool {
+        let after_start = self.valid_from.map_or(true, |vf| when >= vf);
+        let before_end = when < self.valid_until;
+        after_start && before_end
+    }
+}
+
 #[allow(non_camel_case_types)]
 #[derive(
     Debug,
@@ -287,6 +314,7 @@ pub enum SyntaxType {
     Sha256 = 44,
     Int64 = 45,
     Uint64 = 46,
+    TimeBoundedMember = 47,
 }
 
 impl TryFrom<&str> for SyntaxType {
@@ -342,6 +370,7 @@ impl TryFrom<&str> for SyntaxType {
             "SHA256" => Ok(SyntaxType::Sha256),
             "INT64" => Ok(SyntaxType::Int64),
             "UINT64" => Ok(SyntaxType::Uint64),
+            "TIME_BOUNDED_MEMBER" => Ok(SyntaxType::TimeBoundedMember),
             _ => Err(()),
         }
     }
@@ -397,6 +426,7 @@ impl fmt::Display for SyntaxType {
             SyntaxType::Sha256 => "SHA256",
             SyntaxType::Int64 => "INT64",
             SyntaxType::Uint64 => "UINT64",
+            SyntaxType::TimeBoundedMember => "TIME_BOUNDED_MEMBER",
         })
     }
 }
@@ -616,6 +646,7 @@ pub enum PartialValue {
     Sha256(Sha256Output),
     Int64(i64),
     Uint64(u64),
+    TimeBoundedMember(Uuid),
 }
 
 impl From<SyntaxType> for PartialValue {
@@ -1446,6 +1477,7 @@ pub enum Value {
     ApplicationPassword(ApplicationPassword),
     Json(JsonValue),
     Sha256(Sha256Output),
+    TimeBoundedMember(TimeBoundedMember),
 }
 
 impl PartialEq for Value {
@@ -1492,6 +1524,7 @@ impl PartialEq for Value {
             (Value::Image(image1), Value::Image(image2)) => {
                 image1.hash_imagevalue().eq(&image2.hash_imagevalue())
             }
+            (Value::TimeBoundedMember(a), Value::TimeBoundedMember(b)) => a.eq(b),
             (Value::Address(_), Value::Address(_))
             | (Value::PrivateBinary(_), Value::PrivateBinary(_))
             | (Value::SecretValue(_), Value::SecretValue(_)) => false,
