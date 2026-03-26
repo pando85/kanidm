@@ -15,11 +15,13 @@ use uuid::Uuid;
 
 use num_enum::TryFromPrimitive;
 
+mod authorization;
 mod credupdate;
 mod error;
 mod raw;
 mod token;
 
+pub use self::authorization::*;
 pub use self::credupdate::*;
 pub use self::error::*;
 pub use self::raw::*;

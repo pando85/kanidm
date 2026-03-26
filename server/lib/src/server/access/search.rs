@@ -8,13 +8,13 @@ use std::collections::BTreeSet;
 use std::ops::Sub;
 use std::sync::Arc;
 
-pub(super) enum SearchResult {
+pub enum SearchResult {
     Deny,
     Grant,
     Allow(BTreeSet<Attribute>),
 }
 
-pub(super) fn apply_search_access(
+pub fn apply_search_access(
     ident: &Identity,
     related_acp: &[AccessControlSearchResolved],
     entry: &Arc<EntrySealedCommitted>,

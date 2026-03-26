@@ -38,10 +38,7 @@ use self::profiles::{
 
 use kanidm_proto::scim_v1::server::ScimAttributeEffectiveAccess;
 
-use self::create::{apply_create_access, CreateResult};
-use self::delete::{apply_delete_access, DeleteResult};
-use self::modify::{apply_modify_access, ModifyResult};
-use self::search::{apply_search_access, SearchResult};
+use self::create::apply_create_access;
 
 const ACP_RESOLVE_FILTER_CACHE_MAX: usize = 256;
 const ACP_RESOLVE_FILTER_CACHE_LOCAL: usize = 0;
@@ -53,6 +50,11 @@ mod modify;
 pub mod profiles;
 mod protected;
 mod search;
+
+pub use self::create::CreateResult;
+pub use self::delete::{apply_delete_access, DeleteResult};
+pub use self::modify::{apply_modify_access, ModifyResult};
+pub use self::search::{apply_search_access, SearchResult};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Access {

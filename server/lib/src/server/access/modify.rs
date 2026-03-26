@@ -14,7 +14,7 @@ use std::collections::BTreeSet;
 use std::ops::Sub;
 use std::sync::Arc;
 
-pub(super) enum ModifyResult<'a> {
+pub enum ModifyResult<'a> {
     Deny,
     Grant,
     Allow {
@@ -25,7 +25,7 @@ pub(super) enum ModifyResult<'a> {
     },
 }
 
-pub(super) fn apply_modify_access<'a>(
+pub fn apply_modify_access<'a>(
     ident: &Identity,
     related_acp: &'a [AccessControlModifyResolved],
     sync_agreements: &HashMap<Uuid, BTreeSet<Attribute>>,

@@ -50,6 +50,7 @@ const HTTPS_CLIENT_IO_TIMEOUT: Duration = Duration::from_secs(60);
 const HTTPS_CLIENT_REQUEST_TIMEOUT: Duration = Duration::from_secs(300);
 
 mod apidocs;
+pub(crate) mod authorization;
 pub(crate) mod cache_buster;
 pub(crate) mod errors;
 mod extractors;
@@ -308,6 +309,7 @@ pub async fn create_https_server(
     };
     let app = Router::new()
         .merge(oauth2::route_setup(state.clone()))
+        .merge(authorization::route_setup())
         .merge(v1_scim::route_setup())
         .merge(v1::route_setup(state.clone()))
         .route("/robots.txt", get(generic::robots_txt))

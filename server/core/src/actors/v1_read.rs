@@ -1581,4 +1581,56 @@ impl QueryServerReadV1 {
     pub fn domain_info_read(&self) -> DomainInfoRead {
         self.idms.domain_read()
     }
+
+    #[instrument(
+        level = "info",
+        name = "authorization",
+        skip_all,
+        fields(uuid = ?eventid)
+    )]
+    pub async fn handle_authorization_request(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        req: kanidm_proto::internal::AuthorizationRequest,
+        eventid: Uuid,
+    ) -> Result<kanidm_proto::internal::AuthorizationResponse, OperationError> {
+        let ct = duration_from_epoch_now();
+        let mut idms_prox_read = self.idms.proxy_read().await?;
+        let ident = idms_prox_read
+            .validate_client_auth_info_to_ident(client_auth_info, ct)
+            .map_err(|e| {
+                error!(?e, "Invalid identity");
+                e
+            })?;
+
+        kanidmd_lib::server::authorization::make_authorization_decision(
+            &mut idms_prox_read.qs_read,
+            &ident,
+            &req,
+        )
+    }
+
+    #[instrument(
+        level = "info",
+        name = "batch_authorization",
+        skip_all,
+        fields(uuid = ?eventid)
+    )]
+    pub async fn handle_batch_authorization_request(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        req: kanidm_proto::internal::BatchAuthorizationRequest,
+        eventid: Uuid,
+    ) -> Result<kanidm_proto::internal::BatchAuthorizationResponse, OperationError> {
+        let mut responses = Vec::with_capacity(req.requests.len());
+
+        for auth_req in req.requests {
+            let response = self
+                .handle_authorization_request(client_auth_info.clone(), auth_req, eventid)
+                .await?;
+            responses.push(response);
+        }
+
+        Ok(kanidm_proto::internal::BatchAuthorizationResponse { responses })
+    }
 }
