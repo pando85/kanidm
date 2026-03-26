@@ -591,12 +591,9 @@ impl Plugin for MemberOf {
         cand: &[Entry<EntrySealed, EntryCommitted>],
         _de: &DeleteEvent,
     ) -> Result<(), OperationError> {
-        // Similar condition to create - we only trigger updates on groups's members,
-        // so that they can find they are no longer a mo of what was deleted.
         let affected_uuids = cand
             .iter()
             .filter_map(|e| {
-                // Is it a group?
                 if e.attribute_equality(Attribute::Class, &EntryClass::Group.into()) {
                     e.get_ava_as_refuuid(Attribute::Member)
                 } else {
@@ -605,11 +602,21 @@ impl Plugin for MemberOf {
             })
             .flatten()
             .chain(
-                // Or a dyn group?
                 cand.iter()
                     .filter_map(|post| {
                         if post.attribute_equality(Attribute::Class, &EntryClass::DynGroup.into()) {
                             post.get_ava_as_refuuid(Attribute::DynMember)
+                        } else {
+                            None
+                        }
+                    })
+                    .flatten(),
+            )
+            .chain(
+                cand.iter()
+                    .filter_map(|e| {
+                        if e.attribute_equality(Attribute::Class, &EntryClass::Group.into()) {
+                            e.get_ava_as_refuuid(Attribute::TimeBoundedMemberAttr)
                         } else {
                             None
                         }
@@ -659,6 +666,13 @@ impl Plugin for MemberOf {
                         .get_ava_refer(Attribute::DynMember)
                         .into_iter()
                         .flat_map(|set| set.iter()),
+                )
+                .chain(
+                    entry
+                        .get_ava_set(Attribute::TimeBoundedMemberAttr)
+                        .and_then(|vs| vs.as_time_bounded_member_set())
+                        .into_iter()
+                        .flat_map(|map| map.keys()),
                 );
 
             for member_uuid in member_iter {
@@ -739,13 +753,22 @@ impl MemberOf {
             .iter()
             .map(|e| e.get_uuid())
             .chain(dyngroup_change)
-            // In a create, we have to always examine our members as being affected.
             .chain(
                 cand.iter()
                     .filter_map(|e| {
-                        // Is it a group?
                         if e.attribute_equality(Attribute::Class, &EntryClass::Group.into()) {
                             e.get_ava_as_refuuid(Attribute::Member)
+                        } else {
+                            None
+                        }
+                    })
+                    .flatten(),
+            )
+            .chain(
+                cand.iter()
+                    .filter_map(|e| {
+                        if e.attribute_equality(Attribute::Class, &EntryClass::Group.into()) {
+                            e.get_ava_as_refuuid(Attribute::TimeBoundedMemberAttr)
                         } else {
                             None
                         }
@@ -787,11 +810,9 @@ impl MemberOf {
 
             match (pre_member, post_member) {
                 (Some(pre_m), Some(post_m)) => {
-                    // Show only the *changed* uuids for leaf resolution.
                     affected_uuids.extend(pre_m.symmetric_difference(post_m));
                 }
                 (Some(members), None) | (None, Some(members)) => {
-                    // Doesn't matter what order, just that they are affected
                     affected_uuids.extend(members);
                 }
                 (None, None) => {}
@@ -802,15 +823,27 @@ impl MemberOf {
 
             match (pre_dynmember, post_dynmember) {
                 (Some(pre_m), Some(post_m)) => {
-                    // Show only the *changed* uuids.
                     affected_uuids.extend(pre_m.symmetric_difference(post_m));
                 }
                 (Some(members), None) | (None, Some(members)) => {
-                    // Doesn't matter what order, just that they are affected
                     affected_uuids.extend(members);
                 }
                 (None, None) => {}
             };
+
+            let pre_time_bounded: BTreeSet<Uuid> = pre
+                .get_ava_set(Attribute::TimeBoundedMemberAttr)
+                .and_then(|vs| vs.as_time_bounded_member_set())
+                .map(|map| map.keys().copied().collect())
+                .unwrap_or_default();
+
+            let post_time_bounded: BTreeSet<Uuid> = post
+                .get_ava_set(Attribute::TimeBoundedMemberAttr)
+                .and_then(|vs| vs.as_time_bounded_member_set())
+                .map(|map| map.keys().copied().collect())
+                .unwrap_or_default();
+
+            affected_uuids.extend(pre_time_bounded.symmetric_difference(&post_time_bounded));
         }
 
         apply_memberof(qs, affected_uuids)
