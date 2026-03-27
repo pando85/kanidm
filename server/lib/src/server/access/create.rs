@@ -7,7 +7,7 @@ use crate::prelude::*;
 use std::collections::BTreeSet;
 use std::ops::Sub;
 
-pub(super) enum CreateResult<'a> {
+pub enum CreateResult<'a> {
     Deny,
     Grant,
     Allow {

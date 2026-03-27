@@ -7,7 +7,7 @@ use crate::prelude::*;
 use std::ops::Sub;
 use std::sync::Arc;
 
-pub(super) enum DeleteResult {
+pub enum DeleteResult {
     Deny,
     Grant,
 }
@@ -18,7 +18,7 @@ enum IResult {
     Ignore,
 }
 
-pub(super) fn apply_delete_access<'a>(
+pub fn apply_delete_access<'a>(
     ident: &Identity,
     related_acp: &'a [AccessControlDeleteResolved],
     entry: &'a Arc<EntrySealedCommitted>,
