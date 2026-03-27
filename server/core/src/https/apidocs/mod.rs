@@ -220,6 +220,9 @@ impl Modify for SecurityAddon {
         super::v1::debug_ipinfo,
         super::v1::public_jwk_key_id_get,
 
+        super::authorization::authorize,
+        super::authorization::authorize_batch,
+
     ),
     components(
         schemas(
@@ -298,6 +301,14 @@ impl Modify for SecurityAddon {
             internal::AppLink,
 
             internal::IdentifyUserRequest,
+            internal::AuthorizationRequest,
+            internal::AuthorizationResponse,
+            internal::AuthorizationDecision,
+            internal::AuthorizationAction,
+            internal::AuthorizationExplanation,
+            internal::BatchAuthorizationRequest,
+            internal::BatchAuthorizationResponse,
+            internal::DecisionCacheEntry,
             // terrible workaround for other things
             response_schema::CreationChallengeResponse,
 
