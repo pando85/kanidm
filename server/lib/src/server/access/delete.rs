@@ -132,6 +132,20 @@ fn delete_filter_entry<'a>(
                     return false;
                 }
             }
+            AccessControlReceiverCondition::Delegated {
+                scope_filter_resolved,
+            } => {
+                if let Some(f_res) = scope_filter_resolved {
+                    if !entry.entry_match_no_index(f_res) {
+                        trace!(
+                            "entry {:?} DOES NOT match delegated scope filter for acs {}",
+                            entry.get_uuid(),
+                            acd.acp.acp.name
+                        );
+                        return false;
+                    }
+                }
+            }
         };
 
         match &acd.target_condition {
@@ -144,6 +158,20 @@ fn delete_filter_entry<'a>(
                     );
                     // Does not match, fail.
                     return false;
+                }
+            }
+            AccessControlTargetCondition::DelegatedScope {
+                scope_filter_resolved,
+            } => {
+                if let Some(f_res) = scope_filter_resolved {
+                    if !entry.entry_match_no_index(f_res) {
+                        trace!(
+                            "entry {:?} DOES NOT match delegated scope for acs {}",
+                            entry.get_uuid(),
+                            acd.acp.acp.name
+                        );
+                        return false;
+                    }
                 }
             }
         };
