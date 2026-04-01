@@ -179,6 +179,12 @@ fn create_filter_entry<'a>(
                 // Currently, this is unsatisfiable for creates.
                 return false;
             }
+            AccessControlReceiverCondition::Delegated { scope_filter_resolved: _ } => {
+                // For creates, delegated scope filter can't be evaluated on the new entry
+                // in the same way as searches. The scope is typically used to limit what
+                // entries can be operated on. For creates, we allow this to pass through
+                // since the target condition will handle the scope check.
+            }
         };
 
         match &accr.target_condition {
@@ -187,6 +193,14 @@ fn create_filter_entry<'a>(
                     trace!(?entry, acs = %accr.acp.acp.name, "entry DOES NOT match acs");
                     // Does not match, fail this rule.
                     return false;
+                }
+            }
+            AccessControlTargetCondition::DelegatedScope { scope_filter_resolved } => {
+                if let Some(f_res) = scope_filter_resolved {
+                    if !entry.entry_match_no_index(f_res) {
+                        trace!(?entry, acs = %accr.acp.acp.name, "entry DOES NOT match delegated scope");
+                        return false;
+                    }
                 }
             }
         };
