@@ -43,7 +43,7 @@ fn do_group_memberof(
     uuid: Uuid,
     tgte: &mut EntryInvalidCommitted,
 ) -> Result<(), OperationError> {
-    let now = OffsetDateTime::now_utc();
+    let now = qs.get_curtime_odt();
 
     let groups = qs
         .internal_search(filter!(f_and!([
@@ -202,7 +202,7 @@ fn do_leaf_memberof(
         ));
     }
 
-    let now = OffsetDateTime::now_utc();
+    let now = qs.get_curtime_odt();
 
     let all_groups = qs
         .internal_search(filter!(f_and!([

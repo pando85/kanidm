@@ -178,7 +178,7 @@ impl TimeBoundedMember {
     }
 
     pub fn is_valid_at(&self, when: OffsetDateTime) -> bool {
-        let after_start = self.valid_from.map_or(true, |vf| when >= vf);
+        let after_start = self.valid_from.is_none_or(|vf| when >= vf);
         let before_end = when < self.valid_until;
         after_start && before_end
     }

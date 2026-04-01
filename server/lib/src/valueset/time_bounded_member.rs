@@ -49,7 +49,7 @@ impl ValueSetTimeBoundedMember {
         Ok(Box::new(ValueSetTimeBoundedMember { map }))
     }
 
-    pub fn from_iter<T>(iter: T) -> Option<Box<Self>>
+    pub fn new_from_iter<T>(iter: T) -> Option<Box<Self>>
     where
         T: IntoIterator<Item = TimeBoundedMember>,
     {
