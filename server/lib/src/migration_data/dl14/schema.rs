@@ -1517,3 +1517,59 @@ pub static SCHEMA_CLASS_ASSERTION_NONCE: LazyLock<SchemaClass> = LazyLock::new(|
     ..Default::default()
 }
 });
+
+// =========================================
+// Time-Bounded Access
+
+pub static SCHEMA_ATTR_MEMBER_VALID_FROM: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_MEMBER_VALID_FROM,
+        name: Attribute::MemberValidFrom,
+        description: "The datetime after which a group membership becomes valid".to_string(),
+        sync_allowed: true,
+        syntax: SyntaxType::DateTime,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_MEMBER_VALID_UNTIL: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_MEMBER_VALID_UNTIL,
+        name: Attribute::MemberValidUntil,
+        description: "The datetime after which a group membership expires".to_string(),
+        sync_allowed: true,
+        syntax: SyntaxType::DateTime,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_MAX_GRANT_DURATION: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_MAX_GRANT_DURATION,
+        name: Attribute::MaxGrantDuration,
+        description: "The maximum duration in seconds for time-bounded access grants".to_string(),
+        syntax: SyntaxType::Uint32,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_TIME_BOUNDED_MEMBER: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_TIME_BOUNDED_MEMBER,
+        name: Attribute::TimeBoundedMemberAttr,
+        description: "A time-bounded group member with validity period".to_string(),
+        indexed: true,
+        multivalue: true,
+        syntax: SyntaxType::TimeBoundedMember,
+        ..Default::default()
+    });
+
+pub static SCHEMA_CLASS_TIME_BOUNDED_GRANT: LazyLock<SchemaClass> = LazyLock::new(|| SchemaClass {
+    uuid: UUID_SCHEMA_CLASS_TIME_BOUNDED_GRANT,
+    name: EntryClass::TimeBoundedGrant.into(),
+    description: "A time-bounded access grant that automatically expires".to_string(),
+    systemmust: vec![],
+    systemmay: vec![
+        Attribute::TimeBoundedMemberAttr,
+        Attribute::MaxGrantDuration,
+    ],
+    systemsupplements: vec![EntryClass::Group.into()],
+    ..Default::default()
+});

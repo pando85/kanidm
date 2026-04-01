@@ -58,6 +58,7 @@ pub use self::session::{ValueSetApiToken, ValueSetOauth2Session, ValueSetSession
 pub use self::spn::ValueSetSpn;
 pub use self::ssh::ValueSetSshKey;
 pub use self::syntax::ValueSetSyntax;
+pub use self::time_bounded_member::ValueSetTimeBoundedMember;
 pub use self::totp::ValueSetTotpSecret;
 pub use self::uihint::ValueSetUiHint;
 pub use self::uint32::ValueSetUint32;
@@ -94,6 +95,7 @@ mod session;
 mod spn;
 mod ssh;
 mod syntax;
+mod time_bounded_member;
 mod totp;
 mod uihint;
 mod uint32;
@@ -698,6 +700,13 @@ pub trait ValueSetT: std::fmt::Debug + DynClone {
         None
     }
 
+    fn as_time_bounded_member_set(
+        &self,
+    ) -> Option<&BTreeMap<Uuid, crate::value::TimeBoundedMember>> {
+        debug_assert!(false);
+        None
+    }
+
     fn repl_merge_valueset(
         &self,
         _older: &ValueSet,
@@ -910,7 +919,8 @@ pub fn from_result_value_iter(
         | Value::HexString(_)
         | Value::Json(_)
         | Value::Sha256(_)
-        | Value::KeyInternal { .. } => {
+        | Value::KeyInternal { .. }
+        | Value::TimeBoundedMember(_) => {
             debug_assert!(false);
             return Err(OperationError::InvalidValueState);
         }
@@ -1002,6 +1012,7 @@ pub fn from_value_iter(mut iter: impl Iterator<Item = Value>) -> Result<ValueSet
             debug_assert!(false);
             return Err(OperationError::InvalidValueState);
         }
+        Value::TimeBoundedMember(m) => ValueSetTimeBoundedMember::new(m),
     };
 
     for v in iter {
@@ -1067,6 +1078,7 @@ pub fn from_db_valueset_v2(dbvs: DbValueSetV2) -> Result<ValueSet, OperationErro
         DbValueSetV2::Json(object) => Ok(ValueSetJson::new(object)),
         DbValueSetV2::Sha256(set) => ValueSetSha256::from_dbvs2(set),
         DbValueSetV2::Message(object) => Ok(ValueSetMessage::new(object)),
+        DbValueSetV2::TimeBoundedMember(set) => ValueSetTimeBoundedMember::from_dbvs2(set),
         DbValueSetV2::EcKeyPrivate(_key) => Err(OperationError::InvalidState),
     }
 }

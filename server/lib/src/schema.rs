@@ -284,6 +284,7 @@ impl SchemaAttribute {
             // SyntaxType::Json => matches!(v, PartialValue::Json),
             // Should not be queried
             SyntaxType::Json | SyntaxType::Message => false,
+            SyntaxType::TimeBoundedMember => matches!(v, PartialValue::TimeBoundedMember(_)),
         };
         if r {
             Ok(())
@@ -353,6 +354,7 @@ impl SchemaAttribute {
                 SyntaxType::Sha256 => matches!(v, Value::Sha256(_)),
                 SyntaxType::EcKeyPrivate => matches!(v, Value::SecretValue(_)),
                 SyntaxType::Message => false,
+                SyntaxType::TimeBoundedMember => matches!(v, Value::TimeBoundedMember(_)),
             };
         if r {
             Ok(())
