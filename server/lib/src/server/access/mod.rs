@@ -197,6 +197,37 @@ fn resolve_access_conditions(
             }
         }
         AccessControlReceiver::EntryManager => AccessControlReceiverCondition::EntryManager,
+        AccessControlReceiver::Delegated {
+            scope_group,
+            scope_filter,
+            ..
+        } => {
+            let scope_filter_resolved = if let Some(filter) = scope_filter {
+                filter
+                    .resolve(ident, None, Some(acp_resolve_filter_cache))
+                    .map_err(|e| {
+                        admin_error!(?e, "Failed to resolve delegated scope filter");
+                        e
+                    })
+                    .ok()
+            } else {
+                None
+            };
+
+            if let Some(scope_group_uuid) = scope_group {
+                let group_check = ident_memberof
+                    .map(|imo| imo.contains(scope_group_uuid))
+                    .unwrap_or_default();
+
+                if !group_check {
+                    return None;
+                }
+            }
+
+            AccessControlReceiverCondition::Delegated {
+                scope_filter_resolved,
+            }
+        }
         AccessControlReceiver::None => return None,
         // AccessControlReceiverCondition::None,
     };
@@ -210,6 +241,26 @@ fn resolve_access_conditions(
             })
             .ok()
             .map(AccessControlTargetCondition::Scope)?,
+        AccessControlTarget::DelegatedScope {
+            scope_group: _,
+            scope_filter,
+        } => {
+            let scope_filter_resolved = if let Some(filter) = scope_filter {
+                filter
+                    .resolve(ident, None, Some(acp_resolve_filter_cache))
+                    .map_err(|e| {
+                        admin_error!(?e, "Failed to resolve delegated scope filter");
+                        e
+                    })
+                    .ok()
+            } else {
+                None
+            };
+
+            AccessControlTargetCondition::DelegatedScope {
+                scope_filter_resolved,
+            }
+        }
         AccessControlTarget::None => return None,
     };
 
@@ -331,7 +382,7 @@ pub trait AccessControlsTransaction<'a> {
 
         // For each entry.
         let entries_is_empty = entries.is_empty();
-        let allowed_entries: Vec<_> = entries
+let allowed_entries: Vec<_> = entries
             .into_iter()
             .filter(|e| {
                 match apply_search_access(ident, related_acp.as_slice(), e) {
@@ -667,7 +718,7 @@ pub trait AccessControlsTransaction<'a> {
                         debug!("passed pres, rem, classes check.");
                     }
 
-                    // Yield the result
+// Yield the result
                     decision
                 }
                 ModifyResult::ReauthRequired { .. } => false,
@@ -934,7 +985,8 @@ pub trait AccessControlsTransaction<'a> {
 
                     decision
                 }
-                CreateResult::ReauthRequired { .. } => false,
+CreateResult::ReauthRequired { .. } => false,
+
             }
         });
 
@@ -1085,7 +1137,8 @@ pub trait AccessControlsTransaction<'a> {
                 // Bound by requested attrs?
                 Access::Allow(allowed_attrs.into_iter().collect())
             }
-            SearchResult::ReauthRequired { .. } => Access::Deny,
+SearchResult::ReauthRequired { .. } => Access::Deny,
+
         };
 
         // == modify ==

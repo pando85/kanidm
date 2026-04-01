@@ -1,5 +1,6 @@
 mod access;
 pub(super) mod accounts;
+mod delegation;
 mod groups;
 mod key_providers;
 pub(crate) mod schema;
@@ -7,6 +8,7 @@ mod system_config;
 
 use self::access::*;
 use self::accounts::*;
+use self::delegation::*;
 use self::groups::*;
 use self::schema::*;
 use self::system_config::*;
@@ -257,6 +259,10 @@ pub fn phase_6_builtin_non_admin_entries() -> Result<Vec<EntryInitNew>, Operatio
         // other things
         IDM_UI_ENABLE_EXPERIMENTAL_FEATURES.clone().try_into()?,
         IDM_ACCOUNT_MAIL_READ.clone().try_into()?,
+        // Delegated roles
+        BUILTIN_DELEGATED_ROLE_HELPDESK.clone().into(),
+        BUILTIN_DELEGATED_ROLE_USER_ADMIN.clone().into(),
+        BUILTIN_DELEGATED_ROLE_GROUP_ADMIN.clone().into(),
     ])
 }
 

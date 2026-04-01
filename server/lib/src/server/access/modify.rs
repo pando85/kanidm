@@ -167,6 +167,15 @@ pub fn apply_modify_access<'a>(
                             return None;
                         }
                     }
+                    AccessControlReceiverCondition::Delegated { scope_filter_resolved } => {
+                        // Check if the entry matches the delegated scope filter
+                        if let Some(filter) = scope_filter_resolved {
+                            if !entry.entry_match_no_index(filter) {
+                                debug!(entry = ?entry.get_display_id(), acm = %acm.acp.acp.name, "entry DOES NOT match delegated scope filter");
+                                return None;
+                            }
+                        }
+                    }
                 };
 
                 match &acm.target_condition {
@@ -174,6 +183,15 @@ pub fn apply_modify_access<'a>(
                         if !entry.entry_match_no_index(f_res) {
                             debug!(entry = ?entry.get_display_id(), acm = %acm.acp.acp.name, "entry DOES NOT match acs");
                             return None;
+                        }
+                    }
+                    AccessControlTargetCondition::DelegatedScope { scope_filter_resolved } => {
+                        // Check if the entry matches the delegated scope filter
+                        if let Some(filter) = scope_filter_resolved {
+                            if !entry.entry_match_no_index(filter) {
+                                debug!(entry = ?entry.get_display_id(), acm = %acm.acp.acp.name, "entry DOES NOT match delegated scope filter");
+                                return None;
+                            }
                         }
                     }
                 };

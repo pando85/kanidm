@@ -405,6 +405,10 @@ pub enum AccessControlReceiver {
     None,
     Group(BTreeSet<Uuid>),
     EntryManager,
+    Delegated {
+        scope_group: Option<Uuid>,
+        scope_filter: Option<Filter<FilterValid>>,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -412,6 +416,9 @@ pub enum AccessControlReceiverCondition {
     // None,
     GroupChecked,
     EntryManager,
+    Delegated {
+        scope_filter_resolved: Option<Filter<FilterValidResolved>>,
+    },
 }
 
 /*
@@ -426,12 +433,19 @@ impl AccessControlReceiverCondition {
 pub enum AccessControlTarget {
     None,
     Scope(Filter<FilterValid>),
+    DelegatedScope {
+        scope_group: Option<Uuid>,
+        scope_filter: Option<Filter<FilterValid>>,
+    },
 }
 
 #[derive(Debug, Clone)]
 pub enum AccessControlTargetCondition {
     // None,
     Scope(Filter<FilterValidResolved>),
+    DelegatedScope {
+        scope_filter_resolved: Option<Filter<FilterValidResolved>>,
+    },
 }
 
 /*
@@ -445,6 +459,8 @@ impl AccessControlTargetCondition {
 #[derive(Debug, Clone)]
 pub struct AccessControlProfile {
     pub name: String,
+    // Currently we retrieve this but don't use it. We could depending on how we change
+    // the acp update routine.
     #[allow(dead_code)]
     uuid: Uuid,
     pub receiver: AccessControlReceiver,
@@ -497,6 +513,40 @@ impl AccessControlProfile {
             &EntryClass::AccessControlReceiverEntryManager.into(),
         ) {
             AccessControlReceiver::EntryManager
+        } else if value.attribute_equality(
+            Attribute::Class,
+            &EntryClass::AccessControlReceiverDelegated.into(),
+        ) {
+            let scope_group = value.get_ava_single_refer(Attribute::DelegatedScopeGroup);
+
+            let scope_filter = if let Some(f) =
+                value.get_ava_single_protofilter(Attribute::DelegatedScopeFilter)
+            {
+                let ident = Identity::from_internal();
+                let filter_i = Filter::from_rw(&ident, f, qs).map_err(|e| {
+                    admin_error!(
+                        "{} validation failed {:?}",
+                        Attribute::DelegatedScopeFilter,
+                        e
+                    );
+                    e
+                })?;
+                Some(filter_i.validate(qs.get_schema()).map_err(|e| {
+                    admin_error!(
+                        "{} Schema Violation {:?}",
+                        Attribute::DelegatedScopeFilter,
+                        e
+                    );
+                    OperationError::SchemaViolation(e)
+                })?)
+            } else {
+                None
+            };
+
+            AccessControlReceiver::Delegated {
+                scope_group,
+                scope_filter,
+            }
         } else {
             warn!(
                 ?name,
@@ -535,6 +585,40 @@ impl AccessControlProfile {
                     OperationError::SchemaViolation(e)
                 })
                 .map(AccessControlTarget::Scope)?
+        } else if value.attribute_equality(
+            Attribute::Class,
+            &EntryClass::AccessControlTargetDelegatedScope.into(),
+        ) {
+            let scope_group = value.get_ava_single_refer(Attribute::DelegatedScopeGroup);
+
+            let scope_filter = if let Some(f) =
+                value.get_ava_single_protofilter(Attribute::DelegatedScopeFilter)
+            {
+                let ident = Identity::from_internal();
+                let filter_i = Filter::from_rw(&ident, f, qs).map_err(|e| {
+                    admin_error!(
+                        "{} validation failed {:?}",
+                        Attribute::DelegatedScopeFilter,
+                        e
+                    );
+                    e
+                })?;
+                Some(filter_i.validate(qs.get_schema()).map_err(|e| {
+                    admin_error!(
+                        "{} Schema Violation {:?}",
+                        Attribute::DelegatedScopeFilter,
+                        e
+                    );
+                    OperationError::SchemaViolation(e)
+                })?)
+            } else {
+                None
+            };
+
+            AccessControlTarget::DelegatedScope {
+                scope_group,
+                scope_filter,
+            }
         } else {
             warn!(
                 ?name,

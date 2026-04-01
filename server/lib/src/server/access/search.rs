@@ -190,6 +190,15 @@ fn search_filter_entry(
                         return None
                     }
                 }
+                AccessControlReceiverCondition::Delegated { scope_filter_resolved } => {
+                    // Check if the entry matches the delegated scope filter
+                    if let Some(filter) = scope_filter_resolved {
+                        if !entry.entry_match_no_index(filter) {
+                            debug!(entry = ?entry.get_display_id(), acs = %acs.acp.acp.name, "entry DOES NOT match delegated scope filter");
+                            return None
+                        }
+                    }
+                }
             };
 
             match &acs.target_condition {
@@ -197,6 +206,15 @@ fn search_filter_entry(
                     if !entry.entry_match_no_index(f_res) {
                         debug!(entry = ?entry.get_display_id(), acs = %acs.acp.acp.name, action="search_filter", "entry DOES NOT match acs");
                         return None
+                    }
+                }
+                AccessControlTargetCondition::DelegatedScope { scope_filter_resolved } => {
+                    // Check if the entry matches the delegated scope filter
+                    if let Some(filter) = scope_filter_resolved {
+                        if !entry.entry_match_no_index(filter) {
+                            debug!(entry = ?entry.get_display_id(), acs = %acs.acp.acp.name, "entry DOES NOT match delegated scope filter");
+                            return None
+                        }
                     }
                 }
             };
