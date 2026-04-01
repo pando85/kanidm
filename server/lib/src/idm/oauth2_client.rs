@@ -127,7 +127,11 @@ impl OAuth2ClientProvider {
         email
             .split('@')
             .nth(1)
-            .map(|domain| self.email_domains.iter().any(|d| d.eq_ignore_ascii_case(domain)))
+            .map(|domain| {
+                self.email_domains
+                    .iter()
+                    .any(|d| d.eq_ignore_ascii_case(domain))
+            })
             .unwrap_or(false)
     }
 }
@@ -168,9 +172,15 @@ impl FederationDiscoveryCache {
 }
 
 #[allow(dead_code)]
-pub async fn discover_oidc_provider(issuer_url: &Url) -> Result<OidcDiscoveryResponse, OperationError> {
-    let discovery_url = format!("{}{}", issuer_url.as_str().trim_end_matches('/'), OIDC_DISCOVERY_PATH);
-    
+pub async fn discover_oidc_provider(
+    issuer_url: &Url,
+) -> Result<OidcDiscoveryResponse, OperationError> {
+    let discovery_url = format!(
+        "{}{}",
+        issuer_url.as_str().trim_end_matches('/'),
+        OIDC_DISCOVERY_PATH
+    );
+
     let url = Url::parse(&discovery_url).map_err(|e| {
         error!(?e, "Failed to parse discovery URL");
         OperationError::InvalidState
@@ -184,26 +194,26 @@ pub async fn discover_oidc_provider(issuer_url: &Url) -> Result<OidcDiscoveryRes
             OperationError::InvalidState
         })?;
 
-    let response = client
-        .get(url.clone())
-        .send()
-        .await
-        .map_err(|e| {
-            error!(?e, "Failed to fetch OIDC discovery document");
-            OperationError::InvalidState
-        })?;
+    let response = client.get(url.clone()).send().await.map_err(|e| {
+        error!(?e, "Failed to fetch OIDC discovery document");
+        OperationError::InvalidState
+    })?;
 
     if !response.status().is_success() {
         error!(status = ?response.status(), "OIDC discovery request failed");
         return Err(OperationError::InvalidValueState);
     }
 
-    let discovery = response.json::<OidcDiscoveryResponse>().await.map_err(|e| {
-        error!(?e, "Failed to parse OIDC discovery response");
-        OperationError::SerdeJsonError
-    })?;
+    let discovery = response
+        .json::<OidcDiscoveryResponse>()
+        .await
+        .map_err(|e| {
+            error!(?e, "Failed to parse OIDC discovery response");
+            OperationError::SerdeJsonError
+        })?;
 
-    if discovery.issuer.as_str().trim_end_matches('/') != issuer_url.as_str().trim_end_matches('/') {
+    if discovery.issuer.as_str().trim_end_matches('/') != issuer_url.as_str().trim_end_matches('/')
+    {
         error!(
             expected = ?issuer_url,
             actual = ?discovery.issuer,
@@ -223,8 +233,7 @@ impl IdmServerProxyWriteTransaction<'_> {
             f_eq(Attribute::Class, EntryClass::OAuth2Federation.into())
         ])))?;
 
-        let mut oauth2_client_provider_structs =
-            Vec::with_capacity(oauth2_client_entries.len());
+        let mut oauth2_client_provider_structs = Vec::with_capacity(oauth2_client_entries.len());
 
         let mut client_redirect_uri = self.origin.clone();
         client_redirect_uri.set_path(OAUTH2_CLIENT_AUTHORISATION_RESPONSE_PATH);
@@ -299,26 +308,23 @@ impl IdmServerProxyWriteTransaction<'_> {
                 .get_ava_single_bool(Attribute::OAuth2AutoDiscovery)
                 .unwrap_or(false);
 
-            let (authorisation_endpoint, token_endpoint) = match (
-                authorisation_endpoint,
-                token_endpoint,
-                issuer.as_ref(),
-            ) {
-                (Some(auth), Some(token), _) => (auth, token),
-                (None, None, Some(issuer_url)) => {
-                    let mut auth = issuer_url.clone();
-                    auth.set_path("/oauth2/authorize");
-                    
-                    let mut token = issuer_url.clone();
-                    token.set_path("/oauth2/token");
-                    
-                    (auth, token)
-                }
-                _ => {
-                    error!(?uuid, "OAuth2 provider missing required endpoints");
-                    return Err(OperationError::InvalidValueState);
-                }
-            };
+            let (authorisation_endpoint, token_endpoint) =
+                match (authorisation_endpoint, token_endpoint, issuer.as_ref()) {
+                    (Some(auth), Some(token), _) => (auth, token),
+                    (None, None, Some(issuer_url)) => {
+                        let mut auth = issuer_url.clone();
+                        auth.set_path("/oauth2/authorize");
+
+                        let mut token = issuer_url.clone();
+                        token.set_path("/oauth2/token");
+
+                        (auth, token)
+                    }
+                    _ => {
+                        error!(?uuid, "OAuth2 provider missing required endpoints");
+                        return Err(OperationError::InvalidValueState);
+                    }
+                };
 
             let provider = OAuth2ClientProvider {
                 name,

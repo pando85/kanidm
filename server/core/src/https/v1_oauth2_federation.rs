@@ -26,10 +26,7 @@ pub(crate) async fn oauth2_federation_get(
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
 ) -> Result<Json<Vec<ProtoEntry>>, WebError> {
-    let filter = filter_all!(f_eq(
-        Attribute::Class,
-        EntryClass::OAuth2Federation.into()
-    ));
+    let filter = filter_all!(f_eq(Attribute::Class, EntryClass::OAuth2Federation.into()));
     json_rest_event_get(state, None, filter, kopid, client_auth_info).await
 }
 
@@ -78,7 +75,8 @@ pub(crate) async fn oauth2_federation_id_get(
         f_eq(Attribute::Class, EntryClass::OAuth2Federation.into()),
         f_eq(Attribute::Name, PartialValue::new_iname(&id))
     ]));
-    let Json(entry_opt) = json_rest_event_get_id(state, id, filter, None, kopid, client_auth_info).await?;
+    let Json(entry_opt) =
+        json_rest_event_get_id(state, id, filter, None, kopid, client_auth_info).await?;
     entry_opt
         .map(|entry| Json(entry))
         .ok_or_else(|| WebError::from(OperationError::NoMatchingEntries))
