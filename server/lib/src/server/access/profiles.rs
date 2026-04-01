@@ -77,6 +77,8 @@ impl AccessControlSearch {
                 uuid,
                 receiver: AccessControlReceiver::Group(btreeset!(receiver)),
                 target: AccessControlTarget::Scope(targetscope),
+                require_reauth: false,
+                reauth_max_age: None,
             },
             attrs,
         }
@@ -97,6 +99,8 @@ impl AccessControlSearch {
                 uuid,
                 receiver: AccessControlReceiver::EntryManager,
                 target,
+                require_reauth: false,
+                reauth_max_age: None,
             },
             attrs: attrs.split_whitespace().map(Attribute::from).collect(),
         }
@@ -147,6 +151,8 @@ impl AccessControlDelete {
                 uuid,
                 receiver: AccessControlReceiver::Group(btreeset!(receiver)),
                 target: AccessControlTarget::Scope(targetscope),
+                require_reauth: false,
+                reauth_max_age: None,
             },
         }
     }
@@ -161,6 +167,8 @@ impl AccessControlDelete {
                 uuid,
                 receiver: AccessControlReceiver::EntryManager,
                 target,
+                require_reauth: false,
+                reauth_max_age: None,
             },
         }
     }
@@ -227,6 +235,8 @@ impl AccessControlCreate {
                 uuid,
                 receiver: AccessControlReceiver::Group(btreeset!(receiver)),
                 target: AccessControlTarget::Scope(targetscope),
+                require_reauth: false,
+                reauth_max_age: None,
             },
             classes: classes.split_whitespace().map(AttrString::from).collect(),
             attrs: attrs.split_whitespace().map(Attribute::from).collect(),
@@ -249,6 +259,8 @@ impl AccessControlCreate {
                 uuid,
                 receiver: AccessControlReceiver::EntryManager,
                 target,
+                require_reauth: false,
+                reauth_max_age: None,
             },
             classes: classes.split_whitespace().map(AttrString::from).collect(),
             attrs: attrs.split_whitespace().map(Attribute::from).collect(),
@@ -337,6 +349,8 @@ impl AccessControlModify {
                 uuid,
                 receiver: AccessControlReceiver::Group(btreeset!(receiver)),
                 target: AccessControlTarget::Scope(targetscope),
+                require_reauth: false,
+                reauth_max_age: None,
             },
             pres_classes: pres_classes
                 .split_whitespace()
@@ -369,6 +383,8 @@ impl AccessControlModify {
                 uuid,
                 receiver: AccessControlReceiver::EntryManager,
                 target,
+                require_reauth: false,
+                reauth_max_age: None,
             },
             pres_classes: pres_classes
                 .split_whitespace()
@@ -429,12 +445,12 @@ impl AccessControlTargetCondition {
 #[derive(Debug, Clone)]
 pub struct AccessControlProfile {
     pub name: String,
-    // Currently we retrieve this but don't use it. We could depending on how we change
-    // the acp update routine.
     #[allow(dead_code)]
     uuid: Uuid,
     pub receiver: AccessControlReceiver,
     pub target: AccessControlTarget,
+    pub require_reauth: bool,
+    pub reauth_max_age: Option<u32>,
 }
 
 impl AccessControlProfile {
@@ -527,11 +543,19 @@ impl AccessControlProfile {
             AccessControlTarget::None
         };
 
+        let require_reauth = value
+            .get_ava_single_bool(Attribute::AcpRequireReauth)
+            .unwrap_or(false);
+
+        let reauth_max_age = value.get_ava_single_uint32(Attribute::AcpReauthMaxAge);
+
         Ok(AccessControlProfile {
             name,
             uuid,
             receiver,
             target,
+            require_reauth,
+            reauth_max_age,
         })
     }
 }

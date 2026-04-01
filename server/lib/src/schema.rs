@@ -1412,6 +1412,40 @@ impl SchemaWriteTransaction<'_> {
                 },
             );
         self.attributes.insert(
+            Attribute::AcpRequireReauth,
+            SchemaAttribute {
+                name: Attribute::AcpRequireReauth,
+                uuid: UUID_SCHEMA_ATTR_ACP_REQUIRE_REAUTH,
+                description: String::from(
+                    "A flag to determine if this ACP requires step-up authentication for operations.",
+                ),
+                multivalue: false,
+                unique: false,
+                phantom: false,
+                sync_allowed: false,
+                replicated: Replicated::True,
+                indexed: false,
+                syntax: SyntaxType::Boolean,
+            },
+        );
+        self.attributes.insert(
+            Attribute::AcpReauthMaxAge,
+            SchemaAttribute {
+                name: Attribute::AcpReauthMaxAge,
+                uuid: UUID_SCHEMA_ATTR_ACP_REAUTH_MAX_AGE,
+                description: String::from(
+                    "The maximum age in seconds since last authentication before step-up is required.",
+                ),
+                multivalue: false,
+                unique: false,
+                phantom: false,
+                sync_allowed: false,
+                replicated: Replicated::True,
+                indexed: false,
+                syntax: SyntaxType::Uint32,
+            },
+        );
+        self.attributes.insert(
             Attribute::EntryManagedBy,
             SchemaAttribute {
                 name: Attribute::EntryManagedBy,
@@ -2163,7 +2197,12 @@ impl SchemaWriteTransaction<'_> {
                 name: EntryClass::AccessControlProfile.into(),
                 uuid: UUID_SCHEMA_CLASS_ACCESS_CONTROL_PROFILE,
                 description: String::from("System Access Control Profile Class"),
-                systemmay: vec![Attribute::AcpEnable, Attribute::Description],
+                systemmay: vec![
+                    Attribute::AcpEnable,
+                    Attribute::Description,
+                    Attribute::AcpRequireReauth,
+                    Attribute::AcpReauthMaxAge,
+                ],
                 systemmust: vec![Attribute::Name],
                 systemsupplements: vec![
                     EntryClass::AccessControlSearch.into(),
