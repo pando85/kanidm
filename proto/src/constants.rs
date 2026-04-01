@@ -70,7 +70,13 @@ pub const ATTR_ACP_MODIFY_PRESENTATTR: &str = "acp_modify_presentattr";
 pub const ATTR_ACP_MODIFY_REMOVEDATTR: &str = "acp_modify_removedattr";
 pub const ATTR_ACP_RECEIVER_GROUP: &str = "acp_receiver_group";
 pub const ATTR_ACP_RECEIVER: &str = "acp_receiver";
-pub const ATTR_ACP_SEARCH_ATTR: &str = "acp_search_attr";
+pub const ATTR_ACP_RECEIVER_DELEGATED: &str = "acp_receiver_delegated";
+pub const ATTR_ACP_TARGET_DELEGATED_SCOPE: &str = "acp_target_delegated_scope";
+pub const ATTR_DELEGATED_SCOPE_FILTER: &str = "delegated_scope_filter";
+pub const ATTR_DELEGATED_SCOPE_GROUP: &str = "delegated_scope_group";
+pub const ATTR_DELEGATED_BY: &str = "delegated_by";
+pub const ATTR_DELEGATED_ROLE_TEMPLATE: &str = "delegated_role_template";
+pub const ATTR_SEARCH_ATTR: &str = "acp_search_attr";
 pub const ATTR_ACP_TARGET_SCOPE: &str = "acp_targetscope";
 pub const ATTR_API_TOKEN_SESSION: &str = "api_token_session";
 pub const ATTR_APPLICATION_PASSWORD: &str = "application_password";
@@ -325,6 +331,9 @@ pub const ACCESS_CONTROL_RECEIVER_ENTRY_MANAGER: &str = "access_control_receiver
 pub const ACCESS_CONTROL_RECEIVER_GROUP: &str = "access_control_receiver_group";
 pub const ACCESS_CONTROL_SEARCH: &str = "access_control_search";
 pub const ACCESS_CONTROL_TARGET_SCOPE: &str = "access_control_target_scope";
+pub const ACCESS_CONTROL_RECEIVER_DELEGATED: &str = "access_control_receiver_delegated";
+pub const ACCESS_CONTROL_TARGET_DELEGATED_SCOPE: &str = "access_control_target_delegated_scope";
+pub const DELEGATED_ROLE: &str = "delegated_role";
 
 /// Entryclass
 pub const ENTRYCLASS_BUILTIN: &str = "builtin";

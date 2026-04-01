@@ -389,6 +389,11 @@ pub enum AccessControlReceiver {
     None,
     Group(BTreeSet<Uuid>),
     EntryManager,
+    Delegated {
+        delegated_role: Uuid,
+        scope_group: Option<Uuid>,
+        scope_filter: Option<Filter<FilterValid>>,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -396,6 +401,9 @@ pub enum AccessControlReceiverCondition {
     // None,
     GroupChecked,
     EntryManager,
+    Delegated {
+        scope_filter_resolved: Option<Filter<FilterValidResolved>>,
+    },
 }
 
 /*
@@ -410,12 +418,19 @@ impl AccessControlReceiverCondition {
 pub enum AccessControlTarget {
     None,
     Scope(Filter<FilterValid>),
+    DelegatedScope {
+        scope_group: Uuid,
+        scope_filter: Option<Filter<FilterValid>>,
+    },
 }
 
 #[derive(Debug, Clone)]
 pub enum AccessControlTargetCondition {
     // None,
     Scope(Filter<FilterValidResolved>),
+    DelegatedScope {
+        scope_filter_resolved: Option<Filter<FilterValidResolved>>,
+    },
 }
 
 /*
@@ -481,6 +496,51 @@ impl AccessControlProfile {
             &EntryClass::AccessControlReceiverEntryManager.into(),
         ) {
             AccessControlReceiver::EntryManager
+        } else if value.attribute_equality(
+            Attribute::Class,
+            &EntryClass::AccessControlReceiverDelegated.into(),
+        ) {
+            let delegated_role = value
+                .get_ava_single_refer(Attribute::AcpReceiverDelegated)
+                .ok_or_else(|| {
+                    admin_error!("Missing {}", Attribute::AcpReceiverDelegated);
+                    OperationError::InvalidAcpState(format!(
+                        "Missing {}",
+                        Attribute::AcpReceiverDelegated
+                    ))
+                })?;
+
+            let scope_group = value.get_ava_single_refer(Attribute::DelegatedScopeGroup);
+
+            let scope_filter = if let Some(f) =
+                value.get_ava_single_protofilter(Attribute::DelegatedScopeFilter)
+            {
+                let ident = Identity::from_internal();
+                let filter_i = Filter::from_rw(&ident, f, qs).map_err(|e| {
+                    admin_error!(
+                        "{} validation failed {:?}",
+                        Attribute::DelegatedScopeFilter,
+                        e
+                    );
+                    e
+                })?;
+                Some(filter_i.validate(qs.get_schema()).map_err(|e| {
+                    admin_error!(
+                        "{} Schema Violation {:?}",
+                        Attribute::DelegatedScopeFilter,
+                        e
+                    );
+                    OperationError::SchemaViolation(e)
+                })?)
+            } else {
+                None
+            };
+
+            AccessControlReceiver::Delegated {
+                delegated_role,
+                scope_group,
+                scope_filter,
+            }
         } else {
             warn!(
                 ?name,
@@ -519,6 +579,48 @@ impl AccessControlProfile {
                     OperationError::SchemaViolation(e)
                 })
                 .map(AccessControlTarget::Scope)?
+        } else if value.attribute_equality(
+            Attribute::Class,
+            &EntryClass::AccessControlTargetDelegatedScope.into(),
+        ) {
+            let scope_group = value
+                .get_ava_single_refer(Attribute::DelegatedScopeGroup)
+                .ok_or_else(|| {
+                    admin_error!("Missing {}", Attribute::DelegatedScopeGroup);
+                    OperationError::InvalidAcpState(format!(
+                        "Missing {}",
+                        Attribute::DelegatedScopeGroup
+                    ))
+                })?;
+
+            let scope_filter = if let Some(f) =
+                value.get_ava_single_protofilter(Attribute::DelegatedScopeFilter)
+            {
+                let ident = Identity::from_internal();
+                let filter_i = Filter::from_rw(&ident, f, qs).map_err(|e| {
+                    admin_error!(
+                        "{} validation failed {:?}",
+                        Attribute::DelegatedScopeFilter,
+                        e
+                    );
+                    e
+                })?;
+                Some(filter_i.validate(qs.get_schema()).map_err(|e| {
+                    admin_error!(
+                        "{} Schema Violation {:?}",
+                        Attribute::DelegatedScopeFilter,
+                        e
+                    );
+                    OperationError::SchemaViolation(e)
+                })?)
+            } else {
+                None
+            };
+
+            AccessControlTarget::DelegatedScope {
+                scope_group,
+                scope_filter,
+            }
         } else {
             warn!(
                 ?name,
