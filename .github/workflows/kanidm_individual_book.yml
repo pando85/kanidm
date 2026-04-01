@@ -44,8 +44,11 @@ jobs:
           python-version: "3.12"
 
       - name: Build the docs
+        env:
+          KANIDM_BUILD_PROFILE: developer
         run: |
-          cargo install --quiet mdbook mdbook-mermaid
+          cd /tmp && cargo install --quiet mdbook mdbook-mermaid
+          cd $GITHUB_WORKSPACE
           cargo doc --quiet --no-deps
           mdbook build *book
           rm -rf ./docs/

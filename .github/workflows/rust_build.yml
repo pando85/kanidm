@@ -22,6 +22,7 @@ jobs:
       RUSTC_WRAPPER: sccache
       CARGO_INCREMENTAL: 0
       CARGO_TERM_COLOR: always
+      KANIDM_BUILD_PROFILE: developer
     steps:
       - uses: actions/checkout@v6
       - name: Install Rust
@@ -61,6 +62,7 @@ jobs:
       RUSTC_WRAPPER: sccache
       CARGO_INCREMENTAL: 0
       CARGO_TERM_COLOR: always
+      KANIDM_BUILD_PROFILE: developer
     strategy:
       matrix:
         rust_version: ["beta", "nightly"]
@@ -105,6 +107,7 @@ jobs:
       CARGO_INCREMENTAL: 0
       CARGO_TERM_COLOR: always
       MALLOC_CONF: "thp:always,metadata_thp:always"
+      KANIDM_BUILD_PROFILE: developer
     steps:
       - uses: actions/checkout@v6
       - name: Install Rust
