@@ -1573,3 +1573,144 @@ pub static SCHEMA_CLASS_TIME_BOUNDED_GRANT: LazyLock<SchemaClass> = LazyLock::ne
     systemsupplements: vec![EntryClass::Group.into()],
     ..Default::default()
 });
+
+// =========================================
+// OAuth2/OIDC Federation
+
+pub static SCHEMA_ATTR_OAUTH2_ISSUER: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_OAUTH2_ISSUER,
+        name: Attribute::OAuth2Issuer,
+        description: "The issuer URL of the OAuth2/OIDC provider for discovery".to_string(),
+        syntax: SyntaxType::Url,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_OAUTH2_JWKS_URI: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_OAUTH2_JWKS_URI,
+        name: Attribute::OAuth2JwksUri,
+        description: "The JWKS endpoint URL for key verification".to_string(),
+        syntax: SyntaxType::Url,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_OAUTH2_USERINFO_ENDPOINT: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_OAUTH2_USERINFO_ENDPOINT,
+        name: Attribute::OAuth2UserinfoEndpoint,
+        description: "The userinfo endpoint URL of the OAuth2/OIDC provider".to_string(),
+        syntax: SyntaxType::Url,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_OAUTH2_EMAIL_DOMAIN: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_OAUTH2_EMAIL_DOMAIN,
+        name: Attribute::OAuth2EmailDomain,
+        description: "Email domain for home realm discovery routing".to_string(),
+        syntax: SyntaxType::Utf8StringInsensitive,
+        multivalue: true,
+        indexed: true,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_OAUTH2_DISPLAY_NAME: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_OAUTH2_DISPLAY_NAME,
+        name: Attribute::OAuth2DisplayName,
+        description: "Display name for the IdP in the user-facing IdP selection UI".to_string(),
+        syntax: SyntaxType::Utf8String,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_OAUTH2_AUTO_DISCOVERY: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_OAUTH2_AUTO_DISCOVERY,
+        name: Attribute::OAuth2AutoDiscovery,
+        description: "Enable automatic OIDC discovery from the issuer URL".to_string(),
+        syntax: SyntaxType::Boolean,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_OAUTH2_LINK_LOCAL_ACCOUNT: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_OAUTH2_LINK_LOCAL_ACCOUNT,
+        name: Attribute::OAuth2LinkLocalAccount,
+        description: "Reference to a local account linked to this federated identity".to_string(),
+        syntax: SyntaxType::ReferenceUuid,
+        multivalue: true,
+        indexed: true,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_OAUTH2_LINK_POLICY: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_OAUTH2_LINK_POLICY,
+        name: Attribute::OAuth2LinkPolicy,
+        description:
+            "Policy for account linking: 'auto' (same email), 'manual', or 'admin_approval'"
+                .to_string(),
+        syntax: SyntaxType::Utf8StringInsensitive,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_OAUTH2_IDP_INITIATED_ENABLED: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_OAUTH2_IDP_INITIATED_ENABLED,
+        name: Attribute::OAuth2IdpInitiatedEnabled,
+        description: "Enable IdP-initiated login flows for this federation provider".to_string(),
+        syntax: SyntaxType::Boolean,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_OAUTH2_FEDERATION_ID: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_OAUTH2_FEDERATION_ID,
+        name: Attribute::OAuth2FederationId,
+        description: "Unique federation identifier for metadata exchange".to_string(),
+        syntax: SyntaxType::Utf8StringIname,
+        indexed: true,
+        unique: true,
+        ..Default::default()
+    });
+
+pub static SCHEMA_CLASS_OAUTH2_FEDERATION: LazyLock<SchemaClass> = LazyLock::new(|| {
+    SchemaClass {
+    uuid: UUID_SCHEMA_CLASS_OAUTH2_FEDERATION,
+    name: EntryClass::OAuth2Federation.into(),
+    description: "A federated OAuth2/OIDC Identity Provider configuration with discovery and account linking support".to_string(),
+    systemmust: vec![
+        Attribute::Name,
+        Attribute::OAuth2ClientId,
+        Attribute::OAuth2ClientSecret,
+        Attribute::OAuth2Issuer,
+    ],
+    systemmay: vec![
+        Attribute::Description,
+        Attribute::OAuth2DisplayName,
+        Attribute::OAuth2AuthorisationEndpoint,
+        Attribute::OAuth2TokenEndpoint,
+        Attribute::OAuth2JwksUri,
+        Attribute::OAuth2UserinfoEndpoint,
+        Attribute::OAuth2RequestScopes,
+        Attribute::OAuth2EmailDomain,
+        Attribute::OAuth2AutoDiscovery,
+        Attribute::OAuth2LinkPolicy,
+        Attribute::OAuth2IdpInitiatedEnabled,
+        Attribute::OAuth2FederationId,
+        Attribute::Image,
+    ],
+    ..Default::default()
+}
+});
+
+pub static SCHEMA_CLASS_OAUTH2_LINKED_ACCOUNT: LazyLock<SchemaClass> =
+    LazyLock::new(|| SchemaClass {
+        uuid: UUID_SCHEMA_CLASS_OAUTH2_LINKED_ACCOUNT,
+        name: EntryClass::OAuth2LinkedAccount.into(),
+        description: "Marker class for accounts that have linked federated identities".to_string(),
+        systemmay: vec![Attribute::OAuth2LinkLocalAccount],
+        systemsupplements: vec![EntryClass::OAuth2Account.into()],
+        ..Default::default()
+    });
