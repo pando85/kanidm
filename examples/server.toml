@@ -152,3 +152,32 @@ schedule = "00 22 * * *"
 # Compression can either be "gzip" or "nocompression".
 # Defaults to "gzip" if unspecified.
 compression = "gzip"
+
+#   S3-compatible backup storage (optional)
+#   If configured, backups will also be uploaded to S3.
+#   Supports AWS S3, MinIO, Ceph, GCS, Azure Blob via S3 API.
+#
+# [online_backup.s3]
+# bucket = "kanidm-backups"
+# region = "us-east-1"
+#   Optional: Custom endpoint for MinIO or other S3-compatible services
+# endpoint = "https://minio.example.com"
+#   Optional: Path prefix for organizing backups
+# path_prefix = "production"
+#   Optional: Storage class (STANDARD, GLACIER, DEEP_ARCHIVE, etc.)
+# storage_class = "STANDARD"
+#
+#   Authentication: Static credentials (for testing)
+# [online_backup.s3.credentials]
+# access_key_id = "your-access-key-id"
+# secret_access_key = "your-secret-access-key"
+#   Optional: Session token for temporary credentials
+# session_token = "your-session-token"
+#
+#   Authentication: IAM role (recommended for EC2/EKS)
+#   Omit credentials section to use IAM role authentication
+#
+#   Optional: Server-side encryption
+# [online_backup.s3.server_side_encryption]
+# algorithm = "aws:kms"  # or "AES256"
+# kms_key_id = "arn:aws:kms:us-east-1:123456789:key/..."

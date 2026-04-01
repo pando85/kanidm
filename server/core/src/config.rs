@@ -5,7 +5,7 @@
 //! or domain entries that are able to be replicated.
 
 use cidr::IpCidr;
-use kanidm_proto::backup::BackupCompression;
+use kanidm_proto::backup::{BackupCompression, S3Config};
 use kanidm_proto::config::ServerRole;
 use kanidm_proto::constants::DEFAULT_SERVER_ADDRESS;
 use kanidm_proto::internal::FsType;
@@ -81,6 +81,10 @@ pub struct OnlineBackup {
 
     #[serde(default)]
     pub compression: BackupCompression,
+
+    /// S3 configuration for cloud backup storage. If provided, backups will also be stored in S3.
+    #[serde(default)]
+    pub s3: Option<S3Config>,
 }
 
 impl Default for OnlineBackup {
@@ -91,6 +95,7 @@ impl Default for OnlineBackup {
             versions: default_online_backup_versions(),
             enabled: default_online_backup_enabled(),
             compression: BackupCompression::default(),
+            s3: None,
         }
     }
 }
@@ -560,17 +565,23 @@ impl fmt::Display for Configuration {
 
         write!(f, "with TLS: {}, ", self.tls_config.is_some())?;
         match &self.online_backup {
-            Some(bck) => write!(
-                f,
-                "online_backup: enabled: {} - schedule: {} versions: {} path: {}, ",
-                bck.enabled,
-                bck.schedule,
-                bck.versions,
-                bck.path
-                    .as_ref()
-                    .map(|p| p.to_string_lossy().to_string())
-                    .unwrap_or("<unset>".to_string())
-            ),
+            Some(bck) => {
+                write!(
+                    f,
+                    "online_backup: enabled: {} - schedule: {} versions: {} path: {}, ",
+                    bck.enabled,
+                    bck.schedule,
+                    bck.versions,
+                    bck.path
+                        .as_ref()
+                        .map(|p| p.to_string_lossy().to_string())
+                        .unwrap_or("<unset>".to_string())
+                )?;
+                if let Some(s3) = &bck.s3 {
+                    write!(f, "s3: {}, ", s3)?;
+                }
+                write!(f, "")
+            }
             None => write!(f, "online_backup: disabled, "),
         }?;
         write!(

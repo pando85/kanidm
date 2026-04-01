@@ -28,6 +28,11 @@ axum-extra = { workspace = true, features = ["form"] }
 axum-macros = { workspace = true }
 base64 = { workspace = true }
 bytes = { workspace = true }
+aws-sdk-s3 = { workspace = true }
+aws-config = { workspace = true }
+aws-credential-types = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
 cidr = { workspace = true, features = ["serde"] }
 chrono = { workspace = true }
 compact_jwt = { workspace = true }

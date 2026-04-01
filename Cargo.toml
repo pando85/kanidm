@@ -298,4 +298,13 @@ whoami = "^2.1.1"
 walkdir = "2"
 x509-cert = "0.2.5"
 yescrypt = "0.1.0-rc.5"
+aws-sdk-s3 = { version = "1.68.0", default-features = false, features = [
+    "rt-tokio",
+    "sigv4a",
+] }
+aws-config = { version = "1.5.13", default-features = false, features = [
+    "rt-tokio",
+    "sso",
+] }
+aws-credential-types = { version = "1.2.1", features = ["hardcoded-credentials"] }
 zxcvbn = "3.1.0"

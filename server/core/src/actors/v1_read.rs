@@ -44,6 +44,7 @@ use tracing::{error, info, instrument, trace};
 use uuid::Uuid;
 
 use super::QueryServerReadV1;
+use crate::backup::S3ClientWrapper;
 
 // ===========================================================
 
@@ -191,6 +192,7 @@ impl QueryServerReadV1 {
         outpath: &Path,
         versions: usize,
         compression: BackupCompression,
+        s3_client: Option<S3ClientWrapper>,
     ) -> Result<(), OperationError> {
         trace!(eventid = ?msg.eventid, "Begin online backup event");
 
@@ -200,6 +202,15 @@ impl QueryServerReadV1 {
 
         #[allow(clippy::unwrap_used)]
         let timestamp = now.format(&Rfc3339).unwrap();
+
+        // Handle S3 backup
+        if let Some(s3) = s3_client {
+            return self
+                .handle_s3_backup(&msg, &timestamp, compression, s3)
+                .await;
+        }
+
+        // Handle local file backup
         let dest_file = outpath.join(format!("backup-{timestamp}.json{}", compression.suffix()));
 
         if dest_file.exists() {
@@ -322,6 +333,50 @@ impl QueryServerReadV1 {
             debug!("Online backup cleanup had no files to remove");
         };
 
+        Ok(())
+    }
+
+    #[instrument(
+        level = "info",
+        name = "s3_backup",
+        skip_all,
+        fields(uuid = ?msg.eventid)
+    )]
+    async fn handle_s3_backup(
+        &self,
+        msg: &OnlineBackupEvent,
+        timestamp: &str,
+        compression: BackupCompression,
+        s3_client: S3ClientWrapper,
+    ) -> Result<(), OperationError> {
+        trace!(eventid = ?msg.eventid, "Begin S3 backup event");
+
+        let mut backup_data = Vec::new();
+
+        // Scope to limit the read txn and collect backup data
+        {
+            let mut idms_prox_read = self.idms.proxy_read().await?;
+            idms_prox_read
+                .qs_read
+                .get_be_txn()
+                .backup(&mut backup_data, compression)
+                .map_err(|e| {
+                    error!("Online backup failed to create backup data: {:?}", e);
+                    OperationError::InvalidState
+                })?;
+        }
+
+        let object_key = format!("backup-{timestamp}.json{}", compression.suffix());
+
+        s3_client
+            .upload_backup(backup_data, &object_key, timestamp, compression)
+            .await
+            .map_err(|e| {
+                error!("S3 backup upload failed: {}", e);
+                OperationError::InvalidState
+            })?;
+
+        info!("S3 backup uploaded successfully: {}", object_key);
         Ok(())
     }
 

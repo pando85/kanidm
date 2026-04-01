@@ -11,6 +11,7 @@ use cron::Schedule;
 use tokio::sync::broadcast;
 use tokio::time::{interval, sleep, Duration, MissedTickBehavior};
 
+use crate::backup::S3ClientWrapper;
 use crate::config::OnlineBackup;
 use crate::CoreAction;
 
@@ -68,13 +69,15 @@ impl IntervalActor {
         online_backup_config: &OnlineBackup,
         mut rx: broadcast::Receiver<CoreAction>,
     ) -> Result<tokio::task::JoinHandle<()>, ()> {
-        let outpath = match online_backup_config.path.to_owned() {
-            Some(val) => val,
-            None => {
-                error!("Online backup output path is not set.");
-                return Err(());
-            }
-        };
+        let outpath = online_backup_config.path.to_owned();
+        let has_local_path = outpath.is_some();
+        let has_s3_config = online_backup_config.s3.is_some();
+
+        if !has_local_path && !has_s3_config {
+            error!("Online backup output path is not set and S3 is not configured.");
+            return Err(());
+        }
+
         let versions = online_backup_config.versions;
         let crono_expr = online_backup_config.schedule.as_str().to_string();
         let mut crono_expr_values = crono_expr.split_ascii_whitespace().collect::<Vec<&str>>();
@@ -111,30 +114,33 @@ impl IntervalActor {
             return Err(());
         }
 
-        // Output path handling
-        let op = Path::new(&outpath);
+        // Output path handling - only for local backups
+        if let Some(ref path) = outpath {
+            let op = Path::new(path);
 
-        // does the path exist and is a directory?
-        if !op.exists() {
-            info!(
-                "Online backup output folder '{}' does not exist, trying to create it.",
-                outpath.display()
-            );
-            fs::create_dir_all(&outpath).map_err(|e| {
-                error!(
-                    "Online backup failed to create output directory '{}': {}",
-                    outpath.display(),
-                    e
-                )
-            })?;
-        }
+            // does the path exist and is a directory?
+            if !op.exists() {
+                info!(
+                    "Online backup output folder '{}' does not exist, trying to create it.",
+                    path.display()
+                );
+                fs::create_dir_all(path).map_err(|e| {
+                    error!(
+                        "Online backup failed to create output directory '{}': {}",
+                        path.display(),
+                        e
+                    )
+                })?;
+            }
 
-        if !op.is_dir() {
-            error!("Online backup output '{}' is not a directory or we are missing permissions to access it.", outpath.display());
-            return Err(());
+            if !op.is_dir() {
+                error!("Online backup output '{}' is not a directory or we are missing permissions to access it.", path.display());
+                return Err(());
+            }
         }
 
         let backup_compression = online_backup_config.compression;
+        let s3_config = online_backup_config.s3.clone();
 
         let handle = tokio::spawn(async move {
             for next_time in cron_expr.upcoming(Utc) {
@@ -154,16 +160,43 @@ impl IntervalActor {
                         }
                     }
                     _ = sleep(Duration::from_secs(wait_seconds)) => {
-                        if let Err(e) = server
-                            .handle_online_backup(
-                                OnlineBackupEvent::new(),
-                                &outpath,
-                                versions,
-                                backup_compression,
-                            )
-                            .await
-                        {
-                            error!(?e, "An online backup error occurred.");
+                        // Perform local backup if path is configured
+                        if let Some(ref path) = outpath {
+                            if let Err(e) = server
+                                .handle_online_backup(
+                                    OnlineBackupEvent::new(),
+                                    path,
+                                    versions,
+                                    backup_compression,
+                                    None,
+                                )
+                                .await
+                            {
+                                error!(?e, "An online backup error occurred.");
+                            }
+                        }
+
+                        // Perform S3 backup if configured
+                        if let Some(s3_cfg) = &s3_config {
+                            match S3ClientWrapper::new(s3_cfg.clone()).await {
+                                Ok(s3_client) => {
+                                    if let Err(e) = server
+                                        .handle_online_backup(
+                                            OnlineBackupEvent::new(),
+                                            &std::path::PathBuf::from("s3://backup"),
+                                            versions,
+                                            backup_compression,
+                                            Some(s3_client),
+                                        )
+                                        .await
+                                    {
+                                        error!(?e, "An S3 backup error occurred.");
+                                    }
+                                }
+                                Err(e) => {
+                                    error!(?e, "Failed to create S3 client.");
+                                }
+                            }
                         }
                     }
                 }
