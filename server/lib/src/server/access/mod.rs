@@ -49,6 +49,7 @@ mod migration;
 mod modify;
 pub mod profiles;
 mod protected;
+mod reauth;
 mod search;
 
 pub use self::create::CreateResult;
@@ -118,7 +119,13 @@ pub enum AccessSrchResult {
         attr: BTreeSet<Attribute>,
     },
     */
-    Allow { attr: BTreeSet<Attribute> },
+    Allow {
+        attr: BTreeSet<Attribute>,
+    },
+    #[allow(dead_code)]
+    ReauthRequired {
+        reason: String,
+    },
 }
 
 pub enum AccessModResult<'a> {
@@ -143,6 +150,10 @@ pub enum AccessModResult<'a> {
         rem_attr: BTreeSet<Attribute>,
         pres_class: BTreeSet<&'a str>,
         rem_class: BTreeSet<&'a str>,
+    },
+    #[allow(dead_code)]
+    ReauthRequired {
+        reason: String,
     },
 }
 
@@ -394,6 +405,7 @@ pub trait AccessControlsTransaction<'a> {
                         );
                         decision
                     }
+                    SearchResult::ReauthRequired { .. } => false,
                 }
             })
             .collect();
@@ -518,6 +530,7 @@ pub trait AccessControlsTransaction<'a> {
 
                         Some(entry.reduce_attributes(&reduced_attrs, effective_permissions))
                     }
+                    SearchResult::ReauthRequired { .. } => None,
                 }
 
                 // End filter
@@ -714,6 +727,7 @@ pub trait AccessControlsTransaction<'a> {
                     // Yield the result
                     decision
                 }
+                ModifyResult::ReauthRequired { .. } => false,
             }
         });
 
@@ -886,6 +900,7 @@ pub trait AccessControlsTransaction<'a> {
                     // Yield the result
                     decision
                 }
+                ModifyResult::ReauthRequired { .. } => false,
             }
         });
 
@@ -976,6 +991,7 @@ pub trait AccessControlsTransaction<'a> {
 
                     decision
                 }
+                CreateResult::ReauthRequired { .. } => false,
             }
         });
 
@@ -1032,6 +1048,7 @@ pub trait AccessControlsTransaction<'a> {
             match apply_delete_access(&de.ident, related_acp.as_slice(), e) {
                 DeleteResult::Deny => false,
                 DeleteResult::Grant => true,
+                DeleteResult::ReauthRequired { .. } => false,
             }
         });
         if r {
@@ -1125,6 +1142,7 @@ pub trait AccessControlsTransaction<'a> {
                 // Bound by requested attrs?
                 Access::Allow(allowed_attrs.into_iter().collect())
             }
+            SearchResult::ReauthRequired { .. } => Access::Deny,
         };
 
         // == modify ==
@@ -1153,6 +1171,12 @@ pub trait AccessControlsTransaction<'a> {
                     AccessClass::Allow(pres_cls.into_iter().map(|s| s.into()).collect()),
                     AccessClass::Allow(rem_cls.into_iter().map(|s| s.into()).collect()),
                 ),
+                ModifyResult::ReauthRequired { .. } => (
+                    Access::Deny,
+                    Access::Deny,
+                    AccessClass::Deny,
+                    AccessClass::Deny,
+                ),
             };
 
         // == delete ==
@@ -1161,6 +1185,7 @@ pub trait AccessControlsTransaction<'a> {
         let delete = match delete_status {
             DeleteResult::Deny => false,
             DeleteResult::Grant => true,
+            DeleteResult::ReauthRequired { .. } => false,
         };
 
         AccessEffectivePermission {

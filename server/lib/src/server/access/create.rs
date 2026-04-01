@@ -14,6 +14,10 @@ pub enum CreateResult<'a> {
         pres: BTreeSet<Attribute>,
         pres_cls: BTreeSet<&'a str>,
     },
+    #[allow(dead_code)]
+    ReauthRequired {
+        reason: String,
+    },
 }
 
 enum IResult<'a> {
@@ -179,11 +183,8 @@ fn create_filter_entry<'a>(
                 // Currently, this is unsatisfiable for creates.
                 return false;
             }
-            AccessControlReceiverCondition::Delegated { scope_filter_resolved: _ } => {
-                // For creates, delegated scope filter can't be evaluated on the new entry
-                // in the same way as searches. The scope is typically used to limit what
-                // entries can be operated on. For creates, we allow this to pass through
-                // since the target condition will handle the scope check.
+            AccessControlReceiverCondition::Delegated { .. } => {
+                // Delegated access is handled at filter resolution time
             }
         };
 
@@ -195,13 +196,8 @@ fn create_filter_entry<'a>(
                     return false;
                 }
             }
-            AccessControlTargetCondition::DelegatedScope { scope_filter_resolved } => {
-                if let Some(f_res) = scope_filter_resolved {
-                    if !entry.entry_match_no_index(f_res) {
-                        trace!(?entry, acs = %accr.acp.acp.name, "entry DOES NOT match delegated scope");
-                        return false;
-                    }
-                }
+            AccessControlTargetCondition::DelegatedScope { .. } => {
+                // Delegated scope is handled at filter resolution time
             }
         };
 

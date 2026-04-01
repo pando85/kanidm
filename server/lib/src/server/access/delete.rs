@@ -10,6 +10,10 @@ use std::sync::Arc;
 pub enum DeleteResult {
     Deny,
     Grant,
+    #[allow(dead_code)]
+    ReauthRequired {
+        reason: String,
+    },
 }
 
 enum IResult {
@@ -135,8 +139,9 @@ fn delete_filter_entry<'a>(
             AccessControlReceiverCondition::Delegated {
                 scope_filter_resolved,
             } => {
-                if let Some(f_res) = scope_filter_resolved {
-                    if !entry.entry_match_no_index(f_res) {
+                // Check if the entry matches the delegated scope filter
+                if let Some(filter) = scope_filter_resolved {
+                    if !entry.entry_match_no_index(filter) {
                         trace!(
                             "entry {:?} DOES NOT match delegated scope filter for acs {}",
                             entry.get_uuid(),
@@ -163,10 +168,11 @@ fn delete_filter_entry<'a>(
             AccessControlTargetCondition::DelegatedScope {
                 scope_filter_resolved,
             } => {
-                if let Some(f_res) = scope_filter_resolved {
-                    if !entry.entry_match_no_index(f_res) {
+                // Check if the entry matches the delegated scope filter
+                if let Some(filter) = scope_filter_resolved {
+                    if !entry.entry_match_no_index(filter) {
                         trace!(
-                            "entry {:?} DOES NOT match delegated scope for acs {}",
+                            "entry {:?} DOES NOT match delegated scope filter for acs {}",
                             entry.get_uuid(),
                             acd.acp.acp.name
                         );
