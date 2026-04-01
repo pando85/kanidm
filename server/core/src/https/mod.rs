@@ -63,6 +63,7 @@ pub(crate) mod trace;
 mod v1;
 mod v1_domain;
 mod v1_oauth2;
+mod v1_oauth2_federation;
 mod v1_scim;
 mod views;
 

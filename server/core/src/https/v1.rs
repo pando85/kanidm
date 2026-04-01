@@ -3175,6 +3175,18 @@ pub(crate) fn route_setup(state: ServerState) -> Router<ServerState> {
             "/v1/oauth2/{rs_name}/_claimmap/{claim_name}",
             post(super::v1_oauth2::oauth2_id_claimmap_join_post),
         )
+        .route(
+            "/v1/oauth2/federation",
+            get(super::v1_oauth2_federation::oauth2_federation_get),
+        )
+        .route(
+            "/v1/oauth2/federation/_create",
+            post(super::v1_oauth2_federation::oauth2_federation_post),
+        )
+        .route(
+            "/v1/oauth2/federation/{name}",
+            get(super::v1_oauth2_federation::oauth2_federation_id_get),
+        )
         .route("/v1/raw/create", post(raw_create))
         .route("/v1/raw/modify", post(raw_modify))
         .route("/v1/raw/delete", post(raw_delete))
