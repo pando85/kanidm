@@ -17,10 +17,17 @@ use crate::entry::{Entry, EntryCommitted, EntrySealed};
 use crate::event::{CreateEvent, DeleteEvent, ModifyEvent};
 use crate::plugins::Plugin;
 use crate::prelude::*;
+use crate::schema::SchemaTransaction;
 use crate::value::{PartialValue, TimeBoundedMember};
 use time::OffsetDateTime;
 
 pub struct MemberOf;
+
+fn has_time_bounded_member_attr(qs: &QueryServerWriteTransaction) -> bool {
+    qs.get_schema()
+        .get_attributes()
+        .contains_key(&Attribute::TimeBoundedMemberAttr)
+}
 
 fn get_valid_time_bounded_members(
     entry: &Arc<Entry<EntrySealed, EntryCommitted>>,
@@ -45,18 +52,25 @@ fn do_group_memberof(
 ) -> Result<(), OperationError> {
     let now = qs.get_curtime_odt();
 
+    let has_tbm = has_time_bounded_member_attr(qs);
+
     let groups = qs
-        .internal_search(filter!(f_and!([
-            f_eq(Attribute::Class, EntryClass::Group.into()),
-            f_or!([
+        .internal_search({
+            let mut filter_parts = vec![
                 f_eq(Attribute::Member, PartialValue::Refer(uuid)),
                 f_eq(Attribute::DynMember, PartialValue::Refer(uuid)),
-                f_eq(
+            ];
+            if has_tbm {
+                filter_parts.push(f_eq(
                     Attribute::TimeBoundedMemberAttr,
-                    PartialValue::TimeBoundedMember(uuid)
-                )
-            ])
-        ])))
+                    PartialValue::TimeBoundedMember(uuid),
+                ));
+            }
+            filter!(f_and(vec![
+                f_eq(Attribute::Class, EntryClass::Group.into()),
+                f_or(filter_parts)
+            ]))
+        })
         .map_err(|e| {
             admin_error!("internal search failure -> {:?}", e);
             e
@@ -193,13 +207,17 @@ fn do_leaf_memberof(
 
     let mut groups_or = Vec::with_capacity(leaf_entries.len() * 3);
 
+    let has_tbm = has_time_bounded_member_attr(qs);
+
     for uuid in leaf_entries.keys().copied() {
         groups_or.push(f_eq(Attribute::Member, PartialValue::Refer(uuid)));
         groups_or.push(f_eq(Attribute::DynMember, PartialValue::Refer(uuid)));
-        groups_or.push(f_eq(
-            Attribute::TimeBoundedMemberAttr,
-            PartialValue::TimeBoundedMember(uuid),
-        ));
+        if has_tbm {
+            groups_or.push(f_eq(
+                Attribute::TimeBoundedMemberAttr,
+                PartialValue::TimeBoundedMember(uuid),
+            ));
+        }
     }
 
     let now = qs.get_curtime_odt();
