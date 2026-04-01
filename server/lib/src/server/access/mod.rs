@@ -119,9 +119,13 @@ pub enum AccessSrchResult {
         attr: BTreeSet<Attribute>,
     },
     */
-    Allow { attr: BTreeSet<Attribute> },
+    Allow {
+        attr: BTreeSet<Attribute>,
+    },
     #[allow(dead_code)]
-    ReauthRequired { reason: String },
+    ReauthRequired {
+        reason: String,
+    },
 }
 
 pub enum AccessModResult<'a> {
@@ -148,7 +152,9 @@ pub enum AccessModResult<'a> {
         rem_class: BTreeSet<&'a str>,
     },
     #[allow(dead_code)]
-    ReauthRequired { reason: String },
+    ReauthRequired {
+        reason: String,
+    },
 }
 
 // =========================================================================
@@ -382,7 +388,7 @@ pub trait AccessControlsTransaction<'a> {
 
         // For each entry.
         let entries_is_empty = entries.is_empty();
-let allowed_entries: Vec<_> = entries
+        let allowed_entries: Vec<_> = entries
             .into_iter()
             .filter(|e| {
                 match apply_search_access(ident, related_acp.as_slice(), e) {
@@ -718,7 +724,7 @@ let allowed_entries: Vec<_> = entries
                         debug!("passed pres, rem, classes check.");
                     }
 
-// Yield the result
+                    // Yield the result
                     decision
                 }
                 ModifyResult::ReauthRequired { .. } => false,
@@ -985,8 +991,7 @@ let allowed_entries: Vec<_> = entries
 
                     decision
                 }
-CreateResult::ReauthRequired { .. } => false,
-
+                CreateResult::ReauthRequired { .. } => false,
             }
         });
 
@@ -1137,8 +1142,7 @@ CreateResult::ReauthRequired { .. } => false,
                 // Bound by requested attrs?
                 Access::Allow(allowed_attrs.into_iter().collect())
             }
-SearchResult::ReauthRequired { .. } => Access::Deny,
-
+            SearchResult::ReauthRequired { .. } => Access::Deny,
         };
 
         // == modify ==
