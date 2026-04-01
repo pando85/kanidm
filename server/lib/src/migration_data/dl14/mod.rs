@@ -133,6 +133,17 @@ pub fn phase_1_schema_attrs() -> Vec<EntryInitNew> {
         SCHEMA_ATTR_ACCOUNT_SOFTLOCK_EXPIRE.clone().into(),
         // DL14
         SCHEMA_ATTR_PASSWORD_CHANGED_TIME.clone().into(),
+        // OAuth2 Federation (DL14+)
+        SCHEMA_ATTR_OAUTH2_ISSUER.clone().into(),
+        SCHEMA_ATTR_OAUTH2_JWKS_URI.clone().into(),
+        SCHEMA_ATTR_OAUTH2_USERINFO_ENDPOINT.clone().into(),
+        SCHEMA_ATTR_OAUTH2_EMAIL_DOMAIN.clone().into(),
+        SCHEMA_ATTR_OAUTH2_DISPLAY_NAME.clone().into(),
+        SCHEMA_ATTR_OAUTH2_AUTO_DISCOVERY.clone().into(),
+        SCHEMA_ATTR_OAUTH2_LINK_LOCAL_ACCOUNT.clone().into(),
+        SCHEMA_ATTR_OAUTH2_LINK_POLICY.clone().into(),
+        SCHEMA_ATTR_OAUTH2_IDP_INITIATED_ENABLED.clone().into(),
+        SCHEMA_ATTR_OAUTH2_FEDERATION_ID.clone().into(),
         // Time-bounded access
         SCHEMA_ATTR_MEMBER_VALID_FROM.clone().into(),
         SCHEMA_ATTR_MEMBER_VALID_UNTIL.clone().into(),
@@ -189,6 +200,9 @@ pub fn phase_2_schema_classes() -> Vec<EntryInitNew> {
         SCHEMA_CLASS_ASSERTION_NONCE.clone().into(),
         // Time-bounded access
         SCHEMA_CLASS_TIME_BOUNDED_GRANT.clone().into(),
+        // OAuth2 Federation (DL14+)
+        SCHEMA_CLASS_OAUTH2_FEDERATION.clone().into(),
+        SCHEMA_CLASS_OAUTH2_LINKED_ACCOUNT.clone().into(),
     ]
 }
 
