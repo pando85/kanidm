@@ -19,9 +19,8 @@ pub fn evaluate_reauth_requirement(
         return ReauthRequirement::NotRequired;
     }
 
-    let session = match ident.get_session() {
-        Some(s) => s,
-        None => return ReauthRequirement::NotRequired,
+    let Some(session) = ident.get_session() else {
+        return ReauthRequirement::NotRequired;
     };
 
     if matches!(ident.access_scope(), AccessScope::ReadWrite) {
