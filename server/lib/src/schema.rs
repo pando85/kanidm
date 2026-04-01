@@ -2315,8 +2315,9 @@ impl SchemaWriteTransaction<'_> {
                 name: EntryClass::AccessControlReceiverDelegated.into(),
                 uuid: UUID_SCHEMA_CLASS_ACCESS_CONTROL_RECEIVER_DELEGATED,
                 description: String::from("System Access Control Profile Receiver - Delegated"),
-                systemmust: vec![Attribute::AcpReceiverDelegated],
+                systemmust: vec![],
                 systemmay: vec![
+                    Attribute::AcpReceiverDelegated,
                     Attribute::DelegatedScopeGroup,
                     Attribute::DelegatedScopeFilter,
                 ],
@@ -2334,8 +2335,11 @@ impl SchemaWriteTransaction<'_> {
                 name: EntryClass::AccessControlTargetDelegatedScope.into(),
                 uuid: UUID_SCHEMA_CLASS_ACCESS_CONTROL_TARGET_DELEGATED_SCOPE,
                 description: String::from("System Access Control Profile Target - Delegated Scope"),
-                systemmust: vec![Attribute::DelegatedScopeGroup],
-                systemmay: vec![Attribute::DelegatedScopeFilter],
+                systemmust: vec![],
+                systemmay: vec![
+                    Attribute::DelegatedScopeGroup,
+                    Attribute::DelegatedScopeFilter,
+                ],
                 systemsupplements: vec![EntryClass::AccessControlProfile.into()],
                 systemexcludes: vec![EntryClass::AccessControlTargetScope.into()],
                 ..Default::default()

@@ -390,7 +390,6 @@ pub enum AccessControlReceiver {
     Group(BTreeSet<Uuid>),
     EntryManager,
     Delegated {
-        delegated_role: Uuid,
         scope_group: Option<Uuid>,
         scope_filter: Option<Filter<FilterValid>>,
     },
@@ -419,7 +418,7 @@ pub enum AccessControlTarget {
     None,
     Scope(Filter<FilterValid>),
     DelegatedScope {
-        scope_group: Uuid,
+        scope_group: Option<Uuid>,
         scope_filter: Option<Filter<FilterValid>>,
     },
 }
@@ -500,16 +499,6 @@ impl AccessControlProfile {
             Attribute::Class,
             &EntryClass::AccessControlReceiverDelegated.into(),
         ) {
-            let delegated_role = value
-                .get_ava_single_refer(Attribute::AcpReceiverDelegated)
-                .ok_or_else(|| {
-                    admin_error!("Missing {}", Attribute::AcpReceiverDelegated);
-                    OperationError::InvalidAcpState(format!(
-                        "Missing {}",
-                        Attribute::AcpReceiverDelegated
-                    ))
-                })?;
-
             let scope_group = value.get_ava_single_refer(Attribute::DelegatedScopeGroup);
 
             let scope_filter = if let Some(f) =
@@ -537,7 +526,6 @@ impl AccessControlProfile {
             };
 
             AccessControlReceiver::Delegated {
-                delegated_role,
                 scope_group,
                 scope_filter,
             }
@@ -583,15 +571,7 @@ impl AccessControlProfile {
             Attribute::Class,
             &EntryClass::AccessControlTargetDelegatedScope.into(),
         ) {
-            let scope_group = value
-                .get_ava_single_refer(Attribute::DelegatedScopeGroup)
-                .ok_or_else(|| {
-                    admin_error!("Missing {}", Attribute::DelegatedScopeGroup);
-                    OperationError::InvalidAcpState(format!(
-                        "Missing {}",
-                        Attribute::DelegatedScopeGroup
-                    ))
-                })?;
+            let scope_group = value.get_ava_single_refer(Attribute::DelegatedScopeGroup);
 
             let scope_filter = if let Some(f) =
                 value.get_ava_single_protofilter(Attribute::DelegatedScopeFilter)
