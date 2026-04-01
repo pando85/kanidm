@@ -192,7 +192,11 @@ fn resolve_access_conditions(
             }
         }
         AccessControlReceiver::EntryManager => AccessControlReceiverCondition::EntryManager,
-        AccessControlReceiver::Delegated { scope_group, scope_filter, .. } => {
+        AccessControlReceiver::Delegated {
+            scope_group,
+            scope_filter,
+            ..
+        } => {
             let scope_filter_resolved = if let Some(filter) = scope_filter {
                 filter
                     .resolve(ident, None, Some(acp_resolve_filter_cache))
@@ -232,7 +236,10 @@ fn resolve_access_conditions(
             })
             .ok()
             .map(AccessControlTargetCondition::Scope)?,
-        AccessControlTarget::DelegatedScope { scope_group: _, scope_filter } => {
+        AccessControlTarget::DelegatedScope {
+            scope_group: _,
+            scope_filter,
+        } => {
             let scope_filter_resolved = if let Some(filter) = scope_filter {
                 filter
                     .resolve(ident, None, Some(acp_resolve_filter_cache))
