@@ -14,6 +14,10 @@ pub enum CreateResult<'a> {
         pres: BTreeSet<Attribute>,
         pres_cls: BTreeSet<&'a str>,
     },
+    #[allow(dead_code)]
+    ReauthRequired {
+        reason: String,
+    },
 }
 
 enum IResult<'a> {

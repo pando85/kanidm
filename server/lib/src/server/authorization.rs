@@ -79,6 +79,10 @@ pub fn make_authorization_decision(
                             return Ok(response);
                         }
                     }
+                    SearchResult::ReauthRequired { reason } => {
+                        denied_by = Some(reason.clone());
+                        AuthorizationDecision::ReauthRequired
+                    }
                 }
             }
         }
@@ -99,6 +103,10 @@ pub fn make_authorization_decision(
                         AuthorizationDecision::Deny
                     }
                     DeleteResult::Grant => AuthorizationDecision::Allow,
+                    DeleteResult::ReauthRequired { reason } => {
+                        denied_by = Some(reason.clone());
+                        AuthorizationDecision::ReauthRequired
+                    }
                 }
             }
         }
@@ -146,6 +154,10 @@ pub fn make_authorization_decision(
                             return Ok(response);
                         }
                     }
+                    ModifyResult::ReauthRequired { reason } => {
+                        denied_by = Some(reason.clone());
+                        AuthorizationDecision::ReauthRequired
+                    }
                 }
             }
         }
@@ -159,6 +171,9 @@ pub fn make_authorization_decision(
     let mut response = match decision {
         AuthorizationDecision::Allow => AuthorizationResponse::allow(resource_uuid, action),
         AuthorizationDecision::Deny => AuthorizationResponse::deny(resource_uuid, action),
+        AuthorizationDecision::ReauthRequired => {
+            AuthorizationResponse::reauth_required(resource_uuid, action)
+        }
     };
 
     if include_explanation {
@@ -168,6 +183,9 @@ pub fn make_authorization_decision(
             reason: match decision {
                 AuthorizationDecision::Allow => "Access granted".to_string(),
                 AuthorizationDecision::Deny => "Access denied".to_string(),
+                AuthorizationDecision::ReauthRequired => {
+                    "Re-authentication required for this operation".to_string()
+                }
             },
         });
     }

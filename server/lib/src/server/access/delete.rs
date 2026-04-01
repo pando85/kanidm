@@ -10,6 +10,10 @@ use std::sync::Arc;
 pub enum DeleteResult {
     Deny,
     Grant,
+    #[allow(dead_code)]
+    ReauthRequired {
+        reason: String,
+    },
 }
 
 enum IResult {

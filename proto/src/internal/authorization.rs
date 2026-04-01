@@ -8,6 +8,7 @@ use uuid::Uuid;
 pub enum AuthorizationDecision {
     Allow,
     Deny,
+    ReauthRequired,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash, ToSchema)]
@@ -109,6 +110,16 @@ impl AuthorizationResponse {
     pub fn deny(resource: Uuid, action: AuthorizationAction) -> Self {
         Self {
             decision: AuthorizationDecision::Deny,
+            resource,
+            action,
+            allowed_attributes: None,
+            explanation: None,
+        }
+    }
+
+    pub fn reauth_required(resource: Uuid, action: AuthorizationAction) -> Self {
+        Self {
+            decision: AuthorizationDecision::ReauthRequired,
             resource,
             action,
             allowed_attributes: None,
