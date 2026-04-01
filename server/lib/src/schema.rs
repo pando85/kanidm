@@ -1266,6 +1266,106 @@ impl SchemaWriteTransaction<'_> {
         );
 
         self.attributes.insert(
+            Attribute::AcpReceiverDelegated,
+            SchemaAttribute {
+                name: Attribute::AcpReceiverDelegated,
+                uuid: UUID_SCHEMA_ATTR_ACP_RECEIVER_DELEGATED,
+                description: String::from(
+                    "The delegated role that receives this access control to allow access",
+                ),
+                multivalue: false,
+                unique: false,
+                phantom: false,
+                sync_allowed: false,
+                replicated: Replicated::True,
+                indexed: true,
+                syntax: SyntaxType::ReferenceUuid,
+            },
+        );
+
+        self.attributes.insert(
+            Attribute::AcpTargetDelegatedScope,
+            SchemaAttribute {
+                name: Attribute::AcpTargetDelegatedScope,
+                uuid: UUID_SCHEMA_ATTR_ACP_TARGET_DELEGATED_SCOPE,
+                description: String::from("The delegated scope filter for target definition"),
+                multivalue: false,
+                unique: false,
+                phantom: false,
+                sync_allowed: false,
+                replicated: Replicated::True,
+                indexed: false,
+                syntax: SyntaxType::JsonFilter,
+            },
+        );
+
+        self.attributes.insert(
+            Attribute::DelegatedScopeFilter,
+            SchemaAttribute {
+                name: Attribute::DelegatedScopeFilter,
+                uuid: UUID_SCHEMA_ATTR_DELEGATED_SCOPE_FILTER,
+                description: String::from(
+                    "A filter defining the scope of delegated administration",
+                ),
+                multivalue: false,
+                unique: false,
+                phantom: false,
+                sync_allowed: false,
+                replicated: Replicated::True,
+                indexed: false,
+                syntax: SyntaxType::JsonFilter,
+            },
+        );
+
+        self.attributes.insert(
+            Attribute::DelegatedScopeGroup,
+            SchemaAttribute {
+                name: Attribute::DelegatedScopeGroup,
+                uuid: UUID_SCHEMA_ATTR_DELEGATED_SCOPE_GROUP,
+                description: String::from("A group defining the scope of delegated administration"),
+                multivalue: false,
+                unique: false,
+                phantom: false,
+                sync_allowed: false,
+                replicated: Replicated::True,
+                indexed: true,
+                syntax: SyntaxType::ReferenceUuid,
+            },
+        );
+
+        self.attributes.insert(
+            Attribute::DelegatedBy,
+            SchemaAttribute {
+                name: Attribute::DelegatedBy,
+                uuid: UUID_SCHEMA_ATTR_DELEGATED_BY,
+                description: String::from("The UUID of the user who delegated this role"),
+                multivalue: false,
+                unique: false,
+                phantom: false,
+                sync_allowed: false,
+                replicated: Replicated::True,
+                indexed: true,
+                syntax: SyntaxType::ReferenceUuid,
+            },
+        );
+
+        self.attributes.insert(
+            Attribute::DelegatedRoleTemplate,
+            SchemaAttribute {
+                name: Attribute::DelegatedRoleTemplate,
+                uuid: UUID_SCHEMA_ATTR_DELEGATED_ROLE_TEMPLATE,
+                description: String::from("The template UUID for this delegated role"),
+                multivalue: false,
+                unique: false,
+                phantom: false,
+                sync_allowed: false,
+                replicated: Replicated::True,
+                indexed: true,
+                syntax: SyntaxType::ReferenceUuid,
+            },
+        );
+
+        self.attributes.insert(
             Attribute::AcpTargetScope,
             SchemaAttribute {
                 name: Attribute::AcpTargetScope,
@@ -2206,6 +2306,53 @@ impl SchemaWriteTransaction<'_> {
                 description: String::from("System Access Control Profile Target - Scope"),
                 systemmust: vec![Attribute::AcpTargetScope],
                 systemsupplements: vec![EntryClass::AccessControlProfile.into()],
+                ..Default::default()
+            },
+        );
+        self.classes.insert(
+            EntryClass::AccessControlReceiverDelegated.into(),
+            SchemaClass {
+                name: EntryClass::AccessControlReceiverDelegated.into(),
+                uuid: UUID_SCHEMA_CLASS_ACCESS_CONTROL_RECEIVER_DELEGATED,
+                description: String::from("System Access Control Profile Receiver - Delegated"),
+                systemmust: vec![Attribute::AcpReceiverDelegated],
+                systemmay: vec![
+                    Attribute::DelegatedScopeGroup,
+                    Attribute::DelegatedScopeFilter,
+                ],
+                systemsupplements: vec![EntryClass::AccessControlProfile.into()],
+                systemexcludes: vec![
+                    EntryClass::AccessControlReceiverGroup.into(),
+                    EntryClass::AccessControlReceiverEntryManager.into(),
+                ],
+                ..Default::default()
+            },
+        );
+        self.classes.insert(
+            EntryClass::AccessControlTargetDelegatedScope.into(),
+            SchemaClass {
+                name: EntryClass::AccessControlTargetDelegatedScope.into(),
+                uuid: UUID_SCHEMA_CLASS_ACCESS_CONTROL_TARGET_DELEGATED_SCOPE,
+                description: String::from("System Access Control Profile Target - Delegated Scope"),
+                systemmust: vec![Attribute::DelegatedScopeGroup],
+                systemmay: vec![Attribute::DelegatedScopeFilter],
+                systemsupplements: vec![EntryClass::AccessControlProfile.into()],
+                systemexcludes: vec![EntryClass::AccessControlTargetScope.into()],
+                ..Default::default()
+            },
+        );
+        self.classes.insert(
+            EntryClass::DelegatedRole.into(),
+            SchemaClass {
+                name: EntryClass::DelegatedRole.into(),
+                uuid: UUID_SCHEMA_CLASS_DELEGATED_ROLE,
+                description: String::from("A delegated administration role template"),
+                systemmust: vec![Attribute::Name],
+                systemmay: vec![
+                    Attribute::Description,
+                    Attribute::DelegatedBy,
+                    Attribute::DelegatedRoleTemplate,
+                ],
                 ..Default::default()
             },
         );
