@@ -437,7 +437,7 @@ fn response_modes_supported_default() -> Vec<ResponseMode> {
     vec![ResponseMode::Query, ResponseMode::Fragment]
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum GrantType {
     #[serde(rename = "authorization_code")]
@@ -455,28 +455,26 @@ fn grant_types_supported_default() -> Vec<GrantType> {
     ]
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum SubjectType {
     Pairwise,
     Public,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub enum PkceAlg {
     S256,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "UPPERCASE")]
-/// Algorithms supported for token signatures. Prefers `ES256`
 pub enum IdTokenSignAlg {
-    // WE REFUSE TO SUPPORT NONE. DON'T EVEN ASK. IT WON'T HAPPEN.
     ES256,
     RS256,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum TokenEndpointAuthMethod {
     ClientSecretPost,
@@ -489,7 +487,7 @@ fn token_endpoint_auth_methods_supported_default() -> Vec<TokenEndpointAuthMetho
     vec![TokenEndpointAuthMethod::ClientSecretBasic]
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum DisplayValue {
     Page,
@@ -498,9 +496,8 @@ pub enum DisplayValue {
     Wap,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
-// https://openid.net/specs/openid-connect-core-1_0.html#ClaimTypes
 pub enum ClaimType {
     Normal,
     Aggregated,
@@ -545,7 +542,7 @@ pub struct OidcWebfingerResponse {
 /// The response to an OpenID connect discovery request
 /// <https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata>
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct OidcDiscoveryResponse {
     pub issuer: Url,
     pub authorization_endpoint: Url,

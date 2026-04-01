@@ -1705,6 +1705,7 @@ pub static SCHEMA_CLASS_OAUTH2_FEDERATION: LazyLock<SchemaClass> = LazyLock::new
 }
 });
 
+#[allow(dead_code)]
 pub static SCHEMA_CLASS_OAUTH2_LINKED_ACCOUNT: LazyLock<SchemaClass> =
     LazyLock::new(|| SchemaClass {
         uuid: UUID_SCHEMA_CLASS_OAUTH2_LINKED_ACCOUNT,
