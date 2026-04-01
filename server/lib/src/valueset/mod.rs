@@ -700,7 +700,9 @@ pub trait ValueSetT: std::fmt::Debug + DynClone {
         None
     }
 
-    fn as_time_bounded_member_set(&self) -> Option<&BTreeMap<Uuid, crate::value::TimeBoundedMember>> {
+    fn as_time_bounded_member_set(
+        &self,
+    ) -> Option<&BTreeMap<Uuid, crate::value::TimeBoundedMember>> {
         debug_assert!(false);
         None
     }

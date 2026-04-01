@@ -949,7 +949,8 @@ pub trait QueryServerTransaction<'a> {
                         "Message values can not be validated by this interface".to_string(),
                     )),
                     SyntaxType::TimeBoundedMember => Err(OperationError::InvalidAttribute(
-                        "TimeBoundedMember values can not be validated by this interface".to_string(),
+                        "TimeBoundedMember values can not be validated by this interface"
+                            .to_string(),
                     )),
                 }
             }
