@@ -369,7 +369,7 @@ impl QueryServerReadV1 {
         let object_key = format!("backup-{timestamp}.json{}", compression.suffix());
 
         s3_client
-            .upload_backup(backup_data, &object_key, compression)
+            .upload_backup(backup_data, &object_key, timestamp, compression)
             .await
             .map_err(|e| {
                 error!("S3 backup upload failed: {}", e);

@@ -103,19 +103,15 @@ impl S3ClientWrapper {
         &self,
         data: Vec<u8>,
         key: &str,
+        timestamp: &str,
         compression: BackupCompression,
     ) -> Result<S3BackupMetadata, S3BackupError> {
         let size = data.len() as u64;
         let checksum = hex_encode(Sha256::digest(&data));
         let object_key = self.build_object_key(key);
 
-        #[allow(clippy::expect_used)]
-        let timestamp = time::OffsetDateTime::now_utc()
-            .format(&time::format_description::well_known::Rfc3339)
-            .expect("Failed to format timestamp");
-
         let metadata =
-            S3BackupMetadata::new(checksum.clone(), timestamp.clone(), compression, size);
+            S3BackupMetadata::new(checksum.clone(), timestamp.to_string(), compression, size);
 
         if size > MULTIPART_THRESHOLD {
             self.upload_multipart(&data, &object_key, &metadata).await?;
@@ -508,7 +504,9 @@ impl<R> ChecksumReader<R> {
 impl<R: Read> Read for ChecksumReader<R> {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         let n = self.reader.read(buf)?;
-        self.hasher.update(&buf[..n]);
+        if let Some(slice) = buf.get(..n) {
+            self.hasher.update(slice);
+        }
         Ok(n)
     }
 }
