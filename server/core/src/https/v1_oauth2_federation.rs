@@ -78,6 +78,6 @@ pub(crate) async fn oauth2_federation_id_get(
     let Json(entry_opt) =
         json_rest_event_get_id(state, id, filter, None, kopid, client_auth_info).await?;
     entry_opt
-        .map(|entry| Json(entry))
+        .map(Json)
         .ok_or_else(|| WebError::from(OperationError::NoMatchingEntries))
 }
