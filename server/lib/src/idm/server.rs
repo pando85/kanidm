@@ -2176,7 +2176,10 @@ impl IdmServerProxyWriteTransaction<'_> {
             return Ok(());
         }
 
-        let entry = &entries[0];
+        let entry = entries.first().ok_or_else(|| {
+                debug!("Approval request not found after existence check");
+                OperationError::NoMatchingEntries
+            })?;
         let current_level = entry
             .get_ava_single_uint32(Attribute::ApprovalEscalationLevel)
             .unwrap_or(0);

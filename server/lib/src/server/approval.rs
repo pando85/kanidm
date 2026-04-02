@@ -10,7 +10,7 @@ use time::OffsetDateTime;
 impl QueryServerReadTransaction<'_> {
     pub fn approval_policy_list(
         &mut self,
-        ident: &Identity,
+        _ident: &Identity,
     ) -> Result<Vec<ApprovalPolicy>, OperationError> {
         let filter = filter!(f_eq(Attribute::Class, EntryClass::ApprovalPolicy.into()));
         let entries = self.internal_search(filter)?;
@@ -23,7 +23,7 @@ impl QueryServerReadTransaction<'_> {
 
     pub fn approval_policy_get(
         &mut self,
-        ident: &Identity,
+        _ident: &Identity,
         name: &str,
     ) -> Result<ApprovalPolicy, OperationError> {
         let filter = filter!(f_and!([
@@ -35,12 +35,12 @@ impl QueryServerReadTransaction<'_> {
         entries
             .first()
             .map(|e| approval_policy_from_entry(e))
-            .ok_or(OperationError::NoMatchingEntries)
+            .ok_or(OperationError::NoMatchingEntries)?
     }
 
     pub fn approval_request_list(
         &mut self,
-        ident: &Identity,
+        _ident: &Identity,
         state: Option<ApprovalRequestState>,
     ) -> Result<Vec<ApprovalRequest>, OperationError> {
         let filter = match state {
@@ -63,7 +63,7 @@ impl QueryServerReadTransaction<'_> {
 
     pub fn approval_request_get(
         &mut self,
-        ident: &Identity,
+        _ident: &Identity,
         uuid: Uuid,
     ) -> Result<ApprovalRequest, OperationError> {
         let filter = filter!(f_and!([
@@ -75,15 +75,15 @@ impl QueryServerReadTransaction<'_> {
         entries
             .first()
             .map(|e| approval_request_from_entry(e))
-            .ok_or(OperationError::NoMatchingEntries)
+            .ok_or(OperationError::NoMatchingEntries)?
     }
 }
 
 impl QueryServerWriteTransaction<'_> {
     pub fn approval_policy_create(
         &mut self,
-        ident: &Identity,
-        request: ApprovalPolicyCreateRequest,
+        _ident: &Identity,
+        request: &ApprovalPolicyCreateRequest,
     ) -> Result<(), OperationError> {
         let uuid = Uuid::new_v4();
 
@@ -101,7 +101,7 @@ impl QueryServerWriteTransaction<'_> {
             .map(|o| Value::new_utf8(o.to_string()))
             .collect();
 
-        let mut entry = EntryInit::new();
+        let mut entry: Entry<EntryInit, EntryNew> = Entry::new();
         entry.set_ava(
             Attribute::Class,
             vec![EntryClass::ApprovalPolicy.into(), EntryClass::Object.into()],
@@ -140,36 +140,19 @@ impl QueryServerWriteTransaction<'_> {
         entry.set_ava(Attribute::ApprovalPolicyEnabled, vec![Value::Bool(true)]);
 
         let create_event = CreateEvent::new_internal(vec![entry]);
-        self.create(&create_event)
+        self.create(&create_event).map(|_| ())
     }
 
     pub fn approval_policy_delete(
         &mut self,
-        ident: &Identity,
+        _ident: &Identity,
         name: &str,
     ) -> Result<(), OperationError> {
         let filter = filter!(f_and!([
             f_eq(Attribute::Class, EntryClass::ApprovalPolicy.into()),
             f_eq(Attribute::ApprovalPolicyName, PartialValue::new_utf8s(name))
         ]));
-        let delete_event = DeleteEvent::new_internal(filter);
-        self.delete(&delete_event)
-    }
-
-    pub fn approval_policy_enable(
-        &mut self,
-        ident: &Identity,
-        name: &str,
-        enable: bool,
-    ) -> Result<(), OperationError> {
-        let filter = filter!(f_and!([
-            f_eq(Attribute::Class, EntryClass::ApprovalPolicy.into()),
-            f_eq(Attribute::ApprovalPolicyName, PartialValue::new_utf8s(name))
-        ]));
-        let modlist =
-            ModifyList::new_append(Attribute::ApprovalPolicyEnabled, vec![Value::Bool(enable)]);
-        let modify_event = ModifyEvent::new_internal(filter, modlist);
-        self.modify(&modify_event)
+        self.internal_delete(&filter)
     }
 
     pub fn approval_request_decision(
@@ -205,7 +188,10 @@ impl QueryServerWriteTransaction<'_> {
 
         let decision = ApprovalDecision {
             approver_uuid: ident.get_uuid().ok_or(OperationError::InvalidState)?,
-            approver_spn: ident.get_uuid().to_string(),
+            approver_spn: ident
+                .get_user_entry()
+                .and_then(|e| e.get_ava_single_utf8(Attribute::Spn).map(|s| s.to_string()))
+                .unwrap_or_default(),
             decision_time: current_time,
             action: match request.action {
                 ApprovalDecisionAction::Approve => ApprovalDecisionAction::Approve,
@@ -225,7 +211,13 @@ impl QueryServerWriteTransaction<'_> {
 
         let filter = filter!(f_eq(Attribute::Uuid, PartialValue::Uuid(request_uuid)));
         let modlist = ModifyList::new_list(vec![
-            Modify::Present(Attribute::ApprovalDecision, Value::Json(decision_json)),
+            Modify::Present(
+                Attribute::ApprovalDecision,
+                Value::Json(
+                    serde_json::from_str(&decision_json)
+                        .map_err(|_| OperationError::InvalidState)?,
+                ),
+            ),
             Modify::Purged(Attribute::ApprovalState),
             Modify::Present(
                 Attribute::ApprovalState,
@@ -233,13 +225,12 @@ impl QueryServerWriteTransaction<'_> {
             ),
         ]);
 
-        let modify_event = ModifyEvent::new_internal(filter, modlist);
-        self.modify(&modify_event)
+        self.internal_modify(&filter, &modlist)
     }
 
     pub fn approval_request_cancel(
         &mut self,
-        ident: &Identity,
+        _ident: &Identity,
         request_uuid: Uuid,
     ) -> Result<(), OperationError> {
         let filter = filter!(f_and!([
@@ -250,8 +241,7 @@ impl QueryServerWriteTransaction<'_> {
             Modify::Purged(Attribute::ApprovalState),
             Modify::Present(Attribute::ApprovalState, Value::new_iutf8("cancelled")),
         ]);
-        let modify_event = ModifyEvent::new_internal(filter, modlist);
-        self.modify(&modify_event)
+        self.internal_modify(&filter, &modlist)
     }
 }
 
@@ -318,15 +308,13 @@ fn approval_policy_from_entry(
 
     let approvers: Vec<Uuid> = entry
         .get_ava_refer(Attribute::Approver)
-        .unwrap_or_default()
-        .into_iter()
-        .collect();
+        .map(|s| s.iter().copied().collect())
+        .unwrap_or_default();
 
     let backup_approvers: Vec<Uuid> = entry
         .get_ava_refer(Attribute::BackupApprover)
-        .unwrap_or_default()
-        .into_iter()
-        .collect();
+        .map(|s| s.iter().copied().collect())
+        .unwrap_or_default();
 
     Ok(ApprovalPolicy {
         uuid,
@@ -389,8 +377,8 @@ fn approval_request_from_entry(
         ))?;
 
     let created_at = entry
-        .get_ava_single_datetime(Attribute::CreatedAt)
-        .ok_or(OperationError::MissingAttribute(Attribute::CreatedAt))?;
+        .get_ava_single_datetime(Attribute::CreatedAtCid)
+        .ok_or(OperationError::MissingAttribute(Attribute::CreatedAtCid))?;
 
     let expires_at = entry.get_ava_single_datetime(Attribute::ApprovalExpires);
 
@@ -408,10 +396,20 @@ fn approval_request_from_entry(
         .ok_or(OperationError::InvalidValueState)?;
 
     let decisions: Vec<ApprovalDecision> = entry
-        .get_ava_iter_json(Attribute::ApprovalDecision)
-        .unwrap_or_default()
-        .filter_map(|json| serde_json::from_str(&json).ok())
-        .collect();
+        .get_ava_set(Attribute::ApprovalDecision)
+        .and_then(|vs| vs.as_json_object())
+        .and_then(|json| {
+            if json.is_array() {
+                json.as_array().map(|arr| {
+                    arr.iter()
+                        .filter_map(|v| serde_json::from_value(v.clone()).ok())
+                        .collect()
+                })
+            } else {
+                serde_json::from_value(json.clone()).ok().map(|d| vec![d])
+            }
+        })
+        .unwrap_or_default();
 
     let escalation_level = entry
         .get_ava_single_uint32(Attribute::ApprovalEscalationLevel)
@@ -420,10 +418,20 @@ fn approval_request_from_entry(
     let required_decisions = 1;
 
     let operation_details: BTreeMap<String, String> = entry
-        .get_ava_iter_json(Attribute::ApprovalOperationDetails)
-        .unwrap_or_default()
-        .filter_map(|json| serde_json::from_str(&json).ok())
-        .collect();
+        .get_ava_set(Attribute::ApprovalOperationDetails)
+        .and_then(|vs| vs.as_json_object())
+        .and_then(|json| {
+            if json.is_object() {
+                json.as_object().map(|obj| {
+                    obj.iter()
+                        .map(|(k, v)| (k.clone(), v.as_str().unwrap_or_default().to_string()))
+                        .collect()
+                })
+            } else {
+                None
+            }
+        })
+        .unwrap_or_default();
 
     Ok(ApprovalRequest {
         uuid,
