@@ -476,7 +476,9 @@ impl S3ClientWrapper {
                 .await?;
         }
 
-        region_wrapper.upload_metadata(&object_key, metadata).await?;
+        region_wrapper
+            .upload_metadata(&object_key, metadata)
+            .await?;
 
         info!(
             "Replicated backup {} to region {} bucket {}",
@@ -517,8 +519,7 @@ impl S3ClientWrapper {
             config_builder = config_builder.endpoint_url(endpoint);
         }
 
-        config_builder =
-            config_builder.region(Region::new(region_config.region.clone()));
+        config_builder = config_builder.region(Region::new(region_config.region.clone()));
 
         if let Some(credentials) = &region_config.credentials {
             let creds = Credentials::new(
@@ -581,14 +582,11 @@ impl S3ClientWrapper {
 
         if let Some(last_sync_ts) = &status.last_sync_timestamp {
             if let Ok(sync_time) = chrono::DateTime::parse_from_rfc3339(last_sync_ts) {
-                let sync_time_utc: chrono::DateTime<chrono::Utc> = sync_time.with_timezone(&chrono::Utc);
+                let sync_time_utc: chrono::DateTime<chrono::Utc> =
+                    sync_time.with_timezone(&chrono::Utc);
                 let now = chrono::Utc::now();
                 let lag = (now - sync_time_utc).num_seconds();
-                status.lag_seconds = if lag >= 0 {
-                    Some(lag as u64)
-                } else {
-                    Some(0)
-                };
+                status.lag_seconds = if lag >= 0 { Some(lag as u64) } else { Some(0) };
             }
         }
 

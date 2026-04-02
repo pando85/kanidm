@@ -1229,65 +1229,76 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
             let s3_config = config.online_backup.as_ref().and_then(|b| b.s3.as_ref());
 
             match s3_config {
-                Some(s3) => {
-                    match &s3.replication {
-                        Some(replication) if replication.enabled => {
-                            match kanidmd_core::replication_status_core(&config, s3).await {
-                                Ok(health) => {
-                                    info!("Replication Health Check:");
-                                    info!("  Overall Status: {}", health.overall_status);
-                                    info!("  Healthy Regions: {}", health.healthy_regions);
-                                    info!("  Unhealthy Regions: {}", health.unhealthy_regions);
-                                    info!("  Maximum Lag: {} seconds", health.max_lag_seconds);
-                                    info!("  Last Check: {}", health.last_check_timestamp);
+                Some(s3) => match &s3.replication {
+                    Some(replication) if replication.enabled => {
+                        match kanidmd_core::replication_status_core(&config, s3).await {
+                            Ok(health) => {
+                                info!("Replication Health Check:");
+                                info!("  Overall Status: {}", health.overall_status);
+                                info!("  Healthy Regions: {}", health.healthy_regions);
+                                info!("  Unhealthy Regions: {}", health.unhealthy_regions);
+                                info!("  Maximum Lag: {} seconds", health.max_lag_seconds);
+                                info!("  Last Check: {}", health.last_check_timestamp);
 
-                                    for region in &health.regions {
-                                        info!("  Region {} (bucket: {}):", region.region, region.bucket);
-                                        info!("    Status: {}", region.status);
-                                        info!("    Backups Replicated: {}", region.backups_replicated);
-                                        info!("    Bytes Replicated: {}", region.bytes_replicated);
-                                        if let Some(lag) = region.lag_seconds {
-                                            info!("    Lag: {} seconds", lag);
-                                        }
-                                        if let Some(last_sync) = &region.last_sync_timestamp {
-                                            info!("    Last Sync: {}", last_sync);
-                                        }
-                                        if let Some(error) = &region.last_error {
-                                            info!("    Last Error: {}", error);
-                                        }
+                                for region in &health.regions {
+                                    info!(
+                                        "  Region {} (bucket: {}):",
+                                        region.region, region.bucket
+                                    );
+                                    info!("    Status: {}", region.status);
+                                    info!("    Backups Replicated: {}", region.backups_replicated);
+                                    info!("    Bytes Replicated: {}", region.bytes_replicated);
+                                    if let Some(lag) = region.lag_seconds {
+                                        info!("    Lag: {} seconds", lag);
                                     }
+                                    if let Some(last_sync) = &region.last_sync_timestamp {
+                                        info!("    Last Sync: {}", last_sync);
+                                    }
+                                    if let Some(error) = &region.last_error {
+                                        info!("    Last Error: {}", error);
+                                    }
+                                }
 
-                                    if *detailed {
-                                        match kanidmd_core::replication_lag_metrics_core(&config, s3).await {
-                                            Ok(metrics) => {
-                                                info!("Detailed Lag Metrics:");
-                                                for metric in &metrics {
-                                                    info!("  Region {}:", metric.region);
-                                                    info!("    Lag Seconds: {}", metric.lag_seconds);
-                                                    info!("    Pending Backups: {}", metric.pending_backups);
-                                                    info!("    Sync Interval: {} seconds", metric.replication_delay_seconds);
-                                                    if let Some(last_backup) = &metric.last_backup_timestamp {
-                                                        info!("    Last Backup: {}", last_backup);
-                                                    }
+                                if *detailed {
+                                    match kanidmd_core::replication_lag_metrics_core(&config, s3)
+                                        .await
+                                    {
+                                        Ok(metrics) => {
+                                            info!("Detailed Lag Metrics:");
+                                            for metric in &metrics {
+                                                info!("  Region {}:", metric.region);
+                                                info!("    Lag Seconds: {}", metric.lag_seconds);
+                                                info!(
+                                                    "    Pending Backups: {}",
+                                                    metric.pending_backups
+                                                );
+                                                info!(
+                                                    "    Sync Interval: {} seconds",
+                                                    metric.replication_delay_seconds
+                                                );
+                                                if let Some(last_backup) =
+                                                    &metric.last_backup_timestamp
+                                                {
+                                                    info!("    Last Backup: {}", last_backup);
                                                 }
                                             }
-                                            Err(e) => {
-                                                error!("Failed to get detailed lag metrics: {}", e);
-                                            }
+                                        }
+                                        Err(e) => {
+                                            error!("Failed to get detailed lag metrics: {}", e);
                                         }
                                     }
                                 }
-                                Err(e) => {
-                                    error!("Failed to check replication status: {}", e);
-                                    std::process::exit(1);
-                                }
+                            }
+                            Err(e) => {
+                                error!("Failed to check replication status: {}", e);
+                                std::process::exit(1);
                             }
                         }
-                        _ => {
-                            info!("Cross-region replication is not enabled. Configure online_backup.s3.replication in server.toml");
-                        }
                     }
-                }
+                    _ => {
+                        info!("Cross-region replication is not enabled. Configure online_backup.s3.replication in server.toml");
+                    }
+                },
                 None => {
                     error!("S3 configuration is required for replication status. Configure online_backup.s3 in server.toml");
                 }

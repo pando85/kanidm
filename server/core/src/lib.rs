@@ -51,8 +51,8 @@ use crypto_glue::{
     traits::Digest,
 };
 use kanidm_proto::backup::{
-    BackupCompression, PitrManifest, RecoveryTarget, ReplicationHealthCheck,
-    ReplicationLagMetrics, S3Config,
+    BackupCompression, PitrManifest, RecoveryTarget, ReplicationHealthCheck, ReplicationLagMetrics,
+    S3Config,
 };
 use kanidm_proto::config::ServerRole;
 use kanidm_proto::internal::OperationError;
