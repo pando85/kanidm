@@ -272,4 +272,3 @@ async fn update_pitr_manifest(
     info!("Updated PITR manifest with base backup: {}", backup_id);
     Ok(())
 }
->>>>>>> origin/master

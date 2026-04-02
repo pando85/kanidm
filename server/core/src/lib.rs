@@ -744,10 +744,7 @@ pub async fn pitr_recover_core(
 
     reindex_inner(be, schema, config).await;
 
-    info!(
-        "PITR Recovery completed successfully to target: {}",
-        target
-    );
+    info!("PITR Recovery completed successfully to target: {}", target);
     Ok(())
 }
 

@@ -43,8 +43,8 @@ pub mod credential;
 pub mod entry;
 pub mod event;
 pub mod filter;
-pub mod pip;
 pub(crate) mod migration_data;
+pub mod pip;
 
 pub mod modify;
 pub mod time;
@@ -93,9 +93,7 @@ pub mod prelude {
         QueryServerWriteTransaction,
     };
     pub use crate::time::duration_from_epoch_now;
-    pub use crate::value::{
-        ApiTokenScope, IndexType, PartialValue, SyntaxType, Value,
-    };
+    pub use crate::value::{ApiTokenScope, IndexType, PartialValue, SyntaxType, Value};
     pub(crate) use crate::valueset::{
         ValueSet, ValueSetBool, ValueSetCid, ValueSetIname, ValueSetIutf8, ValueSetRefer,
         ValueSetSha256, ValueSetSyntax, ValueSetT, ValueSetUtf8, ValueSetUuid,
