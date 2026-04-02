@@ -305,7 +305,7 @@ impl MockS3TestContext {
     }
 
     pub fn backup_count(&self) -> usize {
-        self.storage.object_count() / 2
+        self.storage.object_count()
     }
 
     pub fn get_bucket(&self) -> &str {
