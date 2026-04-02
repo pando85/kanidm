@@ -40,7 +40,7 @@ jobs:
       - name: Install python 3.12
         uses: actions/setup-python@v6
         with:
-python-version: "3.12"
+          python-version: "3.12"
 
       - name: Build the docs
         run: |
@@ -54,7 +54,7 @@ python-version: "3.12"
           mkdir -p ./docs/${{ inputs.tag }}/rustdoc/
           find ./target/doc/ -name .lock -exec rm "{}" \;
           mv ./target/doc/* ./docs/${{ inputs.tag }}/rustdoc/
-      - name: pykanidm docs
+      - name: pykanidm Docs
         run: |
           python -m pip install uv
           cd pykanidm
