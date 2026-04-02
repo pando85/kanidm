@@ -534,8 +534,8 @@ mod tests {
         assert_eq!(dec_header.key_identifier, "external-key-id");
     }
 
-    #[test]
-    fn test_encryption_different_passphrases_different_output() {
+    #[tokio::test]
+    async fn test_encryption_different_passphrases_different_output() {
         let config = BackupEncryptionConfig::default();
         let encryptor = BackupEncryptor::new(config);
         let data = b"test data";
@@ -546,8 +546,8 @@ mod tests {
         assert_ne!(encrypted1, encrypted2);
     }
 
-    #[test]
-    fn test_encryption_same_passphrase_different_output() {
+    #[tokio::test]
+    async fn test_encryption_same_passphrase_different_output() {
         let config = BackupEncryptionConfig::default();
         let encryptor = BackupEncryptor::new(config);
         let data = b"test data";
@@ -558,8 +558,8 @@ mod tests {
         assert_ne!(encrypted1, encrypted2);
     }
 
-    #[test]
-    fn test_encryption_empty_data() {
+    #[tokio::test]
+    async fn test_encryption_empty_data() {
         let config = BackupEncryptionConfig::default();
         let encryptor = BackupEncryptor::new(config);
         let data = b"";
@@ -570,8 +570,8 @@ mod tests {
         assert_eq!(decrypted, data);
     }
 
-    #[test]
-    fn test_encryption_large_data() {
+    #[tokio::test]
+    async fn test_encryption_large_data() {
         let config = BackupEncryptionConfig::default();
         let encryptor = BackupEncryptor::new(config);
         let data: Vec<u8> = (0..10000).map(|i| (i % 256) as u8).collect();
@@ -666,24 +666,25 @@ mod tests {
         assert!(!header_not_compressed.compressed);
     }
 
-    #[test]
-    fn test_encryption_tampered_data_detection() {
+    #[tokio::test]
+    async fn test_encryption_tampered_data_detection() {
         let config = BackupEncryptionConfig::default();
         let encryptor = BackupEncryptor::new(config);
         let data = b"sensitive data";
 
         let mut encrypted = encryptor.encrypt(data, b"passphrase", false).await.unwrap();
 
-        if !encrypted.is_empty() {
-            encrypted[encrypted.len() - 10] ^= 0xFF;
+        if encrypted.len() >= 10 {
+            let len = encrypted.len();
+            encrypted[len - 10] ^= 0xFF;
         }
 
         let result = BackupEncryptor::decrypt(&encrypted, b"passphrase");
         assert!(result.is_err());
     }
 
-    #[test]
-    fn test_encryption_tampered_header_detection() {
+    #[tokio::test]
+    async fn test_encryption_tampered_header_detection() {
         let config = BackupEncryptionConfig::default();
         let encryptor = BackupEncryptor::new(config);
         let data = b"test data";
@@ -698,8 +699,8 @@ mod tests {
         assert!(result.is_err());
     }
 
-    #[test]
-    fn test_encryption_wrong_key_identifier() {
+    #[tokio::test]
+    async fn test_encryption_wrong_key_identifier() {
         let config = BackupEncryptionConfig {
             enabled: true,
             key_source: EncryptionKeySource::Passphrase,
@@ -776,8 +777,8 @@ mod tests {
         assert_eq!(key.len(), BACKUP_ENCRYPTION_KEY_LEN);
     }
 
-    #[test]
-    fn test_encryption_nonce_uniqueness() {
+    #[tokio::test]
+    async fn test_encryption_nonce_uniqueness() {
         let config = BackupEncryptionConfig::default();
         let encryptor = BackupEncryptor::new(config);
         let data = b"test data";
@@ -791,8 +792,8 @@ mod tests {
         assert_ne!(header1.nonce, header2.nonce);
     }
 
-    #[test]
-    fn test_encryption_salt_uniqueness() {
+    #[tokio::test]
+    async fn test_encryption_salt_uniqueness() {
         let config = BackupEncryptionConfig::default();
         let encryptor = BackupEncryptor::new(config);
         let data = b"test data";
@@ -806,8 +807,8 @@ mod tests {
         assert_ne!(header1.salt, header2.salt);
     }
 
-    #[test]
-    fn test_encryption_short_passphrase() {
+    #[tokio::test]
+    async fn test_encryption_short_passphrase() {
         let config = BackupEncryptionConfig::default();
         let encryptor = BackupEncryptor::new(config);
         let data = b"test data";
@@ -819,8 +820,8 @@ mod tests {
         assert_eq!(decrypted, data);
     }
 
-    #[test]
-    fn test_encryption_long_passphrase() {
+    #[tokio::test]
+    async fn test_encryption_long_passphrase() {
         let config = BackupEncryptionConfig::default();
         let encryptor = BackupEncryptor::new(config);
         let data = b"test data";
@@ -832,8 +833,8 @@ mod tests {
         assert_eq!(decrypted, data);
     }
 
-    #[test]
-    fn test_encryption_unicode_passphrase() {
+    #[tokio::test]
+    async fn test_encryption_unicode_passphrase() {
         let config = BackupEncryptionConfig::default();
         let encryptor = BackupEncryptor::new(config);
         let data = b"test data";
@@ -845,8 +846,8 @@ mod tests {
         assert_eq!(decrypted, data);
     }
 
-    #[test]
-    fn test_encryption_binary_passphrase() {
+    #[tokio::test]
+    async fn test_encryption_binary_passphrase() {
         let config = BackupEncryptionConfig::default();
         let encryptor = BackupEncryptor::new(config);
         let data = b"test data";
@@ -941,8 +942,8 @@ mod tests {
         assert!(result.is_ok());
     }
 
-    #[test]
-    fn test_encryption_decrypt_with_wrong_nonce_length() {
+    #[tokio::test]
+    async fn test_encryption_decrypt_with_wrong_nonce_length() {
         let config = BackupEncryptionConfig::default();
         let encryptor = BackupEncryptor::new(config);
         let data = b"test data";

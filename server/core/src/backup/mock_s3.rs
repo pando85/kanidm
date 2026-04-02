@@ -540,7 +540,6 @@ mod tests {
 
         let backups = ctx.list_backups().unwrap();
         assert_eq!(backups.len(), 10);
-        assert_eq!(ctx.backup_count(), 10);
     }
 
     #[test]
@@ -563,10 +562,10 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(ctx.backup_count(), 2);
+        assert_eq!(ctx.list_backups().unwrap().len(), 2);
 
         ctx.clear();
-        assert_eq!(ctx.backup_count(), 0);
+        assert_eq!(ctx.list_backups().unwrap().len(), 0);
     }
 
     #[test]
@@ -589,8 +588,6 @@ mod tests {
 
     #[test]
     fn test_mock_s3_concurrent_uploads() {
-        let ctx = MockS3TestBuilder::new().build();
-
         let mut handles = vec![];
 
         for i in 0..5 {
@@ -692,7 +689,7 @@ mod tests {
         let ctx = MockS3TestBuilder::new().build();
         let data = create_small_backup_data();
 
-        for attempt in 0..5 {
+        for _ in 0..5 {
             ctx.upload_backup(
                 "repeated-backup",
                 &data,
@@ -822,7 +819,7 @@ mod tests {
             .unwrap();
         }
 
-        assert_eq!(ctx.backup_count(), 100);
+        assert_eq!(ctx.list_backups().unwrap().len(), 100);
     }
 
     #[test]
@@ -832,9 +829,9 @@ mod tests {
         let result = ctx.delete_backup("nonexistent");
         assert!(result.is_ok());
 
-        let count_before = ctx.backup_count();
+        let count_before = ctx.list_backups().unwrap().len();
         ctx.delete_backup("another-nonexistent").unwrap();
-        assert_eq!(ctx.backup_count(), count_before);
+        assert_eq!(ctx.list_backups().unwrap().len(), count_before);
     }
 
     #[test]

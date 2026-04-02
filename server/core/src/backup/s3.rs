@@ -800,7 +800,7 @@ mod tests {
 
     #[test]
     fn test_checksum_writer_empty() {
-        let writer = ChecksumWriter::new(Vec::new());
+        let writer = ChecksumWriter::new(Vec::<u8>::new());
         let (data, checksum) = writer.finalize();
 
         assert_eq!(data, b"");
@@ -814,7 +814,7 @@ mod tests {
     #[test]
     fn test_checksum_writer_large_data() {
         let large_data: Vec<u8> = (0..10000).map(|i| (i % 256) as u8).collect();
-        let mut writer = ChecksumWriter::new(Vec::new());
+        let mut writer = ChecksumWriter::new(Vec::<u8>::new());
         writer.write_all(&large_data).unwrap();
         let (data, checksum) = writer.finalize();
 
@@ -824,7 +824,7 @@ mod tests {
 
     #[test]
     fn test_checksum_writer_multiple_writes() {
-        let mut writer = ChecksumWriter::new(Vec::new());
+        let mut writer = ChecksumWriter::new(Vec::<u8>::new());
         writer.write_all(b"hello").unwrap();
         writer.write_all(b" ").unwrap();
         writer.write_all(b"world").unwrap();
@@ -833,7 +833,7 @@ mod tests {
         assert_eq!(data, b"hello world");
         assert_eq!(checksum.len(), 64);
 
-        let mut single_writer = ChecksumWriter::new(Vec::new());
+        let mut single_writer = ChecksumWriter::new(Vec::<u8>::new());
         single_writer.write_all(b"hello world").unwrap();
         let (_, single_checksum) = single_writer.finalize();
 
@@ -871,7 +871,7 @@ mod tests {
     #[test]
     fn test_checksum_reader_writer_consistency() {
         let data = b"test data for consistency check";
-        let mut writer = ChecksumWriter::new(Vec::new());
+        let mut writer = ChecksumWriter::new(Vec::<u8>::new());
         writer.write_all(data).unwrap();
         let (written_data, write_checksum) = writer.finalize();
 
