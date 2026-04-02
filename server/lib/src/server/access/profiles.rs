@@ -87,6 +87,41 @@ impl AccessControlSearch {
         }
     }
 
+    /// ⚠️  - Manually create a search access profile with time restrictions.
+    /// This is a TEST ONLY method and will never be exposed in production.
+    #[cfg(test)]
+    pub(super) fn from_raw_with_time(
+        name: &str,
+        uuid: Uuid,
+        receiver: Uuid,
+        targetscope: Filter<FilterValid>,
+        attrs: &str,
+        time_restriction_start: Option<time::OffsetDateTime>,
+        time_restriction_end: Option<time::OffsetDateTime>,
+    ) -> Self {
+        let mut attrs: BTreeSet<_> = attrs.split_whitespace().map(Attribute::from).collect();
+
+        // Ability to search memberof, implies the ability to read directmemberof
+        if attrs.contains(&Attribute::MemberOf) {
+            attrs.insert(Attribute::DirectMemberOf);
+        }
+
+        AccessControlSearch {
+            acp: AccessControlProfile {
+                name: name.to_string(),
+                uuid,
+                receiver: AccessControlReceiver::Group(btreeset!(receiver)),
+                target: AccessControlTarget::Scope(targetscope),
+                require_reauth: false,
+                reauth_max_age: None,
+                time_restriction_start,
+                time_restriction_end,
+                scope_filter: None,
+            },
+            attrs,
+        }
+    }
+
     /// ⚠️  - Manually create a search access profile from values.
     /// This is a TEST ONLY method and will never be exposed in production.
     #[cfg(test)]
