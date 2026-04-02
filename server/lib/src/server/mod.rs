@@ -50,6 +50,7 @@ use tokio::sync::{Semaphore, SemaphorePermit};
 use tracing::trace;
 
 pub(crate) mod access;
+pub mod approval;
 pub mod assert;
 pub mod authorization;
 pub mod batch_modify;
