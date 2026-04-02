@@ -1,3 +1,4 @@
+use crate::idm::approval::ApprovalAuditEvent;
 use crate::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
@@ -28,5 +29,9 @@ pub enum AuditEvent {
         spn: String,
         #[serde(with = "time::serde::timestamp")]
         time: OffsetDateTime,
+    },
+    ApprovalEvent {
+        source: AuditSource,
+        event: ApprovalAuditEvent,
     },
 }
