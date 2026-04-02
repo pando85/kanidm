@@ -16,6 +16,7 @@ use crate::config::OnlineBackup;
 use crate::CoreAction;
 
 use crate::actors::{QueryServerReadV1, QueryServerWriteV1};
+use kanidm_proto::backup::PitrManifest;
 use kanidmd_lib::constants::PURGE_FREQUENCY;
 use kanidmd_lib::event::{
     OnlineBackupEvent, PurgeDeleteAfterEvent, PurgeRecycledEvent, PurgeTombstoneEvent,
@@ -141,6 +142,7 @@ impl IntervalActor {
 
         let backup_compression = online_backup_config.compression;
         let s3_config = online_backup_config.s3.clone();
+        let wal_archive_config = online_backup_config.wal_archive.clone();
 
         let handle = tokio::spawn(async move {
             for next_time in cron_expr.upcoming(Utc) {
@@ -160,6 +162,9 @@ impl IntervalActor {
                         }
                     }
                     _ = sleep(Duration::from_secs(wait_seconds)) => {
+                        let backup_timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
+                        let backup_id = format!("backup-{}.json", backup_timestamp);
+
                         // Perform local backup if path is configured
                         if let Some(ref path) = outpath {
                             if let Err(e) = server
@@ -186,11 +191,20 @@ impl IntervalActor {
                                             &std::path::PathBuf::from("s3://backup"),
                                             versions,
                                             backup_compression,
-                                            Some(s3_client),
+                                            Some(s3_client.clone()),
                                         )
                                         .await
                                     {
                                         error!(?e, "An S3 backup error occurred.");
+                                    }
+
+                                    // Update PITR manifest after successful S3 backup
+                                    if let Some(wal_cfg) = &wal_archive_config {
+                                        if wal_cfg.enabled {
+                                            if let Err(e) = update_pitr_manifest(&s3_client, &backup_id, &backup_timestamp).await {
+                                                error!(?e, "Failed to update PITR manifest.");
+                                            }
+                                        }
                                     }
                                 }
                                 Err(e) => {
@@ -207,3 +221,54 @@ impl IntervalActor {
         Ok(handle)
     }
 }
+
+async fn update_pitr_manifest(
+    s3_client: &S3ClientWrapper,
+    backup_id: &str,
+    backup_timestamp: &str,
+) -> Result<(), String> {
+    use kanidm_proto::backup::WalSegment;
+    use uuid::Uuid;
+
+    let manifest_key = "pitr-manifest.json";
+
+    let existing_manifest = match s3_client.download_backup(manifest_key).await {
+        Ok((data, _)) => serde_json::from_slice::<PitrManifest>(&data).ok(),
+        Err(_) => None,
+    };
+
+    let server_uuid = Uuid::new_v4();
+
+    let mut manifest = existing_manifest.unwrap_or_else(|| {
+        PitrManifest::new(
+            server_uuid,
+            backup_id.to_string(),
+            backup_timestamp.to_string(),
+        )
+    });
+
+    manifest.base_backup_id = backup_id.to_string();
+    manifest.base_backup_timestamp = backup_timestamp.to_string();
+
+    if !manifest.segments.is_empty() {
+        manifest.earliest_recoverable_time = manifest.segments.first()
+            .map(|s| s.created_at.clone())
+            .unwrap_or_else(|| backup_timestamp.to_string());
+    }
+    manifest.latest_recoverable_time = backup_timestamp.to_string();
+
+    let manifest_json = serde_json::to_string(&manifest)
+        .map_err(|e| format!("Failed to serialize PITR manifest: {}", e))?;
+
+    s3_client
+        .upload_backup(
+            manifest_json.into_bytes(),
+            manifest_key,
+            backup_timestamp,
+            kanidm_proto::backup::BackupCompression::NoCompression,
+        )
+        .await
+        .map_err(|e| format!("Failed to upload PITR manifest: {}", e))?;
+
+    info!("Updated PITR manifest with base backup: {}", backup_id);
+    Ok(())
