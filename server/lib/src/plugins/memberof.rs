@@ -2418,17 +2418,17 @@ mod tests {
             let mut ea = EA_TB.clone();
             let eb = EB_TB.clone();
 
-            let window1_start = OffsetDateTime::UNIX_EPOCH;
-            let window1_end = window1_start + Duration::from_secs(200);
+            let window1_start = None;
+            let window1_end = OffsetDateTime::UNIX_EPOCH + Duration::from_secs(100_000_000_000);
 
-            let window2_start = window1_start + Duration::from_secs(100);
-            let window2_end = window2_start + Duration::from_secs(200);
+            let window2_start = None;
+            let window2_end = OffsetDateTime::UNIX_EPOCH + Duration::from_secs(150_000_000_000);
 
             ea.add_ava(
                 Attribute::TimeBoundedMemberAttr,
                 Value::TimeBoundedMember(TimeBoundedMember::new(
                     uuid::uuid!(UUID_TB_B),
-                    Some(window1_start),
+                    window1_start,
                     window1_end,
                 )),
             );
@@ -2436,7 +2436,7 @@ mod tests {
                 Attribute::TimeBoundedMemberAttr,
                 Value::TimeBoundedMember(TimeBoundedMember::new(
                     uuid::uuid!(UUID_TB_B),
-                    Some(window2_start),
+                    window2_start,
                     window2_end,
                 )),
             );
