@@ -10,7 +10,11 @@ use aws_sdk_s3::types::{
 };
 use aws_sdk_s3::Client as S3Client;
 use hex::encode as hex_encode;
-use kanidm_proto::backup::{BackupCompression, S3BackupMetadata, S3Config, S3EncryptionAlgorithm};
+use kanidm_proto::backup::{
+    BackupCompression, ReplicationConfig, ReplicationHealthCheck, ReplicationLagMetrics,
+    ReplicationRegionConfig, ReplicationRegionStatus, ReplicationStatus, S3BackupMetadata,
+    S3Config, S3EncryptionAlgorithm,
+};
 use sha2::{Digest, Sha256};
 
 const MULTIPART_THRESHOLD: u64 = 100 * 1024 * 1024;
@@ -451,6 +455,272 @@ impl S3ClientWrapper {
 
         Ok(true)
     }
+
+    pub async fn replicate_backup(
+        &self,
+        backup_key: &str,
+        backup_data: Vec<u8>,
+        metadata: &S3BackupMetadata,
+        region_config: &ReplicationRegionConfig,
+    ) -> Result<(), S3BackupError> {
+        let region_client = Self::create_region_client(region_config).await?;
+        let object_key = Self::build_region_object_key(region_config, backup_key);
+
+        if backup_data.len() as u64 > MULTIPART_THRESHOLD {
+            region_client
+                .upload_multipart(&backup_data, &object_key, metadata)
+                .await?;
+        } else {
+            region_client
+                .upload_single(&backup_data, &object_key, metadata)
+                .await?;
+        }
+
+        region_client.upload_metadata(&object_key, metadata).await?;
+
+        info!(
+            "Replicated backup {} to region {} bucket {}",
+            backup_key, region_config.region, region_config.bucket
+        );
+        Ok(())
+    }
+
+    async fn create_region_client(
+        region_config: &ReplicationRegionConfig,
+    ) -> Result<S3Client, S3BackupError> {
+        let mut config_builder = aws_config::defaults(BehaviorVersion::latest());
+
+        if let Some(endpoint) = &region_config.endpoint {
+            config_builder = config_builder.endpoint_url(endpoint);
+        }
+
+        config_builder =
+            config_builder.region(Region::new(region_config.region.clone()));
+
+        if let Some(credentials) = &region_config.credentials {
+            let creds = Credentials::new(
+                credentials.access_key_id.clone(),
+                credentials.secret_access_key.clone(),
+                credentials.session_token.clone(),
+                None,
+                "kanidm-backup-replication",
+            );
+            config_builder = config_builder.credentials_provider(creds);
+        }
+
+        let sdk_config = config_builder.load().await;
+        Ok(S3Client::new(&sdk_config))
+    }
+
+    fn build_region_object_key(region_config: &ReplicationRegionConfig, key: &str) -> String {
+        match &region_config.path_prefix {
+            Some(prefix) => format!("{}/{}", prefix.trim_end_matches('/'), key),
+            None => key.to_string(),
+        }
+    }
+
+    pub async fn check_region_replication_status(
+        &self,
+        region_config: &ReplicationRegionConfig,
+        source_backups: &[String],
+    ) -> Result<ReplicationRegionStatus, S3BackupError> {
+        let region_client = Self::create_region_client(region_config).await?;
+
+        let replicated_backups = Self::list_region_backups(&region_client, region_config).await?;
+
+        let mut status = ReplicationRegionStatus {
+            region: region_config.region.clone(),
+            bucket: region_config.bucket.clone(),
+            status: ReplicationStatus::Completed,
+            last_sync_timestamp: None,
+            last_sync_backup_id: None,
+            lag_seconds: None,
+            bytes_replicated: 0,
+            backups_replicated: 0,
+            last_error: None,
+        };
+
+        for backup_key in source_backups {
+            if replicated_backups.contains(backup_key) {
+                status.backups_replicated += 1;
+                let object_key = Self::build_region_object_key(region_config, backup_key);
+                let metadata = Self::download_region_metadata(&region_client, region_config, &object_key).await?;
+                status.bytes_replicated += metadata.size_bytes;
+                status.last_sync_backup_id = Some(backup_key.clone());
+                status.last_sync_timestamp = Some(metadata.timestamp.clone());
+            } else {
+                if status.status == ReplicationStatus::Completed {
+                    status.status = ReplicationStatus::Degraded {
+                        message: format!("Missing backup: {}", backup_key),
+                    };
+                }
+            }
+        }
+
+        if let Some(last_sync_ts) = &status.last_sync_timestamp {
+            if let Ok(sync_time) = chrono::DateTime::parse_from_rfc3339(last_sync_ts) {
+                let now = chrono::Utc::now();
+                status.lag_seconds = Some((now - sync_time).num_seconds() as u64);
+            }
+        }
+
+        Ok(status)
+    }
+
+    async fn list_region_backups(
+        client: &S3Client,
+        region_config: &ReplicationRegionConfig,
+    ) -> Result<Vec<String>, S3BackupError> {
+        let prefix = region_config.path_prefix.clone().unwrap_or_default();
+
+        let output = client
+            .list_objects_v2()
+            .bucket(&region_config.bucket)
+            .prefix(&prefix)
+            .send()
+            .await
+            .map_err(|e| S3BackupError::SdkError(format!("Failed to list objects: {}", e)))?;
+
+        let mut backups = Vec::new();
+        for obj in output.contents() {
+            if let Some(key) = obj.key() {
+                if !key.ends_with(".metadata.json") {
+                    let display_key = if let Some(prefix) = &region_config.path_prefix {
+                        key.strip_prefix(prefix)
+                            .map(|s: &str| s.trim_start_matches('/').to_string())
+                            .unwrap_or_else(|| key.to_string())
+                    } else {
+                        key.to_string()
+                    };
+                    backups.push(display_key);
+                }
+            }
+        }
+
+        Ok(backups)
+    }
+
+    async fn download_region_metadata(
+        client: &S3Client,
+        region_config: &ReplicationRegionConfig,
+        backup_key: &str,
+    ) -> Result<S3BackupMetadata, S3BackupError> {
+        let metadata_key = format!("{}.metadata.json", backup_key);
+
+        let output = client
+            .get_object()
+            .bucket(&region_config.bucket)
+            .key(&metadata_key)
+            .send()
+            .await
+            .map_err(|e| {
+                S3BackupError::DownloadError(format!("Failed to download metadata: {}", e))
+            })?;
+
+        let body = output
+            .body
+            .collect()
+            .await
+            .map_err(|e| S3BackupError::DownloadError(format!("Stream error: {}", e)))?;
+
+        let data = body.into_bytes().to_vec();
+        let metadata: S3BackupMetadata = serde_json::from_slice(&data).map_err(|e| {
+            S3BackupError::DownloadError(format!("Failed to parse metadata: {}", e))
+        })?;
+
+        Ok(metadata)
+    }
+
+    pub async fn check_replication_health(
+        &self,
+        replication_config: &ReplicationConfig,
+    ) -> Result<ReplicationHealthCheck, S3BackupError> {
+        let source_backups = self.list_backups().await?;
+
+        let mut regions = Vec::new();
+        let mut max_lag = 0u64;
+        let mut total_lag = 0u64;
+        let mut healthy = 0usize;
+        let mut unhealthy = 0usize;
+
+        for region_config in &replication_config.regions {
+            let region_status = self
+                .check_region_replication_status(region_config, &source_backups)
+                .await?;
+
+            if let Some(lag) = region_status.lag_seconds {
+                total_lag += lag;
+                if lag > max_lag {
+                    max_lag = lag;
+                }
+            }
+
+            match &region_status.status {
+                ReplicationStatus::Completed => healthy += 1,
+                ReplicationStatus::Degraded { .. } | ReplicationStatus::Failed { .. } => {
+                    unhealthy += 1
+                }
+                _ => {}
+            }
+
+            regions.push(region_status);
+        }
+
+        let overall_status = if unhealthy > 0 {
+            if healthy == 0 {
+                ReplicationStatus::Failed {
+                    error: "All regions unhealthy".to_string(),
+                }
+            } else {
+                ReplicationStatus::Degraded {
+                    message: format!("{} regions unhealthy", unhealthy),
+                }
+            }
+        } else if healthy > 0 {
+            ReplicationStatus::Completed
+        } else {
+            ReplicationStatus::NotConfigured
+        };
+
+        Ok(ReplicationHealthCheck {
+            overall_status,
+            regions,
+            total_lag_seconds: total_lag,
+            max_lag_seconds: max_lag,
+            healthy_regions: healthy,
+            unhealthy_regions: unhealthy,
+            last_check_timestamp: chrono::Utc::now().to_rfc3339(),
+        })
+    }
+
+    pub async fn get_replication_lag_metrics(
+        &self,
+        replication_config: &ReplicationConfig,
+    ) -> Result<Vec<ReplicationLagMetrics>, S3BackupError> {
+        let source_backups = self.list_backups().await?;
+        let mut metrics = Vec::new();
+
+        for region_config in &replication_config.regions {
+            let region_status = self
+                .check_region_replication_status(region_config, &source_backups)
+                .await?;
+
+            let pending = source_backups
+                .iter()
+                .filter(|b| region_status.last_sync_backup_id.as_ref() != Some(b))
+                .count();
+
+            metrics.push(ReplicationLagMetrics {
+                region: region_config.region.clone(),
+                lag_seconds: region_status.lag_seconds.unwrap_or(0),
+                pending_backups: pending,
+                last_backup_timestamp: region_status.last_sync_timestamp.clone(),
+                replication_delay_seconds: replication_config.sync_interval_seconds,
+            });
+        }
+
+        Ok(metrics)
+    }
 }
 
 pub struct ChecksumWriter<W> {
@@ -558,5 +828,34 @@ mod tests {
 
         assert_eq!(output, b"hello world");
         assert_eq!(checksum.len(), 64);
+    }
+
+    #[test]
+    fn test_replication_region_config_display() {
+        let config = ReplicationRegionConfig {
+            region: "eu-west-1".to_string(),
+            bucket: "backup-eu".to_string(),
+            endpoint: Some("https://s3.eu-west-1.amazonaws.com".to_string()),
+            path_prefix: None,
+            credentials: None,
+            server_side_encryption: None,
+            storage_class: "STANDARD".to_string(),
+            kms_key_id: None,
+        };
+        assert!(config.to_string().contains("eu-west-1"));
+        assert!(config.to_string().contains("backup-eu"));
+    }
+
+    #[test]
+    fn test_replication_config_display() {
+        let config = ReplicationConfig {
+            enabled: true,
+            regions: vec![],
+            sync_interval_seconds: 600,
+            max_retries: 5,
+            retry_delay_seconds: 60,
+        };
+        assert!(config.to_string().contains("enabled: true"));
+        assert!(config.to_string().contains("600s"));
     }
 }
