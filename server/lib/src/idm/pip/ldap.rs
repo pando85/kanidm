@@ -456,7 +456,7 @@ mod tests {
     }
 
     #[test]
-    fn test_search_filter_building() {
+    fn test_search_filter_building_with_username() {
         let config = create_test_config();
         let pip = LdapPip::new(config).unwrap();
 
@@ -464,6 +464,87 @@ mod tests {
 
         let filter = pip.build_search_filter(&subject);
         assert_eq!(filter, "(uid=testuser)");
+    }
+
+    #[test]
+    fn test_search_filter_building_with_uuid() {
+        let config = LdapPipConfig {
+            id: "test".to_string(),
+            url: Url::parse("ldap://localhost:389").unwrap(),
+            base_dn: "dc=example,dc=com".to_string(),
+            bind_dn: "cn=admin,dc=example,dc=com".to_string(),
+            bind_password: "secret".to_string(),
+            search_filter: "(entryUUID={uuid})".to_string(),
+            attributes: vec!["cn".to_string()],
+            tls: super::super::config::PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            fallback_behavior: PipFallbackBehavior::UseFallback,
+            fallback_values: BTreeMap::new(),
+            health_check: super::super::config::PipHealthCheckConfig::default(),
+            attribute_mapping: BTreeMap::new(),
+        };
+        let pip = LdapPip::new(config).unwrap();
+
+        let uuid = uuid::Uuid::new_v4();
+        let subject = PipSubject::from_uuid(uuid);
+
+        let filter = pip.build_search_filter(&subject);
+        assert_eq!(filter, format!("(entryUUID={})", uuid));
+    }
+
+    #[test]
+    fn test_search_filter_building_with_email() {
+        let config = LdapPipConfig {
+            id: "test".to_string(),
+            url: Url::parse("ldap://localhost:389").unwrap(),
+            base_dn: "dc=example,dc=com".to_string(),
+            bind_dn: "cn=admin,dc=example,dc=com".to_string(),
+            bind_password: "secret".to_string(),
+            search_filter: "(mail={email})".to_string(),
+            attributes: vec!["cn".to_string()],
+            tls: super::super::config::PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            fallback_behavior: PipFallbackBehavior::UseFallback,
+            fallback_values: BTreeMap::new(),
+            health_check: super::super::config::PipHealthCheckConfig::default(),
+            attribute_mapping: BTreeMap::new(),
+        };
+        let pip = LdapPip::new(config).unwrap();
+
+        let subject = PipSubject::from_uuid(uuid::Uuid::new_v4()).with_email("test@example.com");
+
+        let filter = pip.build_search_filter(&subject);
+        assert_eq!(filter, "(mail=test@example.com)");
+    }
+
+    #[test]
+    fn test_search_filter_building_with_context() {
+        let config = LdapPipConfig {
+            id: "test".to_string(),
+            url: Url::parse("ldap://localhost:389").unwrap(),
+            base_dn: "dc=example,dc=com".to_string(),
+            bind_dn: "cn=admin,dc=example,dc=com".to_string(),
+            bind_password: "secret".to_string(),
+            search_filter: "(&(uid={username})(ou={department}))".to_string(),
+            attributes: vec!["cn".to_string()],
+            tls: super::super::config::PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            fallback_behavior: PipFallbackBehavior::UseFallback,
+            fallback_values: BTreeMap::new(),
+            health_check: super::super::config::PipHealthCheckConfig::default(),
+            attribute_mapping: BTreeMap::new(),
+        };
+        let pip = LdapPip::new(config).unwrap();
+
+        let subject = PipSubject::from_uuid(uuid::Uuid::new_v4())
+            .with_username("testuser")
+            .with_context("department", "Engineering");
+
+        let filter = pip.build_search_filter(&subject);
+        assert_eq!(filter, "(&(uid=testuser)(ou=Engineering))");
     }
 
     #[test]
@@ -478,14 +559,239 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_ldap_filter() {
+    fn test_provided_attributes_from_mapping() {
+        let mut mapping = BTreeMap::new();
+        mapping.insert("cn".to_string(), "common_name".to_string());
+        mapping.insert("uid".to_string(), "username".to_string());
+
+        let config = LdapPipConfig {
+            id: "test".to_string(),
+            url: Url::parse("ldap://localhost:389").unwrap(),
+            base_dn: "dc=example,dc=com".to_string(),
+            bind_dn: "cn=admin,dc=example,dc=com".to_string(),
+            bind_password: "secret".to_string(),
+            search_filter: "(uid={username})".to_string(),
+            attributes: vec![],
+            tls: super::super::config::PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            fallback_behavior: PipFallbackBehavior::UseFallback,
+            fallback_values: BTreeMap::new(),
+            health_check: super::super::config::PipHealthCheckConfig::default(),
+            attribute_mapping: mapping,
+        };
+        let pip = LdapPip::new(config).unwrap();
+
+        assert_eq!(pip.provided_attributes().len(), 2);
+    }
+
+    #[test]
+    fn test_pip_id() {
+        let config = create_test_config();
+        let pip = LdapPip::new(config).unwrap();
+
+        assert_eq!(pip.id().as_str(), "test_ldap_pip");
+    }
+
+    #[test]
+    fn test_cached_health_status_initial() {
+        let config = create_test_config();
+        let pip = LdapPip::new(config).unwrap();
+
+        let status = pip.cached_health_status();
+        assert_eq!(status, PipHealthStatus::Unknown);
+    }
+
+    #[test]
+    fn test_apply_fallback_empty() {
+        let config = create_test_config();
+        let pip = LdapPip::new(config).unwrap();
+
+        let attrs = pip.apply_fallback();
+        assert!(attrs.is_empty());
+    }
+
+    #[test]
+    fn test_apply_fallback_with_values() {
+        let mut fallback = BTreeMap::new();
+        fallback.insert(
+            "department".to_string(),
+            PipAttributeValue::String("Unknown".to_string()),
+        );
+
+        let config = LdapPipConfig {
+            id: "test".to_string(),
+            url: Url::parse("ldap://localhost:389").unwrap(),
+            base_dn: "dc=example,dc=com".to_string(),
+            bind_dn: "cn=admin,dc=example,dc=com".to_string(),
+            bind_password: "secret".to_string(),
+            search_filter: "(uid={username})".to_string(),
+            attributes: vec!["cn".to_string()],
+            tls: super::super::config::PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            fallback_behavior: PipFallbackBehavior::UseFallback,
+            fallback_values: fallback,
+            health_check: super::super::config::PipHealthCheckConfig::default(),
+            attribute_mapping: BTreeMap::new(),
+        };
+        let pip = LdapPip::new(config).unwrap();
+
+        let attrs = pip.apply_fallback();
+        assert_eq!(attrs.len(), 1);
+    }
+
+    #[test]
+    fn test_parse_ldap_filter_simple() {
         let result = parse_ldap_filter("(uid=testuser)");
         assert!(result.is_ok());
 
+        let result = parse_ldap_filter("(objectClass=person)");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_ldap_filter_complex() {
         let result = parse_ldap_filter("(&(objectClass=person)(uid=testuser))");
         assert!(result.is_ok());
 
+        let result = parse_ldap_filter("(|(uid=user1)(uid=user2))");
+        assert!(result.is_ok());
+
+        let result = parse_ldap_filter("(!(status=inactive))");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_ldap_filter_nested() {
+        let result = parse_ldap_filter("(&(objectClass=person)(|(uid=user1)(uid=user2)))");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_ldap_filter_invalid() {
         let result = parse_ldap_filter("invalid filter");
         assert!(result.is_err());
+
+        let result = parse_ldap_filter("(unclosed");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_ldap_pip_with_ldaps() {
+        let config = LdapPipConfig {
+            id: "test".to_string(),
+            url: Url::parse("ldaps://ldap.example.com:636").unwrap(),
+            base_dn: "dc=example,dc=com".to_string(),
+            bind_dn: "cn=admin,dc=example,dc=com".to_string(),
+            bind_password: "secret".to_string(),
+            search_filter: "(uid={username})".to_string(),
+            attributes: vec!["cn".to_string()],
+            tls: super::super::config::PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            fallback_behavior: PipFallbackBehavior::UseFallback,
+            fallback_values: BTreeMap::new(),
+            health_check: super::super::config::PipHealthCheckConfig::default(),
+            attribute_mapping: BTreeMap::new(),
+        };
+        let pip = LdapPip::new(config);
+        assert!(pip.is_ok());
+    }
+
+    #[test]
+    fn test_ldap_pip_with_insecure_tls() {
+        let config = LdapPipConfig {
+            id: "test".to_string(),
+            url: Url::parse("ldaps://ldap.example.com:636").unwrap(),
+            base_dn: "dc=example,dc=com".to_string(),
+            bind_dn: "cn=admin,dc=example,dc=com".to_string(),
+            bind_password: "secret".to_string(),
+            search_filter: "(uid={username})".to_string(),
+            attributes: vec!["cn".to_string()],
+            tls: super::super::config::PipTlsConfig {
+                ca_path: None,
+                verify_server: false,
+                allow_insecure: true,
+            },
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            fallback_behavior: PipFallbackBehavior::UseFallback,
+            fallback_values: BTreeMap::new(),
+            health_check: super::super::config::PipHealthCheckConfig::default(),
+            attribute_mapping: BTreeMap::new(),
+        };
+        let pip = LdapPip::new(config);
+        assert!(pip.is_ok());
+    }
+
+    #[test]
+    fn test_fallback_behavior_deny() {
+        let config = LdapPipConfig {
+            id: "test".to_string(),
+            url: Url::parse("ldap://localhost:389").unwrap(),
+            base_dn: "dc=example,dc=com".to_string(),
+            bind_dn: "cn=admin,dc=example,dc=com".to_string(),
+            bind_password: "secret".to_string(),
+            search_filter: "(uid={username})".to_string(),
+            attributes: vec!["cn".to_string()],
+            tls: super::super::config::PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            fallback_behavior: PipFallbackBehavior::Deny,
+            fallback_values: BTreeMap::new(),
+            health_check: super::super::config::PipHealthCheckConfig::default(),
+            attribute_mapping: BTreeMap::new(),
+        };
+        let pip = LdapPip::new(config);
+        assert!(pip.is_ok());
+    }
+
+    #[test]
+    fn test_fallback_behavior_ignore() {
+        let config = LdapPipConfig {
+            id: "test".to_string(),
+            url: Url::parse("ldap://localhost:389").unwrap(),
+            base_dn: "dc=example,dc=com".to_string(),
+            bind_dn: "cn=admin,dc=example,dc=com".to_string(),
+            bind_password: "secret".to_string(),
+            search_filter: "(uid={username})".to_string(),
+            attributes: vec!["cn".to_string()],
+            tls: super::super::config::PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            fallback_behavior: PipFallbackBehavior::Ignore,
+            fallback_values: BTreeMap::new(),
+            health_check: super::super::config::PipHealthCheckConfig::default(),
+            attribute_mapping: BTreeMap::new(),
+        };
+        let pip = LdapPip::new(config);
+        assert!(pip.is_ok());
+    }
+
+    #[test]
+    fn test_attribute_mapping() {
+        let mut mapping = BTreeMap::new();
+        mapping.insert("cn".to_string(), "full_name".to_string());
+
+        let config = LdapPipConfig {
+            id: "test".to_string(),
+            url: Url::parse("ldap://localhost:389").unwrap(),
+            base_dn: "dc=example,dc=com".to_string(),
+            bind_dn: "cn=admin,dc=example,dc=com".to_string(),
+            bind_password: "secret".to_string(),
+            search_filter: "(uid={username})".to_string(),
+            attributes: vec!["cn".to_string()],
+            tls: super::super::config::PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            fallback_behavior: PipFallbackBehavior::UseFallback,
+            fallback_values: BTreeMap::new(),
+            health_check: super::super::config::PipHealthCheckConfig::default(),
+            attribute_mapping: mapping,
+        };
+        let pip = LdapPip::new(config).unwrap();
+
+        assert_eq!(pip.attribute_mapping.get("cn"), Some(&"full_name".to_string()));
     }
 }
