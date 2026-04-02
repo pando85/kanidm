@@ -501,7 +501,6 @@ pub fn parse_recovery_target_cid(cid_str: &str) -> Result<Cid, WalError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::Duration;
 
     #[test]
     fn test_wal_segment_builder() {
@@ -509,7 +508,7 @@ mod tests {
         let config = WalArchiveConfig::default();
         let base_path = std::env::temp_dir();
 
-        let mut archiver = WalArchiver::new(config, server_uuid, &base_path);
+        let archiver = WalArchiver::new(config, server_uuid, &base_path);
 
         assert!(!archiver.is_enabled());
     }
