@@ -5,7 +5,7 @@
 //! or domain entries that are able to be replicated.
 
 use cidr::IpCidr;
-use kanidm_proto::backup::{BackupCompression, S3Config, WalArchiveConfig};
+use kanidm_proto::backup::{BackupCompression, BackupEncryptionConfig, S3Config, WalArchiveConfig};
 use kanidm_proto::config::ServerRole;
 use kanidm_proto::constants::DEFAULT_SERVER_ADDRESS;
 use kanidm_proto::internal::FsType;
@@ -86,6 +86,11 @@ pub struct OnlineBackup {
     #[serde(default)]
     pub s3: Option<S3Config>,
 
+    /// Encryption configuration for client-side backup encryption.
+    /// When enabled, backups are encrypted with AES-256-GCM before storage.
+    #[serde(default)]
+    pub encryption: BackupEncryptionConfig,
+
     /// WAL archive configuration for Point-in-Time Recovery (PITR).
     #[serde(default)]
     pub wal_archive: Option<WalArchiveConfig>,
@@ -94,12 +99,13 @@ pub struct OnlineBackup {
 impl Default for OnlineBackup {
     fn default() -> Self {
         OnlineBackup {
-            path: None, // This makes it revert to the kanidm_db path
+            path: None,
             schedule: default_online_backup_schedule(),
             versions: default_online_backup_versions(),
             enabled: default_online_backup_enabled(),
             compression: BackupCompression::default(),
             s3: None,
+            encryption: BackupEncryptionConfig::default(),
             wal_archive: None,
         }
     }
@@ -479,7 +485,6 @@ impl Configuration {
         ConfigurationBuilder {
             bindaddress: None,
             ldapbindaddress: None,
-            // set by build profiles
             adminbindpath: env!("KANIDM_SERVER_ADMIN_BIND_PATH").to_string(),
             threads: std::thread::available_parallelism()
                 .map(|t| t.get())
@@ -491,7 +496,7 @@ impl Configuration {
             db_fs_type: None,
             db_arc_size: None,
             migration_path: None,
-            maximum_request: 256 * 1024, // 256k
+            maximum_request: 256 * 1024,
             http_client_address_info: HttpAddressInfo::default(),
             ldap_client_address_info: LdapAddressInfo::default(),
             tls_key: None,
@@ -519,7 +524,7 @@ impl Configuration {
             db_fs_type: None,
             db_arc_size: None,
             migration_path: None,
-            maximum_request: 256 * 1024, // 256k
+            maximum_request: 256 * 1024,
             http_client_address_info: HttpAddressInfo::default(),
             ldap_client_address_info: LdapAddressInfo::default(),
             tls_config: None,

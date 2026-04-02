@@ -282,5 +282,5 @@ fn test_fstype_deser() {
     assert_eq!(FsType::try_from("zfs"), Ok(FsType::Zfs));
     assert_eq!(FsType::try_from("generic"), Ok(FsType::Generic));
     assert_eq!(FsType::try_from(" "), Err(()));
-    assert_eq!(FsType::try_from("crab🦀"), Err(()));
+    assert_eq!(FsType::try_from("crab"), Err(()));
 }

@@ -3,11 +3,9 @@ name: "Github Pages - Branch"
 "on":
   workflow_call:
     inputs:
-      # the target tag for generating things
       tag:
         required: true
         type: string
-      # the parent workflow for caching
       parent_id:
         required: true
         type: string
@@ -70,7 +68,6 @@ jobs:
         env:
           ACTIONS_RUNNER_DEBUG: true
       - name: Upload artifact
-        # https://github.com/actions/upload-artifact
         uses: actions/upload-artifact@v7
         with:
           name: "individual${{ inputs.tag }}"

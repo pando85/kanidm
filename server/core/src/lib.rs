@@ -632,7 +632,7 @@ pub async fn pitr_validate_recovery_target_core(
         .validate_target()
         .map_err(|e| format!("Recovery target validation failed: {}", e))?;
 
-    info!("✅ Recovery target is valid and achievable");
+    info!("Recovery target is valid and achievable");
     Ok(recovery_state)
 }
 
@@ -744,10 +744,7 @@ pub async fn pitr_recover_core(
 
     reindex_inner(be, schema, config).await;
 
-    info!(
-        "✅ PITR Recovery completed successfully to target: {}",
-        target
-    );
+    info!("PITR Recovery completed successfully to target: {}", target);
     Ok(())
 }
 

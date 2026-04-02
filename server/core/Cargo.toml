@@ -33,6 +33,9 @@ aws-config = { workspace = true }
 aws-credential-types = { workspace = true }
 sha2 = { workspace = true }
 hex = { workspace = true }
+argon2 = { workspace = true }
+generic-array = { workspace = true }
+rand = { workspace = true }
 cidr = { workspace = true, features = ["serde"] }
 chrono = { workspace = true }
 compact_jwt = { workspace = true }
@@ -86,7 +89,7 @@ uuid = { workspace = true, features = ["serde", "v4"] }
 utoipa = { workspace = true, features = [
     "axum_extras",
     "openapi_extensions",
-    "preserve_order",     #  Preserve order of properties when serializing the schema for a component.
+    "preserve_order",
     "time",
     "url",
     "uuid",
@@ -110,6 +113,6 @@ kanidm_build_profiles = { workspace = true }
 
 [package.metadata.cargo-machete]
 ignored = [
-    "opentelemetry",         # feature gated
+    "opentelemetry",
     "kanidm_build_profiles",
 ]

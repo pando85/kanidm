@@ -21,8 +21,8 @@ doctest = false
 default = []
 dhat-heap = ["dep:dhat"]
 dhat-ad-hoc = ["dep:dhat"]
-dev-oauth2-device-flow = [] # still-in-development oauth2 device flow support
-test = []                   # Enable this for cross-package test features.
+dev-oauth2-device-flow = []
+test = []
 
 [dependencies]
 async-trait = { workspace = true }
@@ -35,7 +35,6 @@ concread = { workspace = true }
 crypto-glue = { workspace = true }
 dhat = { workspace = true, optional = true }
 dyn-clone = { workspace = true }
-# futures-util = { workspace = true }
 hashbrown = { workspace = true }
 idlset = { workspace = true }
 itertools = { workspace = true }
@@ -89,7 +88,6 @@ image = { workspace = true, default-features = false, features = [
 svg = { workspace = true }
 flate2 = "1.1.9"
 
-# because windows really can't build without the bundled one
 [target.'cfg(target_family = "windows")'.dependencies]
 whoami = { workspace = true }
 
@@ -97,8 +95,6 @@ whoami = { workspace = true }
 compact_jwt = { workspace = true, features = ["unsafe_release_without_verify"] }
 futures = { workspace = true }
 kanidmd_lib_macros = { workspace = true }
-# This is needed so that we can use a test feature across the crate boundary to proto
-# so we can enable certain hidden test only attributes.
 kanidm_proto = { workspace = true, features = ["test"] }
 toml = { workspace = true }
 webauthn-authenticator-rs = { workspace = true, features = [
@@ -117,6 +113,6 @@ regex = { workspace = true }
 
 [package.metadata.cargo-machete]
 ignored = [
-    "openssl-sys", # see note above
-    "whoami",      # used in windows
+    "openssl-sys",
+    "whoami",
 ]

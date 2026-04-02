@@ -1197,9 +1197,9 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
                     {
                         Ok(()) => {
                             if pitr_opt.dry_run {
-                                info!("✅ PITR dry run completed successfully");
+                                info!("PITR dry run completed successfully");
                             } else {
-                                info!("✅ PITR recovery completed successfully");
+                                info!("PITR recovery completed successfully");
                             }
                         }
                         Err(e) => {

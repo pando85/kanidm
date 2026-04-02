@@ -48,11 +48,11 @@ enum DomainSettingsCmds {
     /// Kanidm. This is a safe read only operation.
     #[clap(name = "upgrade-check")]
     UpgradeCheck,
-    /// ⚠️  Do not use this command unless directed by a project member. ⚠️
+    /// Do not use this command unless directed by a project member.
     /// - Raise the functional level of this domain to the maximum available.
     #[clap(name = "raise")]
     Raise,
-    /// ⚠️  Do not use this command unless directed by a project member. ⚠️
+    /// Do not use this command unless directed by a project member.
     /// - Rerun migrations of this domains database, optionally nominating the level
     ///   to start from.
     #[clap(name = "remigrate")]
@@ -173,7 +173,6 @@ enum ScriptingCommand {
     },
 }
 
-// The main command parser for kanidmd
 #[derive(Debug, Subcommand)]
 enum KanidmdOpt {
     #[clap(name = "server")]
