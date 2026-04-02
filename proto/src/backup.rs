@@ -5,6 +5,11 @@ use serde::{Deserialize, Serialize};
 use serde_with::DeserializeFromStr;
 use sketching::tracing::warn;
 
+pub const BACKUP_ENCRYPTION_MAGIC: &[u8] = b"KANIDM_ENC_BACKUP_V1";
+pub const BACKUP_ENCRYPTION_KEY_LEN: usize = 32;
+pub const BACKUP_ENCRYPTION_NONCE_LEN: usize = 12;
+pub const BACKUP_ENCRYPTION_SALT_LEN: usize = 16;
+
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, DeserializeFromStr, Serialize)]
 /// Compression types for backups, defaults to Gzip
 pub enum BackupCompression {
@@ -75,7 +80,6 @@ impl FromStr for BackupCompression {
 }
 
 #[test]
-
 fn test_backup_compression_identify() {
     let gzip_path = Path::new("/var/lib/kanidm/backups/backup-2024-01-01.tar.gz");
     let no_comp_path = Path::new("/var/lib/kanidm/backups/backup-2024-01-01.tar");
@@ -103,6 +107,58 @@ fn test_backup_compression_identify() {
             );
         }
     }
+}
+
+#[test]
+fn test_key_derivation_params_default() {
+    let params = KeyDerivationParams::default();
+    assert_eq!(params.m_cost, 19 * 1024);
+    assert_eq!(params.t_cost, 2);
+    assert_eq!(params.p_cost, 1);
+}
+
+#[test]
+fn test_encryption_key_source_display() {
+    assert_eq!(EncryptionKeySource::Passphrase.to_string(), "passphrase");
+    assert_eq!(
+        EncryptionKeySource::File {
+            path: "/path/to/key"
+        }
+        .to_string(),
+        "file:/path/to/key"
+    );
+    assert_eq!(
+        EncryptionKeySource::HttpEndpoint {
+            url: "https://vault.example.com/key"
+        }
+        .to_string(),
+        "http:https://vault.example.com/key"
+    );
+}
+
+#[test]
+fn test_backup_encryption_header_validate_magic() {
+    let header = BackupEncryptionHeader::new(
+        "test-key".to_string(),
+        vec![0u8; 16],
+        vec![0u8; 12],
+        KeyDerivationParams::default(),
+        false,
+    );
+    assert!(header.validate_magic());
+}
+
+#[test]
+fn test_s3_backup_metadata_encrypted() {
+    let meta = S3BackupMetadata::new_encrypted(
+        "sha256".to_string(),
+        "2024-01-01".to_string(),
+        BackupCompression::Gzip,
+        1024,
+        "key-123".to_string(),
+    );
+    assert!(meta.encrypted);
+    assert_eq!(meta.key_identifier, Some("key-123".to_string()));
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
@@ -190,6 +246,194 @@ impl S3BackupMetadata {
             timestamp,
             compression,
             size_bytes,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Default)]
+pub struct KeyDerivationParams {
+    #[serde(default = "default_argon2_m_cost")]
+    pub m_cost: u32,
+    #[serde(default = "default_argon2_t_cost")]
+    pub t_cost: u32,
+    #[serde(default = "default_argon2_p_cost")]
+    pub p_cost: u32,
+}
+
+fn default_argon2_m_cost() -> u32 {
+    19 * 1024
+}
+
+fn default_argon2_t_cost() -> u32 {
+    2
+}
+
+fn default_argon2_p_cost() -> u32 {
+    1
+}
+
+impl Default for KeyDerivationParams {
+    fn default() -> Self {
+        Self {
+            m_cost: default_argon2_m_cost(),
+            t_cost: default_argon2_t_cost(),
+            p_cost: default_argon2_p_cost(),
+        }
+    }
+}
+
+impl Display for KeyDerivationParams {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "KeyDerivationParams {{ m_cost: {}, t_cost: {}, p_cost: {} }}",
+            self.m_cost, self.t_cost, self.p_cost
+        )
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+pub enum EncryptionKeySource {
+    Passphrase,
+    File { path: String },
+    HttpEndpoint { url: String },
+}
+
+impl Default for EncryptionKeySource {
+    fn default() -> Self {
+        EncryptionKeySource::Passphrase
+    }
+}
+
+impl Display for EncryptionKeySource {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            EncryptionKeySource::Passphrase => write!(f, "passphrase"),
+            EncryptionKeySource::File { path } => write!(f, "file:{}", path),
+            EncryptionKeySource::HttpEndpoint { url } => write!(f, "http:{}", url),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+pub struct BackupEncryptionConfig {
+    #[serde(default)]
+    pub enabled: bool,
+    #[serde(default)]
+    pub key_source: EncryptionKeySource,
+    #[serde(default)]
+    pub key_derivation: KeyDerivationParams,
+    #[serde(default)]
+    pub key_identifier: Option<String>,
+}
+
+impl Default for BackupEncryptionConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            key_source: EncryptionKeySource::Passphrase,
+            key_derivation: KeyDerivationParams::default(),
+            key_identifier: None,
+        }
+    }
+}
+
+impl Display for BackupEncryptionConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "BackupEncryptionConfig {{ enabled: {}, key_source: {}, key_derivation: {} }}",
+            self.enabled, self.key_source, self.key_derivation
+        )
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct BackupEncryptionHeader {
+    pub magic: String,
+    pub key_identifier: String,
+    pub salt: Vec<u8>,
+    pub nonce: Vec<u8>,
+    pub key_derivation: KeyDerivationParams,
+    pub compressed: bool,
+}
+
+impl BackupEncryptionHeader {
+    pub fn new(
+        key_identifier: String,
+        salt: Vec<u8>,
+        nonce: Vec<u8>,
+        key_derivation: KeyDerivationParams,
+        compressed: bool,
+    ) -> Self {
+        Self {
+            magic: String::from_utf8_lossy(BACKUP_ENCRYPTION_MAGIC).to_string(),
+            key_identifier,
+            salt,
+            nonce,
+            key_derivation,
+            compressed,
+        }
+    }
+
+    pub fn validate_magic(&self) -> bool {
+        self.magic.as_bytes() == BACKUP_ENCRYPTION_MAGIC
+    }
+}
+
+impl Display for BackupEncryptionHeader {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "BackupEncryptionHeader {{ key_identifier: {}, compressed: {} }}",
+            self.key_identifier, self.compressed
+        )
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+pub struct S3BackupMetadata {
+    pub checksum_sha256: String,
+    pub timestamp: String,
+    pub compression: BackupCompression,
+    pub size_bytes: u64,
+    #[serde(default)]
+    pub encrypted: bool,
+    #[serde(default)]
+    pub key_identifier: Option<String>,
+}
+
+impl S3BackupMetadata {
+    pub fn new(
+        checksum_sha256: String,
+        timestamp: String,
+        compression: BackupCompression,
+        size_bytes: u64,
+    ) -> Self {
+        Self {
+            checksum_sha256,
+            timestamp,
+            compression,
+            size_bytes,
+            encrypted: false,
+            key_identifier: None,
+        }
+    }
+
+    pub fn new_encrypted(
+        checksum_sha256: String,
+        timestamp: String,
+        compression: BackupCompression,
+        size_bytes: u64,
+        key_identifier: String,
+    ) -> Self {
+        Self {
+            checksum_sha256,
+            timestamp,
+            compression,
+            size_bytes,
+            encrypted: true,
+            key_identifier: Some(key_identifier),
         }
     }
 }
