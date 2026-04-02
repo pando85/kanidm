@@ -783,7 +783,10 @@ mod tests {
             parse_storage_class("INTELLIGENT_TIERING"),
             StorageClass::IntelligentTiering
         );
-        assert_eq!(parse_storage_class("DEEP_ARCHIVE"), StorageClass::DeepArchive);
+        assert_eq!(
+            parse_storage_class("DEEP_ARCHIVE"),
+            StorageClass::DeepArchive
+        );
         assert_eq!(parse_storage_class("GLACIER_IR"), StorageClass::GlacierIr);
     }
 
@@ -1264,7 +1267,10 @@ mod tests {
     fn test_s3_server_side_encryption_kms() {
         let sse = S3ServerSideEncryption {
             algorithm: Some(S3EncryptionAlgorithm::AwsKms),
-            kms_key_id: Some("arn:aws:kms:us-east-1:123456789012:key/12345678-1234-1234-1234-123456789012".to_string()),
+            kms_key_id: Some(
+                "arn:aws:kms:us-east-1:123456789012:key/12345678-1234-1234-1234-123456789012"
+                    .to_string(),
+            ),
         };
 
         assert_eq!(sse.algorithm, Some(S3EncryptionAlgorithm::AwsKms));

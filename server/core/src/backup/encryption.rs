@@ -540,8 +540,14 @@ mod tests {
         let encryptor = BackupEncryptor::new(config);
         let data = b"test data";
 
-        let encrypted1 = encryptor.encrypt(data, b"passphrase1", false).await.unwrap();
-        let encrypted2 = encryptor.encrypt(data, b"passphrase2", false).await.unwrap();
+        let encrypted1 = encryptor
+            .encrypt(data, b"passphrase1", false)
+            .await
+            .unwrap();
+        let encrypted2 = encryptor
+            .encrypt(data, b"passphrase2", false)
+            .await
+            .unwrap();
 
         assert_ne!(encrypted1, encrypted2);
     }
@@ -576,7 +582,10 @@ mod tests {
         let encryptor = BackupEncryptor::new(config);
         let data: Vec<u8> = (0..10000).map(|i| (i % 256) as u8).collect();
 
-        let encrypted = encryptor.encrypt(&data, b"passphrase", false).await.unwrap();
+        let encrypted = encryptor
+            .encrypt(&data, b"passphrase", false)
+            .await
+            .unwrap();
         let (decrypted, _) = BackupEncryptor::decrypt(&encrypted, b"passphrase").unwrap();
 
         assert_eq!(decrypted, data);
@@ -627,7 +636,10 @@ mod tests {
 
         let result = BackupEncryptor::derive_key(passphrase, &short_salt, &params);
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), BackupEncryptionError::InvalidSaltLength));
+        assert!(matches!(
+            result.unwrap_err(),
+            BackupEncryptionError::InvalidSaltLength
+        ));
     }
 
     #[test]
@@ -814,7 +826,10 @@ mod tests {
         let data = b"test data";
         let short_passphrase = b"x";
 
-        let encrypted = encryptor.encrypt(data, short_passphrase, false).await.unwrap();
+        let encrypted = encryptor
+            .encrypt(data, short_passphrase, false)
+            .await
+            .unwrap();
         let (decrypted, _) = BackupEncryptor::decrypt(&encrypted, short_passphrase).unwrap();
 
         assert_eq!(decrypted, data);
@@ -827,7 +842,10 @@ mod tests {
         let data = b"test data";
         let long_passphrase: Vec<u8> = (0..1000).map(|i| (i % 256) as u8).collect();
 
-        let encrypted = encryptor.encrypt(data, &long_passphrase, false).await.unwrap();
+        let encrypted = encryptor
+            .encrypt(data, &long_passphrase, false)
+            .await
+            .unwrap();
         let (decrypted, _) = BackupEncryptor::decrypt(&encrypted, &long_passphrase).unwrap();
 
         assert_eq!(decrypted, data);
@@ -840,7 +858,10 @@ mod tests {
         let data = b"test data";
         let unicode_passphrase = "日本語パスワード".as_bytes();
 
-        let encrypted = encryptor.encrypt(data, unicode_passphrase, false).await.unwrap();
+        let encrypted = encryptor
+            .encrypt(data, unicode_passphrase, false)
+            .await
+            .unwrap();
         let (decrypted, _) = BackupEncryptor::decrypt(&encrypted, unicode_passphrase).unwrap();
 
         assert_eq!(decrypted, data);
@@ -853,7 +874,10 @@ mod tests {
         let data = b"test data";
         let binary_passphrase: Vec<u8> = vec![0x00, 0xFF, 0x80, 0x7F, 0x01, 0xFE];
 
-        let encrypted = encryptor.encrypt(data, &binary_passphrase, false).await.unwrap();
+        let encrypted = encryptor
+            .encrypt(data, &binary_passphrase, false)
+            .await
+            .unwrap();
         let (decrypted, _) = BackupEncryptor::decrypt(&encrypted, &binary_passphrase).unwrap();
 
         assert_eq!(decrypted, data);
