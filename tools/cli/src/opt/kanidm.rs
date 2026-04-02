@@ -22,6 +22,11 @@ pub struct Named {
 }
 
 #[derive(Debug, Args, Clone)]
+pub struct ApprovalUuid {
+    pub uuid: String,
+}
+
+#[derive(Debug, Args, Clone)]
 pub struct DebugOpt {
     /// Enable debugging of the kanidm tool
     #[clap(short, long, env = "KANIDM_DEBUG")]
@@ -1364,6 +1369,79 @@ pub enum SchemaOpt {
     Attribute {
         #[clap(subcommand)]
         commands: SchemaAttrOpt,
+    },
+}
+
+#[derive(Debug, Args, Clone)]
+pub struct ApprovalPolicyCreateOpt {
+    pub name: String,
+    #[clap(long)]
+    pub description: Option<String>,
+    #[clap(long, required = true, num_args(1..))]
+    pub operation_types: Vec<String>,
+    #[clap(long, required = true, num_args(1..))]
+    pub approvers: Vec<String>,
+    #[clap(long, num_args(0..))]
+    pub backup_approvers: Vec<String>,
+    #[clap(long, default_value = "any_one")]
+    pub pattern: String,
+    #[clap(long, default_value = "3600")]
+    pub timeout_seconds: u32,
+    #[clap(long)]
+    pub escalation_timeout_seconds: Option<u32>,
+}
+
+#[derive(Debug, Args, Clone)]
+pub struct ApprovalDecisionOpt {
+    pub uuid: String,
+    #[clap(long)]
+    pub comment: Option<String>,
+}
+
+#[derive(Debug, Subcommand, Clone)]
+pub enum ApprovalPolicyOpt {
+    #[clap(name = "list")]
+    List,
+    #[clap(name = "get")]
+    Get(Named),
+    #[clap(name = "create")]
+    Create(ApprovalPolicyCreateOpt),
+    #[clap(name = "delete")]
+    Delete(Named),
+    #[clap(name = "enable")]
+    Enable(Named),
+    #[clap(name = "disable")]
+    Disable(Named),
+}
+
+#[derive(Debug, Subcommand, Clone)]
+pub enum ApprovalRequestOpt {
+    #[clap(name = "list")]
+    List {
+        #[clap(long)]
+        state: Option<String>,
+    },
+    #[clap(name = "get")]
+    Get(ApprovalUuid),
+    #[clap(name = "approve")]
+    Approve(ApprovalDecisionOpt),
+    #[clap(name = "reject")]
+    Reject(ApprovalDecisionOpt),
+    #[clap(name = "cancel")]
+    Cancel(ApprovalUuid),
+}
+
+#[derive(Debug, Subcommand, Clone)]
+pub enum ApprovalOpt {
+    #[clap(name = "policy")]
+    Policy {
+        #[clap(subcommand)]
+        commands: ApprovalPolicyOpt,
+    },
+    #[clap(name = "request")]
+    Request {
+        #[clap(subcommand)]
+        commands: ApprovalRequestOpt,
     },
 }
 
