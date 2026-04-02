@@ -93,7 +93,9 @@ pub mod prelude {
         QueryServerWriteTransaction,
     };
     pub use crate::time::duration_from_epoch_now;
-    pub use crate::value::{ApiTokenScope, IndexType, PartialValue, SyntaxType, Value};
+    pub use crate::value::{
+        ApiTokenScope, IndexType, PartialValue, SessionScope, SyntaxType, Value,
+    };
     pub(crate) use crate::valueset::{
         ValueSet, ValueSetBool, ValueSetCid, ValueSetIname, ValueSetIutf8, ValueSetRefer,
         ValueSetSha256, ValueSetSyntax, ValueSetT, ValueSetUtf8, ValueSetUuid,
