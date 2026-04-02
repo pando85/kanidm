@@ -1,14 +1,12 @@
-use aes_gcm::{
-    aead::{Aead, KeyInit},
-    Aes256Gcm,
-};
+use crypto_glue::aes256gcm::{Aead, Aes256Gcm, KeyInit};
+use generic_array::GenericArray;
 use argon2::{Algorithm, Argon2, Params, Version};
 use kanidm_proto::backup::{
     BackupEncryptionConfig, BackupEncryptionHeader,
     EncryptionKeySource, KeyDerivationParams, BACKUP_ENCRYPTION_KEY_LEN,
     BACKUP_ENCRYPTION_MAGIC, BACKUP_ENCRYPTION_NONCE_LEN, BACKUP_ENCRYPTION_SALT_LEN,
 };
-use rand::RngExt;
+use rand::{Rng, RngExt};
 use reqwest::Client;
 use sha2::{Digest, Sha256};
 use std::fs;
@@ -144,9 +142,8 @@ impl BackupEncryptor {
         let salt: Vec<u8> = (0..BACKUP_ENCRYPTION_SALT_LEN)
             .map(|_| rng.random())
             .collect();
-        let nonce_bytes: Vec<u8> = (0..BACKUP_ENCRYPTION_NONCE_LEN)
-            .map(|_| rng.random())
-            .collect();
+        let mut nonce_bytes = [0u8; BACKUP_ENCRYPTION_NONCE_LEN];
+        rng.fill_bytes(&mut nonce_bytes);
 
         let key = Self::derive_key(passphrase, &salt, &self.config.key_derivation)?;
 
@@ -159,19 +156,16 @@ impl BackupEncryptor {
         let header = BackupEncryptionHeader::new(
             key_identifier.clone(),
             salt.clone(),
-            nonce_bytes.clone(),
+            nonce_bytes.to_vec(),
             self.config.key_derivation.clone(),
             compressed,
         );
 
-        let cipher = Aes256Gcm::new_from_slice(&key)
-            .map_err(|e| BackupEncryptionError::EncryptionFailed(e.to_string()))?;
-
-        let nonce_array: [u8; BACKUP_ENCRYPTION_NONCE_LEN] = nonce_bytes.as_slice().try_into()
-            .map_err(|_| BackupEncryptionError::InvalidNonceLength)?;
+        let cipher = Aes256Gcm::new(GenericArray::from_slice(&key));
+        let nonce = GenericArray::from_slice(&nonce_bytes);
 
         let encrypted_data = cipher
-            .encrypt((&nonce_array).into(), data)
+            .encrypt(nonce, data)
             .map_err(|e| BackupEncryptionError::EncryptionFailed(e.to_string()))?;
 
         let header_json = serde_json::to_string(&header)
@@ -232,14 +226,11 @@ impl BackupEncryptor {
 
         let encrypted_data = &data[header_end..];
 
-        let cipher = Aes256Gcm::new_from_slice(&key)
-            .map_err(|e| BackupEncryptionError::DecryptionFailed(e.to_string()))?;
-
-        let nonce_array: [u8; BACKUP_ENCRYPTION_NONCE_LEN] = header.nonce.as_slice().try_into()
-            .map_err(|_| BackupEncryptionError::InvalidNonceLength)?;
+        let cipher = Aes256Gcm::new(GenericArray::from_slice(&key));
+        let nonce = GenericArray::from_slice(&header.nonce);
 
         let decrypted_data = cipher
-            .decrypt((&nonce_array).into(), encrypted_data)
+            .decrypt(nonce, encrypted_data)
             .map_err(|e| BackupEncryptionError::DecryptionFailed(e.to_string()))?;
 
         Ok((decrypted_data, header))
@@ -288,14 +279,11 @@ impl BackupEncryptor {
 
         let encrypted_data = &data[header_end..];
 
-        let cipher = Aes256Gcm::new_from_slice(key)
-            .map_err(|e| BackupEncryptionError::DecryptionFailed(e.to_string()))?;
-
-        let nonce_array: [u8; BACKUP_ENCRYPTION_NONCE_LEN] = header.nonce.as_slice().try_into()
-            .map_err(|_| BackupEncryptionError::InvalidNonceLength)?;
+        let cipher = Aes256Gcm::new(GenericArray::from_slice(key));
+        let nonce = GenericArray::from_slice(&header.nonce);
 
         let decrypted_data = cipher
-            .decrypt((&nonce_array).into(), encrypted_data)
+            .decrypt(nonce, encrypted_data)
             .map_err(|e| BackupEncryptionError::DecryptionFailed(e.to_string()))?;
 
         Ok((decrypted_data, header))
@@ -400,13 +388,6 @@ mod tests {
     use super::*;
     use kanidm_proto::backup::BackupEncryptionConfig;
 
-    fn run_async<F, T>(f: F) -> T
-    where
-        F: std::future::Future<Output = T>,
-    {
-        tokio::runtime::Runtime::new().unwrap().block_on(f)
-    }
-
     #[test]
     fn test_derive_key() {
         let passphrase = b"test_passphrase";
@@ -417,8 +398,8 @@ mod tests {
         assert_eq!(key.len(), BACKUP_ENCRYPTION_KEY_LEN);
     }
 
-    #[test]
-    fn test_encrypt_decrypt_roundtrip() {
+    #[tokio::test]
+    async fn test_encrypt_decrypt_roundtrip() {
         let config = BackupEncryptionConfig {
             enabled: true,
             key_source: EncryptionKeySource::Passphrase,
@@ -430,15 +411,15 @@ mod tests {
         let data = b"test backup data";
         let passphrase = b"test_passphrase";
 
-        let encrypted = run_async(encryptor.encrypt(data, passphrase, false)).unwrap();
+        let encrypted = encryptor.encrypt(data.as_slice(), passphrase, false).await.unwrap();
         let (decrypted, header) = BackupEncryptor::decrypt(&encrypted, passphrase).unwrap();
 
         assert_eq!(decrypted, data);
         assert!(!header.compressed);
     }
 
-    #[test]
-    fn test_encrypt_decrypt_with_compression_flag() {
+    #[tokio::test]
+    async fn test_encrypt_decrypt_with_compression_flag() {
         let config = BackupEncryptionConfig {
             enabled: true,
             key_source: EncryptionKeySource::Passphrase,
@@ -450,15 +431,15 @@ mod tests {
         let data = b"test backup data compressed";
         let passphrase = b"test_passphrase";
 
-        let encrypted = run_async(encryptor.encrypt(data, passphrase, true)).unwrap();
+        let encrypted = encryptor.encrypt(data.as_slice(), passphrase, true).await.unwrap();
         let (decrypted, header) = BackupEncryptor::decrypt(&encrypted, passphrase).unwrap();
 
         assert_eq!(decrypted, data);
         assert!(header.compressed);
     }
 
-    #[test]
-    fn test_decrypt_wrong_passphrase() {
+    #[tokio::test]
+    async fn test_decrypt_wrong_passphrase() {
         let config = BackupEncryptionConfig {
             enabled: true,
             key_source: EncryptionKeySource::Passphrase,
@@ -470,7 +451,7 @@ mod tests {
         let data = b"test backup data";
         let passphrase = b"correct_passphrase";
 
-        let encrypted = run_async(encryptor.encrypt(data, passphrase, false)).unwrap();
+        let encrypted = encryptor.encrypt(data.as_slice(), passphrase, false).await.unwrap();
 
         let result = BackupEncryptor::decrypt(&encrypted, b"wrong_passphrase");
         assert!(result.is_err());
@@ -490,8 +471,10 @@ mod tests {
 
     #[test]
     fn test_invalid_magic() {
-        let data = b"INVALID_MAGIC_HEADER";
-        let result = BackupEncryptor::decrypt(data, b"passphrase");
+        let mut data = BACKUP_ENCRYPTION_MAGIC.to_vec();
+        data.extend_from_slice(&[0u8; 100]);
+        data[0] = b'X';
+        let result = BackupEncryptor::decrypt(&data, b"passphrase");
         assert!(matches!(result, Err(BackupEncryptionError::InvalidMagic)));
     }
 
@@ -501,23 +484,22 @@ mod tests {
         let key: Vec<u8> = (0..BACKUP_ENCRYPTION_KEY_LEN)
             .map(|_| rng.random())
             .collect();
-        let nonce_bytes: Vec<u8> = (0..BACKUP_ENCRYPTION_NONCE_LEN)
-            .map(|_| rng.random())
-            .collect();
+        let mut nonce_bytes = [0u8; BACKUP_ENCRYPTION_NONCE_LEN];
+        rng.fill_bytes(&mut nonce_bytes);
 
         let header = BackupEncryptionHeader::new(
             "external-key-id".to_string(),
             vec![0u8; BACKUP_ENCRYPTION_SALT_LEN],
-            nonce_bytes.clone(),
+            nonce_bytes.to_vec(),
             KeyDerivationParams::default(),
             false,
         );
 
         let data = b"test data for external key";
 
-        let cipher = Aes256Gcm::new_from_slice(&key).unwrap();
-        let nonce_array: [u8; BACKUP_ENCRYPTION_NONCE_LEN] = nonce_bytes.as_slice().try_into().unwrap();
-        let encrypted_data = cipher.encrypt((&nonce_array).into(), data).unwrap();
+        let cipher = Aes256Gcm::new(GenericArray::from_slice(&key));
+        let nonce = GenericArray::from_slice(&nonce_bytes);
+        let encrypted_data = cipher.encrypt(nonce, data.as_slice()).unwrap();
 
         let header_json = serde_json::to_string(&header).unwrap();
         let header_len = header_json.len() as u32;

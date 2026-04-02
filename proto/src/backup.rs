@@ -122,14 +122,14 @@ fn test_encryption_key_source_display() {
     assert_eq!(EncryptionKeySource::Passphrase.to_string(), "passphrase");
     assert_eq!(
         EncryptionKeySource::File {
-            path: "/path/to/key"
+            path: "/path/to/key".to_string()
         }
         .to_string(),
         "file:/path/to/key"
     );
     assert_eq!(
         EncryptionKeySource::HttpEndpoint {
-            url: "https://vault.example.com/key"
+            url: "https://vault.example.com/key".to_string()
         }
         .to_string(),
         "http:https://vault.example.com/key"
@@ -227,30 +227,6 @@ impl Display for S3EncryptionAlgorithm {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
-pub struct S3BackupMetadata {
-    pub checksum_sha256: String,
-    pub timestamp: String,
-    pub compression: BackupCompression,
-    pub size_bytes: u64,
-}
-
-impl S3BackupMetadata {
-    pub fn new(
-        checksum_sha256: String,
-        timestamp: String,
-        compression: BackupCompression,
-        size_bytes: u64,
-    ) -> Self {
-        Self {
-            checksum_sha256,
-            timestamp,
-            compression,
-            size_bytes,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Default)]
 pub struct KeyDerivationParams {
     #[serde(default = "default_argon2_m_cost")]
     pub m_cost: u32,
