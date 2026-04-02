@@ -10,6 +10,9 @@ name: "Linux Build and Test"
 env:
   SCCACHE_GHA_ENABLED: "true"
   RUSTC_WRAPPER: "sccache"
+  CARGO_INCREMENTAL: 0
+  CARGO_TERM_COLOR: always
+  KANIDM_BUILD_PROFILE: developer
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -17,11 +20,6 @@ concurrency:
 jobs:
   rust_build:
     runs-on: ubuntu-latest
-    env:
-      SCCACHE_GHA_ENABLED: true
-      RUSTC_WRAPPER: sccache
-      CARGO_INCREMENTAL: 0
-      CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v6
       - name: Install Rust
@@ -53,14 +51,8 @@ jobs:
       - name: "Check disk space at the end"
         run: du -shc *
   rust_build_next:
-    # build future versions to find possible next-version bugs
     runs-on: ubuntu-latest
     continue-on-error: true
-    env:
-      SCCACHE_GHA_ENABLED: true
-      RUSTC_WRAPPER: sccache
-      CARGO_INCREMENTAL: 0
-      CARGO_TERM_COLOR: always
     strategy:
       matrix:
         rust_version: ["beta", "nightly"]
@@ -100,10 +92,6 @@ jobs:
   run_release:
     runs-on: ubuntu-latest
     env:
-      SCCACHE_GHA_ENABLED: true
-      RUSTC_WRAPPER: sccache
-      CARGO_INCREMENTAL: 0
-      CARGO_TERM_COLOR: always
       MALLOC_CONF: "thp:always,metadata_thp:always"
     steps:
       - uses: actions/checkout@v6
