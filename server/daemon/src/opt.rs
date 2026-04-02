@@ -82,6 +82,13 @@ enum DbCommands {
     #[clap(name = "pitr-list")]
     /// List available recovery points for Point-in-Time Recovery
     PitrList,
+    #[clap(name = "replicate-status")]
+    /// Check cross-region backup replication status
+    ReplicateStatus {
+        /// Output detailed lag metrics for each region
+        #[clap(long)]
+        detailed: bool,
+    },
 }
 
 #[derive(Debug, Args)]

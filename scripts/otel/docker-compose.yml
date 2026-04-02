@@ -77,7 +77,7 @@ services:
     image: prom/prometheus:v2.47.2
     restart: always
     ports:
-    - "9090:9090"
+      - "9090:9090"
     volumes:
       - type: bind
         source: ./prometheus.yml

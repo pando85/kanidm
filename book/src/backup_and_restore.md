@@ -54,6 +54,157 @@ secret_access_key = "your-secret-key"
 2. **IAM Role Authentication**: Omit the `credentials` section - the server will use IAM roles when running on EC2/EKS
 3. **Environment Variables**: Set `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and optionally `AWS_SESSION_TOKEN`
 
+### Cross-Region Backup Replication
+
+For enterprise disaster recovery, Kanidm supports automatic cross-region backup replication to ensure backups are
+available in multiple geographic regions. This provides:
+
+- Geographic backup redundancy
+- Cross-region recovery capability
+- Protection against regional outages
+- Compliance with data residency requirements
+
+#### Configuration
+
+Add a `replication` section to your S3 configuration:
+
+```toml
+[online_backup.s3.replication]
+enabled = true
+# How often to check replication status (seconds)
+sync_interval_seconds = 300
+# Maximum retry attempts for failed replication
+max_retries = 3
+# Delay between retry attempts (seconds)
+retry_delay_seconds = 30
+
+# Configure secondary regions (multiple regions supported)
+[[online_backup.s3.replication.regions]]
+region = "eu-west-1"
+bucket = "kanidm-backups-eu"
+# Optional: Custom endpoint for non-AWS S3
+# endpoint = "https://s3.eu-west-1.amazonaws.com"
+# Optional: Path prefix
+# path_prefix = "dr-backups"
+# Optional: Storage class
+# storage_class = "STANDARD"
+
+# Optional: Region-specific encryption key
+# kms_key_id = "arn:aws:kms:eu-west-1:123456789:key/..."
+
+# Optional: Region-specific credentials (if different from primary)
+# [online_backup.s3.replication.regions.credentials]
+# access_key_id = "eu-region-key"
+# secret_access_key = "eu-region-secret"
+
+# Add additional regions as needed
+[[online_backup.s3.replication.regions]]
+region = "ap-southeast-1"
+bucket = "kanidm-backups-ap"
+```
+
+#### Region-Specific Encryption Keys
+
+For compliance requirements, you can configure region-specific KMS keys:
+
+```toml
+[[online_backup.s3.replication.regions]]
+region = "eu-west-1"
+bucket = "kanidm-backups-eu"
+kms_key_id = "arn:aws:kms:eu-west-1:123456789:key/eu-key-id"
+
+[online_backup.s3.replication.regions.server_side_encryption]
+algorithm = "aws:kms"
+kms_key_id = "arn:aws:kms:eu-west-1:123456789:key/eu-key-id"
+```
+
+#### Checking Replication Status
+
+Use the `replicate-status` command to check the health of cross-region replication:
+
+```bash
+kanidmd database replicate-status -c /data/server.toml
+```
+
+For detailed output including lag metrics per region:
+
+```bash
+kanidmd database replicate-status -c /data/server.toml --detailed
+```
+
+The output shows:
+- Overall replication status
+- Per-region status (Completed, In Progress, Degraded, Failed)
+- Number of backups replicated
+- Bytes replicated
+- Replication lag in seconds
+- Last successful sync timestamp
+
+#### Recovery from Secondary Region
+
+To recover from a backup stored in a secondary region:
+
+1. **Identify the backup in the secondary region**:
+   ```bash
+   # Use AWS CLI or S3 tools to list backups in the secondary region bucket
+   aws s3 ls s3://kanidm-backups-eu/
+   ```
+
+2. **Restore using the S3 backup key**:
+   ```bash
+   docker stop <container name>
+   docker run --rm -i -t -v kanidmd:/data \
+       kanidm/server:latest /sbin/kanidmd database restore-s3 -c /data/server.toml \
+       --bucket kanidm-backups-eu --key backup-2024-01-01T22:00:00Z.json.gz
+   docker start <container name>
+   ```
+
+#### Monitoring Replication Lag
+
+Replication lag metrics can be integrated with monitoring systems:
+
+- `total_lag_seconds`: Cumulative lag across all regions
+- `max_lag_seconds`: Maximum lag in any region
+- `healthy_regions`: Count of regions with healthy replication
+- `unhealthy_regions`: Count of regions with issues
+
+Set up alerts for:
+- `max_lag_seconds > threshold` (e.g., 3600 for 1 hour lag)
+- `unhealthy_regions > 0`
+- Overall status changing to `Failed` or `Degraded`
+
+#### Disaster Recovery Runbook
+
+**Scenario: Primary Region Outage**
+
+1. Verify secondary region backups are available:
+   ```bash
+   # Check backup availability in secondary region (using S3 tools)
+   aws s3 ls s3://kanidm-backups-eu/ --region eu-west-1
+   ```
+
+2. Deploy Kanidm instance in secondary region:
+   - Configure `server.toml` to use secondary region S3 bucket
+   - Use region-specific encryption keys if configured
+
+3. Restore from secondary region backup:
+   ```bash
+   kanidmd database restore-s3 -c /data/server.toml \
+       --bucket kanidm-backups-eu --key backup-2024-01-01T22:00:00Z.json.gz
+   ```
+
+4. Verify restoration success and start server
+
+5. Update DNS/network configuration to point to new instance
+
+**Important Considerations**
+
+- S3 Cross-Region Replication has eventual consistency - expect RPO based on replication lag
+- Regularly test recovery from secondary regions to validate DR procedures
+- Document region-specific encryption key locations for recovery scenarios
+- Consider immutable storage (S3 Object Lock) for ransomware protection
+- Review compliance requirements for data residency in secondary regions
+
 #### Backup Verification
 
 Each S3 backup includes a SHA-256 checksum that is verified automatically on restore. You can verify backups

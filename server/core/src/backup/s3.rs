@@ -10,7 +10,11 @@ use aws_sdk_s3::types::{
 };
 use aws_sdk_s3::Client as S3Client;
 use hex::encode as hex_encode;
-use kanidm_proto::backup::{BackupCompression, S3BackupMetadata, S3Config, S3EncryptionAlgorithm};
+use kanidm_proto::backup::{
+    BackupCompression, ReplicationConfig, ReplicationHealthCheck, ReplicationLagMetrics,
+    ReplicationRegionConfig, ReplicationRegionStatus, ReplicationStatus, S3BackupMetadata,
+    S3Config, S3EncryptionAlgorithm,
+};
 use sha2::{Digest, Sha256};
 
 const MULTIPART_THRESHOLD: u64 = 100 * 1024 * 1024;
@@ -451,6 +455,234 @@ impl S3ClientWrapper {
 
         Ok(true)
     }
+
+    pub async fn replicate_backup(
+        &self,
+        backup_key: &str,
+        backup_data: Vec<u8>,
+        metadata: &S3BackupMetadata,
+        region_config: &ReplicationRegionConfig,
+    ) -> Result<(), S3BackupError> {
+        let region_wrapper = Self::create_region_wrapper(region_config).await?;
+        let object_key = Self::build_region_object_key(region_config, backup_key);
+
+        if backup_data.len() as u64 > MULTIPART_THRESHOLD {
+            region_wrapper
+                .upload_multipart(&backup_data, &object_key, metadata)
+                .await?;
+        } else {
+            region_wrapper
+                .upload_single(&backup_data, &object_key, metadata)
+                .await?;
+        }
+
+        region_wrapper
+            .upload_metadata(&object_key, metadata)
+            .await?;
+
+        info!(
+            "Replicated backup {} to region {} bucket {}",
+            backup_key, region_config.region, region_config.bucket
+        );
+        Ok(())
+    }
+
+    async fn create_region_wrapper(
+        region_config: &ReplicationRegionConfig,
+    ) -> Result<S3ClientWrapper, S3BackupError> {
+        let sdk_config = Self::build_region_sdk_config(region_config).await?;
+        let client = S3Client::new(&sdk_config);
+
+        let s3_config = kanidm_proto::backup::S3Config {
+            bucket: region_config.bucket.clone(),
+            region: Some(region_config.region.clone()),
+            endpoint: region_config.endpoint.clone(),
+            path_prefix: region_config.path_prefix.clone(),
+            credentials: region_config.credentials.clone(),
+            server_side_encryption: region_config.server_side_encryption.clone(),
+            storage_class: region_config.storage_class.clone(),
+            replication: None,
+        };
+
+        Ok(S3ClientWrapper {
+            client,
+            config: s3_config,
+        })
+    }
+
+    async fn build_region_sdk_config(
+        region_config: &ReplicationRegionConfig,
+    ) -> Result<SdkConfig, S3BackupError> {
+        let mut config_builder = aws_config::defaults(BehaviorVersion::latest());
+
+        if let Some(endpoint) = &region_config.endpoint {
+            config_builder = config_builder.endpoint_url(endpoint);
+        }
+
+        config_builder = config_builder.region(Region::new(region_config.region.clone()));
+
+        if let Some(credentials) = &region_config.credentials {
+            let creds = Credentials::new(
+                credentials.access_key_id.clone(),
+                credentials.secret_access_key.clone(),
+                credentials.session_token.clone(),
+                None,
+                "kanidm-backup-replication",
+            );
+            config_builder = config_builder.credentials_provider(creds);
+        }
+
+        Ok(config_builder.load().await)
+    }
+
+    fn build_region_object_key(region_config: &ReplicationRegionConfig, key: &str) -> String {
+        match &region_config.path_prefix {
+            Some(prefix) => format!("{}/{}", prefix.trim_end_matches('/'), key),
+            None => key.to_string(),
+        }
+    }
+
+    pub async fn check_region_replication_status(
+        &self,
+        region_config: &ReplicationRegionConfig,
+        source_backups: &[String],
+    ) -> Result<ReplicationRegionStatus, S3BackupError> {
+        let region_wrapper = Self::create_region_wrapper(region_config).await?;
+
+        let replicated_backups = region_wrapper.list_backups().await?;
+
+        let mut status = ReplicationRegionStatus {
+            region: region_config.region.clone(),
+            bucket: region_config.bucket.clone(),
+            status: ReplicationStatus::Completed,
+            last_sync_timestamp: None,
+            last_sync_backup_id: None,
+            lag_seconds: None,
+            bytes_replicated: 0,
+            backups_replicated: 0,
+            last_error: None,
+        };
+
+        for backup_key in source_backups {
+            if replicated_backups.contains(backup_key) {
+                status.backups_replicated += 1;
+                let object_key = Self::build_region_object_key(region_config, backup_key);
+                let (_, metadata) = region_wrapper.download_backup(&object_key).await?;
+                status.bytes_replicated += metadata.size_bytes;
+                status.last_sync_backup_id = Some(backup_key.clone());
+                status.last_sync_timestamp = Some(metadata.timestamp.clone());
+            } else {
+                if status.status == ReplicationStatus::Completed {
+                    status.status = ReplicationStatus::Degraded {
+                        message: format!("Missing backup: {}", backup_key),
+                    };
+                }
+            }
+        }
+
+        if let Some(last_sync_ts) = &status.last_sync_timestamp {
+            if let Ok(sync_time) = chrono::DateTime::parse_from_rfc3339(last_sync_ts) {
+                let sync_time_utc: chrono::DateTime<chrono::Utc> =
+                    sync_time.with_timezone(&chrono::Utc);
+                let now = chrono::Utc::now();
+                let lag = (now - sync_time_utc).num_seconds();
+                status.lag_seconds = if lag >= 0 { Some(lag as u64) } else { Some(0) };
+            }
+        }
+
+        Ok(status)
+    }
+
+    pub async fn check_replication_health(
+        &self,
+        replication_config: &ReplicationConfig,
+    ) -> Result<ReplicationHealthCheck, S3BackupError> {
+        let source_backups = self.list_backups().await?;
+
+        let mut regions = Vec::new();
+        let mut max_lag = 0u64;
+        let mut total_lag = 0u64;
+        let mut healthy = 0usize;
+        let mut unhealthy = 0usize;
+
+        for region_config in &replication_config.regions {
+            let region_status = self
+                .check_region_replication_status(region_config, &source_backups)
+                .await?;
+
+            if let Some(lag) = region_status.lag_seconds {
+                total_lag += lag;
+                if lag > max_lag {
+                    max_lag = lag;
+                }
+            }
+
+            match &region_status.status {
+                ReplicationStatus::Completed => healthy += 1,
+                ReplicationStatus::Degraded { .. } | ReplicationStatus::Failed { .. } => {
+                    unhealthy += 1
+                }
+                _ => {}
+            }
+
+            regions.push(region_status);
+        }
+
+        let overall_status = if unhealthy > 0 {
+            if healthy == 0 {
+                ReplicationStatus::Failed {
+                    error: "All regions unhealthy".to_string(),
+                }
+            } else {
+                ReplicationStatus::Degraded {
+                    message: format!("{} regions unhealthy", unhealthy),
+                }
+            }
+        } else if healthy > 0 {
+            ReplicationStatus::Completed
+        } else {
+            ReplicationStatus::NotConfigured
+        };
+
+        Ok(ReplicationHealthCheck {
+            overall_status,
+            regions,
+            total_lag_seconds: total_lag,
+            max_lag_seconds: max_lag,
+            healthy_regions: healthy,
+            unhealthy_regions: unhealthy,
+            last_check_timestamp: chrono::Utc::now().to_rfc3339(),
+        })
+    }
+
+    pub async fn get_replication_lag_metrics(
+        &self,
+        replication_config: &ReplicationConfig,
+    ) -> Result<Vec<ReplicationLagMetrics>, S3BackupError> {
+        let source_backups = self.list_backups().await?;
+        let mut metrics = Vec::new();
+
+        for region_config in &replication_config.regions {
+            let region_status = self
+                .check_region_replication_status(region_config, &source_backups)
+                .await?;
+
+            let pending = source_backups
+                .iter()
+                .filter(|b| region_status.last_sync_backup_id.as_ref() != Some(b))
+                .count();
+
+            metrics.push(ReplicationLagMetrics {
+                region: region_config.region.clone(),
+                lag_seconds: region_status.lag_seconds.unwrap_or(0),
+                pending_backups: pending,
+                last_backup_timestamp: region_status.last_sync_timestamp.clone(),
+                replication_delay_seconds: replication_config.sync_interval_seconds,
+            });
+        }
+
+        Ok(metrics)
+    }
 }
 
 pub struct ChecksumWriter<W> {
@@ -558,5 +790,34 @@ mod tests {
 
         assert_eq!(output, b"hello world");
         assert_eq!(checksum.len(), 64);
+    }
+
+    #[test]
+    fn test_replication_region_config_display() {
+        let config = ReplicationRegionConfig {
+            region: "eu-west-1".to_string(),
+            bucket: "backup-eu".to_string(),
+            endpoint: Some("https://s3.eu-west-1.amazonaws.com".to_string()),
+            path_prefix: None,
+            credentials: None,
+            server_side_encryption: None,
+            storage_class: "STANDARD".to_string(),
+            kms_key_id: None,
+        };
+        assert!(config.to_string().contains("eu-west-1"));
+        assert!(config.to_string().contains("backup-eu"));
+    }
+
+    #[test]
+    fn test_replication_config_display() {
+        let config = ReplicationConfig {
+            enabled: true,
+            regions: vec![],
+            sync_interval_seconds: 600,
+            max_retries: 5,
+            retry_delay_seconds: 60,
+        };
+        assert!(config.to_string().contains("enabled: true"));
+        assert!(config.to_string().contains("600s"));
     }
 }

@@ -1,16 +1,20 @@
 # Kanidm - Simple and Secure Identity Management
 
-> **This is a hard fork of [Kanidm](https://github.com/kanidm/kanidm).**
->
-> We forked this project to pursue a modern approach to identity management software:
->
-> - **Cloud-native and Kubernetes-friendly**: We believe in supporting modern deployment patterns, including object store backups and native Kubernetes integration.
-> - **Modern development practices**: We embrace LLM-assisted coding and contemporary software development methodologies.
-> - **Enterprise-ready Workforce IAM**: Our goal is to extend Kanidm into a competitive enterprise identity management solution, not just an IDM for homelabs.
->
-> Kanidm + Kaniop delivers **low operational costs** with **high security**. We're committed to building the enterprise features required for real-world Workforce IAM deployments.
->
-> **Special thanks to** [@firstyear](https://github.com/firstyear) and [@yaleman](https://github.com/yaleman) for creating and maintaining this excellent piece of software. We hope to match their persistence in maintaining secure infrastructure.
+> **This repository is an independent fork of [Kanidm](https://github.com/kanidm/kanidm).**
+> 
+> We started this fork because our product direction and development priorities have diverged from the upstream project.
+> 
+> Our focus is on:
+> 
+> - **Cloud-native and Kubernetes-friendly operations**: including modern deployment patterns, object-store backups, and tighter Kubernetes integration.
+> - **Contemporary development practices**: including LLM-assisted workflows and tooling that support faster iteration.
+> - **Enterprise-ready Workforce IAM**: extending the platform toward the requirements of larger production deployments.
+> 
+> This fork reflects a different roadmap, not a lack of appreciation for upstream. We are grateful to the original maintainers for building and sustaining Kanidm, and this work would not exist without that foundation.
+> 
+> If you are using this fork, please report bugs, request features, and seek support through this repository and its associated community channels. As our implementation and priorities differ from upstream, fork-specific issues are best handled here rather than in the upstream Kanidm project. We aim to respond to feedback as quickly as possible and to keep our release cycle fast so fixes and improvements can reach users sooner.
+> 
+> **Special thanks to** [@firstyear](https://github.com/firstyear) and [@yaleman](https://github.com/yaleman) for creating and maintaining Kanidm.
 
 ![Kanidm Logo](artwork/logo-small.png)
 
