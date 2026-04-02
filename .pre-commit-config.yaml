@@ -17,6 +17,7 @@ repos:
     rev: v1.38.0
     hooks:
       - id: yamllint
+        exclude: ^(scripts/otel/)
   - repo: https://github.com/gruntwork-io/pre-commit
     rev: v0.1.30
     hooks:
