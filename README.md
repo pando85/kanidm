@@ -1,5 +1,17 @@
 # Kanidm - Simple and Secure Identity Management
 
+> **This is a hard fork of [Kanidm](https://github.com/kanidm/kanidm).**
+> 
+> We forked this project to pursue a modern approach to identity management software:
+> 
+> - **Cloud-native and Kubernetes-friendly**: We believe in supporting modern deployment patterns, including object store backups and native Kubernetes integration.
+> - **Modern development practices**: We embrace LLM-assisted coding and contemporary software development methodologies.
+> - **Enterprise-ready Workforce IAM**: Our goal is to extend Kanidm into a competitive enterprise identity management solution, not just an IDM for homelabs.
+> 
+> Kanidm + Kaniop delivers **low operational costs** with **high security**. We're committed to building the enterprise features required for real-world Workforce IAM deployments.
+> 
+> **Special thanks to** [@firstyear](https://github.com/firstyear) and [@yaleman](https://github.com/yaleman) for creating and maintaining this excellent piece of software. We hope to match their persistence in maintaining secure infrastructure.
+
 ![Kanidm Logo](artwork/logo-small.png)
 
 ## About
