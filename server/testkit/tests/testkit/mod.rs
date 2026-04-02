@@ -1,4 +1,5 @@
 mod apidocs;
+mod authorization_test;
 mod delegation;
 mod domain;
 mod group;

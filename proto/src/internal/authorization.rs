@@ -187,4 +187,351 @@ mod tests {
         assert!(!entry.is_expired(1050));
         assert!(entry.is_expired(1100));
     }
+
+    #[test]
+    fn test_authorization_request_with_attributes() {
+        let attrs: BTreeSet<String> =
+            BTreeSet::from(["name".to_string(), "displayname".to_string()]);
+        let req =
+            AuthorizationRequest::new(Some(Uuid::nil()), Uuid::nil(), AuthorizationAction::Modify)
+                .with_attributes(attrs.clone());
+
+        assert!(req.attributes.is_some());
+        let req_attrs = req.attributes.unwrap();
+        assert!(req_attrs.contains("name"));
+        assert!(req_attrs.contains("displayname"));
+    }
+
+    #[test]
+    fn test_authorization_request_with_explanation() {
+        let req =
+            AuthorizationRequest::new(Some(Uuid::nil()), Uuid::nil(), AuthorizationAction::Search)
+                .with_explanation(true);
+
+        assert!(req.include_explanation);
+
+        let req_no_explanation =
+            AuthorizationRequest::new(Some(Uuid::nil()), Uuid::nil(), AuthorizationAction::Search)
+                .with_explanation(false);
+
+        assert!(!req_no_explanation.include_explanation);
+    }
+
+    #[test]
+    fn test_authorization_request_deserialization() {
+        let json = r#"{
+            "subject": "00000000-0000-0000-0000-000000000000",
+            "resource": "00000000-0000-0000-0000-000000000001",
+            "action": "modify",
+            "attributes": ["name", "displayname"],
+            "includeExplanation": true
+        }"#;
+
+        let req: AuthorizationRequest = serde_json::from_str(json).unwrap();
+        assert!(req.subject.is_some());
+        assert_eq!(req.action, AuthorizationAction::Modify);
+        assert!(req.attributes.is_some());
+        assert!(req.include_explanation);
+    }
+
+    #[test]
+    fn test_authorization_request_deserialization_defaults() {
+        let json = r#"{
+            "resource": "00000000-0000-0000-0000-000000000000",
+            "action": "search"
+        }"#;
+
+        let req: AuthorizationRequest = serde_json::from_str(json).unwrap();
+        assert!(req.subject.is_none());
+        assert!(req.attributes.is_none());
+        assert!(!req.include_explanation);
+    }
+
+    #[test]
+    fn test_authorization_response_with_explanation() {
+        let explanation = AuthorizationExplanation {
+            matched_rules: vec!["rule1".to_string(), "rule2".to_string()],
+            denied_by: Some("policy_x".to_string()),
+            reason: "Access denied due to security policy".to_string(),
+        };
+
+        let response = AuthorizationResponse::deny(Uuid::nil(), AuthorizationAction::Delete)
+            .with_explanation(explanation.clone());
+
+        assert!(response.explanation.is_some());
+        let resp_explanation = response.explanation.unwrap();
+        assert_eq!(resp_explanation.matched_rules.len(), 2);
+        assert!(resp_explanation.denied_by.is_some());
+        assert!(resp_explanation.reason.contains("denied"));
+    }
+
+    #[test]
+    fn test_authorization_response_allow_with_attributes() {
+        let attrs: BTreeSet<String> = BTreeSet::from(["name".to_string(), "mail".to_string()]);
+        let response = AuthorizationResponse::allow_with_attributes(
+            Uuid::nil(),
+            AuthorizationAction::Search,
+            attrs.clone(),
+        );
+
+        assert_eq!(response.decision, AuthorizationDecision::Allow);
+        assert!(response.allowed_attributes.is_some());
+        let resp_attrs = response.allowed_attributes.unwrap();
+        assert_eq!(resp_attrs.len(), 2);
+        assert!(resp_attrs.contains("name"));
+        assert!(resp_attrs.contains("mail"));
+    }
+
+    #[test]
+    fn test_authorization_decision_serde_roundtrip() {
+        for decision in [
+            AuthorizationDecision::Allow,
+            AuthorizationDecision::Deny,
+            AuthorizationDecision::ReauthRequired,
+        ] {
+            let json = serde_json::to_string(&decision).unwrap();
+            let parsed: AuthorizationDecision = serde_json::from_str(&json).unwrap();
+            assert_eq!(decision, parsed);
+        }
+    }
+
+    #[test]
+    fn test_authorization_action_serde_roundtrip() {
+        for action in [
+            AuthorizationAction::Search,
+            AuthorizationAction::Create,
+            AuthorizationAction::Modify,
+            AuthorizationAction::Delete,
+        ] {
+            let json = serde_json::to_string(&action).unwrap();
+            let parsed: AuthorizationAction = serde_json::from_str(&json).unwrap();
+            assert_eq!(action, parsed);
+        }
+    }
+
+    #[test]
+    fn test_authorization_response_full_serialization() {
+        let response = AuthorizationResponse {
+            decision: AuthorizationDecision::Allow,
+            resource: Uuid::nil(),
+            action: AuthorizationAction::Search,
+            allowed_attributes: Some(BTreeSet::from(["name".to_string()])),
+            explanation: Some(AuthorizationExplanation {
+                matched_rules: vec!["test_rule".to_string()],
+                denied_by: None,
+                reason: "Access granted".to_string(),
+            }),
+        };
+
+        let json = serde_json::to_string(&response).unwrap();
+        assert!(json.contains("allow"));
+        assert!(json.contains("search"));
+        assert!(json.contains("name"));
+        assert!(json.contains("test_rule"));
+
+        let parsed: AuthorizationResponse = serde_json::from_str(&json).unwrap();
+        assert_eq!(response.decision, parsed.decision);
+        assert_eq!(response.action, parsed.action);
+    }
+
+    #[test]
+    fn test_authorization_request_missing_resource_fails() {
+        let json = r#"{
+            "subject": "00000000-0000-0000-0000-000000000000",
+            "action": "search"
+        }"#;
+
+        let result: Result<AuthorizationRequest, _> = serde_json::from_str(json);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_authorization_request_missing_action_fails() {
+        let json = r#"{
+            "subject": "00000000-0000-0000-0000-000000000000",
+            "resource": "00000000-0000-0000-0000-000000000000"
+        }"#;
+
+        let result: Result<AuthorizationRequest, _> = serde_json::from_str(json);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_authorization_request_invalid_uuid_fails() {
+        let json = r#"{
+            "subject": "not-a-uuid",
+            "resource": "00000000-0000-0000-0000-000000000000",
+            "action": "search"
+        }"#;
+
+        let result: Result<AuthorizationRequest, _> = serde_json::from_str(json);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_authorization_request_invalid_action_fails() {
+        let json = r#"{
+            "resource": "00000000-0000-0000-0000-000000000000",
+            "action": "invalid_action"
+        }"#;
+
+        let result: Result<AuthorizationRequest, _> = serde_json::from_str(json);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_batch_authorization_request() {
+        let requests = vec![
+            AuthorizationRequest::new(None, Uuid::nil(), AuthorizationAction::Search),
+            AuthorizationRequest::new(None, Uuid::nil(), AuthorizationAction::Modify),
+        ];
+
+        let batch = BatchAuthorizationRequest { requests };
+        assert_eq!(batch.requests.len(), 2);
+
+        let json = serde_json::to_string(&batch).unwrap();
+        assert!(json.contains("requests"));
+
+        let parsed: BatchAuthorizationRequest = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed.requests.len(), 2);
+    }
+
+    #[test]
+    fn test_batch_authorization_response() {
+        let responses = vec![
+            AuthorizationResponse::allow(Uuid::nil(), AuthorizationAction::Search),
+            AuthorizationResponse::deny(Uuid::nil(), AuthorizationAction::Delete),
+        ];
+
+        let batch = BatchAuthorizationResponse { responses };
+        assert_eq!(batch.responses.len(), 2);
+
+        let json = serde_json::to_string(&batch).unwrap();
+        let parsed: BatchAuthorizationResponse = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed.responses.len(), 2);
+        assert_eq!(parsed.responses[0].decision, AuthorizationDecision::Allow);
+        assert_eq!(parsed.responses[1].decision, AuthorizationDecision::Deny);
+    }
+
+    #[test]
+    fn test_authorization_explanation_serialization() {
+        let explanation = AuthorizationExplanation {
+            matched_rules: vec![
+                "rule_a".to_string(),
+                "rule_b".to_string(),
+                "rule_c".to_string(),
+            ],
+            denied_by: None,
+            reason: "Access granted by access control profile".to_string(),
+        };
+
+        let json = serde_json::to_string(&explanation).unwrap();
+        assert!(json.contains("matchedRules"));
+        assert!(json.contains("rule_a"));
+        assert!(json.contains("Access granted"));
+
+        let parsed: AuthorizationExplanation = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed.matched_rules.len(), 3);
+        assert!(parsed.denied_by.is_none());
+    }
+
+    #[test]
+    fn test_authorization_explanation_with_denied_by() {
+        let explanation = AuthorizationExplanation {
+            matched_rules: vec!["rule_x".to_string()],
+            denied_by: Some("policy_y".to_string()),
+            reason: "Access denied by security restrictions".to_string(),
+        };
+
+        let json = serde_json::to_string(&explanation).unwrap();
+        let parsed: AuthorizationExplanation = serde_json::from_str(&json).unwrap();
+        assert!(parsed.denied_by.is_some());
+        assert_eq!(parsed.denied_by.unwrap(), "policy_y");
+    }
+
+    #[test]
+    fn test_authorization_request_empty_attributes() {
+        let attrs: BTreeSet<String> = BTreeSet::new();
+        let req = AuthorizationRequest::new(None, Uuid::nil(), AuthorizationAction::Search)
+            .with_attributes(attrs);
+
+        assert!(req.attributes.is_some());
+        assert!(req.attributes.unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_authorization_request_null_subject_json() {
+        let json = r#"{
+            "subject": null,
+            "resource": "00000000-0000-0000-0000-000000000000",
+            "action": "search"
+        }"#;
+
+        let req: AuthorizationRequest = serde_json::from_str(json).unwrap();
+        assert!(req.subject.is_none());
+    }
+
+    #[test]
+    fn test_authorization_request_unicode_attributes() {
+        let attrs: BTreeSet<String> = BTreeSet::from([
+            "日本語".to_string(),
+            "属性名".to_string(),
+            "émoji🎯".to_string(),
+        ]);
+
+        let req = AuthorizationRequest::new(None, Uuid::nil(), AuthorizationAction::Search)
+            .with_attributes(attrs.clone());
+
+        let json = serde_json::to_string(&req).unwrap();
+        let parsed: AuthorizationRequest = serde_json::from_str(&json).unwrap();
+
+        let parsed_attrs = parsed.attributes.unwrap();
+        assert!(parsed_attrs.contains("日本語"));
+        assert!(parsed_attrs.contains("属性名"));
+        assert!(parsed_attrs.contains("émoji🎯"));
+    }
+
+    #[test]
+    fn test_decision_cache_entry_with_attributes() {
+        let attrs: BTreeSet<String> =
+            BTreeSet::from(["name".to_string(), "displayname".to_string()]);
+        let entry = DecisionCacheEntry {
+            subject: Some(Uuid::nil()),
+            resource: Uuid::nil(),
+            action: AuthorizationAction::Search,
+            decision: AuthorizationDecision::Allow,
+            allowed_attributes: Some(attrs),
+            cached_at: 1000,
+            ttl_seconds: 60,
+        };
+
+        assert!(entry.allowed_attributes.is_some());
+        let entry_attrs = entry.allowed_attributes.unwrap();
+        assert_eq!(entry_attrs.len(), 2);
+    }
+
+    #[test]
+    fn test_authorization_request_builder_chain() {
+        let attrs: BTreeSet<String> = BTreeSet::from(["attr1".to_string()]);
+        let req =
+            AuthorizationRequest::new(Some(Uuid::nil()), Uuid::nil(), AuthorizationAction::Modify)
+                .with_attributes(attrs.clone())
+                .with_explanation(true);
+
+        assert!(req.subject.is_some());
+        assert_eq!(req.action, AuthorizationAction::Modify);
+        assert!(req.attributes.is_some());
+        assert!(req.include_explanation);
+    }
+
+    #[test]
+    fn test_authorization_response_reauth_required() {
+        let response =
+            AuthorizationResponse::reauth_required(Uuid::nil(), AuthorizationAction::Modify);
+
+        assert_eq!(response.decision, AuthorizationDecision::ReauthRequired);
+        assert_eq!(response.action, AuthorizationAction::Modify);
+        assert!(response.allowed_attributes.is_none());
+        assert!(response.explanation.is_none());
+    }
 }
