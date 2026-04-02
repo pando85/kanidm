@@ -190,15 +190,31 @@ fn create_filter_entry<'a>(
         };
 
         match &accr.target_condition {
-            AccessControlTargetCondition::Scope(f_res) => {
-                if !entry.entry_match_no_index(f_res) {
+            AccessControlTargetCondition::Scope { target_filter, scope_filter } => {
+                if !entry.entry_match_no_index(target_filter) {
                     trace!(?entry, acs = %accr.acp.acp.name, "entry DOES NOT match acs");
-                    // Does not match, fail this rule.
                     return false;
                 }
+                if let Some(filter) = scope_filter {
+                    if !entry.entry_match_no_index(filter) {
+                        trace!(?entry, acs = %accr.acp.acp.name, "entry DOES NOT match ACP scope filter");
+                        return false;
+                    }
+                }
             }
-            AccessControlTargetCondition::DelegatedScope { .. } => {
-                // Delegated scope is handled at filter resolution time
+            AccessControlTargetCondition::DelegatedScope { scope_filter_resolved, scope_filter } => {
+                if let Some(filter) = scope_filter_resolved {
+                    if !entry.entry_match_no_index(filter) {
+                        trace!(?entry, acs = %accr.acp.acp.name, "entry DOES NOT match delegated scope filter");
+                        return false;
+                    }
+                }
+                if let Some(filter) = scope_filter {
+                    if !entry.entry_match_no_index(filter) {
+                        trace!(?entry, acs = %accr.acp.acp.name, "entry DOES NOT match ACP scope filter");
+                        return false;
+                    }
+                }
             }
         };
 

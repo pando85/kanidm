@@ -122,6 +122,39 @@ impl AccessControlSearch {
         }
     }
 
+    /// ⚠️  - Manually create a search access profile with scope filter.
+    /// This is a TEST ONLY method and will never be exposed in production.
+    #[cfg(test)]
+    pub(super) fn from_raw_with_scope_filter(
+        name: &str,
+        uuid: Uuid,
+        receiver: Uuid,
+        targetscope: Filter<FilterValid>,
+        attrs: &str,
+        scope_filter: Option<Filter<FilterValid>>,
+    ) -> Self {
+        let mut attrs: BTreeSet<_> = attrs.split_whitespace().map(Attribute::from).collect();
+
+        if attrs.contains(&Attribute::MemberOf) {
+            attrs.insert(Attribute::DirectMemberOf);
+        }
+
+        AccessControlSearch {
+            acp: AccessControlProfile {
+                name: name.to_string(),
+                uuid,
+                receiver: AccessControlReceiver::Group(btreeset!(receiver)),
+                target: AccessControlTarget::Scope(targetscope),
+                require_reauth: false,
+                reauth_max_age: None,
+                time_restriction_start: None,
+                time_restriction_end: None,
+                scope_filter,
+            },
+            attrs,
+        }
+    }
+
     /// ⚠️  - Manually create a search access profile from values.
     /// This is a TEST ONLY method and will never be exposed in production.
     #[cfg(test)]
@@ -271,6 +304,31 @@ impl AccessControlDelete {
         }
     }
 
+    /// ⚠️  - Manually create a delete access profile with scope filter.
+    /// This is a TEST ONLY method and will never be exposed in production.
+    #[cfg(test)]
+    pub(super) fn from_raw_with_scope_filter(
+        name: &str,
+        uuid: Uuid,
+        receiver: Uuid,
+        targetscope: Filter<FilterValid>,
+        scope_filter: Option<Filter<FilterValid>>,
+    ) -> Self {
+        AccessControlDelete {
+            acp: AccessControlProfile {
+                name: name.to_string(),
+                uuid,
+                receiver: AccessControlReceiver::Group(btreeset!(receiver)),
+                target: AccessControlTarget::Scope(targetscope),
+                require_reauth: false,
+                reauth_max_age: None,
+                time_restriction_start: None,
+                time_restriction_end: None,
+                scope_filter,
+            },
+        }
+    }
+
     /// ⚠️  - Manually create a delete access profile from values.
     /// This is a TEST ONLY method and will never be exposed in production.
     #[cfg(test)]
@@ -415,6 +473,35 @@ impl AccessControlCreate {
                 time_restriction_start: None,
                 time_restriction_end: None,
                 scope_filter: None,
+            },
+            classes: classes.split_whitespace().map(AttrString::from).collect(),
+            attrs: attrs.split_whitespace().map(Attribute::from).collect(),
+        }
+    }
+
+    /// ⚠️  - Manually create a create access profile with scope filter.
+    /// This is a TEST ONLY method and will never be exposed in production.
+    #[cfg(test)]
+    pub(super) fn from_raw_with_scope_filter(
+        name: &str,
+        uuid: Uuid,
+        receiver: Uuid,
+        targetscope: Filter<FilterValid>,
+        classes: &str,
+        attrs: &str,
+        scope_filter: Option<Filter<FilterValid>>,
+    ) -> Self {
+        AccessControlCreate {
+            acp: AccessControlProfile {
+                name: name.to_string(),
+                uuid,
+                receiver: AccessControlReceiver::Group(btreeset!(receiver)),
+                target: AccessControlTarget::Scope(targetscope),
+                require_reauth: false,
+                reauth_max_age: None,
+                time_restriction_start: None,
+                time_restriction_end: None,
+                scope_filter,
             },
             classes: classes.split_whitespace().map(AttrString::from).collect(),
             attrs: attrs.split_whitespace().map(Attribute::from).collect(),
@@ -615,6 +702,45 @@ impl AccessControlModify {
         }
     }
 
+    /// ⚠️  - Manually create a modify access profile with scope filter.
+    /// This is a TEST ONLY method and will never be exposed in production.
+    #[cfg(test)]
+    pub(super) fn from_raw_with_scope_filter(
+        name: &str,
+        uuid: Uuid,
+        receiver: Uuid,
+        targetscope: Filter<FilterValid>,
+        presattrs: &str,
+        remattrs: &str,
+        pres_classes: &str,
+        rem_classes: &str,
+        scope_filter: Option<Filter<FilterValid>>,
+    ) -> Self {
+        AccessControlModify {
+            acp: AccessControlProfile {
+                name: name.to_string(),
+                uuid,
+                receiver: AccessControlReceiver::Group(btreeset!(receiver)),
+                target: AccessControlTarget::Scope(targetscope),
+                require_reauth: false,
+                reauth_max_age: None,
+                time_restriction_start: None,
+                time_restriction_end: None,
+                scope_filter,
+            },
+            pres_classes: pres_classes
+                .split_whitespace()
+                .map(AttrString::from)
+                .collect(),
+            rem_classes: rem_classes
+                .split_whitespace()
+                .map(AttrString::from)
+                .collect(),
+            presattrs: presattrs.split_whitespace().map(Attribute::from).collect(),
+            remattrs: remattrs.split_whitespace().map(Attribute::from).collect(),
+        }
+    }
+
     /// ⚠️  - Manually create a modify access profile from values.
     /// This is a TEST ONLY method and will never be exposed in production.
     #[cfg(test)]
@@ -781,9 +907,13 @@ pub enum AccessControlTarget {
 #[derive(Debug, Clone)]
 pub enum AccessControlTargetCondition {
     // None,
-    Scope(Filter<FilterValidResolved>),
+    Scope {
+        target_filter: Filter<FilterValidResolved>,
+        scope_filter: Option<Filter<FilterValidResolved>>,
+    },
     DelegatedScope {
         scope_filter_resolved: Option<Filter<FilterValidResolved>>,
+        scope_filter: Option<Filter<FilterValidResolved>>,
     },
 }
 

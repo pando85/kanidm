@@ -155,25 +155,44 @@ fn delete_filter_entry<'a>(
         };
 
         match &acd.target_condition {
-            AccessControlTargetCondition::Scope(f_res) => {
-                if !entry.entry_match_no_index(f_res) {
+            AccessControlTargetCondition::Scope { target_filter, scope_filter } => {
+                if !entry.entry_match_no_index(target_filter) {
                     trace!(
                         "entry {:?} DOES NOT match acs {}",
                         entry.get_uuid(),
                         acd.acp.acp.name
                     );
-                    // Does not match, fail.
                     return false;
+                }
+                if let Some(filter) = scope_filter {
+                    if !entry.entry_match_no_index(filter) {
+                        trace!(
+                            "entry {:?} DOES NOT match ACP scope filter for acs {}",
+                            entry.get_uuid(),
+                            acd.acp.acp.name
+                        );
+                        return false;
+                    }
                 }
             }
             AccessControlTargetCondition::DelegatedScope {
                 scope_filter_resolved,
+                scope_filter,
             } => {
-                // Check if the entry matches the delegated scope filter
                 if let Some(filter) = scope_filter_resolved {
                     if !entry.entry_match_no_index(filter) {
                         trace!(
                             "entry {:?} DOES NOT match delegated scope filter for acs {}",
+                            entry.get_uuid(),
+                            acd.acp.acp.name
+                        );
+                        return false;
+                    }
+                }
+                if let Some(filter) = scope_filter {
+                    if !entry.entry_match_no_index(filter) {
+                        trace!(
+                            "entry {:?} DOES NOT match ACP scope filter for acs {}",
                             entry.get_uuid(),
                             acd.acp.acp.name
                         );
