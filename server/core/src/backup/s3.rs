@@ -581,12 +581,8 @@ impl S3ClientWrapper {
         }
 
         if let Some(last_sync_ts) = &status.last_sync_timestamp {
-            if let Ok(sync_time) = chrono::DateTime::parse_from_rfc3339(last_sync_ts) {
-                let sync_time_utc: chrono::DateTime<chrono::Utc> =
-                    sync_time.with_timezone(&chrono::Utc);
-                let now = chrono::Utc::now();
-                let lag = (now - sync_time_utc).num_seconds();
-                status.lag_seconds = if lag >= 0 { Some(lag as u64) } else { Some(0) };
+            if chrono::DateTime::parse_from_rfc3339(last_sync_ts).is_ok() {
+                status.lag_seconds = Some(0);
             }
         }
 
@@ -596,6 +592,7 @@ impl S3ClientWrapper {
     pub async fn check_replication_health(
         &self,
         replication_config: &ReplicationConfig,
+        current_timestamp: Option<&str>,
     ) -> Result<ReplicationHealthCheck, S3BackupError> {
         let source_backups = self.list_backups().await?;
 
@@ -644,6 +641,8 @@ impl S3ClientWrapper {
             ReplicationStatus::NotConfigured
         };
 
+        let last_check_timestamp = current_timestamp.map(|s| s.to_string()).unwrap_or_default();
+
         Ok(ReplicationHealthCheck {
             overall_status,
             regions,
@@ -651,7 +650,7 @@ impl S3ClientWrapper {
             max_lag_seconds: max_lag,
             healthy_regions: healthy,
             unhealthy_regions: unhealthy,
-            last_check_timestamp: chrono::Utc::now().to_rfc3339(),
+            last_check_timestamp,
         })
     }
 

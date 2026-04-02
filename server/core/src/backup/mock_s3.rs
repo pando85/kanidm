@@ -58,19 +58,22 @@ impl MockS3Storage {
     }
 
     pub fn object_exists(&self, key: &str) -> bool {
-        let objects = self.objects.read().unwrap();
-        objects.contains_key(key)
+        self.objects
+            .read()
+            .map_or(false, |objects| objects.contains_key(key))
     }
 
     pub fn clear(&self) {
-        let mut objects = self.objects.write().unwrap();
-        objects.clear();
-        let mut meta = self.metadata.write().unwrap();
-        meta.clear();
+        if let Ok(mut objects) = self.objects.write() {
+            objects.clear();
+        }
+        if let Ok(mut meta) = self.metadata.write() {
+            meta.clear();
+        }
     }
 
     pub fn object_count(&self) -> usize {
-        self.objects.read().unwrap().len()
+        self.objects.read().map_or(0, |objects| objects.len())
     }
 
     pub fn corrupt_object(&self, key: &str) -> Result<(), MockS3Error> {
