@@ -1,10 +1,10 @@
+use argon2::{Algorithm, Argon2, Params, Version};
 use crypto_glue::aes256gcm::{Aead, Aes256Gcm, KeyInit};
 use generic_array::GenericArray;
-use argon2::{Algorithm, Argon2, Params, Version};
 use kanidm_proto::backup::{
-    BackupEncryptionConfig, BackupEncryptionHeader,
-    EncryptionKeySource, KeyDerivationParams, BACKUP_ENCRYPTION_KEY_LEN,
-    BACKUP_ENCRYPTION_MAGIC, BACKUP_ENCRYPTION_NONCE_LEN, BACKUP_ENCRYPTION_SALT_LEN,
+    BackupEncryptionConfig, BackupEncryptionHeader, EncryptionKeySource, KeyDerivationParams,
+    BACKUP_ENCRYPTION_KEY_LEN, BACKUP_ENCRYPTION_MAGIC, BACKUP_ENCRYPTION_NONCE_LEN,
+    BACKUP_ENCRYPTION_SALT_LEN,
 };
 use rand::{Rng, RngExt};
 use reqwest::Client;
@@ -193,7 +193,8 @@ impl BackupEncryptor {
             return Err(BackupEncryptionError::InvalidMagic);
         }
 
-        let header_len_bytes = &data[BACKUP_ENCRYPTION_MAGIC.len()..BACKUP_ENCRYPTION_MAGIC.len() + 4];
+        let header_len_bytes =
+            &data[BACKUP_ENCRYPTION_MAGIC.len()..BACKUP_ENCRYPTION_MAGIC.len() + 4];
         let header_len = u32::from_le_bytes(
             header_len_bytes
                 .try_into()
@@ -297,7 +298,12 @@ pub struct EncryptedWriter<W> {
 }
 
 impl<W> EncryptedWriter<W> {
-    pub fn new(inner: W, encryptor: BackupEncryptor, passphrase: Vec<u8>, compressed: bool) -> Self {
+    pub fn new(
+        inner: W,
+        encryptor: BackupEncryptor,
+        passphrase: Vec<u8>,
+        compressed: bool,
+    ) -> Self {
         Self {
             inner: Some(inner),
             buffer: Vec::new(),
@@ -401,7 +407,10 @@ mod tests {
         let data = b"test backup data";
         let passphrase = b"test_passphrase";
 
-        let encrypted = encryptor.encrypt(data.as_slice(), passphrase, false).await.unwrap();
+        let encrypted = encryptor
+            .encrypt(data.as_slice(), passphrase, false)
+            .await
+            .unwrap();
         let (decrypted, header) = BackupEncryptor::decrypt(&encrypted, passphrase).unwrap();
 
         assert_eq!(decrypted, data);
@@ -421,7 +430,10 @@ mod tests {
         let data = b"test backup data compressed";
         let passphrase = b"test_passphrase";
 
-        let encrypted = encryptor.encrypt(data.as_slice(), passphrase, true).await.unwrap();
+        let encrypted = encryptor
+            .encrypt(data.as_slice(), passphrase, true)
+            .await
+            .unwrap();
         let (decrypted, header) = BackupEncryptor::decrypt(&encrypted, passphrase).unwrap();
 
         assert_eq!(decrypted, data);
@@ -441,7 +453,10 @@ mod tests {
         let data = b"test backup data";
         let passphrase = b"correct_passphrase";
 
-        let encrypted = encryptor.encrypt(data.as_slice(), passphrase, false).await.unwrap();
+        let encrypted = encryptor
+            .encrypt(data.as_slice(), passphrase, false)
+            .await
+            .unwrap();
 
         let result = BackupEncryptor::decrypt(&encrypted, b"wrong_passphrase");
         assert!(result.is_err());

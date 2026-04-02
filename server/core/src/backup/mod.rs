@@ -1,5 +1,5 @@
-pub mod s3;
 pub mod encryption;
+pub mod s3;
 
-pub use s3::*;
 pub use encryption::*;
+pub use s3::*;
