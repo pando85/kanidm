@@ -4,7 +4,7 @@
 //! any point in time within the configured retention window.
 
 use std::io::{Read, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use flate2::write::GzEncoder;
@@ -101,7 +101,7 @@ struct WalSegmentBuilder {
 
 #[allow(dead_code)]
 impl WalArchiver {
-    pub fn new(config: WalArchiveConfig, server_uuid: Uuid, base_path: PathBuf) -> Self {
+    pub fn new(config: WalArchiveConfig, server_uuid: Uuid, base_path: &Path) -> Self {
         let segments_path = base_path.join("wal");
         Self {
             config,
@@ -177,12 +177,13 @@ impl WalArchiver {
             self.start_new_segment(Duration::from_nanos(record.cid_ts))?;
         }
 
-        let segment = self.current_segment.as_mut().unwrap();
-        segment.entries.push(record);
-        segment.current_size += record_size;
+        if let Some(segment) = self.current_segment.as_mut() {
+            segment.entries.push(record);
+            segment.current_size += record_size;
 
-        if segment.current_size >= self.config.segment_size_bytes {
-            self.flush_current_segment()?;
+            if segment.current_size >= self.config.segment_size_bytes {
+                self.flush_current_segment()?;
+            }
         }
 
         Ok(())
@@ -216,9 +217,8 @@ impl WalArchiver {
     }
 
     pub fn flush_current_segment(&mut self) -> Result<Option<WalSegment>, WalError> {
-        let segment_builder = match self.current_segment.take() {
-            Some(s) => s,
-            None => return Ok(None),
+        let Some(segment_builder) = self.current_segment.take() else {
+            return Ok(None);
         };
 
         if segment_builder.entries.is_empty() {
@@ -350,8 +350,7 @@ impl RecoveryState {
                     })?;
 
                 let latest = chrono::DateTime::parse_from_rfc3339(
-                    &self
-                        .available_segments
+                    self.available_segments
                         .last()
                         .map(|s| s.created_at.as_str())
                         .unwrap_or(&self.base_backup_timestamp),
@@ -475,12 +474,23 @@ pub fn parse_recovery_target_cid(cid_str: &str) -> Result<Cid, WalError> {
         )));
     }
 
-    let ts_nanos: u64 = parts[0]
-        .parse()
-        .map_err(|_| WalError::InvalidSegment(format!("Invalid timestamp in CID: {}", parts[0])))?;
+    let Some(ts_str) = parts.first() else {
+        return Err(WalError::InvalidSegment(
+            "Invalid CID format: missing timestamp".to_string(),
+        ));
+    };
+    let Some(uuid_str) = parts.get(1) else {
+        return Err(WalError::InvalidSegment(
+            "Invalid CID format: missing UUID".to_string(),
+        ));
+    };
 
-    let s_uuid = Uuid::parse_str(parts[1])
-        .map_err(|e| WalError::InvalidSegment(format!("Invalid UUID in CID: {}", e)))?;
+    let ts_nanos: u64 = ts_str
+        .parse()
+        .map_err(|_| WalError::InvalidSegment("Invalid timestamp in CID".to_string()))?;
+
+    let s_uuid = Uuid::parse_str(uuid_str)
+        .map_err(|_| WalError::InvalidSegment("Invalid UUID in CID".to_string()))?;
 
     Ok(Cid {
         ts: Duration::from_nanos(ts_nanos),
@@ -499,7 +509,7 @@ mod tests {
         let config = WalArchiveConfig::default();
         let base_path = std::env::temp_dir();
 
-        let mut archiver = WalArchiver::new(config, server_uuid, base_path);
+        let mut archiver = WalArchiver::new(config, server_uuid, &base_path);
 
         assert!(!archiver.is_enabled());
     }
