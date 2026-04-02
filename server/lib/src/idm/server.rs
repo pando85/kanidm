@@ -2134,7 +2134,26 @@ impl IdmServerProxyWriteTransaction<'_> {
         atc: &ApprovalTimeoutCheck,
     ) -> Result<(), OperationError> {
         info!(request_uuid = %atc.request_uuid, "Processing approval timeout check");
-        Ok(())
+
+        let filter = filter!(f_and!([
+            f_eq(Attribute::Class, EntryClass::ApprovalRequest.into()),
+            f_eq(Attribute::Uuid, PartialValue::Uuid(atc.request_uuid)),
+            f_eq(Attribute::ApprovalState, PartialValue::new_utf8s("pending"))
+        ]));
+
+        let entries = self.qs_write.internal_search(filter.clone())?;
+
+        if entries.is_empty() {
+            debug!("Approval request not found or not in pending state");
+            return Ok(());
+        }
+
+        let modlist = ModifyList::new_list(vec![
+            Modify::Purged(Attribute::ApprovalState),
+            Modify::Present(Attribute::ApprovalState, Value::new_iutf8("expired")),
+        ]);
+
+        self.qs_write.internal_modify(&filter, &modlist)
     }
 
     #[instrument(level = "debug", skip_all)]
@@ -2143,7 +2162,33 @@ impl IdmServerProxyWriteTransaction<'_> {
         aec: &ApprovalEscalationCheck,
     ) -> Result<(), OperationError> {
         info!(request_uuid = %aec.request_uuid, "Processing approval escalation check");
-        Ok(())
+
+        let filter = filter!(f_and!([
+            f_eq(Attribute::Class, EntryClass::ApprovalRequest.into()),
+            f_eq(Attribute::Uuid, PartialValue::Uuid(aec.request_uuid)),
+            f_eq(Attribute::ApprovalState, PartialValue::new_utf8s("pending"))
+        ]));
+
+        let entries = self.qs_write.internal_search(filter.clone())?;
+
+        if entries.is_empty() {
+            debug!("Approval request not found or not in pending state");
+            return Ok(());
+        }
+
+        let entry = &entries[0];
+        let current_level = entry
+            .get_ava_single_uint32(Attribute::ApprovalEscalationLevel)
+            .unwrap_or(0);
+
+        let new_level = current_level + 1;
+
+        let modlist = ModifyList::new_list(vec![
+            Modify::Purged(Attribute::ApprovalEscalationLevel),
+            Modify::Present(Attribute::ApprovalEscalationLevel, Value::Uint32(new_level)),
+        ]);
+
+        self.qs_write.internal_modify(&filter, &modlist)
     }
 
     #[instrument(level = "debug", skip_all)]
