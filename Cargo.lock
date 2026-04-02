@@ -1797,7 +1797,7 @@ dependencies = [
 
 [[package]]
 name = "daemon"
-version = "1.10.0-alpha.1"
+version = "1.10.0-alpha.2"
 dependencies = [
  "clap",
  "clap_complete",
@@ -4350,7 +4350,7 @@ dependencies = [
 
 [[package]]
 name = "kanidm-ipa-sync"
-version = "1.10.0-alpha.1"
+version = "1.10.0-alpha.2"
 dependencies = [
  "chrono",
  "clap",
@@ -4376,7 +4376,7 @@ dependencies = [
 
 [[package]]
 name = "kanidm-ldap-sync"
-version = "1.10.0-alpha.1"
+version = "1.10.0-alpha.2"
 dependencies = [
  "chrono",
  "clap",
@@ -4403,7 +4403,7 @@ dependencies = [
 
 [[package]]
 name = "kanidm-mail-sender"
-version = "1.10.0-alpha.1"
+version = "1.10.0-alpha.2"
 dependencies = [
  "chrono",
  "clap",
@@ -4427,7 +4427,7 @@ dependencies = [
 
 [[package]]
 name = "kanidm_build_profiles"
-version = "1.10.0-alpha.1"
+version = "1.10.0-alpha.2"
 dependencies = [
  "base64 0.22.1",
  "gix",
@@ -4438,7 +4438,7 @@ dependencies = [
 
 [[package]]
 name = "kanidm_client"
-version = "1.10.0-alpha.1"
+version = "1.10.0-alpha.2"
 dependencies = [
  "compact_jwt",
  "http 1.4.0",
@@ -4460,7 +4460,7 @@ dependencies = [
 
 [[package]]
 name = "kanidm_device_flow"
-version = "1.10.0-alpha.1"
+version = "1.10.0-alpha.2"
 dependencies = [
  "anyhow",
  "kanidm_proto",
@@ -4473,7 +4473,7 @@ dependencies = [
 
 [[package]]
 name = "kanidm_lib_crypto"
-version = "1.10.0-alpha.1"
+version = "1.10.0-alpha.2"
 dependencies = [
  "base64 0.22.1",
  "base64urlsafedata 0.6.0-dev",
@@ -4495,14 +4495,14 @@ dependencies = [
 
 [[package]]
 name = "kanidm_lib_file_permissions"
-version = "1.10.0-alpha.1"
+version = "1.10.0-alpha.2"
 dependencies = [
  "kanidm_utils_users",
 ]
 
 [[package]]
 name = "kanidm_proto"
-version = "1.10.0-alpha.1"
+version = "1.10.0-alpha.2"
 dependencies = [
  "base32",
  "base64 0.22.1",
@@ -4532,7 +4532,7 @@ dependencies = [
 
 [[package]]
 name = "kanidm_tools"
-version = "1.10.0-alpha.1"
+version = "1.10.0-alpha.2"
 dependencies = [
  "anyhow",
  "clap",
@@ -4562,7 +4562,7 @@ dependencies = [
 
 [[package]]
 name = "kanidm_unix_common"
-version = "1.10.0-alpha.1"
+version = "1.10.0-alpha.2"
 dependencies = [
  "bytes",
  "csv",
@@ -4586,7 +4586,7 @@ dependencies = [
 
 [[package]]
 name = "kanidm_unix_int"
-version = "1.10.0-alpha.1"
+version = "1.10.0-alpha.2"
 dependencies = [
  "async-trait",
  "clap",
@@ -4628,14 +4628,14 @@ dependencies = [
 
 [[package]]
 name = "kanidm_utils_users"
-version = "1.10.0-alpha.1"
+version = "1.10.0-alpha.2"
 dependencies = [
  "libc",
 ]
 
 [[package]]
 name = "kanidmd_core"
-version = "1.10.0-alpha.1"
+version = "1.10.0-alpha.2"
 dependencies = [
  "argon2",
  "askama",
@@ -4705,7 +4705,7 @@ dependencies = [
 
 [[package]]
 name = "kanidmd_lib"
-version = "1.10.0-alpha.1"
+version = "1.10.0-alpha.2"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -4764,7 +4764,7 @@ dependencies = [
 
 [[package]]
 name = "kanidmd_lib_macros"
-version = "1.10.0-alpha.1"
+version = "1.10.0-alpha.2"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4773,7 +4773,7 @@ dependencies = [
 
 [[package]]
 name = "kanidmd_testkit"
-version = "1.10.0-alpha.1"
+version = "1.10.0-alpha.2"
 dependencies = [
  "cidr",
  "compact_jwt",
@@ -5389,7 +5389,7 @@ dependencies = [
 
 [[package]]
 name = "nss_kanidm"
-version = "1.10.0-alpha.1"
+version = "1.10.0-alpha.2"
 dependencies = [
  "cc",
  "kanidm_unix_common",
@@ -5748,7 +5748,7 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 
 [[package]]
 name = "orca"
-version = "1.10.0-alpha.1"
+version = "1.10.0-alpha.2"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5828,7 +5828,7 @@ dependencies = [
 
 [[package]]
 name = "pam_kanidm"
-version = "1.10.0-alpha.1"
+version = "1.10.0-alpha.2"
 dependencies = [
  "kanidm_unix_common",
  "libc",
@@ -7036,7 +7036,7 @@ dependencies = [
 
 [[package]]
 name = "scim_proto"
-version = "1.10.0-alpha.1"
+version = "1.10.0-alpha.2"
 dependencies = [
  "base64urlsafedata 0.6.0-dev",
  "peg",
@@ -7452,7 +7452,7 @@ checksum = "b2aa850e253778c88a04c3d7323b043aeda9d3e30d5971937c1855769763678e"
 
 [[package]]
 name = "sketching"
-version = "1.10.0-alpha.1"
+version = "1.10.0-alpha.2"
 dependencies = [
  "gethostname",
  "num_enum",
