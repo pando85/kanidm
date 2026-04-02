@@ -1,6 +1,6 @@
 use argon2::{Algorithm, Argon2, Params, Version};
-use crypto_glue::aes256gcm::{Aead, Aes256Gcm, KeyInit};
-use generic_array::GenericArray;
+use crypto_glue::aes256::key_from_slice;
+use crypto_glue::aes256gcm::{Aead, Aes256Gcm, Aes256GcmNonce, KeyInit};
 use kanidm_proto::backup::{
     BackupEncryptionConfig, BackupEncryptionHeader, EncryptionKeySource, KeyDerivationParams,
     BACKUP_ENCRYPTION_KEY_LEN, BACKUP_ENCRYPTION_MAGIC, BACKUP_ENCRYPTION_NONCE_LEN,
@@ -161,8 +161,9 @@ impl BackupEncryptor {
             compressed,
         );
 
-        let cipher = Aes256Gcm::new(GenericArray::from_slice(&key));
-        let nonce = GenericArray::from_slice(&nonce_bytes);
+        let key = key_from_slice(&key).ok_or(BackupEncryptionError::InvalidKeyLength)?;
+        let cipher = Aes256Gcm::new(&*key);
+        let nonce = Aes256GcmNonce::from_slice(&nonce_bytes);
 
         let encrypted_data = cipher
             .encrypt(nonce, data)
@@ -244,8 +245,9 @@ impl BackupEncryptor {
             .get(header_end..)
             .ok_or(BackupEncryptionError::InvalidHeader)?;
 
-        let cipher = Aes256Gcm::new(GenericArray::from_slice(&key));
-        let nonce = GenericArray::from_slice(&header.nonce);
+        let key = key_from_slice(&key).ok_or(BackupEncryptionError::InvalidKeyLength)?;
+        let cipher = Aes256Gcm::new(&*key);
+        let nonce = Aes256GcmNonce::from_slice(&header.nonce);
 
         let decrypted_data = cipher
             .decrypt(nonce, encrypted_data)
@@ -276,8 +278,9 @@ impl BackupEncryptor {
             .get(header_end..)
             .ok_or(BackupEncryptionError::InvalidHeader)?;
 
-        let cipher = Aes256Gcm::new(GenericArray::from_slice(key));
-        let nonce = GenericArray::from_slice(&header.nonce);
+        let key = key_from_slice(key).ok_or(BackupEncryptionError::InvalidKeyLength)?;
+        let cipher = Aes256Gcm::new(&*key);
+        let nonce = Aes256GcmNonce::from_slice(&header.nonce);
 
         let decrypted_data = cipher
             .decrypt(nonce, encrypted_data)
@@ -458,8 +461,9 @@ mod tests {
             false,
         );
 
-        let cipher = Aes256Gcm::new(GenericArray::from_slice(key));
-        let nonce = GenericArray::from_slice(nonce_bytes);
+        let key = key_from_slice(key).expect("Invalid key length");
+        let cipher = Aes256Gcm::new(&*key);
+        let nonce = Aes256GcmNonce::from_slice(nonce_bytes);
         let encrypted_data = cipher.encrypt(nonce, data).unwrap();
 
         let header_json = serde_json::to_string(&header).unwrap();
