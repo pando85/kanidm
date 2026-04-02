@@ -601,7 +601,7 @@ pub async fn replication_status_core(
         .ok_or("Replication configuration not found")?;
 
     s3_client
-        .check_replication_health(replication_config)
+        .check_replication_health(replication_config, None)
         .await
         .map_err(|e| format!("Failed to check replication health: {}", e))
 }
