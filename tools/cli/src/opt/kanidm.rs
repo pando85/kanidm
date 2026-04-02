@@ -423,7 +423,7 @@ pub enum AccountCredential {
         /// - An RFC3339 time of the format "YYYY-MM-DDTHH:MM:SS+TZ", "2020-09-25T11:22:02+10:00"
         /// - "now" to reset immediately
         datetime: String,
-    }
+    },
 }
 
 /// RADIUS secret management
@@ -799,21 +799,13 @@ pub enum SessionOpt {
 #[derive(Debug, Subcommand, Clone)]
 pub enum RawOpt {
     #[clap(name = "search")]
-    Search {
-        filter: ScimFilter
-    },
+    Search { filter: ScimFilter },
     #[clap(name = "create")]
-    Create {
-        file: PathBuf
-    },
+    Create { file: PathBuf },
     #[clap(name = "update")]
-    Update {
-        file: PathBuf
-    },
+    Update { file: PathBuf },
     #[clap(name = "delete")]
-    Delete {
-        id: String
-    },
+    Delete { id: String },
 }
 
 #[derive(Debug, Subcommand, Clone)]
@@ -1201,22 +1193,18 @@ pub enum MessageOpt {
 
     #[clap(name = "get")]
     /// Display the message identified by its message ID.
-    Get {
-        message_id: Uuid
-    },
+    Get { message_id: Uuid },
 
     #[clap(name = "mark-as-sent")]
     /// Mark the message with this message ID as sent. This will prevent it
     /// being sent by any mail sender.
-    MarkAsSent {
-        message_id: Uuid
-    },
+    MarkAsSent { message_id: Uuid },
 
     #[clap(name = "send-test-message")]
     SendTestMessage {
         /// The account name of the person who this message should be sent to.
         to: String,
-    }
+    },
 }
 
 #[derive(Debug, Subcommand, Clone)]
@@ -1423,6 +1411,99 @@ pub enum SystemOpt {
         #[clap(subcommand)]
         commands: ApiOpt,
     },
+    #[clap(name = "approval")]
+    /// Manage approval workflows for sensitive operations
+    Approval {
+        #[clap(subcommand)]
+        commands: ApprovalOpt,
+    },
+}
+
+#[derive(Debug, Args, Clone)]
+pub struct ApprovalPolicyCreateOpt {
+    #[clap(name = "name")]
+    pub name: String,
+    #[clap(long)]
+    pub description: Option<String>,
+    #[clap(long = "operation-type")]
+    pub operation_types: Vec<String>,
+    #[clap(long = "approver", short = 'a')]
+    pub approvers: Vec<String>,
+    #[clap(long = "backup-approver")]
+    pub backup_approvers: Vec<String>,
+    #[clap(long = "pattern", default_value = "any_one")]
+    pub pattern: String,
+    #[clap(long = "timeout", short = 't', default_value = "3600")]
+    pub timeout_seconds: u32,
+    #[clap(long = "escalation-timeout")]
+    pub escalation_timeout_seconds: Option<u32>,
+}
+
+#[derive(Debug, Args, Clone)]
+pub struct ApprovalNamedOpt {
+    #[clap(name = "name")]
+    pub name: String,
+}
+
+#[derive(Debug, Args, Clone)]
+pub struct ApprovalRequestNamedOpt {
+    #[clap(name = "uuid")]
+    pub uuid: String,
+}
+
+#[derive(Debug, Args, Clone)]
+pub struct ApprovalDecisionOpt {
+    #[clap(name = "uuid")]
+    pub uuid: String,
+    #[clap(long, short)]
+    pub comment: Option<String>,
+}
+
+#[derive(Debug, Subcommand, Clone)]
+pub enum ApprovalPolicyOpt {
+    #[clap(name = "list")]
+    List,
+    #[clap(name = "get")]
+    Get(ApprovalNamedOpt),
+    #[clap(name = "create")]
+    Create(ApprovalPolicyCreateOpt),
+    #[clap(name = "delete")]
+    Delete(ApprovalNamedOpt),
+    #[clap(name = "enable")]
+    Enable(ApprovalNamedOpt),
+    #[clap(name = "disable")]
+    Disable(ApprovalNamedOpt),
+}
+
+#[derive(Debug, Subcommand, Clone)]
+pub enum ApprovalRequestOpt {
+    #[clap(name = "list")]
+    List {
+        #[clap(long, short)]
+        state: Option<String>,
+    },
+    #[clap(name = "get")]
+    Get(ApprovalRequestNamedOpt),
+    #[clap(name = "approve")]
+    Approve(ApprovalDecisionOpt),
+    #[clap(name = "reject")]
+    Reject(ApprovalDecisionOpt),
+    #[clap(name = "cancel")]
+    Cancel(ApprovalRequestNamedOpt),
+}
+
+#[derive(Debug, Subcommand, Clone)]
+pub enum ApprovalOpt {
+    #[clap(name = "policy")]
+    Policy {
+        #[clap(subcommand)]
+        commands: ApprovalPolicyOpt,
+    },
+    #[clap(name = "request")]
+    Request {
+        #[clap(subcommand)]
+        commands: ApprovalRequestOpt,
+    },
 }
 
 #[derive(Debug, Subcommand, Clone)]
@@ -1548,7 +1629,6 @@ pub struct KanidmClientParser {
     accept_invalid_certs: bool,
     /// Path to a file to cache tokens in, defaults to ~/.cache/kanidm_tokens
     #[clap(
-        short,
         long,
         env = "KANIDM_TOKEN_CACHE_PATH",
     hide = true,
