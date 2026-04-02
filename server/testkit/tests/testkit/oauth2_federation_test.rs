@@ -766,6 +766,11 @@ async fn test_oauth2_federation_auto_discovery(rsclient: &KanidmClient) {
 
 #[kanidmd_testkit::test]
 async fn test_oauth2_federation_unauthorized_access(rsclient: &KanidmClient) {
+    let res = rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await;
+    assert!(res.is_ok());
+
     rsclient
         .idm_person_account_create("test_federation_user", "test_federation_user")
         .await
