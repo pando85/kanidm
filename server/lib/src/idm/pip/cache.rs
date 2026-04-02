@@ -252,6 +252,7 @@ mod tests {
         assert_eq!(cache.stats().misses, 1);
     }
 
+    #[allow(clippy::disallowed_methods)]
     #[test]
     fn test_cache_expiration() {
         let mut cache = PipAttributeCache::new(Duration::from_millis(10));

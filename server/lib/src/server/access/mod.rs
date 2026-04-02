@@ -3852,6 +3852,7 @@ mod tests {
         test_acp_modify!(&me_pres, vec![acp_allow.clone()], &r1_set, false);
     }
 
+    #[allow(clippy::disallowed_methods)]
     #[test]
     fn test_access_time_restriction_valid() {
         sketching::test_init();
@@ -3862,7 +3863,10 @@ mod tests {
 
         let se_admin = SearchEvent::new_impersonate_entry(
             E_TEST_ACCOUNT_1.clone(),
-            filter_all!(f_eq(Attribute::Name, PartialValue::new_iname("testperson1"))),
+            filter_all!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
         );
 
         let now = time::OffsetDateTime::now_utc();
@@ -3885,6 +3889,7 @@ mod tests {
         test_acp_search!(&se_admin, vec![acp], r_set, ex_set);
     }
 
+    #[allow(clippy::disallowed_methods)]
     #[test]
     fn test_access_time_restriction_expired() {
         sketching::test_init();
@@ -3895,7 +3900,10 @@ mod tests {
 
         let se_admin = SearchEvent::new_impersonate_entry(
             E_TEST_ACCOUNT_1.clone(),
-            filter_all!(f_eq(Attribute::Name, PartialValue::new_iname("testperson1"))),
+            filter_all!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
         );
 
         let now = time::OffsetDateTime::now_utc();
@@ -3918,6 +3926,7 @@ mod tests {
         test_acp_search!(&se_admin, vec![acp], r_set, ex_set);
     }
 
+    #[allow(clippy::disallowed_methods)]
     #[test]
     fn test_access_time_restriction_future() {
         sketching::test_init();
@@ -3928,7 +3937,10 @@ mod tests {
 
         let se_admin = SearchEvent::new_impersonate_entry(
             E_TEST_ACCOUNT_1.clone(),
-            filter_all!(f_eq(Attribute::Name, PartialValue::new_iname("testperson1"))),
+            filter_all!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
         );
 
         let now = time::OffsetDateTime::now_utc();
@@ -3951,6 +3963,7 @@ mod tests {
         test_acp_search!(&se_admin, vec![acp], r_set, ex_set);
     }
 
+    #[allow(clippy::disallowed_methods)]
     #[test]
     fn test_access_time_restriction_start_only() {
         sketching::test_init();
@@ -3961,7 +3974,10 @@ mod tests {
 
         let se_admin = SearchEvent::new_impersonate_entry(
             E_TEST_ACCOUNT_1.clone(),
-            filter_all!(f_eq(Attribute::Name, PartialValue::new_iname("testperson1"))),
+            filter_all!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
         );
 
         let now = time::OffsetDateTime::now_utc();
@@ -3983,6 +3999,7 @@ mod tests {
         test_acp_search!(&se_admin, vec![acp], r_set, ex_set);
     }
 
+    #[allow(clippy::disallowed_methods)]
     #[test]
     fn test_access_time_restriction_end_only() {
         sketching::test_init();
@@ -3993,7 +4010,10 @@ mod tests {
 
         let se_admin = SearchEvent::new_impersonate_entry(
             E_TEST_ACCOUNT_1.clone(),
-            filter_all!(f_eq(Attribute::Name, PartialValue::new_iname("testperson1"))),
+            filter_all!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
         );
 
         let now = time::OffsetDateTime::now_utc();
