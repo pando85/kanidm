@@ -1818,7 +1818,7 @@ impl QueryServerWriteV1 {
 
         idms_prox_write
             .qs_write
-            .approval_policy_create(&ident, request)
+            .approval_policy_create(&ident, &request)
             .and_then(|_| idms_prox_write.commit())
     }
 

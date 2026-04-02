@@ -5,6 +5,7 @@ use kanidm_proto::v1::{
     ApprovalRequestState,
 };
 use std::collections::BTreeMap;
+use std::time::Duration;
 use time::OffsetDateTime;
 
 impl QueryServerReadTransaction<'_> {
@@ -155,13 +156,31 @@ impl QueryServerWriteTransaction<'_> {
         self.internal_delete(&filter)
     }
 
+    pub fn approval_policy_enable(
+        &mut self,
+        _ident: &Identity,
+        name: &str,
+        enable: bool,
+    ) -> Result<(), OperationError> {
+        let filter = filter!(f_and!([
+            f_eq(Attribute::Class, EntryClass::ApprovalPolicy.into()),
+            f_eq(Attribute::ApprovalPolicyName, PartialValue::new_utf8s(name))
+        ]));
+        let modlist = ModifyList::new_list(vec![
+            Modify::Purged(Attribute::ApprovalPolicyEnabled),
+            Modify::Present(Attribute::ApprovalPolicyEnabled, Value::Bool(enable)),
+        ]);
+        self.internal_modify(&filter, &modlist)
+    }
+
     pub fn approval_request_decision(
         &mut self,
         ident: &Identity,
         request_uuid: Uuid,
         request: ApprovalDecisionRequest,
-        current_time: OffsetDateTime,
+        ct: Duration,
     ) -> Result<(), OperationError> {
+        let current_time = OffsetDateTime::UNIX_EPOCH + ct;
         let entries = self.internal_search(filter!(f_and!([
             f_eq(Attribute::Class, EntryClass::ApprovalRequest.into()),
             f_eq(Attribute::Uuid, PartialValue::Uuid(request_uuid))

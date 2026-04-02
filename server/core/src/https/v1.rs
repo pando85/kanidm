@@ -25,6 +25,7 @@ use kanidm_proto::v1::{
     AccountUnixExtend, ApiTokenGenerate, AuthIssueSession, AuthRequest, AuthResponse,
     AuthState as ProtoAuthState, Entry as ProtoEntry, GroupUnixExtend, SingleStringRequest,
     UatStatus, UnixGroupToken, UnixUserToken, WhoamiResponse,
+    ApprovalPolicy, ApprovalPolicyCreateRequest, ApprovalRequest, ApprovalDecisionRequest,
 };
 use kanidmd_lib::idm::authentication::{AuthState, AuthStep};
 use kanidmd_lib::idm::event::AuthResult;
