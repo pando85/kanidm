@@ -16,6 +16,25 @@ struct RestoreOpt {
     path: PathBuf,
 }
 
+#[derive(Debug, Args)]
+struct PitrRecoverOpt {
+    /// Target time for recovery (RFC3339 format, e.g., "2024-01-15T10:30:00Z")
+    #[clap(long)]
+    target_time: Option<String>,
+
+    /// Target transaction CID for recovery
+    #[clap(long)]
+    target_cid: Option<String>,
+
+    /// Recover to the latest available point
+    #[clap(long, conflicts_with_all = ["target_time", "target_cid"])]
+    latest: bool,
+
+    /// Perform a dry run without actually applying changes
+    #[clap(long)]
+    dry_run: bool,
+}
+
 #[derive(Debug, Subcommand)]
 enum DomainSettingsCmds {
     /// Show the current domain
@@ -57,6 +76,12 @@ enum DbCommands {
     #[clap(name = "reindex")]
     /// Reindex the database (offline)
     Reindex,
+    #[clap(name = "recover")]
+    /// Point-in-Time Recovery (PITR) - recover database to a specific point in time
+    Recover(PitrRecoverOpt),
+    #[clap(name = "pitr-list")]
+    /// List available recovery points for Point-in-Time Recovery
+    PitrList,
 }
 
 #[derive(Debug, Args)]
@@ -132,7 +157,7 @@ enum ScriptingCommand {
     /// Backup
     Backup {
         /// The path to backup to. If not set, defaults to stdout.
-        path: Option<PathBuf>
+        path: Option<PathBuf>,
     },
     /// Initiate a server reload.
     Reload,
@@ -145,7 +170,7 @@ enum ScriptingCommand {
         /// Check the 'origin' URL from the server configuration file, instead of the 'address'
         #[clap(short = 'O', long, action)]
         check_origin: bool,
-    }
+    },
 }
 
 // The main command parser for kanidmd
@@ -216,6 +241,6 @@ enum KanidmdOpt {
     #[clap(name = "scripting")]
     Scripting {
         #[clap(subcommand)]
-        command: ScriptingCommand
-    }
+        command: ScriptingCommand,
+    },
 }
