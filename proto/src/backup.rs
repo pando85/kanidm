@@ -161,6 +161,77 @@ fn test_s3_backup_metadata_encrypted() {
     assert_eq!(meta.key_identifier, Some("key-123".to_string()));
 }
 
+#[test]
+fn test_replication_config_default() {
+    let config = ReplicationConfig::default();
+    assert!(!config.enabled);
+    assert_eq!(config.regions.len(), 0);
+    assert_eq!(config.sync_interval_seconds, 300);
+    assert_eq!(config.max_retries, 3);
+    assert_eq!(config.retry_delay_seconds, 30);
+}
+
+#[test]
+fn test_replication_status_display() {
+    assert_eq!(
+        ReplicationStatus::NotConfigured.to_string(),
+        "Not Configured"
+    );
+    assert_eq!(ReplicationStatus::InProgress.to_string(), "In Progress");
+    assert_eq!(
+        ReplicationStatus::Failed {
+            error: "network error".to_string()
+        }
+        .to_string(),
+        "Failed: network error"
+    );
+}
+
+#[test]
+fn test_replication_region_status() {
+    let status = ReplicationRegionStatus {
+        region: "us-west-2".to_string(),
+        bucket: "backup-bucket".to_string(),
+        status: ReplicationStatus::Completed,
+        last_sync_timestamp: Some("2024-01-01T00:00:00Z".to_string()),
+        last_sync_backup_id: Some("backup-123".to_string()),
+        lag_seconds: Some(60),
+        bytes_replicated: 1024,
+        backups_replicated: 5,
+        last_error: None,
+    };
+    assert!(status.last_error.is_none());
+    assert_eq!(status.lag_seconds, Some(60));
+}
+
+#[test]
+fn test_replication_health_check() {
+    let check = ReplicationHealthCheck {
+        overall_status: ReplicationStatus::Completed,
+        regions: vec![],
+        total_lag_seconds: 120,
+        max_lag_seconds: 120,
+        healthy_regions: 1,
+        unhealthy_regions: 0,
+        last_check_timestamp: "2024-01-01T00:00:00Z".to_string(),
+    };
+    assert_eq!(check.healthy_regions, 1);
+    assert_eq!(check.unhealthy_regions, 0);
+}
+
+#[test]
+fn test_replication_lag_metrics() {
+    let metrics = ReplicationLagMetrics {
+        region: "eu-west-1".to_string(),
+        lag_seconds: 300,
+        pending_backups: 2,
+        last_backup_timestamp: Some("2024-01-01T00:00:00Z".to_string()),
+        replication_delay_seconds: 60,
+    };
+    assert_eq!(metrics.lag_seconds, 300);
+    assert_eq!(metrics.pending_backups, 2);
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct S3Config {
     pub bucket: String,
@@ -176,6 +247,8 @@ pub struct S3Config {
     pub server_side_encryption: Option<S3ServerSideEncryption>,
     #[serde(default = "default_s3_storage_class")]
     pub storage_class: String,
+    #[serde(default)]
+    pub replication: Option<ReplicationConfig>,
 }
 
 fn default_s3_storage_class() -> String {
@@ -186,8 +259,14 @@ impl Display for S3Config {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "S3Config {{ bucket: {}, region: {:?}, endpoint: {:?} }}",
-            self.bucket, self.region, self.endpoint
+            "S3Config {{ bucket: {}, region: {:?}, endpoint: {:?}, replication_enabled: {} }}",
+            self.bucket,
+            self.region,
+            self.endpoint,
+            self.replication
+                .as_ref()
+                .map(|r| r.enabled)
+                .unwrap_or(false)
         )
     }
 }
@@ -223,6 +302,178 @@ impl Display for S3EncryptionAlgorithm {
             S3EncryptionAlgorithm::Aes256 => write!(f, "AES256"),
             S3EncryptionAlgorithm::AwsKms => write!(f, "aws:kms"),
         }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+pub struct ReplicationRegionConfig {
+    pub region: String,
+    #[serde(default)]
+    pub endpoint: Option<String>,
+    pub bucket: String,
+    #[serde(default)]
+    pub path_prefix: Option<String>,
+    #[serde(default)]
+    pub credentials: Option<S3Credentials>,
+    #[serde(default)]
+    pub server_side_encryption: Option<S3ServerSideEncryption>,
+    #[serde(default = "default_s3_storage_class")]
+    pub storage_class: String,
+    #[serde(default)]
+    pub kms_key_id: Option<String>,
+}
+
+impl Display for ReplicationRegionConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "ReplicationRegionConfig {{ region: {}, bucket: {}, endpoint: {:?} }}",
+            self.region, self.bucket, self.endpoint
+        )
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+pub struct ReplicationConfig {
+    #[serde(default = "default_replication_enabled")]
+    pub enabled: bool,
+    pub regions: Vec<ReplicationRegionConfig>,
+    #[serde(default = "default_replication_sync_interval")]
+    pub sync_interval_seconds: u64,
+    #[serde(default = "default_replication_max_retries")]
+    pub max_retries: u32,
+    #[serde(default = "default_replication_retry_delay")]
+    pub retry_delay_seconds: u64,
+}
+
+fn default_replication_enabled() -> bool {
+    false
+}
+
+fn default_replication_sync_interval() -> u64 {
+    300
+}
+
+fn default_replication_max_retries() -> u32 {
+    3
+}
+
+fn default_replication_retry_delay() -> u64 {
+    30
+}
+
+impl Default for ReplicationConfig {
+    fn default() -> Self {
+        Self {
+            enabled: default_replication_enabled(),
+            regions: Vec::new(),
+            sync_interval_seconds: default_replication_sync_interval(),
+            max_retries: default_replication_max_retries(),
+            retry_delay_seconds: default_replication_retry_delay(),
+        }
+    }
+}
+
+impl Display for ReplicationConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "ReplicationConfig {{ enabled: {}, regions: {}, sync_interval: {}s }}",
+            self.enabled,
+            self.regions.len(),
+            self.sync_interval_seconds
+        )
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+pub enum ReplicationStatus {
+    NotConfigured,
+    Pending,
+    InProgress,
+    Completed,
+    Failed { error: String },
+    Degraded { message: String },
+}
+
+impl Display for ReplicationStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ReplicationStatus::NotConfigured => write!(f, "Not Configured"),
+            ReplicationStatus::Pending => write!(f, "Pending"),
+            ReplicationStatus::InProgress => write!(f, "In Progress"),
+            ReplicationStatus::Completed => write!(f, "Completed"),
+            ReplicationStatus::Failed { error } => write!(f, "Failed: {}", error),
+            ReplicationStatus::Degraded { message } => write!(f, "Degraded: {}", message),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+pub struct ReplicationRegionStatus {
+    pub region: String,
+    pub bucket: String,
+    pub status: ReplicationStatus,
+    pub last_sync_timestamp: Option<String>,
+    pub last_sync_backup_id: Option<String>,
+    pub lag_seconds: Option<u64>,
+    pub bytes_replicated: u64,
+    pub backups_replicated: u64,
+    pub last_error: Option<String>,
+}
+
+impl Display for ReplicationRegionStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Region {} (bucket: {}): {} - lag: {}s, backups: {}, bytes: {}",
+            self.region,
+            self.bucket,
+            self.status,
+            self.lag_seconds.unwrap_or(0),
+            self.backups_replicated,
+            self.bytes_replicated
+        )
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+pub struct ReplicationHealthCheck {
+    pub overall_status: ReplicationStatus,
+    pub regions: Vec<ReplicationRegionStatus>,
+    pub total_lag_seconds: u64,
+    pub max_lag_seconds: u64,
+    pub healthy_regions: usize,
+    pub unhealthy_regions: usize,
+    pub last_check_timestamp: String,
+}
+
+impl Display for ReplicationHealthCheck {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "ReplicationHealth {{ overall: {}, healthy: {}, unhealthy: {}, max_lag: {}s }}",
+            self.overall_status, self.healthy_regions, self.unhealthy_regions, self.max_lag_seconds
+        )
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+pub struct ReplicationLagMetrics {
+    pub region: String,
+    pub lag_seconds: u64,
+    pub pending_backups: usize,
+    pub last_backup_timestamp: Option<String>,
+    pub replication_delay_seconds: u64,
+}
+
+impl Display for ReplicationLagMetrics {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "ReplicationLag {{ region: {}, lag: {}s, pending: {} }}",
+            self.region, self.lag_seconds, self.pending_backups
+        )
     }
 }
 
