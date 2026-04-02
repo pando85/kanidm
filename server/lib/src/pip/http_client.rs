@@ -20,17 +20,35 @@ impl HttpPipClient {
             .connect_timeout(std::time::Duration::from_secs(5));
 
         if let Some(ca_path) = &config.tls_ca_path {
-            if let Ok(ca_content) = std::fs::read(ca_path) {
-                let ca_cert = reqwest::Certificate::from_pem(&ca_content);
-                if let Ok(cert) = ca_cert {
-                    client_builder = client_builder.add_root_certificate(cert);
+            match std::fs::read(ca_path) {
+                Ok(ca_content) => {
+                    match reqwest::Certificate::from_pem(&ca_content) {
+                        Ok(cert) => {
+                            client_builder = client_builder.add_root_certificate(cert);
+                        }
+                        Err(e) => {
+                            admin_warn!(
+                                "Failed to parse CA certificate from {} for PIP source {}: {}",
+                                ca_path, config.name, e
+                            );
+                        }
+                    }
+                }
+                Err(e) => {
+                    admin_warn!(
+                        "Failed to read CA certificate file {} for PIP source {}: {}",
+                        ca_path, config.name, e
+                    );
                 }
             }
         }
 
         let client = client_builder
             .build()
-            .unwrap_or_else(|_| reqwest::Client::new());
+            .unwrap_or_else(|e| {
+                admin_warn!("Failed to build HTTP client for PIP source {}: {}", config.name, e);
+                reqwest::Client::new()
+            });
 
         Self { config, client }
     }
@@ -188,7 +206,6 @@ impl std::fmt::Debug for HttpPipClient {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use uuid::Uuid;
 
     #[test]
     fn test_http_pip_client_creation() {

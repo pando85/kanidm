@@ -141,7 +141,7 @@ impl PipCoordinator {
                 continue;
             }
 
-            let (value, source_name, status) =
+            let (value, source_name, status, ttl) =
                 self.fetch_from_sources(request, attribute_name).await;
 
             if let Some(v) = value {
@@ -150,7 +150,7 @@ impl PipCoordinator {
                     value: v.clone(),
                     source: source_name.clone(),
                     cached_at: current_time,
-                    ttl_seconds: DEFAULT_CACHE_TTL_SECONDS,
+                    ttl_seconds: ttl,
                 };
                 self.cache_value(cache_key, cache_entry).await;
 
@@ -195,8 +195,17 @@ impl PipCoordinator {
         &self,
         request: &PipRequest,
         attribute_name: &str,
-    ) -> (Option<String>, String, PipSourceStatus) {
+    ) -> (Option<String>, String, PipSourceStatus, u64) {
         for source in &self.sources {
+            let source_def = self
+                .config
+                .sources
+                .iter()
+                .find(|s| s.name == source.source_name());
+            let ttl = source_def
+                .map(|s| s.cache_ttl_seconds)
+                .unwrap_or(DEFAULT_CACHE_TTL_SECONDS);
+
             let result = source
                 .retrieve_attributes(request, &[attribute_name.to_string()])
                 .await;
@@ -208,6 +217,7 @@ impl PipCoordinator {
                             Some(value.clone()),
                             source.source_name().to_string(),
                             PipSourceStatus::Success,
+                            ttl,
                         );
                     }
                 }
@@ -216,6 +226,7 @@ impl PipCoordinator {
                         None,
                         source.source_name().to_string(),
                         PipSourceStatus::Timeout,
+                        ttl,
                     );
                 }
                 Err(_) => {
@@ -223,12 +234,18 @@ impl PipCoordinator {
                         None,
                         source.source_name().to_string(),
                         PipSourceStatus::Error,
+                        ttl,
                     );
                 }
             }
         }
 
-        (None, "unknown".to_string(), PipSourceStatus::Unavailable)
+        (
+            None,
+            "unknown".to_string(),
+            PipSourceStatus::Unavailable,
+            DEFAULT_CACHE_TTL_SECONDS,
+        )
     }
 
     pub async fn health_check(&self) -> PipHealthCheckResponse {
