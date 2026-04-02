@@ -137,6 +137,151 @@ fn test_encryption_key_source_display() {
 }
 
 #[test]
+fn test_encryption_key_source_serialization() {
+    let source_passphrase = EncryptionKeySource::Passphrase;
+    let json = serde_json::to_string(&source_passphrase).unwrap();
+    assert_eq!(json, "\"Passphrase\"");
+
+    let source_file = EncryptionKeySource::File {
+        path: "/path/to/key".to_string(),
+    };
+    let json = serde_json::to_string(&source_file).unwrap();
+    let deserialized: EncryptionKeySource = serde_json::from_str(&json).unwrap();
+    assert_eq!(source_file, deserialized);
+
+    let source_http = EncryptionKeySource::HttpEndpoint {
+        url: "https://vault.example.com/key".to_string(),
+    };
+    let json = serde_json::to_string(&source_http).unwrap();
+    let deserialized: EncryptionKeySource = serde_json::from_str(&json).unwrap();
+    assert_eq!(source_http, deserialized);
+}
+
+#[test]
+fn test_backup_encryption_config_default() {
+    let config = BackupEncryptionConfig::default();
+    assert!(!config.enabled);
+    assert_eq!(config.key_source, EncryptionKeySource::Passphrase);
+    assert!(config.key_identifier.is_none());
+}
+
+#[test]
+fn test_backup_encryption_config_serialization() {
+    let config = BackupEncryptionConfig {
+        enabled: true,
+        key_source: EncryptionKeySource::File {
+            path: "/path/to/key".to_string(),
+        },
+        key_derivation: KeyDerivationParams::default(),
+        key_identifier: Some("key-123".to_string()),
+    };
+
+    let json = serde_json::to_string(&config).unwrap();
+    let deserialized: BackupEncryptionConfig = serde_json::from_str(&json).unwrap();
+
+    assert_eq!(config.enabled, deserialized.enabled);
+    assert_eq!(config.key_source, deserialized.key_source);
+    assert_eq!(config.key_identifier, deserialized.key_identifier);
+}
+
+#[test]
+fn test_backup_encryption_config_display() {
+    let config = BackupEncryptionConfig {
+        enabled: true,
+        key_source: EncryptionKeySource::Passphrase,
+        key_derivation: KeyDerivationParams::default(),
+        key_identifier: None,
+    };
+    assert!(config.to_string().contains("enabled: true"));
+    assert!(config.to_string().contains("key_source: passphrase"));
+}
+
+#[test]
+fn test_key_derivation_params_custom_values() {
+    let params = KeyDerivationParams {
+        m_cost: 32 * 1024,
+        t_cost: 4,
+        p_cost: 2,
+    };
+    assert_eq!(params.m_cost, 32 * 1024);
+    assert_eq!(params.t_cost, 4);
+    assert_eq!(params.p_cost, 2);
+}
+
+#[test]
+fn test_key_derivation_params_serialization() {
+    let params = KeyDerivationParams {
+        m_cost: 16384,
+        t_cost: 3,
+        p_cost: 1,
+    };
+
+    let json = serde_json::to_string(&params).unwrap();
+    let deserialized: KeyDerivationParams = serde_json::from_str(&json).unwrap();
+
+    assert_eq!(params.m_cost, deserialized.m_cost);
+    assert_eq!(params.t_cost, deserialized.t_cost);
+    assert_eq!(params.p_cost, deserialized.p_cost);
+}
+
+#[test]
+fn test_key_derivation_params_from_json_partial() {
+    let json = "{}";
+    let params: KeyDerivationParams = serde_json::from_str(json).unwrap();
+    assert_eq!(params.m_cost, 19 * 1024);
+    assert_eq!(params.t_cost, 2);
+    assert_eq!(params.p_cost, 1);
+}
+
+#[test]
+fn test_backup_encryption_header_display() {
+    let header = BackupEncryptionHeader::new(
+        "test-key-id".to_string(),
+        vec![0u8; BACKUP_ENCRYPTION_SALT_LEN],
+        vec![0u8; BACKUP_ENCRYPTION_NONCE_LEN],
+        KeyDerivationParams::default(),
+        true,
+    );
+
+    let display = header.to_string();
+    assert!(display.contains("test-key-id"));
+    assert!(display.contains("compressed: true"));
+}
+
+#[test]
+fn test_backup_encryption_magic_constant() {
+    assert_eq!(BACKUP_ENCRYPTION_MAGIC.len(), 20);
+    assert_eq!(BACKUP_ENCRYPTION_MAGIC, b"KANIDM_ENC_BACKUP_V1");
+}
+
+#[test]
+fn test_backup_encryption_key_len_constant() {
+    assert_eq!(BACKUP_ENCRYPTION_KEY_LEN, 32);
+}
+
+#[test]
+fn test_backup_encryption_nonce_len_constant() {
+    assert_eq!(BACKUP_ENCRYPTION_NONCE_LEN, 12);
+}
+
+#[test]
+fn test_backup_encryption_salt_len_constant() {
+    assert_eq!(BACKUP_ENCRYPTION_SALT_LEN, 16);
+}
+
+#[test]
+fn test_s3_backup_metadata_not_encrypted() {
+    let meta = S3BackupMetadata::new(
+        "sha256".to_string(),
+        "2024-01-01".to_string(),
+        BackupCompression::Gzip,
+        1024,
+    );
+    assert!(!meta.encrypted);
+    assert!(meta.key_identifier.is_none());
+}
+
+#[test]
 fn test_backup_encryption_header_validate_magic() {
     let header = BackupEncryptionHeader::new(
         "test-key".to_string(),
