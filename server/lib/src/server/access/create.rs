@@ -3,30 +3,10 @@ use super::profiles::{
     AccessControlCreateResolved, AccessControlReceiverCondition, AccessControlTargetCondition,
 };
 use super::protected::{PROTECTED_ENTRY_CLASSES, PROTECTED_MOD_PRES_ENTRY_CLASSES};
+use super::utils::check_time_restriction;
 use crate::prelude::*;
 use std::collections::BTreeSet;
 use std::ops::Sub;
-
-fn check_time_restriction(
-    time_start: Option<time::OffsetDateTime>,
-    time_end: Option<time::OffsetDateTime>,
-) -> bool {
-    match (time_start, time_end) {
-        (None, None) => true,
-        (Some(start), None) => {
-            let now = time::OffsetDateTime::now_utc();
-            now >= start
-        }
-        (None, Some(end)) => {
-            let now = time::OffsetDateTime::now_utc();
-            now <= end
-        }
-        (Some(start), Some(end)) => {
-            let now = time::OffsetDateTime::now_utc();
-            now >= start && now <= end
-        }
-    }
-}
 
 pub enum CreateResult<'a> {
     Deny,

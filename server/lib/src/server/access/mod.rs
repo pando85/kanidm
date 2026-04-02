@@ -51,6 +51,7 @@ pub mod profiles;
 mod protected;
 mod reauth;
 mod search;
+mod utils;
 
 pub use self::create::CreateResult;
 pub use self::delete::{apply_delete_access, DeleteResult};

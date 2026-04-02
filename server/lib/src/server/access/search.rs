@@ -2,32 +2,12 @@ use super::migration::{MIGRATION_ENTRY_CLASSES, MIGRATION_IGNORE_CLASSES};
 use super::profiles::{
     AccessControlReceiverCondition, AccessControlSearchResolved, AccessControlTargetCondition,
 };
+use super::utils::check_time_restriction;
 use super::AccessSrchResult;
 use crate::prelude::*;
 use std::collections::BTreeSet;
 use std::ops::Sub;
 use std::sync::Arc;
-
-fn check_time_restriction(
-    time_start: Option<time::OffsetDateTime>,
-    time_end: Option<time::OffsetDateTime>,
-) -> bool {
-    match (time_start, time_end) {
-        (None, None) => true,
-        (Some(start), None) => {
-            let now = time::OffsetDateTime::now_utc();
-            now >= start
-        }
-        (None, Some(end)) => {
-            let now = time::OffsetDateTime::now_utc();
-            now <= end
-        }
-        (Some(start), Some(end)) => {
-            let now = time::OffsetDateTime::now_utc();
-            now >= start && now <= end
-        }
-    }
-}
 
 pub enum SearchResult {
     Deny,
