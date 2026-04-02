@@ -510,7 +510,10 @@ mod tests {
     fn test_pip_attribute_name_special_characters() {
         let pip_id = PipId::new("source-with-dashes");
         let attr_name = PipAttributeName::new(&pip_id, "attr_with_underscores");
-        assert_eq!(attr_name.as_str(), "pip:source-with-dashes:attr_with_underscores");
+        assert_eq!(
+            attr_name.as_str(),
+            "pip:source-with-dashes:attr_with_underscores"
+        );
 
         let parsed = PipAttributeName::parse("pip:source-with-dashes:attr_with_underscores");
         assert!(parsed.is_some());
@@ -646,8 +649,14 @@ mod tests {
             PipAttributeValue::String("test".to_string()),
             PipAttributeValue::String("other".to_string())
         );
-        assert_eq!(PipAttributeValue::Integer(42), PipAttributeValue::Integer(42));
-        assert_eq!(PipAttributeValue::Boolean(true), PipAttributeValue::Boolean(true));
+        assert_eq!(
+            PipAttributeValue::Integer(42),
+            PipAttributeValue::Integer(42)
+        );
+        assert_eq!(
+            PipAttributeValue::Boolean(true),
+            PipAttributeValue::Boolean(true)
+        );
     }
 
     #[test]
@@ -677,7 +686,10 @@ mod tests {
         let subject = PipSubject::from_uuid(Uuid::new_v4())
             .with_context("device_id", "device123")
             .with_context("location", "office");
-        assert_eq!(subject.context.get("device_id"), Some(&"device123".to_string()));
+        assert_eq!(
+            subject.context.get("device_id"),
+            Some(&"device123".to_string())
+        );
         assert_eq!(subject.context.get("location"), Some(&"office".to_string()));
     }
 
@@ -715,7 +727,9 @@ mod tests {
 
     #[test]
     fn test_pip_result_timeout() {
-        let result = PipResult::Timeout { fallback_used: false };
+        let result = PipResult::Timeout {
+            fallback_used: false,
+        };
         assert!(!result.is_success());
         assert!(result.attributes().is_none());
         assert!(!result.fallback_used());

@@ -765,6 +765,9 @@ mod tests {
         };
         let pip = LdapPip::new(config).unwrap();
 
-        assert_eq!(pip.attribute_mapping.get("cn"), Some(&"full_name".to_string()));
+        assert_eq!(
+            pip.attribute_mapping.get("cn"),
+            Some(&"full_name".to_string())
+        );
     }
 }

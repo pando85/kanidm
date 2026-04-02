@@ -616,7 +616,9 @@ mod tests {
         let pip = HttpPip::new(config).unwrap();
 
         assert_eq!(pip.provided_attributes().len(), 1);
-        assert!(pip.provided_attributes().contains(&"attributes".to_string()));
+        assert!(pip
+            .provided_attributes()
+            .contains(&"attributes".to_string()));
     }
 
     #[test]
@@ -655,7 +657,9 @@ mod tests {
 
         let attrs = pip.parse_response(json);
         assert_eq!(attrs.len(), 1);
-        assert!(attrs.get(&PipAttributeName::new(&pip.id, "response")).is_some());
+        assert!(attrs
+            .get(&PipAttributeName::new(&pip.id, "response"))
+            .is_some());
     }
 
     #[test]
@@ -685,10 +689,7 @@ mod tests {
             "department".to_string(),
             PipAttributeValue::String("Unknown".to_string()),
         );
-        fallback.insert(
-            "level".to_string(),
-            PipAttributeValue::Integer(0),
-        );
+        fallback.insert("level".to_string(), PipAttributeValue::Integer(0));
 
         let config = HttpPipConfig {
             id: "test".to_string(),
