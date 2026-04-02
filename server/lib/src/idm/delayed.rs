@@ -13,6 +13,8 @@ pub enum DelayedAction {
     WebauthnCounterIncrement(WebauthnCounterIncrement),
     BackupCodeRemoval(BackupCodeRemoval),
     AuthSessionRecord(AuthSessionRecord),
+    ApprovalTimeoutCheck(ApprovalTimeoutCheck),
+    ApprovalEscalationCheck(ApprovalEscalationCheck),
 }
 
 pub struct PasswordUpgrade {
@@ -65,4 +67,14 @@ pub struct AuthSessionRecord {
     pub scope: SessionScope,
     pub type_: AuthType,
     pub ext_metadata: SessionExtMetadata,
+}
+
+#[derive(Debug)]
+pub struct ApprovalTimeoutCheck {
+    pub request_uuid: Uuid,
+}
+
+#[derive(Debug)]
+pub struct ApprovalEscalationCheck {
+    pub request_uuid: Uuid,
 }

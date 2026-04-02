@@ -21,6 +21,32 @@ impl From<Source> for AuditSource {
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+pub enum ApprovalAuditAction {
+    RequestCreated,
+    DecisionSubmitted,
+    RequestApproved,
+    RequestRejected,
+    RequestExpired,
+    RequestCancelled,
+    RequestEscalated,
+    PolicyCreated,
+    PolicyModified,
+    PolicyDeleted,
+    PolicyEnabled,
+    PolicyDisabled,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+pub struct ApprovalAuditEvent {
+    pub action: ApprovalAuditAction,
+    pub request_uuid: Option<Uuid>,
+    pub policy_uuid: Option<Uuid>,
+    pub actor_uuid: Uuid,
+    #[serde(with = "time::serde::timestamp")]
+    pub timestamp: OffsetDateTime,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub enum AuditEvent {
     AuthenticationDenied {
         source: AuditSource,
@@ -28,5 +54,9 @@ pub enum AuditEvent {
         spn: String,
         #[serde(with = "time::serde::timestamp")]
         time: OffsetDateTime,
+    },
+    ApprovalEvent {
+        source: AuditSource,
+        event: ApprovalAuditEvent,
     },
 }

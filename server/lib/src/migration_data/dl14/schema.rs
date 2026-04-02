@@ -1715,3 +1715,207 @@ pub static SCHEMA_CLASS_OAUTH2_LINKED_ACCOUNT: LazyLock<SchemaClass> =
         systemsupplements: vec![EntryClass::OAuth2Account.into()],
         ..Default::default()
     });
+
+// =========================================
+// Approval Workflows
+
+pub static SCHEMA_ATTR_APPROVAL_POLICY_NAME: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_APPROVAL_POLICY_NAME,
+        name: Attribute::ApprovalPolicyName,
+        description: "The unique name of an approval policy".to_string(),
+        indexed: true,
+        unique: true,
+        syntax: SyntaxType::Utf8StringIname,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_APPROVAL_OPERATION_TYPE: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_APPROVAL_OPERATION_TYPE,
+        name: Attribute::ApprovalOperationType,
+        description: "The type of operation requiring approval".to_string(),
+        indexed: true,
+        multivalue: true,
+        syntax: SyntaxType::Utf8StringInsensitive,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_APPROVAL_PATTERN: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_APPROVAL_PATTERN,
+        name: Attribute::ApprovalPatternAttr,
+        description: "The approval pattern (any_one, majority, all)".to_string(),
+        syntax: SyntaxType::Utf8StringInsensitive,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_APPROVER: LazyLock<SchemaAttribute> = LazyLock::new(|| SchemaAttribute {
+    uuid: UUID_SCHEMA_ATTR_APPROVER,
+    name: Attribute::Approver,
+    description: "A reference to a user who can approve requests".to_string(),
+    indexed: true,
+    multivalue: true,
+    syntax: SyntaxType::ReferenceUuid,
+    ..Default::default()
+});
+
+pub static SCHEMA_ATTR_BACKUP_APPROVER: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_BACKUP_APPROVER,
+        name: Attribute::BackupApprover,
+        description: "A reference to a backup approver for escalation".to_string(),
+        indexed: true,
+        multivalue: true,
+        syntax: SyntaxType::ReferenceUuid,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_APPROVAL_TIMEOUT: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_APPROVAL_TIMEOUT,
+        name: Attribute::ApprovalTimeout,
+        description: "The timeout in seconds for approval requests".to_string(),
+        syntax: SyntaxType::Uint32,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_ESCALATION_TIMEOUT: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_ESCALATION_TIMEOUT,
+        name: Attribute::EscalationTimeout,
+        description: "The timeout in seconds before escalating to backup approvers".to_string(),
+        syntax: SyntaxType::Uint32,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_APPROVAL_POLICY_ENABLED: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_APPROVAL_POLICY_ENABLED,
+        name: Attribute::ApprovalPolicyEnabled,
+        description: "Whether the approval policy is enabled".to_string(),
+        syntax: SyntaxType::Boolean,
+        ..Default::default()
+    });
+
+pub static SCHEMA_CLASS_APPROVAL_POLICY: LazyLock<SchemaClass> = LazyLock::new(|| SchemaClass {
+    uuid: UUID_SCHEMA_CLASS_APPROVAL_POLICY,
+    name: EntryClass::ApprovalPolicy.into(),
+    description: "A policy defining approval requirements for sensitive operations".to_string(),
+    systemmust: vec![
+        Attribute::ApprovalPolicyName,
+        Attribute::ApprovalOperationType,
+        Attribute::Approver,
+        Attribute::ApprovalPatternAttr,
+        Attribute::ApprovalTimeout,
+    ],
+    systemmay: vec![
+        Attribute::Description,
+        Attribute::BackupApprover,
+        Attribute::EscalationTimeout,
+        Attribute::ApprovalPolicyEnabled,
+    ],
+    ..Default::default()
+});
+
+pub static SCHEMA_ATTR_APPROVAL_REQUEST_POLICY: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_APPROVAL_REQUEST_POLICY,
+        name: Attribute::ApprovalRequestPolicy,
+        description: "Reference to the approval policy this request is based on".to_string(),
+        indexed: true,
+        syntax: SyntaxType::ReferenceUuid,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_APPROVAL_TARGET: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_APPROVAL_TARGET,
+        name: Attribute::ApprovalTarget,
+        description: "Reference to the entry that is the target of the approval request"
+            .to_string(),
+        indexed: true,
+        syntax: SyntaxType::ReferenceUuid,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_APPROVAL_REQUESTOR: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_APPROVAL_REQUESTOR,
+        name: Attribute::ApprovalRequestor,
+        description: "Reference to the user who requested the approval".to_string(),
+        indexed: true,
+        syntax: SyntaxType::ReferenceUuid,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_APPROVAL_STATE: LazyLock<SchemaAttribute> = LazyLock::new(|| {
+    SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_APPROVAL_STATE,
+        name: Attribute::ApprovalState,
+        description: "The current state of an approval request (pending, approved, rejected, expired, cancelled, escalated)".to_string(),
+        indexed: true,
+        syntax: SyntaxType::Utf8StringInsensitive,
+        ..Default::default()
+    }
+});
+
+pub static SCHEMA_ATTR_APPROVAL_DECISION: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_APPROVAL_DECISION,
+        name: Attribute::ApprovalDecision,
+        description:
+            "An approval decision record containing approver, action, time, and optional comment"
+                .to_string(),
+        multivalue: true,
+        syntax: SyntaxType::Json,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_APPROVAL_ESCALATION_LEVEL: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_APPROVAL_ESCALATION_LEVEL,
+        name: Attribute::ApprovalEscalationLevel,
+        description: "The current escalation level of an approval request".to_string(),
+        syntax: SyntaxType::Uint32,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_APPROVAL_EXPIRES: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_APPROVAL_EXPIRES,
+        name: Attribute::ApprovalExpires,
+        description: "The datetime when this approval request expires".to_string(),
+        indexed: true,
+        syntax: SyntaxType::DateTime,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_APPROVAL_OPERATION_DETAILS: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_APPROVAL_OPERATION_DETAILS,
+        name: Attribute::ApprovalOperationDetails,
+        description: "JSON-encoded details about the operation requiring approval".to_string(),
+        syntax: SyntaxType::JsonFilter,
+        ..Default::default()
+    });
+
+pub static SCHEMA_CLASS_APPROVAL_REQUEST: LazyLock<SchemaClass> = LazyLock::new(|| SchemaClass {
+    uuid: UUID_SCHEMA_CLASS_APPROVAL_REQUEST,
+    name: EntryClass::ApprovalRequest.into(),
+    description: "A request for approval to perform a sensitive operation".to_string(),
+    systemmust: vec![
+        Attribute::ApprovalRequestPolicy,
+        Attribute::ApprovalOperationType,
+        Attribute::ApprovalTarget,
+        Attribute::ApprovalRequestor,
+        Attribute::ApprovalState,
+    ],
+    systemmay: vec![
+        Attribute::ApprovalDecision,
+        Attribute::ApprovalEscalationLevel,
+        Attribute::ApprovalExpires,
+        Attribute::ApprovalOperationDetails,
+    ],
+    ..Default::default()
+});
