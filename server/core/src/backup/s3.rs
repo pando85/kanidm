@@ -583,7 +583,12 @@ impl S3ClientWrapper {
             if let Ok(sync_time) = chrono::DateTime::parse_from_rfc3339(last_sync_ts) {
                 let sync_time_utc: chrono::DateTime<chrono::Utc> = sync_time.with_timezone(&chrono::Utc);
                 let now = chrono::Utc::now();
-                status.lag_seconds = Some((now - sync_time_utc).num_seconds() as u64);
+                let lag = (now - sync_time_utc).num_seconds();
+                status.lag_seconds = if lag >= 0 {
+                    Some(lag as u64)
+                } else {
+                    Some(0)
+                };
             }
         }
 

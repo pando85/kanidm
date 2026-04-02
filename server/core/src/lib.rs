@@ -588,7 +588,6 @@ pub async fn verify_s3_backup_core(s3_config: &S3Config, object_key: &str) -> bo
 pub async fn replication_status_core(
     _config: &Configuration,
     s3_config: &S3Config,
-    _detailed: bool,
 ) -> Result<ReplicationHealthCheck, String> {
     info!("Checking cross-region backup replication status");
 
