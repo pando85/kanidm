@@ -250,7 +250,9 @@ async fn update_pitr_manifest(
     manifest.base_backup_timestamp = backup_timestamp.to_string();
 
     if !manifest.segments.is_empty() {
-        manifest.earliest_recoverable_time = manifest.segments.first()
+        manifest.earliest_recoverable_time = manifest
+            .segments
+            .first()
             .map(|s| s.created_at.clone())
             .unwrap_or_else(|| backup_timestamp.to_string());
     }

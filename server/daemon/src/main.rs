@@ -1123,20 +1123,29 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
             commands: DbCommands::PitrList,
         } => {
             info!("Running PITR list recovery points ...");
-            
-            let s3_config = config.online_backup.as_ref()
-                .and_then(|b| b.s3.as_ref());
+
+            let s3_config = config.online_backup.as_ref().and_then(|b| b.s3.as_ref());
 
             match s3_config {
                 Some(s3) => {
                     match kanidmd_core::pitr_list_recoverable_points_core(&config, Some(s3)).await {
                         Ok(manifest) => {
                             info!("Available recovery points:");
-                            info!("  Base backup: {} ({})", manifest.base_backup_id, manifest.base_backup_timestamp);
-                            info!("  Recovery window: {} to {}", manifest.earliest_recoverable_time, manifest.latest_recoverable_time);
+                            info!(
+                                "  Base backup: {} ({})",
+                                manifest.base_backup_id, manifest.base_backup_timestamp
+                            );
+                            info!(
+                                "  Recovery window: {} to {}",
+                                manifest.earliest_recoverable_time,
+                                manifest.latest_recoverable_time
+                            );
                             info!("  WAL segments: {}", manifest.segments.len());
                             for segment in &manifest.segments {
-                                info!("    - {} ({} bytes)", segment.segment_id, segment.size_bytes);
+                                info!(
+                                    "    - {} ({} bytes)",
+                                    segment.segment_id, segment.size_bytes
+                                );
                             }
                         }
                         Err(e) => {
@@ -1155,31 +1164,37 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
         } => {
             info!("Running PITR recovery ...");
 
-            let s3_config = config.online_backup.as_ref()
-                .and_then(|b| b.s3.as_ref());
+            let s3_config = config.online_backup.as_ref().and_then(|b| b.s3.as_ref());
 
             match s3_config {
                 Some(s3) => {
                     let target = if pitr_opt.latest {
                         kanidm_proto::backup::RecoveryTarget::latest()
                     } else if let Some(time) = &pitr_opt.target_time {
-                        kanidm_proto::backup::RecoveryTarget::to_time(time)
-                            .unwrap_or_else(|e| {
-                                error!("Invalid target time: {}", e);
-                                std::process::exit(1);
-                            })
+                        kanidm_proto::backup::RecoveryTarget::to_time(time).unwrap_or_else(|e| {
+                            error!("Invalid target time: {}", e);
+                            std::process::exit(1);
+                        })
                     } else if let Some(cid) = &pitr_opt.target_cid {
-                        kanidm_proto::backup::RecoveryTarget::to_transaction(cid)
-                            .unwrap_or_else(|e| {
+                        kanidm_proto::backup::RecoveryTarget::to_transaction(cid).unwrap_or_else(
+                            |e| {
                                 error!("Invalid target CID: {}", e);
                                 std::process::exit(1);
-                            })
+                            },
+                        )
                     } else {
                         error!("Must specify --target-time, --target-cid, or --latest");
                         std::process::exit(1);
                     };
 
-                    match kanidmd_core::pitr_recover_core(&config, Some(s3), &target, pitr_opt.dry_run).await {
+                    match kanidmd_core::pitr_recover_core(
+                        &config,
+                        Some(s3),
+                        &target,
+                        pitr_opt.dry_run,
+                    )
+                    .await
+                    {
                         Ok(()) => {
                             if pitr_opt.dry_run {
                                 info!("✅ PITR dry run completed successfully");

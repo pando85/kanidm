@@ -58,8 +58,8 @@ use kanidmd_lib::be::{Backend, BackendConfig, BackendTransaction};
 use kanidmd_lib::idm::ldap::LdapServer;
 use kanidmd_lib::prelude::*;
 use kanidmd_lib::repl::wal::{
-    parse_recovery_target_cid, parse_recovery_target_time, WalEntryRecord, WalOperationRecord,
-    WalReplayer, RecoveryState,
+    parse_recovery_target_cid, parse_recovery_target_time, RecoveryState, WalEntryRecord,
+    WalOperationRecord, WalReplayer,
 };
 use kanidmd_lib::schema::Schema;
 use kanidmd_lib::status::StatusActor;
@@ -642,16 +642,23 @@ pub async fn pitr_recover_core(
     target: &RecoveryTarget,
     dry_run: bool,
 ) -> Result<(), String> {
-    info!("Starting PITR recovery to target: {} (dry_run={})", target, dry_run);
+    info!(
+        "Starting PITR recovery to target: {} (dry_run={})",
+        target, dry_run
+    );
 
     let s3_config = s3_config.ok_or("S3 configuration required for PITR")?;
-    
-    let recovery_state = pitr_validate_recovery_target_core(config, Some(s3_config), target).await?;
+
+    let recovery_state =
+        pitr_validate_recovery_target_core(config, Some(s3_config), target).await?;
 
     if dry_run {
         info!("Dry run mode - would recover to target: {}", target);
         info!("Base backup: {}", recovery_state.base_backup_id);
-        info!("WAL segments to apply: {}", recovery_state.available_segments.len());
+        info!(
+            "WAL segments to apply: {}",
+            recovery_state.available_segments.len()
+        );
         return Ok(());
     }
 
@@ -661,7 +668,8 @@ pub async fn pitr_recover_core(
 
     let schema = Schema::new().map_err(|e| format!("Failed to setup schema: {:?}", e))?;
 
-    let be = setup_backend(config, &schema).map_err(|e| format!("Failed to setup backend: {:?}", e))?;
+    let be =
+        setup_backend(config, &schema).map_err(|e| format!("Failed to setup backend: {:?}", e))?;
 
     let s3_client = S3ClientWrapper::new(s3_config.clone())
         .await
@@ -673,7 +681,9 @@ pub async fn pitr_recover_core(
         .await
         .map_err(|e| format!("Failed to download base backup: {}", e))?;
 
-    let mut be_wr_txn = be.write().map_err(|e| format!("Backend write transaction failed: {:?}", e))?;
+    let mut be_wr_txn = be
+        .write()
+        .map_err(|e| format!("Backend write transaction failed: {:?}", e))?;
 
     let cursor = std::io::Cursor::new(&backup_data);
     be_wr_txn
@@ -685,21 +695,19 @@ pub async fn pitr_recover_core(
 
     let segments = recovery_state.get_segments_for_recovery();
     let target_ts = match &target.target_type {
-        kanidm_proto::backup::RecoveryTargetType::Time { timestamp } => {
-            Some(parse_recovery_target_time(timestamp)
-                .map_err(|e| format!("Failed to parse target time: {}", e))?)
-        }
-        kanidm_proto::backup::RecoveryTargetType::Transaction { cid: _ } => {
-            None
-        }
+        kanidm_proto::backup::RecoveryTargetType::Time { timestamp } => Some(
+            parse_recovery_target_time(timestamp)
+                .map_err(|e| format!("Failed to parse target time: {}", e))?,
+        ),
+        kanidm_proto::backup::RecoveryTargetType::Transaction { cid: _ } => None,
         kanidm_proto::backup::RecoveryTargetType::Latest => None,
     };
 
     let target_cid = match &target.target_type {
-        kanidm_proto::backup::RecoveryTargetType::Transaction { cid } => {
-            Some(parse_recovery_target_cid(cid)
-                .map_err(|e| format!("Failed to parse target CID: {}", e))?)
-        }
+        kanidm_proto::backup::RecoveryTargetType::Transaction { cid } => Some(
+            parse_recovery_target_cid(cid)
+                .map_err(|e| format!("Failed to parse target CID: {}", e))?,
+        ),
         _ => None,
     };
 
@@ -710,7 +718,12 @@ pub async fn pitr_recover_core(
         let (segment_data, _) = s3_client
             .download_backup(&segment.segment_id)
             .await
-            .map_err(|e| format!("Failed to download WAL segment {}: {}", segment.segment_id, e))?;
+            .map_err(|e| {
+                format!(
+                    "Failed to download WAL segment {}: {}",
+                    segment.segment_id, e
+                )
+            })?;
 
         let replayer = WalReplayer::new(segment.server_uuid);
         let entries = replayer
@@ -731,7 +744,10 @@ pub async fn pitr_recover_core(
 
     reindex_inner(be, schema, config).await;
 
-    info!("✅ PITR Recovery completed successfully to target: {}", target);
+    info!(
+        "✅ PITR Recovery completed successfully to target: {}",
+        target
+    );
     Ok(())
 }
 
