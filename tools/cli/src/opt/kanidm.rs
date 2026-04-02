@@ -1431,7 +1431,7 @@ pub struct ApprovalPolicyCreateOpt {
     pub approvers: Vec<String>,
     #[clap(long = "backup-approver")]
     pub backup_approvers: Vec<String>,
-    #[clap(long = "pattern", short = 'p', default_value = "any_one")]
+    #[clap(long = "pattern", default_value = "any_one")]
     pub pattern: String,
     #[clap(long = "timeout", short = 't', default_value = "3600")]
     pub timeout_seconds: u32,
