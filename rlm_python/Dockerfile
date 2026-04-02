@@ -60,15 +60,16 @@ COPY pykanidm/ /pkg/pykanidm/
 
 # install the package and its dependencies
 RUN for i in 1 2 3; do \
-        zypper install -y gcc openssl-devel && break || \
+        zypper install -y gcc libopenssl-devel && break || \
         (echo "Retry $i failed, refreshing repos..." && zypper ref --force && sleep 5); \
     done && \
+
     python3 -m pip install \
     --break-system-packages \
     --no-cache-dir \
     --no-warn-script-location \
     /pkg/pykanidm && \
-    zypper remove -y gcc openssl-devel
+    zypper remove -y gcc libopenssl-devel
 
 COPY rlm_python/radius_entrypoint.py /radius_entrypoint.py
 
