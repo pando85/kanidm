@@ -4078,10 +4078,7 @@ mod tests {
             "test_acp_scope_filter_pass",
             Uuid::new_v4(),
             UUID_TEST_GROUP_1,
-            filter_valid!(f_eq(
-                Attribute::Class,
-                PartialValue::new_iutf8("person")
-            )),
+            filter_valid!(f_eq(Attribute::Class, PartialValue::new_iutf8("person"))),
             Attribute::Name.as_ref(),
             Some(filter_valid!(f_eq(
                 Attribute::Name,
@@ -4112,10 +4109,7 @@ mod tests {
             "test_acp_scope_filter_block",
             Uuid::new_v4(),
             UUID_TEST_GROUP_1,
-            filter_valid!(f_eq(
-                Attribute::Class,
-                PartialValue::new_iutf8("person")
-            )),
+            filter_valid!(f_eq(Attribute::Class, PartialValue::new_iutf8("person"))),
             Attribute::Name.as_ref(),
             Some(filter_valid!(f_eq(
                 Attribute::Name,
@@ -4177,10 +4171,7 @@ mod tests {
             "test_acp_scope_filter_modify_pass",
             Uuid::new_v4(),
             UUID_TEST_GROUP_1,
-            filter_valid!(f_eq(
-                Attribute::Class,
-                PartialValue::new_iutf8("person")
-            )),
+            filter_valid!(f_eq(Attribute::Class, PartialValue::new_iutf8("person"))),
             "name",
             "name",
             "",
@@ -4214,10 +4205,7 @@ mod tests {
             "test_acp_scope_filter_modify_block",
             Uuid::new_v4(),
             UUID_TEST_GROUP_1,
-            filter_valid!(f_eq(
-                Attribute::Class,
-                PartialValue::new_iutf8("person")
-            )),
+            filter_valid!(f_eq(Attribute::Class, PartialValue::new_iutf8("person"))),
             "name",
             "name",
             "",
@@ -4249,10 +4237,7 @@ mod tests {
             "test_acp_scope_filter_create_pass",
             Uuid::new_v4(),
             UUID_TEST_GROUP_1,
-            filter_valid!(f_eq(
-                Attribute::Class,
-                PartialValue::new_iutf8("account")
-            )),
+            filter_valid!(f_eq(Attribute::Class, PartialValue::new_iutf8("account"))),
             EntryClass::Account.into(),
             "class name uuid",
             Some(filter_valid!(f_eq(
@@ -4282,10 +4267,7 @@ mod tests {
             "test_acp_scope_filter_create_block",
             Uuid::new_v4(),
             UUID_TEST_GROUP_1,
-            filter_valid!(f_eq(
-                Attribute::Class,
-                PartialValue::new_iutf8("account")
-            )),
+            filter_valid!(f_eq(Attribute::Class, PartialValue::new_iutf8("account"))),
             EntryClass::Account.into(),
             "class name uuid",
             Some(filter_valid!(f_eq(
@@ -4316,10 +4298,7 @@ mod tests {
             "test_acp_scope_filter_delete_pass",
             Uuid::new_v4(),
             UUID_TEST_GROUP_1,
-            filter_valid!(f_eq(
-                Attribute::Class,
-                PartialValue::new_iutf8("person")
-            )),
+            filter_valid!(f_eq(Attribute::Class, PartialValue::new_iutf8("person"))),
             Some(filter_valid!(f_eq(
                 Attribute::Name,
                 PartialValue::new_iname("testperson1")
@@ -4348,10 +4327,7 @@ mod tests {
             "test_acp_scope_filter_delete_block",
             Uuid::new_v4(),
             UUID_TEST_GROUP_1,
-            filter_valid!(f_eq(
-                Attribute::Class,
-                PartialValue::new_iutf8("person")
-            )),
+            filter_valid!(f_eq(Attribute::Class, PartialValue::new_iutf8("person"))),
             Some(filter_valid!(f_eq(
                 Attribute::Name,
                 PartialValue::new_iname("different_person")
