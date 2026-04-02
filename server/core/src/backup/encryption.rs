@@ -188,13 +188,16 @@ impl BackupEncryptor {
             return Err(BackupEncryptionError::InvalidHeader);
         }
 
-        let magic = &data[..BACKUP_ENCRYPTION_MAGIC.len()];
+        let magic = data
+            .get(..BACKUP_ENCRYPTION_MAGIC.len())
+            .ok_or(BackupEncryptionError::InvalidHeader)?;
         if magic != BACKUP_ENCRYPTION_MAGIC {
             return Err(BackupEncryptionError::InvalidMagic);
         }
 
-        let header_len_bytes =
-            &data[BACKUP_ENCRYPTION_MAGIC.len()..BACKUP_ENCRYPTION_MAGIC.len() + 4];
+        let header_len_bytes = data
+            .get(BACKUP_ENCRYPTION_MAGIC.len()..BACKUP_ENCRYPTION_MAGIC.len() + 4)
+            .ok_or(BackupEncryptionError::InvalidHeader)?;
         let header_len = u32::from_le_bytes(
             header_len_bytes
                 .try_into()
@@ -208,7 +211,9 @@ impl BackupEncryptor {
             return Err(BackupEncryptionError::InvalidHeader);
         }
 
-        let header_json = &data[header_start..header_end];
+        let header_json = data
+            .get(header_start..header_end)
+            .ok_or(BackupEncryptionError::InvalidHeader)?;
         let header: BackupEncryptionHeader = serde_json::from_slice(header_json)
             .map_err(|e| BackupEncryptionError::SerializeError(e.to_string()))?;
 
@@ -235,7 +240,9 @@ impl BackupEncryptor {
 
         let key = Self::derive_key(passphrase, &header.salt, &header.key_derivation)?;
 
-        let encrypted_data = &data[header_end..];
+        let encrypted_data = data
+            .get(header_end..)
+            .ok_or(BackupEncryptionError::InvalidHeader)?;
 
         let cipher = Aes256Gcm::new(GenericArray::from_slice(&key));
         let nonce = GenericArray::from_slice(&header.nonce);
@@ -261,9 +268,13 @@ impl BackupEncryptor {
             return Err(BackupEncryptionError::InvalidKeyLength);
         }
 
-        let key = &key_material[..BACKUP_ENCRYPTION_KEY_LEN];
+        let key = key_material
+            .get(..BACKUP_ENCRYPTION_KEY_LEN)
+            .ok_or(BackupEncryptionError::InvalidKeyLength)?;
 
-        let encrypted_data = &data[header_end..];
+        let encrypted_data = data
+            .get(header_end..)
+            .ok_or(BackupEncryptionError::InvalidHeader)?;
 
         let cipher = Aes256Gcm::new(GenericArray::from_slice(key));
         let nonce = GenericArray::from_slice(&header.nonce);
