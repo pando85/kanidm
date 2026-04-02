@@ -143,6 +143,49 @@ impl LdapPip {
         attrs
     }
 
+    fn handle_unhealthy_fallback(&self) -> PipResult {
+        match self.config.fallback_behavior {
+            PipFallbackBehavior::UseFallback => PipResult::Success(self.apply_fallback()),
+            PipFallbackBehavior::Deny | PipFallbackBehavior::Ignore => PipResult::Unavailable {
+                reason: "LDAP PIP source is unhealthy".to_string(),
+                fallback_used: false,
+            },
+        }
+    }
+
+    fn handle_error_fallback(&self, error: String) -> PipResult {
+        let fallback_used = matches!(
+            self.config.fallback_behavior,
+            PipFallbackBehavior::UseFallback
+        );
+        PipResult::Error {
+            error,
+            fallback_used,
+        }
+    }
+
+    fn handle_unavailable_fallback(&self, reason: String) -> PipResult {
+        let fallback_used = matches!(
+            self.config.fallback_behavior,
+            PipFallbackBehavior::UseFallback
+        );
+        PipResult::Unavailable {
+            reason,
+            fallback_used,
+        }
+    }
+
+    fn handle_empty_result_fallback(&self) -> PipResult {
+        match self.config.fallback_behavior {
+            PipFallbackBehavior::UseFallback => PipResult::Success(self.apply_fallback()),
+            PipFallbackBehavior::Deny => PipResult::Error {
+                error: "No LDAP entries found for subject".to_string(),
+                fallback_used: false,
+            },
+            PipFallbackBehavior::Ignore => PipResult::Success(PipAttributeSet::new()),
+        }
+    }
+
     async fn update_health_success(&self) {
         let mut state = self.health_status.write().await;
         state.record_success(&self.config.health_check);
@@ -169,23 +212,7 @@ impl PolicyInformationPoint for LdapPip {
         }
 
         if !self.cached_health_status().can_retrieve() {
-            match self.config.fallback_behavior {
-                PipFallbackBehavior::UseFallback => {
-                    return PipResult::Success(self.apply_fallback());
-                }
-                PipFallbackBehavior::Deny => {
-                    return PipResult::Unavailable {
-                        reason: "LDAP PIP source is unhealthy".to_string(),
-                        fallback_used: false,
-                    };
-                }
-                PipFallbackBehavior::Ignore => {
-                    return PipResult::Unavailable {
-                        reason: "LDAP PIP source is unhealthy".to_string(),
-                        fallback_used: false,
-                    };
-                }
-            }
+            return self.handle_unhealthy_fallback();
         }
 
         let client_result = self.build_client().await;
@@ -218,19 +245,7 @@ impl PolicyInformationPoint for LdapPip {
                                         self.update_health_success().await;
 
                                         if entries.entries.is_empty() {
-                                            match self.config.fallback_behavior {
-                                                PipFallbackBehavior::UseFallback => {
-                                                    PipResult::Success(self.apply_fallback())
-                                                }
-                                                PipFallbackBehavior::Deny => PipResult::Error {
-                                                    error: "No LDAP entries found for subject"
-                                                        .to_string(),
-                                                    fallback_used: false,
-                                                },
-                                                PipFallbackBehavior::Ignore => {
-                                                    PipResult::Success(PipAttributeSet::new())
-                                                }
-                                            }
+                                            self.handle_empty_result_fallback()
                                         } else if let Some(entry) = entries.entries.first() {
                                             let attrs = self.parse_ldap_entry(entry);
 
@@ -247,21 +262,7 @@ impl PolicyInformationPoint for LdapPip {
                                     Err(e) => {
                                         let error = format!("LDAP search failed: {:?}", e);
                                         self.update_health_failure(error.clone()).await;
-
-                                        match self.config.fallback_behavior {
-                                            PipFallbackBehavior::UseFallback => PipResult::Error {
-                                                error,
-                                                fallback_used: true,
-                                            },
-                                            PipFallbackBehavior::Deny => PipResult::Error {
-                                                error,
-                                                fallback_used: false,
-                                            },
-                                            PipFallbackBehavior::Ignore => PipResult::Error {
-                                                error,
-                                                fallback_used: false,
-                                            },
-                                        }
+                                        self.handle_error_fallback(error)
                                     }
                                 }
                             }
@@ -279,41 +280,13 @@ impl PolicyInformationPoint for LdapPip {
                     Err(e) => {
                         let error = format!("LDAP bind failed: {:?}", e);
                         self.update_health_failure(error.clone()).await;
-
-                        match self.config.fallback_behavior {
-                            PipFallbackBehavior::UseFallback => PipResult::Error {
-                                error,
-                                fallback_used: true,
-                            },
-                            PipFallbackBehavior::Deny => PipResult::Error {
-                                error,
-                                fallback_used: false,
-                            },
-                            PipFallbackBehavior::Ignore => PipResult::Error {
-                                error,
-                                fallback_used: false,
-                            },
-                        }
+                        self.handle_error_fallback(error)
                     }
                 }
             }
             Err(e) => {
                 self.update_health_failure(e.clone()).await;
-
-                match self.config.fallback_behavior {
-                    PipFallbackBehavior::UseFallback => PipResult::Unavailable {
-                        reason: e,
-                        fallback_used: true,
-                    },
-                    PipFallbackBehavior::Deny => PipResult::Unavailable {
-                        reason: e,
-                        fallback_used: false,
-                    },
-                    PipFallbackBehavior::Ignore => PipResult::Unavailable {
-                        reason: e,
-                        fallback_used: false,
-                    },
-                }
+                self.handle_unavailable_fallback(e)
             }
         }
     }

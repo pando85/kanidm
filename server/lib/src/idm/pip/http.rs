@@ -206,6 +206,35 @@ impl HttpPip {
         attrs
     }
 
+    fn handle_unhealthy_fallback(&self) -> PipResult {
+        match self.config.fallback_behavior {
+            PipFallbackBehavior::UseFallback => PipResult::Success(self.apply_fallback()),
+            PipFallbackBehavior::Deny | PipFallbackBehavior::Ignore => PipResult::Unavailable {
+                reason: "PIP source is unhealthy".to_string(),
+                fallback_used: false,
+            },
+        }
+    }
+
+    fn handle_error_fallback(&self, error: String) -> PipResult {
+        let fallback_used = matches!(
+            self.config.fallback_behavior,
+            PipFallbackBehavior::UseFallback
+        );
+        PipResult::Error {
+            error,
+            fallback_used,
+        }
+    }
+
+    fn handle_timeout_fallback(&self) -> PipResult {
+        let fallback_used = matches!(
+            self.config.fallback_behavior,
+            PipFallbackBehavior::UseFallback
+        );
+        PipResult::Timeout { fallback_used }
+    }
+
     async fn update_health_success(&self) {
         let mut state = self.health_status.write().await;
         state.record_success(&self.config.health_check);
@@ -232,23 +261,7 @@ impl PolicyInformationPoint for HttpPip {
         }
 
         if !self.cached_health_status().can_retrieve() {
-            match self.config.fallback_behavior {
-                PipFallbackBehavior::UseFallback => {
-                    return PipResult::Success(self.apply_fallback());
-                }
-                PipFallbackBehavior::Deny => {
-                    return PipResult::Unavailable {
-                        reason: "PIP source is unhealthy".to_string(),
-                        fallback_used: false,
-                    };
-                }
-                PipFallbackBehavior::Ignore => {
-                    return PipResult::Unavailable {
-                        reason: "PIP source is unhealthy".to_string(),
-                        fallback_used: false,
-                    };
-                }
-            }
+            return self.handle_unhealthy_fallback();
         }
 
         let url = self.build_url(subject);
@@ -277,41 +290,13 @@ impl PolicyInformationPoint for HttpPip {
                         Err(e) => {
                             let error = format!("Failed to parse response JSON: {}", e);
                             self.update_health_failure(error.clone()).await;
-
-                            match self.config.fallback_behavior {
-                                PipFallbackBehavior::UseFallback => PipResult::Error {
-                                    error,
-                                    fallback_used: true,
-                                },
-                                PipFallbackBehavior::Deny => PipResult::Error {
-                                    error,
-                                    fallback_used: false,
-                                },
-                                PipFallbackBehavior::Ignore => PipResult::Error {
-                                    error,
-                                    fallback_used: false,
-                                },
-                            }
+                            self.handle_error_fallback(error)
                         }
                     }
                 } else {
                     let error = format!("HTTP error: {}", response.status());
                     self.update_health_failure(error.clone()).await;
-
-                    match self.config.fallback_behavior {
-                        PipFallbackBehavior::UseFallback => PipResult::Error {
-                            error,
-                            fallback_used: true,
-                        },
-                        PipFallbackBehavior::Deny => PipResult::Error {
-                            error,
-                            fallback_used: false,
-                        },
-                        PipFallbackBehavior::Ignore => PipResult::Error {
-                            error,
-                            fallback_used: false,
-                        },
-                    }
+                    self.handle_error_fallback(error)
                 }
             }
             Err(e) => {
@@ -320,43 +305,10 @@ impl PolicyInformationPoint for HttpPip {
 
                 self.update_health_failure(error.clone()).await;
 
-                match self.config.fallback_behavior {
-                    PipFallbackBehavior::UseFallback => {
-                        if is_timeout {
-                            PipResult::Timeout {
-                                fallback_used: true,
-                            }
-                        } else {
-                            PipResult::Error {
-                                error,
-                                fallback_used: true,
-                            }
-                        }
-                    }
-                    PipFallbackBehavior::Deny => {
-                        if is_timeout {
-                            PipResult::Timeout {
-                                fallback_used: false,
-                            }
-                        } else {
-                            PipResult::Error {
-                                error,
-                                fallback_used: false,
-                            }
-                        }
-                    }
-                    PipFallbackBehavior::Ignore => {
-                        if is_timeout {
-                            PipResult::Timeout {
-                                fallback_used: false,
-                            }
-                        } else {
-                            PipResult::Error {
-                                error,
-                                fallback_used: false,
-                            }
-                        }
-                    }
+                if is_timeout {
+                    self.handle_timeout_fallback()
+                } else {
+                    self.handle_error_fallback(error)
                 }
             }
         }
