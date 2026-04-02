@@ -51,6 +51,7 @@ use webauthn_rs_proto::{
 };
 
 mod application;
+mod approval;
 mod domain;
 mod group;
 mod message;

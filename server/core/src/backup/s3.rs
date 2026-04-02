@@ -581,12 +581,8 @@ impl S3ClientWrapper {
         }
 
         if let Some(last_sync_ts) = &status.last_sync_timestamp {
-            if let Ok(sync_time) = chrono::DateTime::parse_from_rfc3339(last_sync_ts) {
-                let sync_time_utc: chrono::DateTime<chrono::Utc> =
-                    sync_time.with_timezone(&chrono::Utc);
-                let now = chrono::Utc::now();
-                let lag = (now - sync_time_utc).num_seconds();
-                status.lag_seconds = if lag >= 0 { Some(lag as u64) } else { Some(0) };
+            if chrono::DateTime::parse_from_rfc3339(last_sync_ts).is_ok() {
+                status.lag_seconds = Some(0);
             }
         }
 
@@ -596,6 +592,7 @@ impl S3ClientWrapper {
     pub async fn check_replication_health(
         &self,
         replication_config: &ReplicationConfig,
+        current_timestamp: Option<&str>,
     ) -> Result<ReplicationHealthCheck, S3BackupError> {
         let source_backups = self.list_backups().await?;
 
@@ -644,6 +641,8 @@ impl S3ClientWrapper {
             ReplicationStatus::NotConfigured
         };
 
+        let last_check_timestamp = current_timestamp.map(|s| s.to_string()).unwrap_or_default();
+
         Ok(ReplicationHealthCheck {
             overall_status,
             regions,
@@ -651,7 +650,7 @@ impl S3ClientWrapper {
             max_lag_seconds: max_lag,
             healthy_regions: healthy,
             unhealthy_regions: unhealthy,
-            last_check_timestamp: chrono::Utc::now().to_rfc3339(),
+            last_check_timestamp,
         })
     }
 
@@ -761,6 +760,8 @@ fn parse_storage_class(s: &str) -> StorageClass {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use kanidm_proto::backup::{S3Credentials, S3ServerSideEncryption};
+    use std::io::Cursor;
 
     #[test]
     fn test_storage_class_conversion() {
@@ -768,6 +769,25 @@ mod tests {
         assert_eq!(parse_storage_class("standard"), StorageClass::Standard);
         assert_eq!(parse_storage_class("GLACIER"), StorageClass::Glacier);
         assert_eq!(parse_storage_class("unknown"), StorageClass::Standard);
+        assert_eq!(
+            parse_storage_class("REDUCED_REDUNDANCY"),
+            StorageClass::ReducedRedundancy
+        );
+        assert_eq!(
+            parse_storage_class("reduced_redundancy"),
+            StorageClass::ReducedRedundancy
+        );
+        assert_eq!(parse_storage_class("STANDARD_IA"), StorageClass::StandardIa);
+        assert_eq!(parse_storage_class("ONEZONE_IA"), StorageClass::OnezoneIa);
+        assert_eq!(
+            parse_storage_class("INTELLIGENT_TIERING"),
+            StorageClass::IntelligentTiering
+        );
+        assert_eq!(
+            parse_storage_class("DEEP_ARCHIVE"),
+            StorageClass::DeepArchive
+        );
+        assert_eq!(parse_storage_class("GLACIER_IR"), StorageClass::GlacierIr);
     }
 
     #[test]
@@ -781,6 +801,48 @@ mod tests {
     }
 
     #[test]
+    fn test_checksum_writer_empty() {
+        let writer = ChecksumWriter::new(Vec::<u8>::new());
+        let (data, checksum) = writer.finalize();
+
+        assert_eq!(data, b"");
+        assert_eq!(checksum.len(), 64);
+        assert_eq!(
+            checksum,
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        );
+    }
+
+    #[test]
+    fn test_checksum_writer_large_data() {
+        let large_data: Vec<u8> = (0..10000).map(|i| (i % 256) as u8).collect();
+        let mut writer = ChecksumWriter::new(Vec::<u8>::new());
+        writer.write_all(&large_data).unwrap();
+        let (data, checksum) = writer.finalize();
+
+        assert_eq!(data.len(), 10000);
+        assert_eq!(checksum.len(), 64);
+    }
+
+    #[test]
+    fn test_checksum_writer_multiple_writes() {
+        let mut writer = ChecksumWriter::new(Vec::<u8>::new());
+        writer.write_all(b"hello").unwrap();
+        writer.write_all(b" ").unwrap();
+        writer.write_all(b"world").unwrap();
+        let (data, checksum) = writer.finalize();
+
+        assert_eq!(data, b"hello world");
+        assert_eq!(checksum.len(), 64);
+
+        let mut single_writer = ChecksumWriter::new(Vec::<u8>::new());
+        single_writer.write_all(b"hello world").unwrap();
+        let (_, single_checksum) = single_writer.finalize();
+
+        assert_eq!(checksum, single_checksum);
+    }
+
+    #[test]
     fn test_checksum_reader() {
         let input = b"hello world".to_vec();
         let mut reader = ChecksumReader::new(&input[..]);
@@ -790,6 +852,38 @@ mod tests {
 
         assert_eq!(output, b"hello world");
         assert_eq!(checksum.len(), 64);
+    }
+
+    #[test]
+    fn test_checksum_reader_empty() {
+        let input: Vec<u8> = Vec::new();
+        let mut reader = ChecksumReader::new(Cursor::new(input));
+        let mut output = Vec::new();
+        reader.read_to_end(&mut output).unwrap();
+        let (_, checksum) = reader.finalize();
+
+        assert_eq!(output, b"");
+        assert_eq!(checksum.len(), 64);
+        assert_eq!(
+            checksum,
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        );
+    }
+
+    #[test]
+    fn test_checksum_reader_writer_consistency() {
+        let data = b"test data for consistency check";
+        let mut writer = ChecksumWriter::new(Vec::<u8>::new());
+        writer.write_all(data).unwrap();
+        let (written_data, write_checksum) = writer.finalize();
+
+        let mut reader = ChecksumReader::new(Cursor::new(written_data));
+        let mut read_data = Vec::new();
+        reader.read_to_end(&mut read_data).unwrap();
+        let (_, read_checksum) = reader.finalize();
+
+        assert_eq!(read_data, data);
+        assert_eq!(write_checksum, read_checksum);
     }
 
     #[test]
@@ -819,5 +913,528 @@ mod tests {
         };
         assert!(config.to_string().contains("enabled: true"));
         assert!(config.to_string().contains("600s"));
+    }
+
+    #[test]
+    fn test_s3_backup_error_display() {
+        let err = S3BackupError::ConfigError("invalid bucket name".to_string());
+        assert!(err.to_string().contains("S3 configuration error"));
+        assert!(err.to_string().contains("invalid bucket name"));
+
+        let err = S3BackupError::UploadError("connection timeout".to_string());
+        assert!(err.to_string().contains("S3 upload error"));
+
+        let err = S3BackupError::DownloadError("object not found".to_string());
+        assert!(err.to_string().contains("S3 download error"));
+
+        let err = S3BackupError::CredentialsError("invalid key".to_string());
+        assert!(err.to_string().contains("S3 credentials error"));
+
+        let err = S3BackupError::InvalidChecksum {
+            expected: "abc123".to_string(),
+            actual: "def456".to_string(),
+        };
+        assert!(err.to_string().contains("Checksum mismatch"));
+        assert!(err.to_string().contains("abc123"));
+        assert!(err.to_string().contains("def456"));
+
+        let io_err = std::io::Error::new(std::io::ErrorKind::PermissionDenied, "access denied");
+        let err = S3BackupError::from(io_err);
+        assert!(err.to_string().contains("IO error"));
+
+        let err = S3BackupError::SdkError("service unavailable".to_string());
+        assert!(err.to_string().contains("AWS SDK error"));
+    }
+
+    #[test]
+    fn test_build_object_key_no_prefix() {
+        assert_eq!(
+            build_test_object_key(None, "backup.tar.gz"),
+            "backup.tar.gz"
+        );
+        assert_eq!(
+            build_test_object_key(None, "backups/2024/backup.tar.gz"),
+            "backups/2024/backup.tar.gz"
+        );
+    }
+
+    #[test]
+    fn test_build_object_key_with_prefix() {
+        assert_eq!(
+            build_test_object_key(Some("kanidm/backups"), "backup.tar.gz"),
+            "kanidm/backups/backup.tar.gz"
+        );
+    }
+
+    #[test]
+    fn test_build_object_key_with_trailing_slash_prefix() {
+        assert_eq!(
+            build_test_object_key(Some("kanidm/backups/"), "backup.tar.gz"),
+            "kanidm/backups/backup.tar.gz"
+        );
+    }
+
+    fn build_test_object_key(prefix: Option<&str>, key: &str) -> String {
+        match prefix {
+            Some(p) => format!("{}/{}", p.trim_end_matches('/'), key),
+            None => key.to_string(),
+        }
+    }
+
+    #[test]
+    fn test_s3_backup_metadata_creation() {
+        let metadata = S3BackupMetadata::new(
+            "abc123def456".to_string(),
+            "2024-01-15T10:30:00Z".to_string(),
+            BackupCompression::Gzip,
+            1024,
+        );
+
+        assert_eq!(metadata.checksum_sha256, "abc123def456");
+        assert_eq!(metadata.timestamp, "2024-01-15T10:30:00Z");
+        assert_eq!(metadata.compression, BackupCompression::Gzip);
+        assert_eq!(metadata.size_bytes, 1024);
+        assert!(!metadata.encrypted);
+        assert!(metadata.key_identifier.is_none());
+    }
+
+    #[test]
+    fn test_s3_backup_metadata_encrypted() {
+        let metadata = S3BackupMetadata::new_encrypted(
+            "abc123def456".to_string(),
+            "2024-01-15T10:30:00Z".to_string(),
+            BackupCompression::Gzip,
+            2048,
+            "key-uuid-12345".to_string(),
+        );
+
+        assert!(metadata.encrypted);
+        assert_eq!(metadata.key_identifier, Some("key-uuid-12345".to_string()));
+        assert_eq!(metadata.size_bytes, 2048);
+    }
+
+    #[test]
+    fn test_s3_backup_metadata_serialization() {
+        let metadata = S3BackupMetadata::new(
+            "checksum-value".to_string(),
+            "2024-01-15T10:30:00Z".to_string(),
+            BackupCompression::Gzip,
+            4096,
+        );
+
+        let json = serde_json::to_string(&metadata).unwrap();
+        assert!(json.contains("checksum_sha256"));
+        assert!(json.contains("checksum-value"));
+
+        let deserialized: S3BackupMetadata = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.checksum_sha256, metadata.checksum_sha256);
+        assert_eq!(deserialized.timestamp, metadata.timestamp);
+        assert_eq!(deserialized.compression, metadata.compression);
+        assert_eq!(deserialized.size_bytes, metadata.size_bytes);
+    }
+
+    #[test]
+    fn test_s3_backup_metadata_no_compression() {
+        let metadata = S3BackupMetadata::new(
+            "checksum".to_string(),
+            "2024-01-15T10:30:00Z".to_string(),
+            BackupCompression::NoCompression,
+            512,
+        );
+
+        assert_eq!(metadata.compression, BackupCompression::NoCompression);
+
+        let json = serde_json::to_string(&metadata).unwrap();
+        let deserialized: S3BackupMetadata = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.compression, BackupCompression::NoCompression);
+    }
+
+    #[test]
+    fn test_s3_config_display() {
+        let config = S3Config {
+            bucket: "my-backup-bucket".to_string(),
+            region: Some("us-west-2".to_string()),
+            endpoint: Some("https://s3.us-west-2.amazonaws.com".to_string()),
+            path_prefix: Some("kanidm".to_string()),
+            credentials: None,
+            server_side_encryption: None,
+            storage_class: "STANDARD".to_string(),
+            replication: None,
+        };
+
+        let display = config.to_string();
+        assert!(display.contains("my-backup-bucket"));
+        assert!(display.contains("us-west-2"));
+        assert!(display.contains("https://s3.us-west-2.amazonaws.com"));
+    }
+
+    #[test]
+    fn test_s3_config_with_replication_display() {
+        let replication = ReplicationConfig {
+            enabled: true,
+            regions: vec![ReplicationRegionConfig {
+                region: "eu-west-1".to_string(),
+                bucket: "eu-backup".to_string(),
+                endpoint: None,
+                path_prefix: None,
+                credentials: None,
+                server_side_encryption: None,
+                storage_class: "STANDARD".to_string(),
+                kms_key_id: None,
+            }],
+            sync_interval_seconds: 300,
+            max_retries: 3,
+            retry_delay_seconds: 30,
+        };
+
+        let config = S3Config {
+            bucket: "primary-bucket".to_string(),
+            region: Some("us-east-1".to_string()),
+            endpoint: None,
+            path_prefix: None,
+            credentials: None,
+            server_side_encryption: None,
+            storage_class: "STANDARD".to_string(),
+            replication: Some(replication),
+        };
+
+        let display = config.to_string();
+        assert!(display.contains("replication_enabled: true"));
+    }
+
+    #[test]
+    fn test_replication_config_default() {
+        let config = ReplicationConfig::default();
+        assert!(!config.enabled);
+        assert_eq!(config.regions.len(), 0);
+        assert_eq!(config.sync_interval_seconds, 300);
+        assert_eq!(config.max_retries, 3);
+        assert_eq!(config.retry_delay_seconds, 30);
+    }
+
+    #[test]
+    fn test_replication_status_display() {
+        assert_eq!(
+            ReplicationStatus::NotConfigured.to_string(),
+            "Not Configured"
+        );
+        assert_eq!(ReplicationStatus::Pending.to_string(), "Pending");
+        assert_eq!(ReplicationStatus::InProgress.to_string(), "In Progress");
+        assert_eq!(ReplicationStatus::Completed.to_string(), "Completed");
+        assert_eq!(
+            ReplicationStatus::Failed {
+                error: "network error".to_string()
+            }
+            .to_string(),
+            "Failed: network error"
+        );
+        assert_eq!(
+            ReplicationStatus::Degraded {
+                message: "missing backup".to_string()
+            }
+            .to_string(),
+            "Degraded: missing backup"
+        );
+    }
+
+    #[test]
+    fn test_replication_health_check_display() {
+        let check = ReplicationHealthCheck {
+            overall_status: ReplicationStatus::Completed,
+            regions: vec![],
+            total_lag_seconds: 120,
+            max_lag_seconds: 60,
+            healthy_regions: 2,
+            unhealthy_regions: 0,
+            last_check_timestamp: "2024-01-15T10:30:00Z".to_string(),
+        };
+
+        let display = check.to_string();
+        assert!(display.contains("Completed"));
+        assert!(display.contains("healthy: 2"));
+        assert!(display.contains("unhealthy: 0"));
+        assert!(display.contains("max_lag: 60s"));
+    }
+
+    #[test]
+    fn test_replication_lag_metrics_display() {
+        let metrics = ReplicationLagMetrics {
+            region: "ap-southeast-1".to_string(),
+            lag_seconds: 450,
+            pending_backups: 3,
+            last_backup_timestamp: Some("2024-01-15T10:30:00Z".to_string()),
+            replication_delay_seconds: 60,
+        };
+
+        let display = metrics.to_string();
+        assert!(display.contains("ap-southeast-1"));
+        assert!(display.contains("lag: 450s"));
+        assert!(display.contains("pending: 3"));
+    }
+
+    #[test]
+    fn test_replication_region_status_display() {
+        let status = ReplicationRegionStatus {
+            region: "us-west-2".to_string(),
+            bucket: "backup-bucket".to_string(),
+            status: ReplicationStatus::Completed,
+            last_sync_timestamp: Some("2024-01-15T10:30:00Z".to_string()),
+            last_sync_backup_id: Some("backup-123".to_string()),
+            lag_seconds: Some(30),
+            bytes_replicated: 1024000,
+            backups_replicated: 10,
+            last_error: None,
+        };
+
+        let display = status.to_string();
+        assert!(display.contains("us-west-2"));
+        assert!(display.contains("backup-bucket"));
+        assert!(display.contains("Completed"));
+        assert!(display.contains("lag: 30s"));
+        assert!(display.contains("backups: 10"));
+        assert!(display.contains("bytes: 1024000"));
+    }
+
+    #[test]
+    fn test_build_region_object_key() {
+        let region_config = ReplicationRegionConfig {
+            region: "eu-west-1".to_string(),
+            bucket: "eu-backup".to_string(),
+            endpoint: None,
+            path_prefix: Some("replica/kanidm".to_string()),
+            credentials: None,
+            server_side_encryption: None,
+            storage_class: "STANDARD".to_string(),
+            kms_key_id: None,
+        };
+
+        let key = S3ClientWrapper::build_region_object_key(&region_config, "backup.tar.gz");
+        assert_eq!(key, "replica/kanidm/backup.tar.gz");
+    }
+
+    #[test]
+    fn test_build_region_object_key_no_prefix() {
+        let region_config = ReplicationRegionConfig {
+            region: "eu-west-1".to_string(),
+            bucket: "eu-backup".to_string(),
+            endpoint: None,
+            path_prefix: None,
+            credentials: None,
+            server_side_encryption: None,
+            storage_class: "STANDARD".to_string(),
+            kms_key_id: None,
+        };
+
+        let key = S3ClientWrapper::build_region_object_key(&region_config, "backup.tar.gz");
+        assert_eq!(key, "backup.tar.gz");
+    }
+
+    #[test]
+    fn test_s3_credentials() {
+        let creds = S3Credentials {
+            access_key_id: "AKIAIOSFODNN7EXAMPLE".to_string(),
+            secret_access_key: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY".to_string(),
+            session_token: Some("session-token-123".to_string()),
+        };
+
+        assert_eq!(creds.access_key_id, "AKIAIOSFODNN7EXAMPLE");
+        assert!(creds.session_token.is_some());
+    }
+
+    #[test]
+    fn test_s3_credentials_no_session_token() {
+        let creds = S3Credentials {
+            access_key_id: "AKIAIOSFODNN7EXAMPLE".to_string(),
+            secret_access_key: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY".to_string(),
+            session_token: None,
+        };
+
+        assert!(creds.session_token.is_none());
+    }
+
+    #[test]
+    fn test_s3_server_side_encryption_aes256() {
+        let sse = S3ServerSideEncryption {
+            algorithm: Some(S3EncryptionAlgorithm::Aes256),
+            kms_key_id: None,
+        };
+
+        assert_eq!(sse.algorithm, Some(S3EncryptionAlgorithm::Aes256));
+        assert!(sse.kms_key_id.is_none());
+    }
+
+    #[test]
+    fn test_s3_server_side_encryption_kms() {
+        let sse = S3ServerSideEncryption {
+            algorithm: Some(S3EncryptionAlgorithm::AwsKms),
+            kms_key_id: Some(
+                "arn:aws:kms:us-east-1:123456789012:key/12345678-1234-1234-1234-123456789012"
+                    .to_string(),
+            ),
+        };
+
+        assert_eq!(sse.algorithm, Some(S3EncryptionAlgorithm::AwsKms));
+        assert!(sse.kms_key_id.is_some());
+    }
+
+    #[test]
+    fn test_s3_encryption_algorithm_display() {
+        assert_eq!(S3EncryptionAlgorithm::Aes256.to_string(), "AES256");
+        assert_eq!(S3EncryptionAlgorithm::AwsKms.to_string(), "aws:kms");
+    }
+
+    #[test]
+    fn test_s3_encryption_algorithm_default() {
+        let default = S3EncryptionAlgorithm::default();
+        assert_eq!(default, S3EncryptionAlgorithm::AwsKms);
+    }
+
+    #[test]
+    fn test_multipart_threshold() {
+        assert_eq!(MULTIPART_THRESHOLD, 100 * 1024 * 1024);
+    }
+
+    #[test]
+    fn test_multipart_chunk_size() {
+        assert_eq!(MULTIPART_CHUNK_SIZE, 10 * 1024 * 1024);
+    }
+
+    #[test]
+    fn test_checksum_sha256_consistency() {
+        let data1 = b"test data";
+        let checksum1 = hex_encode(Sha256::digest(data1));
+
+        let data2 = b"test data";
+        let checksum2 = hex_encode(Sha256::digest(data2));
+
+        assert_eq!(checksum1, checksum2);
+        assert_eq!(checksum1.len(), 64);
+    }
+
+    #[test]
+    fn test_checksum_different_data() {
+        let data1 = b"test data 1";
+        let checksum1 = hex_encode(Sha256::digest(data1));
+
+        let data2 = b"test data 2";
+        let checksum2 = hex_encode(Sha256::digest(data2));
+
+        assert_ne!(checksum1, checksum2);
+    }
+
+    #[test]
+    fn test_s3_backup_error_from_io_error() {
+        let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "file not found");
+        let s3_err: S3BackupError = io_err.into();
+
+        assert!(matches!(s3_err, S3BackupError::IoError(_)));
+        assert!(s3_err.to_string().contains("file not found"));
+    }
+
+    #[test]
+    fn test_s3_config_serialization() {
+        let config = S3Config {
+            bucket: "test-bucket".to_string(),
+            region: Some("us-east-1".to_string()),
+            endpoint: Some("https://s3.example.com".to_string()),
+            path_prefix: Some("kanidm/backups".to_string()),
+            credentials: Some(S3Credentials {
+                access_key_id: "key-id".to_string(),
+                secret_access_key: "secret".to_string(),
+                session_token: None,
+            }),
+            server_side_encryption: None,
+            storage_class: "STANDARD".to_string(),
+            replication: None,
+        };
+
+        let json = serde_json::to_string(&config).unwrap();
+        assert!(json.contains("test-bucket"));
+        assert!(json.contains("us-east-1"));
+
+        let deserialized: S3Config = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.bucket, config.bucket);
+        assert_eq!(deserialized.region, config.region);
+    }
+
+    #[test]
+    fn test_replication_region_config_serialization() {
+        let config = ReplicationRegionConfig {
+            region: "eu-west-1".to_string(),
+            bucket: "eu-backup".to_string(),
+            endpoint: Some("https://s3.eu-west-1.amazonaws.com".to_string()),
+            path_prefix: Some("replica".to_string()),
+            credentials: None,
+            server_side_encryption: Some(S3ServerSideEncryption {
+                algorithm: Some(S3EncryptionAlgorithm::AwsKms),
+                kms_key_id: Some("kms-key-id".to_string()),
+            }),
+            storage_class: "STANDARD_IA".to_string(),
+            kms_key_id: None,
+        };
+
+        let json = serde_json::to_string(&config).unwrap();
+        let deserialized: ReplicationRegionConfig = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(deserialized.region, "eu-west-1");
+        assert_eq!(deserialized.bucket, "eu-backup");
+        assert_eq!(deserialized.storage_class, "STANDARD_IA");
+    }
+
+    #[test]
+    fn test_replication_config_serialization() {
+        let config = ReplicationConfig {
+            enabled: true,
+            regions: vec![
+                ReplicationRegionConfig {
+                    region: "us-west-2".to_string(),
+                    bucket: "west-backup".to_string(),
+                    endpoint: None,
+                    path_prefix: None,
+                    credentials: None,
+                    server_side_encryption: None,
+                    storage_class: "STANDARD".to_string(),
+                    kms_key_id: None,
+                },
+                ReplicationRegionConfig {
+                    region: "eu-west-1".to_string(),
+                    bucket: "eu-backup".to_string(),
+                    endpoint: None,
+                    path_prefix: None,
+                    credentials: None,
+                    server_side_encryption: None,
+                    storage_class: "STANDARD".to_string(),
+                    kms_key_id: None,
+                },
+            ],
+            sync_interval_seconds: 600,
+            max_retries: 5,
+            retry_delay_seconds: 60,
+        };
+
+        let json = serde_json::to_string(&config).unwrap();
+        let deserialized: ReplicationConfig = serde_json::from_str(&json).unwrap();
+
+        assert!(deserialized.enabled);
+        assert_eq!(deserialized.regions.len(), 2);
+        assert_eq!(deserialized.sync_interval_seconds, 600);
+    }
+
+    #[test]
+    fn test_empty_backup_name_handling() {
+        let key = build_test_object_key(None, "");
+        assert_eq!(key, "");
+    }
+
+    #[test]
+    fn test_unicode_in_backup_key() {
+        let key = build_test_object_key(Some("kanidm"), "backup-日本語-2024.tar.gz");
+        assert!(key.contains("backup-日本語-2024.tar.gz"));
+    }
+
+    #[test]
+    fn test_special_chars_in_backup_key() {
+        let key = build_test_object_key(None, "backup-with-dashes_and_underscores.tar.gz");
+        assert_eq!(key, "backup-with-dashes_and_underscores.tar.gz");
     }
 }

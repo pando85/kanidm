@@ -2024,7 +2024,7 @@ pub static IDM_ACP_OAUTH2_CLIENT_ADMIN: LazyLock<BuiltinAcp> = LazyLock::new(|| 
     name: "idm_acp_oauth2_client_admin",
     uuid: UUID_IDM_ACP_OAUTH2_CLIENT_ADMIN,
     description: "Builtin IDM Control for granting oauth2 trust provider administration rights.",
-    receiver: BuiltinAcpReceiver::Group(vec![UUID_IDM_OAUTH2_CLIENT_ADMINS, UUID_SYSTEM_ADMINS]),
+    receiver: BuiltinAcpReceiver::Group(vec![UUID_IDM_OAUTH2_CLIENT_ADMINS]),
     target: BuiltinAcpTarget::Filter(ProtoFilter::And(vec![
         match_class_filter!(EntryClass::OAuth2Client),
         FILTER_ANDNOT_TOMBSTONE_OR_RECYCLED.clone(),
@@ -2065,7 +2065,7 @@ pub static IDM_ACP_OAUTH2_CLIENT_ADMIN: LazyLock<BuiltinAcp> = LazyLock::new(|| 
         Attribute::OAuth2TokenEndpoint,
         Attribute::OAuth2RequestScopes,
     ],
-    create_classes: vec![EntryClass::Object, EntryClass::OAuth2Client],
+    create_classes: vec![EntryClass::OAuth2Client],
     ..Default::default()
 });
 

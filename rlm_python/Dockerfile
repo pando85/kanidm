@@ -13,20 +13,24 @@ ARG RADIUS_USER=radiusd
 EXPOSE 1812 1813
 ENV KANIDM_CONFIG_FILE="/data/kanidm"
 
-RUN zypper install -y \
-        freeradius-client \
-        freeradius-server \
-        freeradius-server-python3 \
-        freeradius-server-utils \
-        hostname \
-        python3 \
-        python3-devel \
-        python3-pip \
-        timezone \
-        iproute2 \
-        iputils \
-        openssl \
-        curl
+RUN zypper ref --force && \
+    for i in 1 2 3; do \
+        zypper install -y \
+            freeradius-client \
+            freeradius-server \
+            freeradius-server-python3 \
+            freeradius-server-utils \
+            hostname \
+            python3 \
+            python3-devel \
+            python3-pip \
+            timezone \
+            iproute2 \
+            iputils \
+            openssl \
+            curl && break || \
+        (echo "Retry $i failed, refreshing repos..." && zypper ref --force && sleep 5); \
+    done
 
 # Don't put in the TZ at build time - it needs to be bind mounted at runtime
 # else we are forcing things on people.
@@ -55,7 +59,10 @@ RUN mkdir -p /pkg/pykanidm/
 COPY pykanidm/ /pkg/pykanidm/
 
 # install the package and its dependencies
-RUN zypper install -y gcc openssl-devel && \
+RUN for i in 1 2 3; do \
+        zypper install -y gcc openssl-devel && break || \
+        (echo "Retry $i failed, refreshing repos..." && zypper ref --force && sleep 5); \
+    done && \
     python3 -m pip install \
     --break-system-packages \
     --no-cache-dir \

@@ -2036,4 +2036,431 @@ mod tests {
             }
         );
     }
+
+    mod time_bounded_member_tests {
+        use crate::prelude::*;
+        use crate::value::TimeBoundedMember;
+        use std::time::Duration;
+        use time::OffsetDateTime;
+
+        const UUID_TB_A: &str = "aaaaaaaa-f82e-4484-a407-181aa03bda5c";
+        const UUID_TB_B: &str = "bbbbbbbb-2438-4384-9891-48f4c8172e9b";
+        const UUID_TB_C: &str = "cccccccc-9b01-423f-9ba6-51aa4bbd5dd2";
+
+        static EA_TB: LazyLock<EntryInitNew> = LazyLock::new(|| {
+            entry_init_fn([
+                (Attribute::Class, EntryClass::Group.to_value()),
+                (Attribute::Class, EntryClass::TimeBoundedGrant.to_value()),
+                (Attribute::Class, EntryClass::MemberOf.to_value()),
+                (Attribute::Name, Value::new_iname("testgroup_tb_a")),
+                (Attribute::Uuid, Value::Uuid(uuid::uuid!(UUID_TB_A))),
+            ])
+        });
+
+        static EB_TB: LazyLock<EntryInitNew> = LazyLock::new(|| {
+            entry_init_fn([
+                (Attribute::Class, EntryClass::Group.to_value()),
+                (Attribute::Class, EntryClass::MemberOf.to_value()),
+                (Attribute::Name, Value::new_iname("testgroup_tb_b")),
+                (Attribute::Uuid, Value::Uuid(uuid::uuid!(UUID_TB_B))),
+            ])
+        });
+
+        static EC_TB: LazyLock<EntryInitNew> = LazyLock::new(|| {
+            entry_init_fn([
+                (Attribute::Class, EntryClass::Group.to_value()),
+                (Attribute::Class, EntryClass::MemberOf.to_value()),
+                (Attribute::Name, Value::new_iname("testgroup_tb_c")),
+                (Attribute::Uuid, Value::Uuid(uuid::uuid!(UUID_TB_C))),
+            ])
+        });
+
+        #[test]
+        fn test_create_time_bounded_member_valid() {
+            let mut ea = EA_TB.clone();
+            let eb = EB_TB.clone();
+
+            ea.add_ava(
+                Attribute::TimeBoundedMemberAttr,
+                Value::TimeBoundedMember(TimeBoundedMember::new(
+                    uuid::uuid!(UUID_TB_B),
+                    None,
+                    OffsetDateTime::UNIX_EPOCH + Duration::from_secs(100_000_000_000),
+                )),
+            );
+
+            let preload = Vec::new();
+            let create = vec![ea, eb];
+
+            run_create_test!(
+                Ok(None),
+                preload,
+                create,
+                None,
+                |qs: &mut QueryServerWriteTransaction| {
+                    assert_memberof!(qs, UUID_TB_B, UUID_TB_A);
+                    assert_dirmemberof!(qs, UUID_TB_B, UUID_TB_A);
+                }
+            );
+        }
+
+        #[test]
+        fn test_create_time_bounded_member_with_immediate_start() {
+            let mut ea = EA_TB.clone();
+            let eb = EB_TB.clone();
+
+            ea.add_ava(
+                Attribute::TimeBoundedMemberAttr,
+                Value::TimeBoundedMember(TimeBoundedMember::new(
+                    uuid::uuid!(UUID_TB_B),
+                    None,
+                    OffsetDateTime::UNIX_EPOCH + Duration::from_secs(100_000_000_000),
+                )),
+            );
+
+            let preload = Vec::new();
+            let create = vec![ea, eb];
+
+            run_create_test!(
+                Ok(None),
+                preload,
+                create,
+                None,
+                |qs: &mut QueryServerWriteTransaction| {
+                    assert_memberof!(qs, UUID_TB_B, UUID_TB_A);
+                    assert_dirmemberof!(qs, UUID_TB_B, UUID_TB_A);
+                }
+            );
+        }
+
+        #[test]
+        fn test_create_time_bounded_member_nested_valid() {
+            let mut ea = EA_TB.clone();
+            let mut eb = entry_init_fn([
+                (Attribute::Class, EntryClass::Group.to_value()),
+                (Attribute::Class, EntryClass::TimeBoundedGrant.to_value()),
+                (Attribute::Class, EntryClass::MemberOf.to_value()),
+                (Attribute::Name, Value::new_iname("testgroup_tb_b")),
+                (Attribute::Uuid, Value::Uuid(uuid::uuid!(UUID_TB_B))),
+            ]);
+            let ec = EC_TB.clone();
+
+            ea.add_ava(Attribute::Member, Value::new_refer_s(UUID_TB_B).unwrap());
+            eb.add_ava(
+                Attribute::TimeBoundedMemberAttr,
+                Value::TimeBoundedMember(TimeBoundedMember::new(
+                    uuid::uuid!(UUID_TB_C),
+                    None,
+                    OffsetDateTime::UNIX_EPOCH + Duration::from_secs(100_000_000_000),
+                )),
+            );
+
+            let preload = Vec::new();
+            let create = vec![ea, eb, ec];
+
+            run_create_test!(
+                Ok(None),
+                preload,
+                create,
+                None,
+                |qs: &mut QueryServerWriteTransaction| {
+                    assert_memberof!(qs, UUID_TB_B, UUID_TB_A);
+                    assert_memberof!(qs, UUID_TB_C, UUID_TB_B);
+                    assert_dirmemberof!(qs, UUID_TB_B, UUID_TB_A);
+                    assert_dirmemberof!(qs, UUID_TB_C, UUID_TB_B);
+                }
+            );
+        }
+
+        #[test]
+        fn test_create_time_bounded_member_multiple_members() {
+            let mut ea = EA_TB.clone();
+            let eb = EB_TB.clone();
+            let ec = EC_TB.clone();
+
+            ea.add_ava(
+                Attribute::TimeBoundedMemberAttr,
+                Value::TimeBoundedMember(TimeBoundedMember::new(
+                    uuid::uuid!(UUID_TB_B),
+                    None,
+                    OffsetDateTime::UNIX_EPOCH + Duration::from_secs(100_000_000_000),
+                )),
+            );
+            ea.add_ava(
+                Attribute::TimeBoundedMemberAttr,
+                Value::TimeBoundedMember(TimeBoundedMember::new(
+                    uuid::uuid!(UUID_TB_C),
+                    None,
+                    OffsetDateTime::UNIX_EPOCH + Duration::from_secs(100_000_000_000),
+                )),
+            );
+
+            let preload = Vec::new();
+            let create = vec![ea, eb, ec];
+
+            run_create_test!(
+                Ok(None),
+                preload,
+                create,
+                None,
+                |qs: &mut QueryServerWriteTransaction| {
+                    assert_memberof!(qs, UUID_TB_B, UUID_TB_A);
+                    assert_memberof!(qs, UUID_TB_C, UUID_TB_A);
+                    assert_dirmemberof!(qs, UUID_TB_B, UUID_TB_A);
+                    assert_dirmemberof!(qs, UUID_TB_C, UUID_TB_A);
+                }
+            );
+        }
+
+        #[test]
+        fn test_create_time_bounded_member_with_regular_member() {
+            let mut ea = EA_TB.clone();
+            let mut eb = entry_init_fn([
+                (Attribute::Class, EntryClass::Group.to_value()),
+                (Attribute::Class, EntryClass::TimeBoundedGrant.to_value()),
+                (Attribute::Class, EntryClass::MemberOf.to_value()),
+                (Attribute::Name, Value::new_iname("testgroup_tb_b")),
+                (Attribute::Uuid, Value::Uuid(uuid::uuid!(UUID_TB_B))),
+            ]);
+            let ec = EC_TB.clone();
+
+            ea.add_ava(Attribute::Member, Value::new_refer_s(UUID_TB_B).unwrap());
+            eb.add_ava(
+                Attribute::TimeBoundedMemberAttr,
+                Value::TimeBoundedMember(TimeBoundedMember::new(
+                    uuid::uuid!(UUID_TB_C),
+                    None,
+                    OffsetDateTime::UNIX_EPOCH + Duration::from_secs(100_000_000_000),
+                )),
+            );
+
+            let preload = Vec::new();
+            let create = vec![ea, eb, ec];
+
+            run_create_test!(
+                Ok(None),
+                preload,
+                create,
+                None,
+                |qs: &mut QueryServerWriteTransaction| {
+                    assert_memberof!(qs, UUID_TB_B, UUID_TB_A);
+                    assert_memberof!(qs, UUID_TB_C, UUID_TB_B);
+                    assert_dirmemberof!(qs, UUID_TB_B, UUID_TB_A);
+                    assert_dirmemberof!(qs, UUID_TB_C, UUID_TB_B);
+                }
+            );
+        }
+
+        #[test]
+        fn test_create_time_bounded_member_default_expiration() {
+            let mut ea = EA_TB.clone();
+            let eb = EB_TB.clone();
+
+            ea.add_ava(
+                Attribute::TimeBoundedMemberAttr,
+                Value::TimeBoundedMember(TimeBoundedMember::new(
+                    uuid::uuid!(UUID_TB_B),
+                    None,
+                    OffsetDateTime::UNIX_EPOCH + Duration::from_secs(100_000_000_000),
+                )),
+            );
+
+            let preload = Vec::new();
+            let create = vec![ea, eb];
+
+            run_create_test!(
+                Ok(None),
+                preload,
+                create,
+                None,
+                |qs: &mut QueryServerWriteTransaction| {
+                    assert_memberof!(qs, UUID_TB_B, UUID_TB_A);
+                }
+            );
+        }
+
+        #[test]
+        fn test_create_time_bounded_member_with_specific_start() {
+            let mut ea = EA_TB.clone();
+            let eb = EB_TB.clone();
+
+            let start_time = OffsetDateTime::UNIX_EPOCH + Duration::from_secs(60);
+
+            ea.add_ava(
+                Attribute::TimeBoundedMemberAttr,
+                Value::TimeBoundedMember(TimeBoundedMember::new(
+                    uuid::uuid!(UUID_TB_B),
+                    Some(start_time),
+                    OffsetDateTime::UNIX_EPOCH + Duration::from_secs(100_000_000_000),
+                )),
+            );
+
+            let preload = Vec::new();
+            let create = vec![ea, eb];
+
+            run_create_test!(
+                Ok(None),
+                preload,
+                create,
+                None,
+                |qs: &mut QueryServerWriteTransaction| {
+                    assert_memberof!(qs, UUID_TB_B, UUID_TB_A);
+                }
+            );
+        }
+
+        #[test]
+        fn test_modify_add_time_bounded_member() {
+            let ea = EA_TB.clone();
+            let eb = EB_TB.clone();
+
+            let preload = vec![ea, eb];
+
+            run_modify_test!(
+                Ok(()),
+                preload,
+                filter!(f_eq(
+                    Attribute::Uuid,
+                    PartialValue::new_uuid_s(UUID_TB_A).unwrap()
+                )),
+                ModifyList::new_list(vec![Modify::Present(
+                    Attribute::TimeBoundedMemberAttr,
+                    Value::TimeBoundedMember(TimeBoundedMember::new(
+                        uuid::uuid!(UUID_TB_B),
+                        None,
+                        OffsetDateTime::UNIX_EPOCH + Duration::from_secs(100_000_000_000)
+                    )),
+                )]),
+                None,
+                |_| {},
+                |qs: &mut QueryServerWriteTransaction| {
+                    assert_memberof!(qs, UUID_TB_B, UUID_TB_A);
+                    assert_dirmemberof!(qs, UUID_TB_B, UUID_TB_A);
+                }
+            );
+        }
+
+        #[test]
+        fn test_modify_remove_time_bounded_member() {
+            let mut ea = EA_TB.clone();
+            let mut eb = EB_TB.clone();
+
+            ea.add_ava(
+                Attribute::TimeBoundedMemberAttr,
+                Value::TimeBoundedMember(TimeBoundedMember::new(
+                    uuid::uuid!(UUID_TB_B),
+                    None,
+                    OffsetDateTime::UNIX_EPOCH + Duration::from_secs(100_000_000_000),
+                )),
+            );
+            eb.add_ava(Attribute::MemberOf, Value::new_refer_s(UUID_TB_A).unwrap());
+            eb.add_ava(
+                Attribute::DirectMemberOf,
+                Value::new_refer_s(UUID_TB_A).unwrap(),
+            );
+
+            let preload = vec![ea, eb];
+
+            run_modify_test!(
+                Ok(()),
+                preload,
+                filter!(f_eq(
+                    Attribute::Uuid,
+                    PartialValue::new_uuid_s(UUID_TB_A).unwrap()
+                )),
+                ModifyList::new_list(vec![Modify::Removed(
+                    Attribute::TimeBoundedMemberAttr,
+                    PartialValue::TimeBoundedMember(uuid::uuid!(UUID_TB_B)),
+                )]),
+                None,
+                |_| {},
+                |qs: &mut QueryServerWriteTransaction| {
+                    assert_not_memberof!(qs, UUID_TB_B, UUID_TB_A);
+                    assert_not_dirmemberof!(qs, UUID_TB_B, UUID_TB_A);
+                }
+            );
+        }
+
+        #[test]
+        fn test_delete_group_with_time_bounded_member() {
+            let mut ea = EA_TB.clone();
+            let mut eb = EB_TB.clone();
+
+            ea.add_ava(
+                Attribute::TimeBoundedMemberAttr,
+                Value::TimeBoundedMember(TimeBoundedMember::new(
+                    uuid::uuid!(UUID_TB_B),
+                    None,
+                    OffsetDateTime::UNIX_EPOCH + Duration::from_secs(100_000_000_000),
+                )),
+            );
+            eb.add_ava(Attribute::MemberOf, Value::new_refer_s(UUID_TB_A).unwrap());
+
+            let preload = vec![ea, eb];
+
+            run_delete_test!(
+                Ok(()),
+                preload,
+                filter!(f_eq(
+                    Attribute::Uuid,
+                    PartialValue::new_uuid_s(UUID_TB_A).unwrap()
+                )),
+                None,
+                |qs: &mut QueryServerWriteTransaction| {
+                    assert_not_memberof!(qs, UUID_TB_B, UUID_TB_A);
+                    assert_not_dirmemberof!(qs, UUID_TB_B, UUID_TB_A);
+                }
+            );
+        }
+
+        #[test]
+        fn test_time_bounded_member_overlapping_windows() {
+            let mut ea = EA_TB.clone();
+            let eb = EB_TB.clone();
+
+            let window1_start = None;
+            let window1_end = OffsetDateTime::UNIX_EPOCH + Duration::from_secs(100_000_000_000);
+
+            let window2_start = None;
+            let window2_end = OffsetDateTime::UNIX_EPOCH + Duration::from_secs(150_000_000_000);
+
+            ea.add_ava(
+                Attribute::TimeBoundedMemberAttr,
+                Value::TimeBoundedMember(TimeBoundedMember::new(
+                    uuid::uuid!(UUID_TB_B),
+                    window1_start,
+                    window1_end,
+                )),
+            );
+            ea.add_ava(
+                Attribute::TimeBoundedMemberAttr,
+                Value::TimeBoundedMember(TimeBoundedMember::new(
+                    uuid::uuid!(UUID_TB_B),
+                    window2_start,
+                    window2_end,
+                )),
+            );
+
+            let preload = Vec::new();
+            let create = vec![ea, eb];
+
+            run_create_test!(
+                Ok(None),
+                preload,
+                create,
+                None,
+                |qs: &mut QueryServerWriteTransaction| {
+                    assert_memberof!(qs, UUID_TB_B, UUID_TB_A);
+                    assert_dirmemberof!(qs, UUID_TB_B, UUID_TB_A);
+
+                    let entry = qs.internal_search_uuid(uuid::uuid!(UUID_TB_A)).unwrap();
+                    let tb_members =
+                        entry.get_ava_as_time_bounded_member(Attribute::TimeBoundedMemberAttr);
+                    assert!(tb_members.is_some());
+                    let members = tb_members.unwrap();
+                    assert_eq!(members.len(), 1);
+                }
+            );
+        }
+    }
 }

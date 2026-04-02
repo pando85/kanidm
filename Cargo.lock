@@ -4657,7 +4657,6 @@ dependencies = [
  "filetime",
  "futures",
  "futures-util",
- "generic-array",
  "haproxy-protocol",
  "hex",
  "hyper",
