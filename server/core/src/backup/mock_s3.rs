@@ -60,7 +60,7 @@ impl MockS3Storage {
     pub fn object_exists(&self, key: &str) -> bool {
         self.objects
             .read()
-            .map_or(false, |objects| objects.contains_key(key))
+            .is_ok_and(|objects| objects.contains_key(key))
     }
 
     pub fn clear(&self) {
@@ -79,8 +79,8 @@ impl MockS3Storage {
     pub fn corrupt_object(&self, key: &str) -> Result<(), MockS3Error> {
         let mut objects = self.objects.write().map_err(|_| MockS3Error::LockError)?;
         if let Some(data) = objects.get_mut(key) {
-            if !data.is_empty() {
-                data[0] = !data[0];
+            if let Some(first_byte) = data.first_mut() {
+                *first_byte = !*first_byte;
             }
             Ok(())
         } else {
