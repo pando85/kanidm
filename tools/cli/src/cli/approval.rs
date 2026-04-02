@@ -82,28 +82,7 @@ impl ApprovalPolicyOpt {
             } => {
                 let op_types: Vec<ApprovalOperationType> = operation_types
                     .iter()
-                    .filter_map(|s| {
-                        match s.to_lowercase().replace('_', "-").replace('-', "_") {
-                            s if s == "create_high_privilege_entry" => Some(ApprovalOperationType::CreateHighPrivilegeEntry),
-                            s if s == "delete_high_privilege_entry" => Some(ApprovalOperationType::DeleteHighPrivilegeEntry),
-                            s if s == "modify_high_privilege_entry" => Some(ApprovalOperationType::ModifyHighPrivilegeEntry),
-                            s if s == "credential_reset_high_privilege" => Some(ApprovalOperationType::CredentialResetHighPrivilege),
-                            s if s == "privilege_grant" => Some(ApprovalOperationType::PrivilegeGrant),
-                            s if s == "privilege_revoke" => Some(ApprovalOperationType::PrivilegeRevoke),
-                            s if s == "schema_modify" => Some(ApprovalOperationType::SchemaModify),
-                            s if s == "access_control_modify" => Some(ApprovalOperationType::AccessControlModify),
-                            s if s == "domain_config_modify" => Some(ApprovalOperationType::DomainConfigModify),
-                            s if s == "key_provider_modify" => Some(ApprovalOperationType::KeyProviderModify),
-                            s if s == "sync_account_modify" => Some(ApprovalOperationType::SyncAccountModify),
-                            s if s == "oauth2_client_modify" => Some(ApprovalOperationType::OAuth2ClientModify),
-                            s if s == "application_modify" => Some(ApprovalOperationType::ApplicationModify),
-                            s if s == "group_membership_high_privilege" => Some(ApprovalOperationType::GroupMembershipHighPrivilege),
-                            _ => {
-                                warn!("Unknown operation type: {}", s);
-                                None
-                            }
-                        }
-                    })
+                    .filter_map(|s| s.parse::<ApprovalOperationType>().ok())
                     .collect();
 
                 if op_types.is_empty() {
@@ -126,11 +105,9 @@ impl ApprovalPolicyOpt {
                     .filter_map(|s| uuid::Uuid::parse_str(s).ok())
                     .collect();
 
-                let approval_pattern = match pattern.to_lowercase() {
-                    "any_one" | "anyone" => ApprovalPattern::AnyOne,
-                    "majority" => ApprovalPattern::Majority,
-                    "all" => ApprovalPattern::All,
-                    _ => {
+                let approval_pattern = match pattern.parse::<ApprovalPattern>() {
+                    Ok(p) => p,
+                    Err(_) => {
                         error!("Invalid pattern: {}. Must be 'any_one', 'majority', or 'all'", pattern);
                         return;
                     }
@@ -179,20 +156,13 @@ impl ApprovalRequestOpt {
         match self {
             ApprovalRequestOpt::List { state } => {
                 let filter_state = match state {
-                    Some(s) => match s.to_lowercase() {
-                        "pending" => Some(ApprovalRequestState::Pending),
-                        "approved" => Some(ApprovalRequestState::Approved),
-                        "rejected" => Some(ApprovalRequestState::Rejected),
-                        "expired" => Some(ApprovalRequestState::Expired),
-                        "cancelled" => Some(ApprovalRequestState::Cancelled),
-                        "escalated" => Some(ApprovalRequestState::Escalated),
-                        _ => {
-                            warn!("Unknown state filter: {}. Showing all requests.", s);
-                            None
-                        }
-                    },
+                    Some(s) => s.parse::<ApprovalRequestState>().ok(),
                     None => None,
                 };
+
+                if state.is_some() && filter_state.is_none() {
+                    warn!("Unknown state filter: {}. Showing all requests.", state.unwrap());
+                }
 
                 let requests = match client.approval_request_list(filter_state).await {
                     Ok(r) => r,

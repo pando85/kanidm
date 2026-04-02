@@ -163,10 +163,30 @@ pub enum ApprovalPattern {
 
 impl fmt::Display for ApprovalPattern {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl ApprovalPattern {
+    pub fn as_str(&self) -> &'static str {
         match self {
-            ApprovalPattern::AnyOne => f.write_str("any_one"),
-            ApprovalPattern::Majority => f.write_str("majority"),
-            ApprovalPattern::All => f.write_str("all"),
+            ApprovalPattern::AnyOne => "any_one",
+            ApprovalPattern::Majority => "majority",
+            ApprovalPattern::All => "all",
+        }
+    }
+}
+
+impl std::str::FromStr for ApprovalPattern {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let normalized = s.to_lowercase().replace('-', "_");
+        match normalized.as_str() {
+            "any_one" | "anyone" => Ok(ApprovalPattern::AnyOne),
+            "majority" => Ok(ApprovalPattern::Majority),
+            "all" => Ok(ApprovalPattern::All),
+            _ => Err("invalid approval pattern"),
         }
     }
 }
@@ -192,31 +212,60 @@ pub enum ApprovalOperationType {
 
 impl fmt::Display for ApprovalOperationType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl ApprovalOperationType {
+    pub fn as_str(&self) -> &'static str {
         match self {
-            ApprovalOperationType::CreateHighPrivilegeEntry => {
-                f.write_str("create_high_privilege_entry")
-            }
-            ApprovalOperationType::DeleteHighPrivilegeEntry => {
-                f.write_str("delete_high_privilege_entry")
-            }
-            ApprovalOperationType::ModifyHighPrivilegeEntry => {
-                f.write_str("modify_high_privilege_entry")
-            }
+            ApprovalOperationType::CreateHighPrivilegeEntry => "create_high_privilege_entry",
+            ApprovalOperationType::DeleteHighPrivilegeEntry => "delete_high_privilege_entry",
+            ApprovalOperationType::ModifyHighPrivilegeEntry => "modify_high_privilege_entry",
             ApprovalOperationType::CredentialResetHighPrivilege => {
-                f.write_str("credential_reset_high_privilege")
+                "credential_reset_high_privilege"
             }
-            ApprovalOperationType::PrivilegeGrant => f.write_str("privilege_grant"),
-            ApprovalOperationType::PrivilegeRevoke => f.write_str("privilege_revoke"),
-            ApprovalOperationType::SchemaModify => f.write_str("schema_modify"),
-            ApprovalOperationType::AccessControlModify => f.write_str("access_control_modify"),
-            ApprovalOperationType::DomainConfigModify => f.write_str("domain_config_modify"),
-            ApprovalOperationType::KeyProviderModify => f.write_str("key_provider_modify"),
-            ApprovalOperationType::SyncAccountModify => f.write_str("sync_account_modify"),
-            ApprovalOperationType::OAuth2ClientModify => f.write_str("oauth2_client_modify"),
-            ApprovalOperationType::ApplicationModify => f.write_str("application_modify"),
+            ApprovalOperationType::PrivilegeGrant => "privilege_grant",
+            ApprovalOperationType::PrivilegeRevoke => "privilege_revoke",
+            ApprovalOperationType::SchemaModify => "schema_modify",
+            ApprovalOperationType::AccessControlModify => "access_control_modify",
+            ApprovalOperationType::DomainConfigModify => "domain_config_modify",
+            ApprovalOperationType::KeyProviderModify => "key_provider_modify",
+            ApprovalOperationType::SyncAccountModify => "sync_account_modify",
+            ApprovalOperationType::OAuth2ClientModify => "oauth2_client_modify",
+            ApprovalOperationType::ApplicationModify => "application_modify",
             ApprovalOperationType::GroupMembershipHighPrivilege => {
-                f.write_str("group_membership_high_privilege")
+                "group_membership_high_privilege"
             }
+        }
+    }
+}
+
+impl std::str::FromStr for ApprovalOperationType {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let normalized = s.to_lowercase().replace('-', "_");
+        match normalized.as_str() {
+            "create_high_privilege_entry" => Ok(ApprovalOperationType::CreateHighPrivilegeEntry),
+            "delete_high_privilege_entry" => Ok(ApprovalOperationType::DeleteHighPrivilegeEntry),
+            "modify_high_privilege_entry" => Ok(ApprovalOperationType::ModifyHighPrivilegeEntry),
+            "credential_reset_high_privilege" => {
+                Ok(ApprovalOperationType::CredentialResetHighPrivilege)
+            }
+            "privilege_grant" => Ok(ApprovalOperationType::PrivilegeGrant),
+            "privilege_revoke" => Ok(ApprovalOperationType::PrivilegeRevoke),
+            "schema_modify" => Ok(ApprovalOperationType::SchemaModify),
+            "access_control_modify" => Ok(ApprovalOperationType::AccessControlModify),
+            "domain_config_modify" => Ok(ApprovalOperationType::DomainConfigModify),
+            "key_provider_modify" => Ok(ApprovalOperationType::KeyProviderModify),
+            "sync_account_modify" => Ok(ApprovalOperationType::SyncAccountModify),
+            "oauth2_client_modify" => Ok(ApprovalOperationType::OAuth2ClientModify),
+            "application_modify" => Ok(ApprovalOperationType::ApplicationModify),
+            "group_membership_high_privilege" => {
+                Ok(ApprovalOperationType::GroupMembershipHighPrivilege)
+            }
+            _ => Err("invalid approval operation type"),
         }
     }
 }
@@ -234,13 +283,35 @@ pub enum ApprovalRequestState {
 
 impl fmt::Display for ApprovalRequestState {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl ApprovalRequestState {
+    pub fn as_str(&self) -> &'static str {
         match self {
-            ApprovalRequestState::Pending => f.write_str("pending"),
-            ApprovalRequestState::Approved => f.write_str("approved"),
-            ApprovalRequestState::Rejected => f.write_str("rejected"),
-            ApprovalRequestState::Expired => f.write_str("expired"),
-            ApprovalRequestState::Cancelled => f.write_str("cancelled"),
-            ApprovalRequestState::Escalated => f.write_str("escalated"),
+            ApprovalRequestState::Pending => "pending",
+            ApprovalRequestState::Approved => "approved",
+            ApprovalRequestState::Rejected => "rejected",
+            ApprovalRequestState::Expired => "expired",
+            ApprovalRequestState::Cancelled => "cancelled",
+            ApprovalRequestState::Escalated => "escalated",
+        }
+    }
+}
+
+impl std::str::FromStr for ApprovalRequestState {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "pending" => Ok(ApprovalRequestState::Pending),
+            "approved" => Ok(ApprovalRequestState::Approved),
+            "rejected" => Ok(ApprovalRequestState::Rejected),
+            "expired" => Ok(ApprovalRequestState::Expired),
+            "cancelled" => Ok(ApprovalRequestState::Cancelled),
+            "escalated" => Ok(ApprovalRequestState::Escalated),
+            _ => Err("invalid approval request state"),
         }
     }
 }
@@ -250,6 +321,21 @@ impl fmt::Display for ApprovalRequestState {
 pub enum ApprovalDecisionAction {
     Approve,
     Reject,
+}
+
+impl fmt::Display for ApprovalDecisionAction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl ApprovalDecisionAction {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ApprovalDecisionAction::Approve => "approve",
+            ApprovalDecisionAction::Reject => "reject",
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
