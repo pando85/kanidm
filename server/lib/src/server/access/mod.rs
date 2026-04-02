@@ -3855,10 +3855,9 @@ mod tests {
     fn test_access_time_restriction_valid() {
         sketching::test_init();
 
-        let admin = Identity::from_impersonate_entry_readwrite(E_TEST_ACCOUNT_1.clone());
-
         let ev1 = E_TESTPERSON_1.clone().into_sealed_committed();
-        let r_set = vec![Arc::new(ev1)];
+        let r_set = vec![Arc::new(ev1.clone())];
+        let ex_set = vec![Arc::new(ev1)];
 
         let se_admin = SearchEvent::new_impersonate_entry(
             E_TEST_ACCOUNT_1.clone(),
@@ -3882,17 +3881,16 @@ mod tests {
             Some(end),
         );
 
-        test_acp_search!(&se_admin, vec![acp], &r_set, true);
+        test_acp_search!(&se_admin, vec![acp], r_set, ex_set);
     }
 
     #[test]
     fn test_access_time_restriction_expired() {
         sketching::test_init();
 
-        let admin = Identity::from_impersonate_entry_readwrite(E_TEST_ACCOUNT_1.clone());
-
         let ev1 = E_TESTPERSON_1.clone().into_sealed_committed();
         let r_set = vec![Arc::new(ev1)];
+        let ex_set = vec![];
 
         let se_admin = SearchEvent::new_impersonate_entry(
             E_TEST_ACCOUNT_1.clone(),
@@ -3916,17 +3914,16 @@ mod tests {
             Some(end),
         );
 
-        test_acp_search!(&se_admin, vec![acp], &r_set, false);
+        test_acp_search!(&se_admin, vec![acp], r_set, ex_set);
     }
 
     #[test]
     fn test_access_time_restriction_future() {
         sketching::test_init();
 
-        let admin = Identity::from_impersonate_entry_readwrite(E_TEST_ACCOUNT_1.clone());
-
         let ev1 = E_TESTPERSON_1.clone().into_sealed_committed();
         let r_set = vec![Arc::new(ev1)];
+        let ex_set = vec![];
 
         let se_admin = SearchEvent::new_impersonate_entry(
             E_TEST_ACCOUNT_1.clone(),
@@ -3950,17 +3947,16 @@ mod tests {
             Some(end),
         );
 
-        test_acp_search!(&se_admin, vec![acp], &r_set, false);
+        test_acp_search!(&se_admin, vec![acp], r_set, ex_set);
     }
 
     #[test]
     fn test_access_time_restriction_start_only() {
         sketching::test_init();
 
-        let admin = Identity::from_impersonate_entry_readwrite(E_TEST_ACCOUNT_1.clone());
-
         let ev1 = E_TESTPERSON_1.clone().into_sealed_committed();
-        let r_set = vec![Arc::new(ev1)];
+        let r_set = vec![Arc::new(ev1.clone())];
+        let ex_set = vec![Arc::new(ev1)];
 
         let se_admin = SearchEvent::new_impersonate_entry(
             E_TEST_ACCOUNT_1.clone(),
@@ -3983,17 +3979,16 @@ mod tests {
             None,
         );
 
-        test_acp_search!(&se_admin, vec![acp], &r_set, true);
+        test_acp_search!(&se_admin, vec![acp], r_set, ex_set);
     }
 
     #[test]
     fn test_access_time_restriction_end_only() {
         sketching::test_init();
 
-        let admin = Identity::from_impersonate_entry_readwrite(E_TEST_ACCOUNT_1.clone());
-
         let ev1 = E_TESTPERSON_1.clone().into_sealed_committed();
-        let r_set = vec![Arc::new(ev1)];
+        let r_set = vec![Arc::new(ev1.clone())];
+        let ex_set = vec![Arc::new(ev1)];
 
         let se_admin = SearchEvent::new_impersonate_entry(
             E_TEST_ACCOUNT_1.clone(),
@@ -4016,6 +4011,6 @@ mod tests {
             Some(end),
         );
 
-        test_acp_search!(&se_admin, vec![acp], &r_set, true);
+        test_acp_search!(&se_admin, vec![acp], r_set, ex_set);
     }
 }
