@@ -1,4 +1,5 @@
 mod apidocs;
+mod authorization_test;
 mod domain;
 mod group;
 mod http_manifest;

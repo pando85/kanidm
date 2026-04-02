@@ -523,4 +523,233 @@ mod tests {
         assert!(subject.email.is_some());
         assert!(subject.context.contains_key("device_id"));
     }
+
+    #[test]
+    fn test_pip_id_from_string() {
+        let pip_id = PipId::from("test_pip".to_string());
+        assert_eq!(pip_id.as_str(), "test_pip");
+
+        let pip_id_ref: PipId = "another_pip".into();
+        assert_eq!(pip_id_ref.as_str(), "another_pip");
+    }
+
+    #[test]
+    fn test_pip_attribute_name_edge_cases() {
+        let pip_id = PipId::new("source_with_underscores");
+        let attr_name = PipAttributeName::new(&pip_id, "attr_with_special_chars_123");
+        assert_eq!(
+            attr_name.as_str(),
+            "pip:source_with_underscores:attr_with_special_chars_123"
+        );
+
+        let parsed = PipAttributeName::parse(attr_name.as_str());
+        assert!(parsed.is_some());
+    }
+
+    #[test]
+    fn test_pip_attribute_name_invalid_parse() {
+        assert!(PipAttributeName::parse("pip:").is_none());
+        assert!(PipAttributeName::parse("pip:source").is_none());
+        assert!(PipAttributeName::parse("no_prefix_here").is_none());
+        assert!(PipAttributeName::parse("").is_none());
+    }
+
+    #[test]
+    fn test_pip_attribute_set_operations() {
+        let mut set = PipAttributeSet::new();
+        assert!(set.is_empty());
+        assert_eq!(set.len(), 0);
+
+        let pip_id = PipId::new("source1");
+        let attr1 = PipAttributeName::new(&pip_id, "attr1");
+        let attr2 = PipAttributeName::new(&pip_id, "attr2");
+
+        set.insert(attr1.clone(), PipAttributeValue::String("value1".to_string()));
+        set.insert(attr2.clone(), PipAttributeValue::String("value2".to_string()));
+
+        assert_eq!(set.len(), 2);
+        assert!(set.contains(&attr1));
+        assert!(set.contains(&attr2));
+
+        let iter_count = set.iter().count();
+        assert_eq!(iter_count, 2);
+    }
+
+    #[test]
+    fn test_pip_attribute_set_merge() {
+        let mut set1 = PipAttributeSet::new();
+        let pip_id1 = PipId::new("source1");
+        let attr1 = PipAttributeName::new(&pip_id1, "attr1");
+        set1.insert(attr1.clone(), PipAttributeValue::String("value1".to_string()));
+
+        let mut set2 = PipAttributeSet::new();
+        let pip_id2 = PipId::new("source2");
+        let attr2 = PipAttributeName::new(&pip_id2, "attr2");
+        set2.insert(attr2.clone(), PipAttributeValue::String("value2".to_string()));
+
+        set1.merge(set2);
+
+        assert_eq!(set1.len(), 2);
+        assert!(set1.contains(&attr1));
+        assert!(set1.contains(&attr2));
+    }
+
+    #[test]
+    fn test_pip_attribute_set_merge_conflict() {
+        let mut set1 = PipAttributeSet::new();
+        let pip_id = PipId::new("source");
+        let attr = PipAttributeName::new(&pip_id, "same_attr");
+        set1.insert(attr.clone(), PipAttributeValue::String("value1".to_string()));
+
+        let mut set2 = PipAttributeSet::new();
+        set2.insert(attr.clone(), PipAttributeValue::String("value2".to_string()));
+
+        set1.merge(set2);
+
+        assert_eq!(set1.len(), 1);
+        assert_eq!(set1.get(&attr).unwrap().as_str(), Some("value2"));
+    }
+
+    #[test]
+    fn test_pip_attribute_value_json() {
+        let json_val = PipAttributeValue::Json(serde_json::json!({"key": "value"}));
+        assert!(json_val.as_json().is_some());
+        let json = json_val.as_json().unwrap();
+        assert_eq!(json.get("key").unwrap().as_str(), Some("value"));
+
+        let string_val = PipAttributeValue::String("test".to_string());
+        assert!(string_val.as_json().is_none());
+    }
+
+    #[test]
+    fn test_pip_attribute_value_array_operations() {
+        let array_val = PipAttributeValue::Array(vec![
+            PipAttributeValue::Integer(1),
+            PipAttributeValue::Integer(2),
+            PipAttributeValue::Integer(3),
+        ]);
+
+        let arr = array_val.as_array().unwrap();
+        assert_eq!(arr.len(), 3);
+        assert_eq!(arr[0].as_int(), Some(1));
+        assert_eq!(arr[2].as_int(), Some(3));
+    }
+
+    #[test]
+    fn test_pip_result_success() {
+        let mut set = PipAttributeSet::new();
+        let pip_id = PipId::new("test");
+        let attr = PipAttributeName::new(&pip_id, "test_attr");
+        set.insert(attr, PipAttributeValue::String("value".to_string()));
+
+        let result = PipResult::Success(set);
+        assert!(result.is_success());
+        assert!(result.attributes().is_some());
+        assert!(!result.fallback_used());
+    }
+
+    #[test]
+    fn test_pip_result_unavailable() {
+        let result = PipResult::Unavailable {
+            reason: "Connection timeout".to_string(),
+            fallback_used: true,
+        };
+
+        assert!(!result.is_success());
+        assert!(result.fallback_used());
+        assert!(result.attributes().is_none());
+    }
+
+    #[test]
+    fn test_pip_result_timeout() {
+        let result = PipResult::Timeout { fallback_used: false };
+        assert!(!result.is_success());
+        assert!(!result.fallback_used());
+    }
+
+    #[test]
+    fn test_pip_result_error() {
+        let result = PipResult::Error {
+            error: "Invalid response format".to_string(),
+            fallback_used: false,
+        };
+
+        assert!(!result.is_success());
+        assert!(!result.fallback_used());
+    }
+
+    #[test]
+    fn test_pip_health_status() {
+        assert!(PipHealthStatus::Healthy.is_healthy());
+        assert!(PipHealthStatus::Healthy.can_retrieve());
+        assert!(PipHealthStatus::Degraded.can_retrieve());
+        assert!(!PipHealthStatus::Degraded.is_healthy());
+        assert!(!PipHealthStatus::Unhealthy.can_retrieve());
+        assert!(!PipHealthStatus::Unhealthy.is_healthy());
+        assert!(!PipHealthStatus::Unknown.is_healthy());
+        assert!(!PipHealthStatus::Unknown.can_retrieve());
+    }
+
+    #[test]
+    fn test_pip_subject_builder() {
+        let uuid = Uuid::new_v4();
+        let subject = PipSubject::from_uuid(uuid)
+            .with_username("admin")
+            .with_email("admin@example.org")
+            .with_context("tenant", "tenant_a")
+            .with_context("ip", "192.168.1.1");
+
+        assert_eq!(subject.uuid, uuid);
+        assert_eq!(subject.username.as_ref().unwrap(), "admin");
+        assert_eq!(subject.email.as_ref().unwrap(), "admin@example.org");
+        assert_eq!(subject.context.len(), 2);
+    }
+
+    #[test]
+    fn test_pip_health_check_struct() {
+        let health_check = PipHealthCheck {
+            pip_id: PipId::new("test_pip"),
+            status: PipHealthStatus::Healthy,
+            last_check: Instant::now(),
+            latency_ms: Some(50),
+            error_message: None,
+        };
+
+        assert_eq!(health_check.pip_id.as_str(), "test_pip");
+        assert!(health_check.status.is_healthy());
+        assert!(health_check.latency_ms.is_some());
+    }
+
+    #[test]
+    fn test_pip_manager_basic() {
+        let manager = PipManager::new(std::time::Duration::from_secs(60));
+        assert!(manager.get(&PipId::new("nonexistent")).is_none());
+    }
+
+    #[test]
+    fn test_pip_attribute_name_with_empty_components() {
+        let pip_id = PipId::new("source");
+        let _attr = PipAttributeName::new(&pip_id, "attribute");
+        let parsed = PipAttributeName::parse("pip::attribute");
+        assert!(parsed.is_some());
+        let (empty_id, attr) = parsed.unwrap();
+        assert_eq!(empty_id.as_str(), "");
+        assert_eq!(attr, "attribute");
+    }
+
+    #[test]
+    fn test_pip_attribute_set_get_missing() {
+        let set = PipAttributeSet::new();
+        let pip_id = PipId::new("source");
+        let attr = PipAttributeName::new(&pip_id, "missing_attr");
+        assert!(set.get(&attr).is_none());
+    }
+
+    #[test]
+    fn test_pip_subject_default_context() {
+        let subject = PipSubject::from_uuid(Uuid::new_v4());
+        assert!(subject.username.is_none());
+        assert!(subject.email.is_none());
+        assert!(subject.context.is_empty());
+    }
 }
