@@ -2020,6 +2020,7 @@ pub static IDM_ACP_OAUTH2_CLIENT_ADMIN: LazyLock<BuiltinAcp> = LazyLock::new(|| 
     classes: vec![
         EntryClass::Object,
         EntryClass::AccessControlCreate,
+        EntryClass::AccessControlDelete,
         EntryClass::AccessControlModify,
         EntryClass::AccessControlProfile,
         EntryClass::AccessControlSearch,
