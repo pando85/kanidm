@@ -2,7 +2,7 @@
 # It should be *very* clear that this is an insecure, dev-only configuration. Don't run this in production!
 services:
   grafana:
-    image: grafana/grafana:10.4.19
+    image: grafana/grafana:10.1.1
     volumes:
       - type: bind
         source: ./grafana-datasources.yaml
@@ -74,7 +74,7 @@ services:
   prometheus:
     hostname: prometheus
     container_name: prometheus
-    image: prom/prometheus:v2.55.1
+    image: prom/prometheus:v2.47.2
     restart: always
     ports:
       - "9090:9090"
