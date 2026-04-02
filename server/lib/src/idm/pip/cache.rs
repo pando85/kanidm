@@ -280,6 +280,7 @@ mod tests {
 
         cache.clear();
         assert!(cache.is_empty());
+        assert_eq!(cache.stats().evictions, 1);
     }
 
     #[test]
@@ -294,5 +295,248 @@ mod tests {
 
         assert_eq!(cache.size(), 3);
         assert!(cache.stats().evictions >= 2);
+    }
+
+    #[test]
+    fn test_cache_put_with_custom_ttl() {
+        let mut cache = PipAttributeCache::new(Duration::from_secs(60));
+        let pip_id = PipId::new("test_pip");
+        let subject = PipSubject::from_uuid(Uuid::new_v4());
+
+        cache.put_with_ttl(
+            &pip_id,
+            &subject,
+            PipAttributeSet::new(),
+            Duration::from_secs(120),
+        );
+
+        assert_eq!(cache.size(), 1);
+    }
+
+    #[test]
+    fn test_cache_remove() {
+        let mut cache = PipAttributeCache::new(Duration::from_secs(60));
+        let pip_id = PipId::new("test_pip");
+        let subject = PipSubject::from_uuid(Uuid::new_v4());
+
+        cache.put(&pip_id, &subject, PipAttributeSet::new());
+        assert_eq!(cache.size(), 1);
+
+        cache.remove(&pip_id, &subject);
+        assert!(cache.is_empty());
+        assert_eq!(cache.stats().evictions, 1);
+    }
+
+    #[test]
+    fn test_cache_remove_nonexistent() {
+        let mut cache = PipAttributeCache::new(Duration::from_secs(60));
+        let pip_id = PipId::new("test_pip");
+        let subject = PipSubject::from_uuid(Uuid::new_v4());
+
+        cache.remove(&pip_id, &subject);
+        assert!(cache.is_empty());
+        assert_eq!(cache.stats().evictions, 0);
+    }
+
+    #[test]
+    fn test_cache_purge_expired() {
+        let mut cache = PipAttributeCache::new(Duration::from_millis(50));
+        let pip_id = PipId::new("test_pip");
+
+        cache.put(
+            &pip_id,
+            &PipSubject::from_uuid(Uuid::new_v4()),
+            PipAttributeSet::new(),
+        );
+        cache.put(
+            &pip_id,
+            &PipSubject::from_uuid(Uuid::new_v4()),
+            PipAttributeSet::new(),
+        );
+
+        assert_eq!(cache.size(), 2);
+        assert_eq!(cache.purge_expired(), 0);
+    }
+
+    #[test]
+    fn test_cache_stats() {
+        let mut cache = PipAttributeCache::new(Duration::from_secs(60));
+        let pip_id = PipId::new("test_pip");
+        let subject = PipSubject::from_uuid(Uuid::new_v4());
+
+        cache.put(&pip_id, &subject, PipAttributeSet::new());
+
+        cache.get(&pip_id, &subject);
+        cache.get(&pip_id, &PipSubject::from_uuid(Uuid::new_v4()));
+
+        let stats = cache.stats();
+        assert_eq!(stats.hits, 1);
+        assert_eq!(stats.misses, 1);
+        assert_eq!(cache.size(), 1);
+    }
+
+    #[test]
+    fn test_cache_hit_rate() {
+        let stats = CacheStats {
+            total_entries: 10,
+            hits: 8,
+            misses: 2,
+            evictions: 0,
+            expired_evictions: 0,
+        };
+        assert_eq!(stats.hit_rate(), 0.8);
+
+        let empty_stats = CacheStats::default();
+        assert_eq!(empty_stats.hit_rate(), 0.0);
+    }
+
+    #[test]
+    fn test_cache_multiple_pips_same_subject() {
+        let mut cache = PipAttributeCache::new(Duration::from_secs(60));
+        let pip_id1 = PipId::new("pip1");
+        let pip_id2 = PipId::new("pip2");
+        let subject = PipSubject::from_uuid(Uuid::new_v4());
+
+        cache.put(&pip_id1, &subject, PipAttributeSet::new());
+        cache.put(&pip_id2, &subject, PipAttributeSet::new());
+
+        assert_eq!(cache.size(), 2);
+        assert!(cache.get(&pip_id1, &subject).is_some());
+        assert!(cache.get(&pip_id2, &subject).is_some());
+    }
+
+    #[test]
+    fn test_cache_same_pip_different_subjects() {
+        let mut cache = PipAttributeCache::new(Duration::from_secs(60));
+        let pip_id = PipId::new("test_pip");
+
+        let subject1 = PipSubject::from_uuid(Uuid::new_v4());
+        let subject2 = PipSubject::from_uuid(Uuid::new_v4());
+
+        cache.put(&pip_id, &subject1, PipAttributeSet::new());
+        cache.put(&pip_id, &subject2, PipAttributeSet::new());
+
+        assert_eq!(cache.size(), 2);
+        assert!(cache.get(&pip_id, &subject1).is_some());
+        assert!(cache.get(&pip_id, &subject2).is_some());
+    }
+
+    #[test]
+    fn test_cache_zero_ttl() {
+        let mut cache = PipAttributeCache::new(Duration::from_secs(0));
+        let pip_id = PipId::new("test_pip");
+        let subject = PipSubject::from_uuid(Uuid::new_v4());
+
+        cache.put(&pip_id, &subject, PipAttributeSet::new());
+        assert_eq!(cache.size(), 1);
+    }
+
+    #[test]
+    fn test_cache_eviction_order() {
+        let mut cache = PipAttributeCache::with_settings(Duration::from_secs(60), 2);
+        let pip_id = PipId::new("test_pip");
+
+        let subject1 = PipSubject::from_uuid(Uuid::new_v4());
+        let subject2 = PipSubject::from_uuid(Uuid::new_v4());
+        let subject3 = PipSubject::from_uuid(Uuid::new_v4());
+
+        cache.put(&pip_id, &subject1, PipAttributeSet::new());
+        cache.put(&pip_id, &subject2, PipAttributeSet::new());
+        cache.put(&pip_id, &subject3, PipAttributeSet::new());
+
+        assert_eq!(cache.size(), 2);
+        assert_eq!(cache.stats().evictions, 1);
+    }
+
+    #[test]
+    fn test_cache_repeated_hits() {
+        let mut cache = PipAttributeCache::new(Duration::from_secs(60));
+        let pip_id = PipId::new("test_pip");
+        let subject = PipSubject::from_uuid(Uuid::new_v4());
+
+        cache.put(&pip_id, &subject, PipAttributeSet::new());
+
+        for _ in 0..10 {
+            cache.get(&pip_id, &subject);
+        }
+
+        assert_eq!(cache.stats().hits, 10);
+    }
+
+    #[test]
+    fn test_cache_attributes_preserved() {
+        let mut cache = PipAttributeCache::new(Duration::from_secs(60));
+        let pip_id = PipId::new("test_pip");
+        let subject = PipSubject::from_uuid(Uuid::new_v4());
+
+        let mut attrs = PipAttributeSet::new();
+        attrs.insert(
+            super::super::PipAttributeName::new(&pip_id, "key1"),
+            super::super::PipAttributeValue::String("value1".to_string()),
+        );
+        attrs.insert(
+            super::super::PipAttributeName::new(&pip_id, "key2"),
+            super::super::PipAttributeValue::Integer(42),
+        );
+
+        cache.put(&pip_id, &subject, attrs.clone());
+
+        let retrieved = cache.get(&pip_id, &subject).unwrap();
+        assert_eq!(retrieved.len(), 2);
+    }
+
+    #[test]
+    fn test_cached_entry_remaining_ttl() {
+        let entry = CachedEntry::new(PipAttributeSet::new(), Duration::from_secs(60));
+        assert!(entry.remaining_ttl().is_some());
+        assert!(entry.remaining_ttl().unwrap() <= Duration::from_secs(60));
+    }
+
+    #[test]
+    fn test_cached_entry_is_expired() {
+        let entry = CachedEntry::new(PipAttributeSet::new(), Duration::from_secs(60));
+        assert!(!entry.is_expired());
+    }
+
+    #[test]
+    fn test_cache_key_creation() {
+        let pip_id = PipId::new("test_pip");
+        let uuid = Uuid::new_v4();
+        let subject = PipSubject::from_uuid(uuid);
+
+        let key = CacheKey::new(pip_id.clone(), &subject);
+        assert_eq!(key.pip_id, pip_id);
+        assert_eq!(key.subject_uuid, uuid);
+    }
+
+    #[test]
+    fn test_cache_key_ordering() {
+        let pip_id1 = PipId::new("pip1");
+        let pip_id2 = PipId::new("pip2");
+        let uuid = Uuid::new_v4();
+        let subject = PipSubject::from_uuid(uuid);
+
+        let key1 = CacheKey::new(pip_id1, &subject);
+        let key2 = CacheKey::new(pip_id2, &subject);
+
+        assert!(key1 < key2);
+    }
+
+    #[test]
+    fn test_cache_with_settings() {
+        let cache = PipAttributeCache::with_settings(Duration::from_secs(300), 500);
+        assert!(cache.is_empty());
+    }
+
+    #[test]
+    fn test_cache_size_tracking() {
+        let mut cache = PipAttributeCache::new(Duration::from_secs(60));
+        let pip_id = PipId::new("test_pip");
+
+        for i in 0..10 {
+            let subject = PipSubject::from_uuid(Uuid::new_v4());
+            cache.put(&pip_id, &subject, PipAttributeSet::new());
+            assert_eq!(cache.size(), i + 1);
+        }
     }
 }

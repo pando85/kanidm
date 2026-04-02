@@ -456,4 +456,509 @@ attributes = ["department", "manager", "location"]
             PipFallbackBehavior::UseFallback
         );
     }
+
+    #[test]
+    fn test_fallback_behavior_default_is_use_fallback() {
+        let behavior = PipFallbackBehavior::default();
+        assert_eq!(behavior, PipFallbackBehavior::UseFallback);
+    }
+
+    #[test]
+    fn test_fallback_behavior_variants() {
+        assert_eq!(
+            PipFallbackBehavior::UseFallback,
+            PipFallbackBehavior::UseFallback
+        );
+        assert_eq!(PipFallbackBehavior::Deny, PipFallbackBehavior::Deny);
+        assert_eq!(PipFallbackBehavior::Ignore, PipFallbackBehavior::Ignore);
+    }
+
+    #[test]
+    fn test_auth_config_none() {
+        let auth = PipAuthConfig::None;
+        let serialized = serde_json::to_string(&auth).unwrap();
+        assert!(serialized.contains("none"));
+    }
+
+    #[test]
+    fn test_auth_config_basic() {
+        let auth = PipAuthConfig::Basic {
+            username: "user".to_string(),
+            password: "pass".to_string(),
+        };
+        let serialized = serde_json::to_string(&auth).unwrap();
+        assert!(serialized.contains("basic"));
+        assert!(serialized.contains("user"));
+        assert!(serialized.contains("pass"));
+    }
+
+    #[test]
+    fn test_auth_config_bearer() {
+        let auth = PipAuthConfig::Bearer {
+            token: "my_token".to_string(),
+        };
+        let serialized = serde_json::to_string(&auth).unwrap();
+        assert!(serialized.contains("bearer"));
+        assert!(serialized.contains("my_token"));
+    }
+
+    #[test]
+    fn test_auth_config_api_key_header() {
+        let auth = PipAuthConfig::ApiKey {
+            key_name: "X-API-Key".to_string(),
+            key_value: "secret".to_string(),
+            location: ApiKeyLocation::Header,
+        };
+        assert!(matches!(auth, PipAuthConfig::ApiKey { .. }));
+    }
+
+    #[test]
+    fn test_auth_config_api_key_query_param() {
+        let auth = PipAuthConfig::ApiKey {
+            key_name: "api_key".to_string(),
+            key_value: "secret".to_string(),
+            location: ApiKeyLocation::QueryParam,
+        };
+        assert!(matches!(
+            auth,
+            PipAuthConfig::ApiKey {
+                location: ApiKeyLocation::QueryParam,
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn test_auth_config_oauth2() {
+        let auth = PipAuthConfig::OAuth2ClientCredentials {
+            token_url: Url::parse("https://auth.example.com/token").unwrap(),
+            client_id: "client".to_string(),
+            client_secret: "secret".to_string(),
+            scope: Some("read".to_string()),
+        };
+        assert!(matches!(
+            auth,
+            PipAuthConfig::OAuth2ClientCredentials { .. }
+        ));
+    }
+
+    #[test]
+    fn test_auth_config_mutual_tls() {
+        let auth = PipAuthConfig::MutualTls {
+            cert_path: PathBuf::from("/path/to/cert.pem"),
+            key_path: PathBuf::from("/path/to/key.pem"),
+        };
+        assert!(matches!(auth, PipAuthConfig::MutualTls { .. }));
+    }
+
+    #[test]
+    fn test_api_key_location_default() {
+        let location = ApiKeyLocation::default();
+        assert_eq!(location, ApiKeyLocation::Header);
+    }
+
+    #[test]
+    fn test_tls_config_default() {
+        let tls = PipTlsConfig::default();
+        assert!(tls.verify_server);
+        assert!(!tls.allow_insecure);
+        assert!(tls.ca_path.is_none());
+    }
+
+    #[test]
+    fn test_tls_config_with_insecure() {
+        let tls = PipTlsConfig {
+            ca_path: Some(PathBuf::from("/path/to/ca.pem")),
+            verify_server: false,
+            allow_insecure: true,
+        };
+        assert!(!tls.verify_server);
+        assert!(tls.allow_insecure);
+        assert!(tls.ca_path.is_some());
+    }
+
+    #[test]
+    fn test_health_check_config_default() {
+        let config = PipHealthCheckConfig::default();
+        assert_eq!(config.interval_secs, 60);
+        assert_eq!(config.failure_threshold, 3);
+        assert_eq!(config.success_threshold, 2);
+        assert_eq!(config.timeout_secs, 5);
+    }
+
+    #[test]
+    fn test_health_check_config_custom() {
+        let config = PipHealthCheckConfig {
+            interval_secs: 30,
+            failure_threshold: 5,
+            success_threshold: 3,
+            timeout_secs: 10,
+        };
+        assert_eq!(config.interval_secs, 30);
+        assert_eq!(config.failure_threshold, 5);
+    }
+
+    #[test]
+    fn test_http_method_variants() {
+        assert_eq!(HttpMethod::Get, HttpMethod::Get);
+        assert_eq!(HttpMethod::Post, HttpMethod::Post);
+        assert_ne!(HttpMethod::Get, HttpMethod::Post);
+    }
+
+    #[test]
+    fn test_pip_source_config_id() {
+        let http = PipSourceConfig::Http(HttpPipConfig {
+            id: "http_pip".to_string(),
+            base_url: Url::parse("https://example.com").unwrap(),
+            endpoint_path: "/test".to_string(),
+            method: HttpMethod::Get,
+            auth: None,
+            tls: PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            headers: BTreeMap::new(),
+            fallback_behavior: PipFallbackBehavior::UseFallback,
+            fallback_values: BTreeMap::new(),
+            health_check: PipHealthCheckConfig::default(),
+            health_check_path: None,
+            provided_attributes: vec!["attr".to_string()],
+        });
+
+        let ldap = PipSourceConfig::Ldap(LdapPipConfig {
+            id: "ldap_pip".to_string(),
+            url: Url::parse("ldap://localhost").unwrap(),
+            base_dn: "dc=example,dc=com".to_string(),
+            bind_dn: "cn=admin".to_string(),
+            bind_password: "secret".to_string(),
+            search_filter: "(uid={username})".to_string(),
+            attributes: vec!["attr".to_string()],
+            tls: PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            fallback_behavior: PipFallbackBehavior::UseFallback,
+            fallback_values: BTreeMap::new(),
+            health_check: PipHealthCheckConfig::default(),
+            attribute_mapping: BTreeMap::new(),
+        });
+
+        assert_eq!(http.id(), "http_pip");
+        assert_eq!(ldap.id(), "ldap_pip");
+    }
+
+    #[test]
+    fn test_pip_source_config_cache_ttl() {
+        let http = PipSourceConfig::Http(HttpPipConfig {
+            id: "test".to_string(),
+            base_url: Url::parse("https://example.com").unwrap(),
+            endpoint_path: "/test".to_string(),
+            method: HttpMethod::Get,
+            auth: None,
+            tls: PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 120,
+            headers: BTreeMap::new(),
+            fallback_behavior: PipFallbackBehavior::UseFallback,
+            fallback_values: BTreeMap::new(),
+            health_check: PipHealthCheckConfig::default(),
+            health_check_path: None,
+            provided_attributes: vec!["attr".to_string()],
+        });
+
+        assert_eq!(http.cache_ttl(), Duration::from_secs(120));
+    }
+
+    #[test]
+    fn test_pip_source_config_timeout() {
+        let ldap = PipSourceConfig::Ldap(LdapPipConfig {
+            id: "test".to_string(),
+            url: Url::parse("ldap://localhost").unwrap(),
+            base_dn: "dc=example,dc=com".to_string(),
+            bind_dn: "cn=admin".to_string(),
+            bind_password: "secret".to_string(),
+            search_filter: "(uid={username})".to_string(),
+            attributes: vec!["attr".to_string()],
+            tls: PipTlsConfig::default(),
+            timeout_secs: 45,
+            cache_ttl_secs: 60,
+            fallback_behavior: PipFallbackBehavior::UseFallback,
+            fallback_values: BTreeMap::new(),
+            health_check: PipHealthCheckConfig::default(),
+            attribute_mapping: BTreeMap::new(),
+        });
+
+        assert_eq!(ldap.timeout(), Duration::from_secs(45));
+    }
+
+    #[test]
+    fn test_pip_source_config_fallback_behavior() {
+        let http = PipSourceConfig::Http(HttpPipConfig {
+            id: "test".to_string(),
+            base_url: Url::parse("https://example.com").unwrap(),
+            endpoint_path: "/test".to_string(),
+            method: HttpMethod::Get,
+            auth: None,
+            tls: PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            headers: BTreeMap::new(),
+            fallback_behavior: PipFallbackBehavior::Deny,
+            fallback_values: BTreeMap::new(),
+            health_check: PipHealthCheckConfig::default(),
+            health_check_path: None,
+            provided_attributes: vec!["attr".to_string()],
+        });
+
+        assert_eq!(http.fallback_behavior(), PipFallbackBehavior::Deny);
+    }
+
+    #[test]
+    fn test_pip_source_config_fallback_values() {
+        let mut fallback = BTreeMap::new();
+        fallback.insert(
+            "key".to_string(),
+            PipAttributeValue::String("value".to_string()),
+        );
+
+        let http = PipSourceConfig::Http(HttpPipConfig {
+            id: "test".to_string(),
+            base_url: Url::parse("https://example.com").unwrap(),
+            endpoint_path: "/test".to_string(),
+            method: HttpMethod::Get,
+            auth: None,
+            tls: PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            headers: BTreeMap::new(),
+            fallback_behavior: PipFallbackBehavior::UseFallback,
+            fallback_values: fallback.clone(),
+            health_check: PipHealthCheckConfig::default(),
+            health_check_path: None,
+            provided_attributes: vec!["attr".to_string()],
+        });
+
+        assert!(http.fallback_values().contains_key("key"));
+    }
+
+    #[test]
+    fn test_pip_config_default_values() {
+        let config = PipConfig::default();
+        assert!(config.sources.is_empty());
+    }
+
+    #[test]
+    fn test_pip_config_default_cache_ttl_method() {
+        let config = PipConfig {
+            sources: vec![],
+            default_cache_ttl_secs: 600,
+            max_cache_entries: 5000,
+            enabled: true,
+        };
+        assert_eq!(config.default_cache_ttl(), Duration::from_secs(600));
+    }
+
+    #[test]
+    fn test_pip_config_is_empty() {
+        let empty_config = PipConfig::default();
+        assert!(empty_config.is_empty());
+
+        let non_empty_config = PipConfig {
+            sources: vec![PipSourceConfig::Http(HttpPipConfig {
+                id: "test".to_string(),
+                base_url: Url::parse("https://example.com").unwrap(),
+                endpoint_path: "/test".to_string(),
+                method: HttpMethod::Get,
+                auth: None,
+                tls: PipTlsConfig::default(),
+                timeout_secs: 30,
+                cache_ttl_secs: 60,
+                headers: BTreeMap::new(),
+                fallback_behavior: PipFallbackBehavior::UseFallback,
+                fallback_values: BTreeMap::new(),
+                health_check: PipHealthCheckConfig::default(),
+                health_check_path: None,
+                provided_attributes: vec!["attr".to_string()],
+            })],
+            default_cache_ttl_secs: 300,
+            max_cache_entries: 10000,
+            enabled: true,
+        };
+        assert!(!non_empty_config.is_empty());
+    }
+
+    #[test]
+    fn test_pip_config_source_count() {
+        let config = PipConfig::default();
+        assert_eq!(config.source_count(), 0);
+
+        let config_with_sources = PipConfig {
+            sources: vec![
+                PipSourceConfig::Http(HttpPipConfig {
+                    id: "http1".to_string(),
+                    base_url: Url::parse("https://example.com").unwrap(),
+                    endpoint_path: "/test".to_string(),
+                    method: HttpMethod::Get,
+                    auth: None,
+                    tls: PipTlsConfig::default(),
+                    timeout_secs: 30,
+                    cache_ttl_secs: 60,
+                    headers: BTreeMap::new(),
+                    fallback_behavior: PipFallbackBehavior::UseFallback,
+                    fallback_values: BTreeMap::new(),
+                    health_check: PipHealthCheckConfig::default(),
+                    health_check_path: None,
+                    provided_attributes: vec!["attr".to_string()],
+                }),
+                PipSourceConfig::Ldap(LdapPipConfig {
+                    id: "ldap1".to_string(),
+                    url: Url::parse("ldap://localhost").unwrap(),
+                    base_dn: "dc=example,dc=com".to_string(),
+                    bind_dn: "cn=admin".to_string(),
+                    bind_password: "secret".to_string(),
+                    search_filter: "(uid={username})".to_string(),
+                    attributes: vec!["attr".to_string()],
+                    tls: PipTlsConfig::default(),
+                    timeout_secs: 30,
+                    cache_ttl_secs: 60,
+                    fallback_behavior: PipFallbackBehavior::UseFallback,
+                    fallback_values: BTreeMap::new(),
+                    health_check: PipHealthCheckConfig::default(),
+                    attribute_mapping: BTreeMap::new(),
+                }),
+            ],
+            default_cache_ttl_secs: 300,
+            max_cache_entries: 10000,
+            enabled: true,
+        };
+        assert_eq!(config_with_sources.source_count(), 2);
+    }
+
+    #[test]
+    fn test_http_pip_config_with_headers() {
+        let mut headers = BTreeMap::new();
+        headers.insert("X-Custom-Header".to_string(), "value".to_string());
+        headers.insert("Authorization".to_string(), "Bearer token".to_string());
+
+        let config = HttpPipConfig {
+            id: "test".to_string(),
+            base_url: Url::parse("https://example.com").unwrap(),
+            endpoint_path: "/test".to_string(),
+            method: HttpMethod::Get,
+            auth: None,
+            tls: PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            headers: headers.clone(),
+            fallback_behavior: PipFallbackBehavior::UseFallback,
+            fallback_values: BTreeMap::new(),
+            health_check: PipHealthCheckConfig::default(),
+            health_check_path: None,
+            provided_attributes: vec!["attr".to_string()],
+        };
+
+        assert_eq!(config.headers.len(), 2);
+    }
+
+    #[test]
+    fn test_ldap_pip_config_with_attribute_mapping() {
+        let mut mapping = BTreeMap::new();
+        mapping.insert("cn".to_string(), "common_name".to_string());
+        mapping.insert("uid".to_string(), "username".to_string());
+
+        let config = LdapPipConfig {
+            id: "test".to_string(),
+            url: Url::parse("ldap://localhost").unwrap(),
+            base_dn: "dc=example,dc=com".to_string(),
+            bind_dn: "cn=admin".to_string(),
+            bind_password: "secret".to_string(),
+            search_filter: "(uid={username})".to_string(),
+            attributes: vec!["cn".to_string(), "uid".to_string()],
+            tls: PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            fallback_behavior: PipFallbackBehavior::UseFallback,
+            fallback_values: BTreeMap::new(),
+            health_check: PipHealthCheckConfig::default(),
+            attribute_mapping: mapping.clone(),
+        };
+
+        assert_eq!(config.attribute_mapping.len(), 2);
+    }
+
+    #[test]
+    fn test_http_pip_config_health_check_path() {
+        let config = HttpPipConfig {
+            id: "test".to_string(),
+            base_url: Url::parse("https://example.com").unwrap(),
+            endpoint_path: "/test".to_string(),
+            method: HttpMethod::Get,
+            auth: None,
+            tls: PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            headers: BTreeMap::new(),
+            fallback_behavior: PipFallbackBehavior::UseFallback,
+            fallback_values: BTreeMap::new(),
+            health_check: PipHealthCheckConfig::default(),
+            health_check_path: Some("/health".to_string()),
+            provided_attributes: vec!["attr".to_string()],
+        };
+
+        assert!(config.health_check_path.is_some());
+        assert_eq!(config.health_check_path.unwrap(), "/health");
+    }
+
+    #[test]
+    fn test_pip_config_disabled() {
+        let config = PipConfig {
+            sources: vec![],
+            default_cache_ttl_secs: 300,
+            max_cache_entries: 10000,
+            enabled: false,
+        };
+        assert!(!config.enabled);
+    }
+
+    #[test]
+    fn test_ldap_pip_config_ldaps_url() {
+        let config = LdapPipConfig {
+            id: "test".to_string(),
+            url: Url::parse("ldaps://ldap.example.com:636").unwrap(),
+            base_dn: "dc=example,dc=com".to_string(),
+            bind_dn: "cn=admin".to_string(),
+            bind_password: "secret".to_string(),
+            search_filter: "(uid={username})".to_string(),
+            attributes: vec!["cn".to_string()],
+            tls: PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            fallback_behavior: PipFallbackBehavior::UseFallback,
+            fallback_values: BTreeMap::new(),
+            health_check: PipHealthCheckConfig::default(),
+            attribute_mapping: BTreeMap::new(),
+        };
+
+        assert!(config.url.as_str().starts_with("ldaps://"));
+    }
+
+    #[test]
+    fn test_ldap_pip_config_empty_attributes() {
+        let config = LdapPipConfig {
+            id: "test".to_string(),
+            url: Url::parse("ldap://localhost").unwrap(),
+            base_dn: "dc=example,dc=com".to_string(),
+            bind_dn: "cn=admin".to_string(),
+            bind_password: "secret".to_string(),
+            search_filter: "(uid={username})".to_string(),
+            attributes: vec![],
+            tls: PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            fallback_behavior: PipFallbackBehavior::UseFallback,
+            fallback_values: BTreeMap::new(),
+            health_check: PipHealthCheckConfig::default(),
+            attribute_mapping: BTreeMap::new(),
+        };
+
+        assert!(config.attributes.is_empty());
+    }
 }
