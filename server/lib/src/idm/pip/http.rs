@@ -206,6 +206,35 @@ impl HttpPip {
         attrs
     }
 
+    fn handle_unhealthy_fallback(&self) -> PipResult {
+        match self.config.fallback_behavior {
+            PipFallbackBehavior::UseFallback => PipResult::Success(self.apply_fallback()),
+            PipFallbackBehavior::Deny | PipFallbackBehavior::Ignore => PipResult::Unavailable {
+                reason: "PIP source is unhealthy".to_string(),
+                fallback_used: false,
+            },
+        }
+    }
+
+    fn handle_error_fallback(&self, error: String) -> PipResult {
+        let fallback_used = matches!(
+            self.config.fallback_behavior,
+            PipFallbackBehavior::UseFallback
+        );
+        PipResult::Error {
+            error,
+            fallback_used,
+        }
+    }
+
+    fn handle_timeout_fallback(&self) -> PipResult {
+        let fallback_used = matches!(
+            self.config.fallback_behavior,
+            PipFallbackBehavior::UseFallback
+        );
+        PipResult::Timeout { fallback_used }
+    }
+
     async fn update_health_success(&self) {
         let mut state = self.health_status.write().await;
         state.record_success(&self.config.health_check);
@@ -232,23 +261,7 @@ impl PolicyInformationPoint for HttpPip {
         }
 
         if !self.cached_health_status().can_retrieve() {
-            match self.config.fallback_behavior {
-                PipFallbackBehavior::UseFallback => {
-                    return PipResult::Success(self.apply_fallback());
-                }
-                PipFallbackBehavior::Deny => {
-                    return PipResult::Unavailable {
-                        reason: "PIP source is unhealthy".to_string(),
-                        fallback_used: false,
-                    };
-                }
-                PipFallbackBehavior::Ignore => {
-                    return PipResult::Unavailable {
-                        reason: "PIP source is unhealthy".to_string(),
-                        fallback_used: false,
-                    };
-                }
-            }
+            return self.handle_unhealthy_fallback();
         }
 
         let url = self.build_url(subject);
@@ -277,41 +290,13 @@ impl PolicyInformationPoint for HttpPip {
                         Err(e) => {
                             let error = format!("Failed to parse response JSON: {}", e);
                             self.update_health_failure(error.clone()).await;
-
-                            match self.config.fallback_behavior {
-                                PipFallbackBehavior::UseFallback => PipResult::Error {
-                                    error,
-                                    fallback_used: true,
-                                },
-                                PipFallbackBehavior::Deny => PipResult::Error {
-                                    error,
-                                    fallback_used: false,
-                                },
-                                PipFallbackBehavior::Ignore => PipResult::Error {
-                                    error,
-                                    fallback_used: false,
-                                },
-                            }
+                            self.handle_error_fallback(error)
                         }
                     }
                 } else {
                     let error = format!("HTTP error: {}", response.status());
                     self.update_health_failure(error.clone()).await;
-
-                    match self.config.fallback_behavior {
-                        PipFallbackBehavior::UseFallback => PipResult::Error {
-                            error,
-                            fallback_used: true,
-                        },
-                        PipFallbackBehavior::Deny => PipResult::Error {
-                            error,
-                            fallback_used: false,
-                        },
-                        PipFallbackBehavior::Ignore => PipResult::Error {
-                            error,
-                            fallback_used: false,
-                        },
-                    }
+                    self.handle_error_fallback(error)
                 }
             }
             Err(e) => {
@@ -320,43 +305,10 @@ impl PolicyInformationPoint for HttpPip {
 
                 self.update_health_failure(error.clone()).await;
 
-                match self.config.fallback_behavior {
-                    PipFallbackBehavior::UseFallback => {
-                        if is_timeout {
-                            PipResult::Timeout {
-                                fallback_used: true,
-                            }
-                        } else {
-                            PipResult::Error {
-                                error,
-                                fallback_used: true,
-                            }
-                        }
-                    }
-                    PipFallbackBehavior::Deny => {
-                        if is_timeout {
-                            PipResult::Timeout {
-                                fallback_used: false,
-                            }
-                        } else {
-                            PipResult::Error {
-                                error,
-                                fallback_used: false,
-                            }
-                        }
-                    }
-                    PipFallbackBehavior::Ignore => {
-                        if is_timeout {
-                            PipResult::Timeout {
-                                fallback_used: false,
-                            }
-                        } else {
-                            PipResult::Error {
-                                error,
-                                fallback_used: false,
-                            }
-                        }
-                    }
+                if is_timeout {
+                    self.handle_timeout_fallback()
+                } else {
+                    self.handle_error_fallback(error)
                 }
             }
         }
@@ -497,7 +449,7 @@ mod tests {
     }
 
     #[test]
-    fn test_url_building() {
+    fn test_url_building_with_username() {
         let config = create_test_config();
         let pip = HttpPip::new(config).unwrap();
 
@@ -508,15 +460,128 @@ mod tests {
     }
 
     #[test]
-    fn test_json_to_attribute_value() {
+    fn test_url_building_with_uuid() {
+        let config = HttpPipConfig {
+            id: "test".to_string(),
+            base_url: Url::parse("https://example.com").unwrap(),
+            endpoint_path: "/users/{uuid}".to_string(),
+            method: HttpMethod::Get,
+            auth: None,
+            tls: PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            headers: BTreeMap::new(),
+            fallback_behavior: PipFallbackBehavior::UseFallback,
+            fallback_values: BTreeMap::new(),
+            health_check: super::super::config::PipHealthCheckConfig::default(),
+            health_check_path: None,
+            provided_attributes: vec!["attr".to_string()],
+        };
+        let pip = HttpPip::new(config).unwrap();
+
+        let uuid = uuid::Uuid::new_v4();
+        let subject = PipSubject::from_uuid(uuid);
+
+        let url = pip.build_url(&subject);
+        assert!(url.contains(&uuid.to_string()));
+    }
+
+    #[test]
+    fn test_url_building_with_email() {
+        let config = HttpPipConfig {
+            id: "test".to_string(),
+            base_url: Url::parse("https://example.com").unwrap(),
+            endpoint_path: "/lookup/{email}".to_string(),
+            method: HttpMethod::Get,
+            auth: None,
+            tls: PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            headers: BTreeMap::new(),
+            fallback_behavior: PipFallbackBehavior::UseFallback,
+            fallback_values: BTreeMap::new(),
+            health_check: super::super::config::PipHealthCheckConfig::default(),
+            health_check_path: None,
+            provided_attributes: vec!["attr".to_string()],
+        };
+        let pip = HttpPip::new(config).unwrap();
+
+        let subject = PipSubject::from_uuid(uuid::Uuid::new_v4()).with_email("test@example.com");
+
+        let url = pip.build_url(&subject);
+        assert!(url.contains("/lookup/test@example.com"));
+    }
+
+    #[test]
+    fn test_url_building_with_context() {
+        let config = HttpPipConfig {
+            id: "test".to_string(),
+            base_url: Url::parse("https://example.com").unwrap(),
+            endpoint_path: "/users/{username}/devices/{device_id}".to_string(),
+            method: HttpMethod::Get,
+            auth: None,
+            tls: PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            headers: BTreeMap::new(),
+            fallback_behavior: PipFallbackBehavior::UseFallback,
+            fallback_values: BTreeMap::new(),
+            health_check: super::super::config::PipHealthCheckConfig::default(),
+            health_check_path: None,
+            provided_attributes: vec!["attr".to_string()],
+        };
+        let pip = HttpPip::new(config).unwrap();
+
+        let subject = PipSubject::from_uuid(uuid::Uuid::new_v4())
+            .with_username("testuser")
+            .with_context("device_id", "device123");
+
+        let url = pip.build_url(&subject);
+        assert!(url.contains("/users/testuser/devices/device123"));
+    }
+
+    #[test]
+    fn test_json_to_attribute_value_string() {
         let string_val = HttpPip::json_to_attribute_value(Value::String("test".to_string()));
         assert_eq!(string_val.as_str(), Some("test"));
+    }
 
+    #[test]
+    fn test_json_to_attribute_value_integer() {
         let int_val = HttpPip::json_to_attribute_value(Value::Number(serde_json::Number::from(42)));
         assert_eq!(int_val.as_int(), Some(42));
+    }
 
+    #[test]
+    fn test_json_to_attribute_value_boolean() {
         let bool_val = HttpPip::json_to_attribute_value(Value::Bool(true));
         assert_eq!(bool_val.as_bool(), Some(true));
+    }
+
+    #[test]
+    fn test_json_to_attribute_value_null() {
+        let null_val = HttpPip::json_to_attribute_value(Value::Null);
+        assert!(matches!(null_val, PipAttributeValue::Json(Value::Null)));
+    }
+
+    #[test]
+    fn test_json_to_attribute_value_array() {
+        let arr = Value::Array(vec![
+            Value::String("a".to_string()),
+            Value::Number(serde_json::Number::from(1)),
+        ]);
+        let array_val = HttpPip::json_to_attribute_value(arr);
+        assert_eq!(array_val.as_array().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn test_json_to_attribute_value_object() {
+        let obj = Value::Object(serde_json::Map::from_iter(vec![(
+            "key".to_string(),
+            Value::String("value".to_string()),
+        )]));
+        let obj_val = HttpPip::json_to_attribute_value(obj);
+        assert!(matches!(obj_val, PipAttributeValue::Json(_)));
     }
 
     #[test]
@@ -528,5 +593,289 @@ mod tests {
         assert!(pip
             .provided_attributes()
             .contains(&"department".to_string()));
+    }
+
+    #[test]
+    fn test_provided_attributes_empty() {
+        let config = HttpPipConfig {
+            id: "test".to_string(),
+            base_url: Url::parse("https://example.com").unwrap(),
+            endpoint_path: "/test".to_string(),
+            method: HttpMethod::Get,
+            auth: None,
+            tls: PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            headers: BTreeMap::new(),
+            fallback_behavior: PipFallbackBehavior::UseFallback,
+            fallback_values: BTreeMap::new(),
+            health_check: super::super::config::PipHealthCheckConfig::default(),
+            health_check_path: None,
+            provided_attributes: vec![],
+        };
+        let pip = HttpPip::new(config).unwrap();
+
+        assert_eq!(pip.provided_attributes().len(), 1);
+        assert!(pip
+            .provided_attributes()
+            .contains(&"attributes".to_string()));
+    }
+
+    #[test]
+    fn test_parse_response_object() {
+        let config = create_test_config();
+        let pip = HttpPip::new(config).unwrap();
+
+        let json = serde_json::json!({
+            "department": "Engineering",
+            "role": "Developer"
+        });
+
+        let attrs = pip.parse_response(json);
+        assert_eq!(attrs.len(), 2);
+    }
+
+    #[test]
+    fn test_parse_response_array() {
+        let config = create_test_config();
+        let pip = HttpPip::new(config).unwrap();
+
+        let json = serde_json::json!([{
+            "department": "Engineering"
+        }]);
+
+        let attrs = pip.parse_response(json);
+        assert_eq!(attrs.len(), 1);
+    }
+
+    #[test]
+    fn test_parse_response_empty_array() {
+        let config = create_test_config();
+        let pip = HttpPip::new(config).unwrap();
+
+        let json = serde_json::json!([]);
+
+        let attrs = pip.parse_response(json);
+        assert_eq!(attrs.len(), 1);
+        assert!(attrs
+            .get(&PipAttributeName::new(&pip.id, "response"))
+            .is_some());
+    }
+
+    #[test]
+    fn test_parse_response_primitive() {
+        let config = create_test_config();
+        let pip = HttpPip::new(config).unwrap();
+
+        let json = serde_json::json!("simple_value");
+
+        let attrs = pip.parse_response(json);
+        assert_eq!(attrs.len(), 1);
+    }
+
+    #[test]
+    fn test_apply_fallback_empty() {
+        let config = create_test_config();
+        let pip = HttpPip::new(config).unwrap();
+
+        let attrs = pip.apply_fallback();
+        assert!(attrs.is_empty());
+    }
+
+    #[test]
+    fn test_apply_fallback_with_values() {
+        let mut fallback = BTreeMap::new();
+        fallback.insert(
+            "department".to_string(),
+            PipAttributeValue::String("Unknown".to_string()),
+        );
+        fallback.insert("level".to_string(), PipAttributeValue::Integer(0));
+
+        let config = HttpPipConfig {
+            id: "test".to_string(),
+            base_url: Url::parse("https://example.com").unwrap(),
+            endpoint_path: "/test".to_string(),
+            method: HttpMethod::Get,
+            auth: None,
+            tls: PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            headers: BTreeMap::new(),
+            fallback_behavior: PipFallbackBehavior::UseFallback,
+            fallback_values: fallback,
+            health_check: super::super::config::PipHealthCheckConfig::default(),
+            health_check_path: None,
+            provided_attributes: vec!["attr".to_string()],
+        };
+        let pip = HttpPip::new(config).unwrap();
+
+        let attrs = pip.apply_fallback();
+        assert_eq!(attrs.len(), 2);
+    }
+
+    #[test]
+    fn test_pip_id() {
+        let config = create_test_config();
+        let pip = HttpPip::new(config).unwrap();
+
+        assert_eq!(pip.id().as_str(), "test_http_pip");
+    }
+
+    #[test]
+    fn test_cached_health_status_initial() {
+        let config = create_test_config();
+        let pip = HttpPip::new(config).unwrap();
+
+        let status = pip.cached_health_status();
+        assert_eq!(status, PipHealthStatus::Unknown);
+    }
+
+    #[test]
+    fn test_http_pip_with_post_method() {
+        let config = HttpPipConfig {
+            id: "test".to_string(),
+            base_url: Url::parse("https://example.com").unwrap(),
+            endpoint_path: "/users".to_string(),
+            method: HttpMethod::Post,
+            auth: None,
+            tls: PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            headers: BTreeMap::new(),
+            fallback_behavior: PipFallbackBehavior::UseFallback,
+            fallback_values: BTreeMap::new(),
+            health_check: super::super::config::PipHealthCheckConfig::default(),
+            health_check_path: None,
+            provided_attributes: vec!["attr".to_string()],
+        };
+        let pip = HttpPip::new(config);
+        assert!(pip.is_ok());
+    }
+
+    #[test]
+    fn test_http_pip_with_headers() {
+        let mut headers = BTreeMap::new();
+        headers.insert("X-API-Key".to_string(), "secret".to_string());
+        headers.insert("X-Custom".to_string(), "value".to_string());
+
+        let config = HttpPipConfig {
+            id: "test".to_string(),
+            base_url: Url::parse("https://example.com").unwrap(),
+            endpoint_path: "/test".to_string(),
+            method: HttpMethod::Get,
+            auth: None,
+            tls: PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            headers,
+            fallback_behavior: PipFallbackBehavior::UseFallback,
+            fallback_values: BTreeMap::new(),
+            health_check: super::super::config::PipHealthCheckConfig::default(),
+            health_check_path: None,
+            provided_attributes: vec!["attr".to_string()],
+        };
+        let pip = HttpPip::new(config);
+        assert!(pip.is_ok());
+    }
+
+    #[test]
+    fn test_http_pip_with_insecure_tls() {
+        let config = HttpPipConfig {
+            id: "test".to_string(),
+            base_url: Url::parse("https://example.com").unwrap(),
+            endpoint_path: "/test".to_string(),
+            method: HttpMethod::Get,
+            auth: None,
+            tls: PipTlsConfig {
+                ca_path: None,
+                verify_server: false,
+                allow_insecure: true,
+            },
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            headers: BTreeMap::new(),
+            fallback_behavior: PipFallbackBehavior::UseFallback,
+            fallback_values: BTreeMap::new(),
+            health_check: super::super::config::PipHealthCheckConfig::default(),
+            health_check_path: None,
+            provided_attributes: vec!["attr".to_string()],
+        };
+        let pip = HttpPip::new(config);
+        assert!(pip.is_ok());
+    }
+
+    #[test]
+    fn test_fallback_behavior_deny() {
+        let config = HttpPipConfig {
+            id: "test".to_string(),
+            base_url: Url::parse("https://example.com").unwrap(),
+            endpoint_path: "/test".to_string(),
+            method: HttpMethod::Get,
+            auth: None,
+            tls: PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            headers: BTreeMap::new(),
+            fallback_behavior: PipFallbackBehavior::Deny,
+            fallback_values: BTreeMap::new(),
+            health_check: super::super::config::PipHealthCheckConfig::default(),
+            health_check_path: None,
+            provided_attributes: vec!["attr".to_string()],
+        };
+        let pip = HttpPip::new(config);
+        assert!(pip.is_ok());
+    }
+
+    #[test]
+    fn test_fallback_behavior_ignore() {
+        let config = HttpPipConfig {
+            id: "test".to_string(),
+            base_url: Url::parse("https://example.com").unwrap(),
+            endpoint_path: "/test".to_string(),
+            method: HttpMethod::Get,
+            auth: None,
+            tls: PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            headers: BTreeMap::new(),
+            fallback_behavior: PipFallbackBehavior::Ignore,
+            fallback_values: BTreeMap::new(),
+            health_check: super::super::config::PipHealthCheckConfig::default(),
+            health_check_path: None,
+            provided_attributes: vec!["attr".to_string()],
+        };
+        let pip = HttpPip::new(config);
+        assert!(pip.is_ok());
+    }
+
+    #[test]
+    fn test_health_check_url_without_custom_path() {
+        let config = HttpPipConfig {
+            id: "test".to_string(),
+            base_url: Url::parse("https://example.com/api").unwrap(),
+            endpoint_path: "/test".to_string(),
+            method: HttpMethod::Get,
+            auth: None,
+            tls: PipTlsConfig::default(),
+            timeout_secs: 30,
+            cache_ttl_secs: 60,
+            headers: BTreeMap::new(),
+            fallback_behavior: PipFallbackBehavior::UseFallback,
+            fallback_values: BTreeMap::new(),
+            health_check: super::super::config::PipHealthCheckConfig::default(),
+            health_check_path: None,
+            provided_attributes: vec!["attr".to_string()],
+        };
+        let pip = HttpPip::new(config).unwrap();
+
+        assert!(pip.config.health_check_path.is_none());
+    }
+
+    #[test]
+    fn test_health_check_url_with_custom_path() {
+        let config = create_test_config();
+        let pip = HttpPip::new(config).unwrap();
+
+        assert_eq!(pip.config.health_check_path, Some("/health".to_string()));
     }
 }

@@ -1,5 +1,6 @@
 mod apidocs;
 mod authorization_test;
+mod delegation;
 mod domain;
 mod group;
 mod http_manifest;
@@ -10,8 +11,10 @@ mod ip_addr_extractors;
 mod ldap_basic;
 mod oauth2_test;
 mod person;
+mod pitr_test;
 mod proto_v1_test;
 mod scim_test;
 mod service_account;
+mod stepup_auth_test;
 mod system;
 mod unix;
