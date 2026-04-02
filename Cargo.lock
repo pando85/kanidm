@@ -4704,6 +4704,7 @@ dependencies = [
 name = "kanidmd_lib"
 version = "1.10.0-dev"
 dependencies = [
+ "async-trait",
  "base64 0.22.1",
  "base64urlsafedata 0.6.0-dev",
  "bitflags 2.11.0",
@@ -4724,6 +4725,7 @@ dependencies = [
  "kanidm_lib_crypto",
  "kanidm_proto",
  "kanidmd_lib_macros",
+ "ldap3_client",
  "ldap3_proto",
  "lodepng",
  "mimalloc",
@@ -4745,6 +4747,7 @@ dependencies = [
  "svg",
  "time",
  "tokio",
+ "toml",
  "tracing",
  "url",
  "utoipa",
