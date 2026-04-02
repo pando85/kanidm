@@ -444,6 +444,36 @@ mod tests {
             .collect()
     }
 
+    fn build_encrypted_data_with_external_key(
+        key: &[u8],
+        nonce_bytes: &[u8; BACKUP_ENCRYPTION_NONCE_LEN],
+        data: &[u8],
+        key_id: &str,
+    ) -> Vec<u8> {
+        let header = BackupEncryptionHeader::new(
+            key_id.to_string(),
+            generate_random_salt(),
+            nonce_bytes.to_vec(),
+            KeyDerivationParams::default(),
+            false,
+        );
+
+        let cipher = Aes256Gcm::new(GenericArray::from_slice(key));
+        let nonce = GenericArray::from_slice(nonce_bytes);
+        let encrypted_data = cipher.encrypt(nonce, data).unwrap();
+
+        let header_json = serde_json::to_string(&header).unwrap();
+        let header_len = header_json.len() as u32;
+        let header_len_bytes = header_len.to_le_bytes();
+
+        let mut full_data = Vec::new();
+        full_data.extend_from_slice(BACKUP_ENCRYPTION_MAGIC);
+        full_data.extend_from_slice(&header_len_bytes);
+        full_data.extend_from_slice(header_json.as_bytes());
+        full_data.extend_from_slice(&encrypted_data);
+        full_data
+    }
+
     mod key_management_tests {
         use super::*;
 
@@ -891,30 +921,10 @@ mod tests {
         fn test_decrypt_with_external_key() {
             let key = generate_random_key();
             let nonce_bytes = generate_random_nonce();
-
-            let header = BackupEncryptionHeader::new(
-                "external-key-id".to_string(),
-                generate_random_salt(),
-                nonce_bytes.to_vec(),
-                KeyDerivationParams::default(),
-                false,
-            );
-
             let data = b"test data for external key";
 
-            let cipher = Aes256Gcm::new(GenericArray::from_slice(&key));
-            let nonce = GenericArray::from_slice(&nonce_bytes);
-            let encrypted_data = cipher.encrypt(nonce, data.as_slice()).unwrap();
-
-            let header_json = serde_json::to_string(&header).unwrap();
-            let header_len = header_json.len() as u32;
-            let header_len_bytes = header_len.to_le_bytes();
-
-            let mut full_data = Vec::new();
-            full_data.extend_from_slice(BACKUP_ENCRYPTION_MAGIC);
-            full_data.extend_from_slice(&header_len_bytes);
-            full_data.extend_from_slice(header_json.as_bytes());
-            full_data.extend_from_slice(&encrypted_data);
+            let full_data =
+                build_encrypted_data_with_external_key(&key, &nonce_bytes, data, "external-key-id");
 
             let (decrypted, dec_header) =
                 BackupEncryptor::decrypt_with_external_key(&full_data, &key).unwrap();
@@ -928,30 +938,10 @@ mod tests {
             let key = generate_random_key();
             let wrong_key = generate_random_key();
             let nonce_bytes = generate_random_nonce();
-
-            let header = BackupEncryptionHeader::new(
-                "external-key-id".to_string(),
-                generate_random_salt(),
-                nonce_bytes.to_vec(),
-                KeyDerivationParams::default(),
-                false,
-            );
-
             let data = b"test data for external key";
 
-            let cipher = Aes256Gcm::new(GenericArray::from_slice(&key));
-            let nonce = GenericArray::from_slice(&nonce_bytes);
-            let encrypted_data = cipher.encrypt(nonce, data.as_slice()).unwrap();
-
-            let header_json = serde_json::to_string(&header).unwrap();
-            let header_len = header_json.len() as u32;
-            let header_len_bytes = header_len.to_le_bytes();
-
-            let mut full_data = Vec::new();
-            full_data.extend_from_slice(BACKUP_ENCRYPTION_MAGIC);
-            full_data.extend_from_slice(&header_len_bytes);
-            full_data.extend_from_slice(header_json.as_bytes());
-            full_data.extend_from_slice(&encrypted_data);
+            let full_data =
+                build_encrypted_data_with_external_key(&key, &nonce_bytes, data, "external-key-id");
 
             let result = BackupEncryptor::decrypt_with_external_key(&full_data, &wrong_key);
             assert!(matches!(
@@ -965,30 +955,10 @@ mod tests {
             let key = generate_random_key();
             let short_key = &key[..BACKUP_ENCRYPTION_KEY_LEN - 1];
             let nonce_bytes = generate_random_nonce();
-
-            let header = BackupEncryptionHeader::new(
-                "external-key-id".to_string(),
-                generate_random_salt(),
-                nonce_bytes.to_vec(),
-                KeyDerivationParams::default(),
-                false,
-            );
-
             let data = b"test data";
 
-            let cipher = Aes256Gcm::new(GenericArray::from_slice(&key));
-            let nonce = GenericArray::from_slice(&nonce_bytes);
-            let encrypted_data = cipher.encrypt(nonce, data.as_slice()).unwrap();
-
-            let header_json = serde_json::to_string(&header).unwrap();
-            let header_len = header_json.len() as u32;
-            let header_len_bytes = header_len.to_le_bytes();
-
-            let mut full_data = Vec::new();
-            full_data.extend_from_slice(BACKUP_ENCRYPTION_MAGIC);
-            full_data.extend_from_slice(&header_len_bytes);
-            full_data.extend_from_slice(header_json.as_bytes());
-            full_data.extend_from_slice(&encrypted_data);
+            let full_data =
+                build_encrypted_data_with_external_key(&key, &nonce_bytes, data, "external-key-id");
 
             let result = BackupEncryptor::decrypt_with_external_key(&full_data, short_key);
             assert!(matches!(
@@ -1000,34 +970,13 @@ mod tests {
         #[test]
         fn test_decrypt_with_external_key_exact_length() {
             let key = generate_random_key();
-            let key_exact = key.clone();
             let nonce_bytes = generate_random_nonce();
-
-            let header = BackupEncryptionHeader::new(
-                "external-key-id".to_string(),
-                generate_random_salt(),
-                nonce_bytes.to_vec(),
-                KeyDerivationParams::default(),
-                false,
-            );
-
             let data = b"test data";
 
-            let cipher = Aes256Gcm::new(GenericArray::from_slice(&key));
-            let nonce = GenericArray::from_slice(&nonce_bytes);
-            let encrypted_data = cipher.encrypt(nonce, data.as_slice()).unwrap();
+            let full_data =
+                build_encrypted_data_with_external_key(&key, &nonce_bytes, data, "external-key-id");
 
-            let header_json = serde_json::to_string(&header).unwrap();
-            let header_len = header_json.len() as u32;
-            let header_len_bytes = header_len.to_le_bytes();
-
-            let mut full_data = Vec::new();
-            full_data.extend_from_slice(BACKUP_ENCRYPTION_MAGIC);
-            full_data.extend_from_slice(&header_len_bytes);
-            full_data.extend_from_slice(header_json.as_bytes());
-            full_data.extend_from_slice(&encrypted_data);
-
-            let result = BackupEncryptor::decrypt_with_external_key(&full_data, &key_exact);
+            let result = BackupEncryptor::decrypt_with_external_key(&full_data, &key);
             assert!(result.is_ok());
         }
     }
