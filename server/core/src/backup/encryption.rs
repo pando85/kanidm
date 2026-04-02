@@ -324,7 +324,7 @@ impl<W: Write> EncryptedWriter<W> {
         let mut inner = self
             .inner
             .ok_or(BackupEncryptionError::IoError(std::io::Error::new(
-                std::io::ErrorKind::InvalidState,
+                std::io::ErrorKind::InvalidData,
                 "Writer already finalized",
             )))?;
         let encrypted_data = self
