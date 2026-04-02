@@ -49,10 +49,8 @@ pub mod credential;
 pub mod entry;
 pub mod event;
 pub mod filter;
+pub mod pip;
 
-// If this module is ever made public outside of this crate, firstyear will be extremely sad.
-// This is *purely migration data*. Don't even think about using it in test cases for anything
-// else.
 pub(crate) mod migration_data;
 
 pub mod modify;

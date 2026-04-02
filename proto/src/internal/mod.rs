@@ -18,12 +18,14 @@ use num_enum::TryFromPrimitive;
 mod authorization;
 mod credupdate;
 mod error;
+mod pip;
 mod raw;
 mod token;
 
 pub use self::authorization::*;
 pub use self::credupdate::*;
 pub use self::error::*;
+pub use self::pip::*;
 pub use self::raw::*;
 pub use self::token::*;
 
