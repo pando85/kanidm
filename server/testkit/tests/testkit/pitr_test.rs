@@ -237,14 +237,25 @@ fn test_pitr_recovery_window_calculation() {
     assert_eq!(manifest.earliest_recoverable_time, base_time);
     assert_eq!(manifest.latest_recoverable_time, base_time);
 
-    let segment = create_test_segment(
+    let segment1 = create_test_segment(
         server_uuid,
         Duration::from_secs(0),
         Duration::from_secs(100),
     );
-    manifest.add_segment(segment);
+    manifest.add_segment(segment1.clone());
 
-    assert!(manifest.earliest_recoverable_time != manifest.latest_recoverable_time);
+    assert_eq!(manifest.earliest_recoverable_time, segment1.created_at);
+    assert_eq!(manifest.latest_recoverable_time, segment1.created_at);
+
+    let segment2 = create_test_segment(
+        server_uuid,
+        Duration::from_secs(100),
+        Duration::from_secs(200),
+    );
+    manifest.add_segment(segment2.clone());
+
+    assert_eq!(manifest.earliest_recoverable_time, segment1.created_at);
+    assert_eq!(manifest.latest_recoverable_time, segment2.created_at);
 }
 
 #[test]
