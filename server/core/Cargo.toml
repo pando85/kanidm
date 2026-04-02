@@ -89,7 +89,7 @@ uuid = { workspace = true, features = ["serde", "v4"] }
 utoipa = { workspace = true, features = [
     "axum_extras",
     "openapi_extensions",
-    "preserve_order",     #  Preserve order of properties when serializing the schema for a component.
+    "preserve_order",
     "time",
     "url",
     "uuid",
@@ -113,6 +113,6 @@ kanidm_build_profiles = { workspace = true }
 
 [package.metadata.cargo-machete]
 ignored = [
-    "opentelemetry",         # feature gated
+    "opentelemetry",
     "kanidm_build_profiles",
 ]

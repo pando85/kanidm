@@ -3,17 +3,16 @@ name: "Github Pages - Branch"
 "on":
   workflow_call:
     inputs:
-      # the target tag for generating things
       tag:
         required: true
         type: string
-      # the parent workflow for caching
       parent_id:
         required: true
         type: string
 env:
   SCCACHE_GHA_ENABLED: "true"
   RUSTC_WRAPPER: "sccache"
+  KANIDM_BUILD_PROFILE: developer
   ACTIONS_RUNNER_DEBUG: true
 jobs:
   generate_mdbook:
@@ -45,7 +44,8 @@ jobs:
 
       - name: Build the docs
         run: |
-          cargo install --quiet mdbook mdbook-mermaid
+          cd /tmp && cargo install --quiet mdbook mdbook-mermaid
+          cd $GITHUB_WORKSPACE
           cargo doc --quiet --no-deps
           mdbook build *book
           rm -rf ./docs/
@@ -68,7 +68,6 @@ jobs:
         env:
           ACTIONS_RUNNER_DEBUG: true
       - name: Upload artifact
-        # https://github.com/actions/upload-artifact
         uses: actions/upload-artifact@v7
         with:
           name: "individual${{ inputs.tag }}"

@@ -5,10 +5,8 @@
 #![deny(deprecated)]
 #![recursion_limit = "512"]
 #![warn(unused_extern_crates)]
-// Enable some groups of clippy lints.
 #![deny(clippy::suspicious)]
 #![deny(clippy::perf)]
-// Specific lints to enforce.
 #![deny(clippy::todo)]
 #![deny(clippy::unimplemented)]
 #![deny(clippy::unwrap_used)]
@@ -36,10 +34,6 @@ extern crate rusqlite;
 #[macro_use]
 extern crate tracing;
 
-// #[macro_use]
-// extern crate sketching;
-
-// This has to be before 'be' so the import order works
 #[macro_use]
 pub mod macros;
 
@@ -49,10 +43,7 @@ pub mod credential;
 pub mod entry;
 pub mod event;
 pub mod filter;
-
-// If this module is ever made public outside of this crate, firstyear will be extremely sad.
-// This is *purely migration data*. Don't even think about using it in test cases for anything
-// else.
+pub mod pip;
 pub(crate) mod migration_data;
 
 pub mod modify;
@@ -69,9 +60,6 @@ pub mod server;
 pub mod status;
 pub mod testkit;
 
-/// A prelude of imports that should be imported by all other Kanidm modules to
-/// help make imports cleaner.
-// Clippy is wrong, these are used. Hush little clippy.
 #[allow(unused_imports)]
 pub mod prelude {
     pub(crate) use crate::be::Limits;
@@ -106,7 +94,7 @@ pub mod prelude {
     };
     pub use crate::time::duration_from_epoch_now;
     pub use crate::value::{
-        ApiTokenScope, IndexType, PartialValue, SessionScope, SyntaxType, Value,
+        ApiTokenScope, IndexType, PartialValue, SyntaxType, Value,
     };
     pub(crate) use crate::valueset::{
         ValueSet, ValueSetBool, ValueSetCid, ValueSetIname, ValueSetIutf8, ValueSetRefer,

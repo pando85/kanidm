@@ -39,22 +39,6 @@ members = [
     "tools/mail_sender",
 ]
 
-# Below follows some guides/estimates to system resources consumed during a build.
-# Most of these values are over-estimates and are just rough observations.
-#
-# These were tested on a 10core M1 Max.
-# Parallel Linking Maximum = an estimate of how much ram will be consumed at peak
-#   while the build is linking multiple binaries in parallel
-# Single Largest Binary Maximum = an estamite of how much ram is conusmed by the
-#   single largest binary during linking. This would reflect a single threaded
-#   build ram maximum.
-# Time = estimate on how long the build may take.
-
-# cargo build --release
-#
-# Parallel Linking Maximum: 6GB
-# Single Largest Binary Maximum: 5GB
-# Time: ~6 minutes
 [profile.release]
 debug = true
 strip = "none"
@@ -67,26 +51,11 @@ debug = false
 opt-level = 0
 codegen-units = 256
 
-# cargo build --profile release-lto
-#
-# Parallel Linking Maximum: 24GB
-# Single Largest Binary Maximum: 16GB
-# Time: ~11 minutes
 [profile.release-lto]
 inherits = "release"
 lto = "fat"
 codegen-units = 1
 
-# cargo build
-#
-# Parallel Linking Maximum: 4GB
-# Single Largest Binary Maximum: 3GB
-# Time: ~2 minutes
-#
-# cargo test [-- --test-threads=1]
-#
-# Parallel Maximum: 1GB
-# Single Maximum: 0.2GB
 [profile.dev]
 debug = true
 lto = false
@@ -99,26 +68,6 @@ opt-level = 0
 codegen-units = 256
 
 [patch.crates-io]
-## As Kanidm maintains a number of libraries, sometimes during development we need to override them
-## with local or git versions. This patch table allows quick uncommenting to achieve that.
-
-# compact_jwt = { path = "../compact-jwt" }
-# crypto-glue = { path = "../crypto-glue" }
-# concread = { path = "../concread" }
-# idlset = { path = "../idlset" }
-# kanidm-hsm-crypto = { path = "../hsm-crypto" }
-
-# ldap3_client = { path = "../ldap3/client" }
-# ldap3_proto = { path = "../ldap3/proto" }
-# ldap3_client = { git = "https://github.com/kanidm/ldap3.git" }
-# ldap3_proto = { git = "https://github.com/kanidm/ldap3.git" }
-
-# base64urlsafedata = { path = "../webauthn-rs/base64urlsafedata" }
-# webauthn-authenticator-rs = { path = "../webauthn-rs/webauthn-authenticator-rs" }
-# webauthn-rs = { path = "../webauthn-rs/webauthn-rs" }
-# webauthn-rs-core = { path = "../webauthn-rs/webauthn-rs-core" }
-# webauthn-rs-proto = { path = "../webauthn-rs/webauthn-rs-proto" }
-# sshkey-attest = { path = "../webauthn-rs/sshkey-attest" }
 
 [workspace.dependencies]
 kanidmd_core = { path = "./server/core", version = "=1.10.0-dev" }
@@ -165,7 +114,6 @@ bytes = "^1.11.1"
 cidr = "0.3.2"
 clap = { version = "4.6.0", features = ["derive", "env"] }
 clap_complete = "^4.6.0"
-# Forced by saffron/cron
 chrono = "^0.4.44"
 compact_jwt = "^0.5.6"
 concread = "^0.5.10"

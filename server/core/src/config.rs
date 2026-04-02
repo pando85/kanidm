@@ -5,7 +5,7 @@
 //! or domain entries that are able to be replicated.
 
 use cidr::IpCidr;
-use kanidm_proto::backup::{BackupCompression, BackupEncryptionConfig, S3Config};
+use kanidm_proto::backup::{BackupCompression, BackupEncryptionConfig, S3Config, WalArchiveConfig};
 use kanidm_proto::config::ServerRole;
 use kanidm_proto::constants::DEFAULT_SERVER_ADDRESS;
 use kanidm_proto::internal::FsType;
@@ -90,6 +90,10 @@ pub struct OnlineBackup {
     /// When enabled, backups are encrypted with AES-256-GCM before storage.
     #[serde(default)]
     pub encryption: BackupEncryptionConfig,
+
+    /// WAL archive configuration for Point-in-Time Recovery (PITR).
+    #[serde(default)]
+    pub wal_archive: Option<WalArchiveConfig>,
 }
 
 impl Default for OnlineBackup {
@@ -102,6 +106,7 @@ impl Default for OnlineBackup {
             compression: BackupCompression::default(),
             s3: None,
             encryption: BackupEncryptionConfig::default(),
+            wal_archive: None,
         }
     }
 }
@@ -328,6 +333,10 @@ pub struct ServerConfig {
     repl_config: Option<ReplicationConfiguration>,
     /// An optional OpenTelemetry collector (GRPC) url to send trace and log data to, eg `http://localhost:4317`. If not set, disables the feature.
     otel_grpc_url: Option<String>,
+    /// Policy Information Point (PIP) configuration for external attribute retrieval.
+    /// See [kanidmd_lib::idm::pip::config::PipConfig] for details.
+    #[serde(default)]
+    pip_config: Option<kanidmd_lib::idm::pip::config::PipConfig>,
 }
 
 impl ServerConfigUntagged {
@@ -415,6 +424,9 @@ pub struct ServerConfigV2 {
     #[serde(rename = "replication")]
     repl_config: Option<ReplicationConfiguration>,
     otel_grpc_url: Option<String>,
+    /// Policy Information Point (PIP) configuration for external attribute retrieval.
+    #[serde(default)]
+    pip_config: Option<kanidmd_lib::idm::pip::config::PipConfig>,
 }
 
 #[derive(Debug, Clone)]
@@ -464,6 +476,8 @@ pub struct Configuration {
     /// This allows internally setting some unsafe options for replication.
     pub integration_repl_config: Option<Box<IntegrationReplConfig>>,
     pub otel_grpc_url: Option<String>,
+    /// Policy Information Point (PIP) configuration for external attribute retrieval.
+    pub pip_config: Option<kanidmd_lib::idm::pip::config::PipConfig>,
 }
 
 impl Configuration {
@@ -471,7 +485,6 @@ impl Configuration {
         ConfigurationBuilder {
             bindaddress: None,
             ldapbindaddress: None,
-            // set by build profiles
             adminbindpath: env!("KANIDM_SERVER_ADMIN_BIND_PATH").to_string(),
             threads: std::thread::available_parallelism()
                 .map(|t| t.get())
@@ -483,7 +496,7 @@ impl Configuration {
             db_fs_type: None,
             db_arc_size: None,
             migration_path: None,
-            maximum_request: 256 * 1024, // 256k
+            maximum_request: 256 * 1024,
             http_client_address_info: HttpAddressInfo::default(),
             ldap_client_address_info: LdapAddressInfo::default(),
             tls_key: None,
@@ -496,6 +509,7 @@ impl Configuration {
             role: None,
             repl_config: None,
             otel_grpc_url: None,
+            pip_config: None,
         }
     }
 
@@ -510,7 +524,7 @@ impl Configuration {
             db_fs_type: None,
             db_arc_size: None,
             migration_path: None,
-            maximum_request: 256 * 1024, // 256k
+            maximum_request: 256 * 1024,
             http_client_address_info: HttpAddressInfo::default(),
             ldap_client_address_info: LdapAddressInfo::default(),
             tls_config: None,
@@ -524,6 +538,7 @@ impl Configuration {
             repl_config: None,
             integration_repl_config: None,
             otel_grpc_url: None,
+            pip_config: None,
         }
     }
 }
@@ -641,6 +656,7 @@ pub struct ConfigurationBuilder {
     log_level: Option<LogLevel>,
     repl_config: Option<ReplicationConfiguration>,
     otel_grpc_url: Option<String>,
+    pip_config: Option<kanidmd_lib::idm::pip::config::PipConfig>,
 }
 
 impl ConfigurationBuilder {
@@ -883,6 +899,10 @@ impl ConfigurationBuilder {
             self.otel_grpc_url = config.otel_grpc_url;
         }
 
+        if config.pip_config.is_some() {
+            self.pip_config = config.pip_config;
+        }
+
         self
     }
 
@@ -971,6 +991,10 @@ impl ConfigurationBuilder {
             self.otel_grpc_url = config.otel_grpc_url;
         }
 
+        if config.pip_config.is_some() {
+            self.pip_config = config.pip_config;
+        }
+
         self
     }
 
@@ -1005,6 +1029,7 @@ impl ConfigurationBuilder {
             log_level,
             repl_config,
             otel_grpc_url,
+            pip_config,
         } = self;
 
         let tls_config = match (tls_key, tls_chain, tls_client_ca) {
@@ -1072,6 +1097,7 @@ impl ConfigurationBuilder {
             otel_grpc_url,
             integration_repl_config: None,
             integration_test_config: None,
+            pip_config,
         })
     }
 }

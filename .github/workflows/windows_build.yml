@@ -11,6 +11,7 @@ name: Windows Build and Test
 env:
   SCCACHE_GHA_ENABLED: "true"
   RUSTC_WRAPPER: "sccache"
+  KANIDM_BUILD_PROFILE: developer
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
