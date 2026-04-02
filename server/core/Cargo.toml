@@ -33,6 +33,8 @@ aws-config = { workspace = true }
 aws-credential-types = { workspace = true }
 sha2 = { workspace = true }
 hex = { workspace = true }
+argon2 = { workspace = true }
+aes-gcm = { workspace = true }
 cidr = { workspace = true, features = ["serde"] }
 chrono = { workspace = true }
 compact_jwt = { workspace = true }
