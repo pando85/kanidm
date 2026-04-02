@@ -15,7 +15,7 @@ impl ApprovalOpt {
 }
 
 impl ApprovalPolicyOpt {
-    pub async fn exec(&self, opt: &KanidmClientParser, client: &KanidmClient) {
+    pub async fn exec(&self, _opt: &KanidmClientParser, client: &KanidmClient) {
         match self {
             ApprovalPolicyOpt::List => {
                 let policies = match client.approval_policy_list().await {
@@ -152,7 +152,7 @@ impl ApprovalPolicyOpt {
 }
 
 impl ApprovalRequestOpt {
-    pub async fn exec(&self, opt: &KanidmClientParser, client: &KanidmClient) {
+    pub async fn exec(&self, _opt: &KanidmClientParser, client: &KanidmClient) {
         match self {
             ApprovalRequestOpt::List { state } => {
                 let filter_state = match state {
@@ -160,11 +160,13 @@ impl ApprovalRequestOpt {
                     None => None,
                 };
 
-                if state.is_some() && filter_state.is_none() {
-                    warn!(
-                        "Unknown state filter: {}. Showing all requests.",
-                        state.unwrap()
-                    );
+                if let Some(s) = state {
+                    if filter_state.is_none() {
+                        warn!(
+                            "Unknown state filter: {}. Showing all requests.",
+                            s
+                        );
+                    }
                 }
 
                 let requests = match client.approval_request_list(filter_state).await {
