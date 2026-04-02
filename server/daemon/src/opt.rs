@@ -19,11 +19,11 @@ struct RestoreOpt {
 #[derive(Debug, Args)]
 struct PitrRecoverOpt {
     /// Target time for recovery (RFC3339 format, e.g., "2024-01-15T10:30:00Z")
-    #[clap(long, name = "target-time")]
+    #[clap(long)]
     target_time: Option<String>,
 
     /// Target transaction CID for recovery
-    #[clap(long, name = "target-cid")]
+    #[clap(long)]
     target_cid: Option<String>,
 
     /// Recover to the latest available point
