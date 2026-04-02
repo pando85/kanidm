@@ -3,6 +3,7 @@ use super::profiles::{
     AccessControlDeleteResolved, AccessControlReceiverCondition, AccessControlTargetCondition,
 };
 use super::protected::PROTECTED_ENTRY_CLASSES;
+use super::utils::check_time_restriction;
 use crate::prelude::*;
 use std::ops::Sub;
 use std::sync::Arc;
@@ -181,6 +182,15 @@ fn delete_filter_entry<'a>(
                 }
             }
         };
+
+        // Check time restrictions
+        if !check_time_restriction(
+            acd.acp.acp.time_restriction_start,
+            acd.acp.acp.time_restriction_end,
+        ) {
+            debug!(entry = ?entry.get_display_id(), acd = %acd.acp.acp.name, "time restriction not satisfied");
+            return false;
+        }
 
         let entry_name = entry.get_display_id();
         security_access!(

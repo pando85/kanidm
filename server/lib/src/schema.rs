@@ -1545,6 +1545,58 @@ impl SchemaWriteTransaction<'_> {
                 syntax: SyntaxType::Uint32,
             },
         );
+        // Fine-Grained Permission Scoping Attributes
+        self.attributes.insert(
+            Attribute::AcpTimeRestrictionStart,
+            SchemaAttribute {
+                name: Attribute::AcpTimeRestrictionStart,
+                uuid: UUID_SCHEMA_ATTR_ACP_TIME_RESTRICTION_START,
+                description: String::from(
+                    "The start time for time-based access restrictions on this ACP.",
+                ),
+                multivalue: false,
+                unique: false,
+                phantom: false,
+                sync_allowed: false,
+                replicated: Replicated::True,
+                indexed: false,
+                syntax: SyntaxType::DateTime,
+            },
+        );
+        self.attributes.insert(
+            Attribute::AcpTimeRestrictionEnd,
+            SchemaAttribute {
+                name: Attribute::AcpTimeRestrictionEnd,
+                uuid: UUID_SCHEMA_ATTR_ACP_TIME_RESTRICTION_END,
+                description: String::from(
+                    "The end time for time-based access restrictions on this ACP.",
+                ),
+                multivalue: false,
+                unique: false,
+                phantom: false,
+                sync_allowed: false,
+                replicated: Replicated::True,
+                indexed: false,
+                syntax: SyntaxType::DateTime,
+            },
+        );
+        self.attributes.insert(
+            Attribute::AcpScopeFilter,
+            SchemaAttribute {
+                name: Attribute::AcpScopeFilter,
+                uuid: UUID_SCHEMA_ATTR_ACP_SCOPE_FILTER,
+                description: String::from(
+                    "A filter defining the scope of targets this ACP applies to within the target scope.",
+                ),
+                multivalue: false,
+                unique: false,
+                phantom: false,
+                sync_allowed: false,
+                replicated: Replicated::True,
+                indexed: false,
+                syntax: SyntaxType::JsonFilter,
+            },
+        );
         self.attributes.insert(
             Attribute::EntryManagedBy,
             SchemaAttribute {

@@ -323,7 +323,7 @@ cert/clean:
 	rm -f /tmp/kanidm/*.pem
 	rm -f /tmp/kanidm/*.cnf
 	rm -f /tmp/kanidm/*.csr
-	rm -f /tmp/kanidm/ca.txt*
+	rm -f /tmp/kanidm/*.ca.txt*
 	rm -f /tmp/kanidm/ca.{cnf,srl,srl.old}
 
 

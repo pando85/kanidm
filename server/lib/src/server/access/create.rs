@@ -3,6 +3,7 @@ use super::profiles::{
     AccessControlCreateResolved, AccessControlReceiverCondition, AccessControlTargetCondition,
 };
 use super::protected::{PROTECTED_ENTRY_CLASSES, PROTECTED_MOD_PRES_ENTRY_CLASSES};
+use super::utils::check_time_restriction;
 use crate::prelude::*;
 use std::collections::BTreeSet;
 use std::ops::Sub;
@@ -200,6 +201,15 @@ fn create_filter_entry<'a>(
                 // Delegated scope is handled at filter resolution time
             }
         };
+
+        // Check time restrictions
+        if !check_time_restriction(
+            accr.acp.acp.time_restriction_start,
+            accr.acp.acp.time_restriction_end,
+        ) {
+            debug!(entry = ?entry.get_display_id(), accr = %accr.acp.acp.name, "time restriction not satisfied");
+            return false;
+        }
 
         // -- Conditions pass -- now verify the attributes.
 

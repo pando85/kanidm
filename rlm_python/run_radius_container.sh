@@ -7,7 +7,7 @@ if [ -z "${IMAGE}" ]; then
 fi
 echo "Running docker container: ${IMAGE}"
 
-if [ ! -z "${IMAGE_ARCH}" ]; then
+if [ -n "${IMAGE_ARCH}" ]; then
     IMAGE_ARCH="--platform ${IMAGE_ARCH}"
 fi
 
@@ -23,7 +23,7 @@ fi
 echo "Starting the dev container..."
 #shellcheck disable=SC2068
 docker run --rm -it \
-    ${IMAGE_ARCH} \
+    "${IMAGE_ARCH}" \
     --network host \
     --name radiusd \
     -v /tmp/kanidm/:/data/ \

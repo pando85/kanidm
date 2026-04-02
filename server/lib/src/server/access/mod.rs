@@ -51,6 +51,7 @@ pub mod profiles;
 mod protected;
 mod reauth;
 mod search;
+mod utils;
 
 pub use self::create::CreateResult;
 pub use self::delete::{apply_delete_access, DeleteResult};
@@ -3849,5 +3850,188 @@ mod tests {
         );
 
         test_acp_modify!(&me_pres, vec![acp_allow.clone()], &r1_set, false);
+    }
+
+    #[allow(clippy::disallowed_methods)]
+    #[test]
+    fn test_access_time_restriction_valid() {
+        sketching::test_init();
+
+        let ev1 = E_TESTPERSON_1.clone().into_sealed_committed();
+        let r_set = vec![Arc::new(ev1.clone())];
+        let ex_set = vec![Arc::new(ev1)];
+
+        let se_admin = SearchEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+        );
+
+        let now = time::OffsetDateTime::now_utc();
+        let start = now - time::Duration::hours(1);
+        let end = now + time::Duration::hours(1);
+
+        let acp = AccessControlSearch::from_raw_with_time(
+            "test_acp_time_valid",
+            Uuid::new_v4(),
+            UUID_TEST_GROUP_1,
+            filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+            Attribute::Name.as_ref(),
+            Some(start),
+            Some(end),
+        );
+
+        test_acp_search!(&se_admin, vec![acp], r_set, ex_set);
+    }
+
+    #[allow(clippy::disallowed_methods)]
+    #[test]
+    fn test_access_time_restriction_expired() {
+        sketching::test_init();
+
+        let ev1 = E_TESTPERSON_1.clone().into_sealed_committed();
+        let r_set = vec![Arc::new(ev1)];
+        let ex_set = vec![];
+
+        let se_admin = SearchEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+        );
+
+        let now = time::OffsetDateTime::now_utc();
+        let start = now - time::Duration::hours(2);
+        let end = now - time::Duration::hours(1);
+
+        let acp = AccessControlSearch::from_raw_with_time(
+            "test_acp_time_expired",
+            Uuid::new_v4(),
+            UUID_TEST_GROUP_1,
+            filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+            Attribute::Name.as_ref(),
+            Some(start),
+            Some(end),
+        );
+
+        test_acp_search!(&se_admin, vec![acp], r_set, ex_set);
+    }
+
+    #[allow(clippy::disallowed_methods)]
+    #[test]
+    fn test_access_time_restriction_future() {
+        sketching::test_init();
+
+        let ev1 = E_TESTPERSON_1.clone().into_sealed_committed();
+        let r_set = vec![Arc::new(ev1)];
+        let ex_set = vec![];
+
+        let se_admin = SearchEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+        );
+
+        let now = time::OffsetDateTime::now_utc();
+        let start = now + time::Duration::hours(1);
+        let end = now + time::Duration::hours(2);
+
+        let acp = AccessControlSearch::from_raw_with_time(
+            "test_acp_time_future",
+            Uuid::new_v4(),
+            UUID_TEST_GROUP_1,
+            filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+            Attribute::Name.as_ref(),
+            Some(start),
+            Some(end),
+        );
+
+        test_acp_search!(&se_admin, vec![acp], r_set, ex_set);
+    }
+
+    #[allow(clippy::disallowed_methods)]
+    #[test]
+    fn test_access_time_restriction_start_only() {
+        sketching::test_init();
+
+        let ev1 = E_TESTPERSON_1.clone().into_sealed_committed();
+        let r_set = vec![Arc::new(ev1.clone())];
+        let ex_set = vec![Arc::new(ev1)];
+
+        let se_admin = SearchEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+        );
+
+        let now = time::OffsetDateTime::now_utc();
+        let start = now - time::Duration::hours(1);
+
+        let acp = AccessControlSearch::from_raw_with_time(
+            "test_acp_time_start_only",
+            Uuid::new_v4(),
+            UUID_TEST_GROUP_1,
+            filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+            Attribute::Name.as_ref(),
+            Some(start),
+            None,
+        );
+
+        test_acp_search!(&se_admin, vec![acp], r_set, ex_set);
+    }
+
+    #[allow(clippy::disallowed_methods)]
+    #[test]
+    fn test_access_time_restriction_end_only() {
+        sketching::test_init();
+
+        let ev1 = E_TESTPERSON_1.clone().into_sealed_committed();
+        let r_set = vec![Arc::new(ev1.clone())];
+        let ex_set = vec![Arc::new(ev1)];
+
+        let se_admin = SearchEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+        );
+
+        let now = time::OffsetDateTime::now_utc();
+        let end = now + time::Duration::hours(1);
+
+        let acp = AccessControlSearch::from_raw_with_time(
+            "test_acp_time_end_only",
+            Uuid::new_v4(),
+            UUID_TEST_GROUP_1,
+            filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+            Attribute::Name.as_ref(),
+            None,
+            Some(end),
+        );
+
+        test_acp_search!(&se_admin, vec![acp], r_set, ex_set);
     }
 }

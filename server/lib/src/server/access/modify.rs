@@ -7,6 +7,7 @@ use super::protected::{
     LOCKED_ENTRY_CLASSES, PROTECTED_MOD_ENTRY_CLASSES, PROTECTED_MOD_PRES_ENTRY_CLASSES,
     PROTECTED_MOD_REM_ENTRY_CLASSES,
 };
+use super::utils::check_time_restriction;
 use super::{AccessBasicResult, AccessModResult};
 use crate::prelude::*;
 use hashbrown::HashMap;
@@ -195,6 +196,15 @@ pub fn apply_modify_access<'a>(
                         }
                     }
                 };
+
+                // Check time restrictions
+                if !check_time_restriction(
+                    acm.acp.acp.time_restriction_start,
+                    acm.acp.acp.time_restriction_end,
+                ) {
+                    debug!(entry = ?entry.get_display_id(), acm = %acm.acp.acp.name, "time restriction not satisfied");
+                    return None;
+                }
 
                 debug!(entry = ?entry.get_display_id(), acs = %acm.acp.acp.name, "acs applied to entry");
 

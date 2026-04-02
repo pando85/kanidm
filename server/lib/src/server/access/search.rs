@@ -2,6 +2,7 @@ use super::migration::{MIGRATION_ENTRY_CLASSES, MIGRATION_IGNORE_CLASSES};
 use super::profiles::{
     AccessControlReceiverCondition, AccessControlSearchResolved, AccessControlTargetCondition,
 };
+use super::utils::check_time_restriction;
 use super::AccessSrchResult;
 use crate::prelude::*;
 use std::collections::BTreeSet;
@@ -218,6 +219,15 @@ fn search_filter_entry(
                     }
                 }
             };
+
+            // Check time restrictions
+            if !check_time_restriction(
+                acs.acp.acp.time_restriction_start,
+                acs.acp.acp.time_restriction_end,
+            ) {
+                debug!(entry = ?entry.get_display_id(), acs = %acs.acp.acp.name, "time restriction not satisfied");
+                return None;
+            }
 
             // -- Conditions pass -- release the attributes.
             debug!(entry = ?entry.get_display_id(), acs = %acs.acp.acp.name, "acs applied to entry");
