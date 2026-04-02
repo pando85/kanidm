@@ -51,7 +51,11 @@ async fn setup_passkey_account(
         .expect("Failed to create soft passkey");
 
     let _status = rsclient
-        .idm_account_credential_update_passkey_finish(&session_token, "softtoken".to_string(), passkey_resp)
+        .idm_account_credential_update_passkey_finish(
+            &session_token,
+            "softtoken".to_string(),
+            passkey_resp,
+        )
         .await
         .unwrap();
 
@@ -67,7 +71,10 @@ async fn get_current_uat(rsclient: &KanidmClient) -> UserAuthToken {
     let token = rsclient.get_token().await.expect("No bearer token present");
     let jwt = JwsCompact::from_str(&token).expect("Failed to parse jwt");
     let key_id = jwt.kid().expect("token does not have a key id");
-    let jwk = rsclient.get_public_jwk(key_id).await.expect("Unable to get jwk");
+    let jwk = rsclient
+        .get_public_jwk(key_id)
+        .await
+        .expect("Unable to get jwk");
     let jws_verifier = JwsEs256Verifier::try_from(&jwk).expect("Unable to build verifier");
 
     let released = jws_verifier.verify(&jwt).expect("Unable to verify jwt");
@@ -428,7 +435,10 @@ mod integration_tests {
         let post_body = serde_json::json!({"attrs": { ATTR_MAIL : ["sensitive@example.com"]}});
 
         let result = rsclient
-            .perform_patch_request::<serde_json::Value, serde_json::Value>("/v1/person/sensitive_user", post_body)
+            .perform_patch_request::<serde_json::Value, serde_json::Value>(
+                "/v1/person/sensitive_user",
+                post_body,
+            )
             .await;
 
         assert!(result.is_ok());
@@ -442,7 +452,11 @@ mod integration_tests {
         assert!(res.is_ok());
 
         rsclient
-            .idm_oauth2_rs_basic_create("test_oauth2_client", "Test OAuth2 Client", "https://example.com")
+            .idm_oauth2_rs_basic_create(
+                "test_oauth2_client",
+                "Test OAuth2 Client",
+                "https://example.com",
+            )
             .await
             .unwrap();
 
