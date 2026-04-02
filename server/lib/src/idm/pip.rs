@@ -564,8 +564,14 @@ mod tests {
         let attr1 = PipAttributeName::new(&pip_id, "attr1");
         let attr2 = PipAttributeName::new(&pip_id, "attr2");
 
-        set.insert(attr1.clone(), PipAttributeValue::String("value1".to_string()));
-        set.insert(attr2.clone(), PipAttributeValue::String("value2".to_string()));
+        set.insert(
+            attr1.clone(),
+            PipAttributeValue::String("value1".to_string()),
+        );
+        set.insert(
+            attr2.clone(),
+            PipAttributeValue::String("value2".to_string()),
+        );
 
         assert_eq!(set.len(), 2);
         assert!(set.contains(&attr1));
@@ -580,12 +586,18 @@ mod tests {
         let mut set1 = PipAttributeSet::new();
         let pip_id1 = PipId::new("source1");
         let attr1 = PipAttributeName::new(&pip_id1, "attr1");
-        set1.insert(attr1.clone(), PipAttributeValue::String("value1".to_string()));
+        set1.insert(
+            attr1.clone(),
+            PipAttributeValue::String("value1".to_string()),
+        );
 
         let mut set2 = PipAttributeSet::new();
         let pip_id2 = PipId::new("source2");
         let attr2 = PipAttributeName::new(&pip_id2, "attr2");
-        set2.insert(attr2.clone(), PipAttributeValue::String("value2".to_string()));
+        set2.insert(
+            attr2.clone(),
+            PipAttributeValue::String("value2".to_string()),
+        );
 
         set1.merge(set2);
 
@@ -599,10 +611,16 @@ mod tests {
         let mut set1 = PipAttributeSet::new();
         let pip_id = PipId::new("source");
         let attr = PipAttributeName::new(&pip_id, "same_attr");
-        set1.insert(attr.clone(), PipAttributeValue::String("value1".to_string()));
+        set1.insert(
+            attr.clone(),
+            PipAttributeValue::String("value1".to_string()),
+        );
 
         let mut set2 = PipAttributeSet::new();
-        set2.insert(attr.clone(), PipAttributeValue::String("value2".to_string()));
+        set2.insert(
+            attr.clone(),
+            PipAttributeValue::String("value2".to_string()),
+        );
 
         set1.merge(set2);
 
@@ -662,7 +680,9 @@ mod tests {
 
     #[test]
     fn test_pip_result_timeout() {
-        let result = PipResult::Timeout { fallback_used: false };
+        let result = PipResult::Timeout {
+            fallback_used: false,
+        };
         assert!(!result.is_success());
         assert!(!result.fallback_used());
     }

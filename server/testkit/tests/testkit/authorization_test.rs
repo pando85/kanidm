@@ -1,8 +1,8 @@
 #![deny(warnings)]
 use kanidm_client::KanidmClient;
 use kanidm_proto::internal::{
-    AuthorizationAction, AuthorizationDecision, AuthorizationRequest,
-    AuthorizationResponse, BatchAuthorizationRequest, BatchAuthorizationResponse,
+    AuthorizationAction, AuthorizationDecision, AuthorizationRequest, AuthorizationResponse,
+    BatchAuthorizationRequest, BatchAuthorizationResponse,
 };
 use kanidmd_testkit::{ADMIN_TEST_PASSWORD, ADMIN_TEST_USER};
 use std::collections::BTreeSet;
@@ -42,11 +42,8 @@ async fn test_authorization_endpoint_authenticated_admin(rsclient: &KanidmClient
         .and_then(|s| Uuid::parse_str(s).ok())
         .expect("Unable to parse admin uuid");
 
-    let request = AuthorizationRequest::new(
-        Some(admin_uuid),
-        admin_uuid,
-        AuthorizationAction::Search,
-    );
+    let request =
+        AuthorizationRequest::new(Some(admin_uuid), admin_uuid, AuthorizationAction::Search);
 
     let response: AuthorizationResponse = rsclient
         .perform_post_request("/v1/authorize", request)
@@ -242,8 +239,9 @@ async fn test_authorization_with_attributes_filtering(rsclient: &KanidmClient) {
         .expect("Unable to parse admin uuid");
 
     let attrs: BTreeSet<String> = BTreeSet::from(["name".to_string()]);
-    let request = AuthorizationRequest::new(Some(admin_uuid), admin_uuid, AuthorizationAction::Search)
-        .with_attributes(attrs.clone());
+    let request =
+        AuthorizationRequest::new(Some(admin_uuid), admin_uuid, AuthorizationAction::Search)
+            .with_attributes(attrs.clone());
 
     let response: AuthorizationResponse = rsclient
         .perform_post_request("/v1/authorize", request)
@@ -251,7 +249,11 @@ async fn test_authorization_with_attributes_filtering(rsclient: &KanidmClient) {
         .expect("Authorization request failed");
 
     if let Some(allowed) = response.allowed_attributes {
-        assert!(allowed.contains("name") || allowed.is_empty() || response.decision == AuthorizationDecision::Deny);
+        assert!(
+            allowed.contains("name")
+                || allowed.is_empty()
+                || response.decision == AuthorizationDecision::Deny
+        );
     }
 }
 
@@ -286,10 +288,12 @@ async fn test_authorization_concurrent_requests(rsclient: &KanidmClient) {
 
     let futures: Vec<_> = requests
         .iter()
-        .map(|req| rsclient.perform_post_request::<AuthorizationRequest, AuthorizationResponse>(
-            "/v1/authorize",
-            req.clone()
-        ))
+        .map(|req| {
+            rsclient.perform_post_request::<AuthorizationRequest, AuthorizationResponse>(
+                "/v1/authorize",
+                req.clone(),
+            )
+        })
         .collect();
 
     let results = futures::future::join_all(futures).await;
@@ -315,4 +319,3 @@ async fn test_authorization_create_action_unsupported(rsclient: &KanidmClient) {
 
     assert_eq!(response.decision, AuthorizationDecision::Deny);
 }
-
