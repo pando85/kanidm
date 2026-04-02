@@ -466,23 +466,11 @@ pub fn parse_recovery_target_time(timestamp: &str) -> Result<Duration, WalError>
 
 #[allow(dead_code)]
 pub fn parse_recovery_target_cid(cid_str: &str) -> Result<Cid, WalError> {
-    let parts: Vec<&str> = cid_str.split('-').collect();
-    if parts.len() < 2 {
+    let Some((ts_str, uuid_str)) = cid_str.split_once('-') else {
         return Err(WalError::InvalidSegment(format!(
             "Invalid CID format: {}",
             cid_str
         )));
-    }
-
-    let Some(ts_str) = parts.first() else {
-        return Err(WalError::InvalidSegment(
-            "Invalid CID format: missing timestamp".to_string(),
-        ));
-    };
-    let Some(uuid_str) = parts.get(1) else {
-        return Err(WalError::InvalidSegment(
-            "Invalid CID format: missing UUID".to_string(),
-        ));
     };
 
     let ts_nanos: u64 = ts_str
@@ -501,6 +489,44 @@ pub fn parse_recovery_target_cid(cid_str: &str) -> Result<Cid, WalError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use kanidm_proto::backup::{PitrManifest, RecoveryTarget, RecoveryTargetType};
+    use std::time::SystemTime;
+
+    fn create_test_config() -> WalArchiveConfig {
+        WalArchiveConfig {
+            enabled: true,
+            s3: None,
+            retention_days: 7,
+            segment_size_bytes: 1024,
+        }
+    }
+
+    fn create_test_cid(ts_nanos: u64) -> Cid {
+        Cid {
+            ts: Duration::from_nanos(ts_nanos),
+            s_uuid: Uuid::new_v4(),
+        }
+    }
+
+    fn create_test_segment(server_uuid: Uuid, start_ts: Duration, end_ts: Duration) -> WalSegment {
+        WalSegment::new(
+            format!("wal-{}-test.wal", server_uuid),
+            server_uuid,
+            start_ts,
+            end_ts,
+            "checksum123".to_string(),
+            100,
+            BackupCompression::NoCompression,
+        )
+    }
+
+    fn create_test_manifest(server_uuid: Uuid) -> PitrManifest {
+        PitrManifest::new(
+            server_uuid,
+            "backup-001".to_string(),
+            "2024-01-01T00:00:00Z".to_string(),
+        )
+    }
 
     #[test]
     fn test_wal_segment_builder() {
@@ -514,10 +540,140 @@ mod tests {
     }
 
     #[test]
+    fn test_wal_archiver_enabled() {
+        let server_uuid = Uuid::new_v4();
+        let config = create_test_config();
+        let base_path = std::env::temp_dir();
+
+        let archiver = WalArchiver::new(config, server_uuid, &base_path);
+
+        assert!(archiver.is_enabled());
+    }
+
+    #[test]
+    fn test_wal_entry_record_create() {
+        let cid = create_test_cid(1000);
+        let entry_id = 1u64;
+        let entry_data = vec![1, 2, 3, 4];
+
+        let record = WalEntryRecord {
+            cid_ts: cid.ts.as_nanos() as u64,
+            cid_server: cid.s_uuid,
+            entry_id,
+            operation: WalOperationRecord::Create { entry_data },
+        };
+
+        assert_eq!(record.cid_ts, 1000);
+        assert_eq!(record.entry_id, 1);
+        assert!(matches!(
+            record.operation,
+            WalOperationRecord::Create { .. }
+        ));
+    }
+
+    #[test]
+    fn test_wal_entry_record_modify() {
+        let cid = create_test_cid(2000);
+        let entry_id = 2u64;
+        let entry_data = vec![5, 6, 7, 8];
+
+        let record = WalEntryRecord {
+            cid_ts: cid.ts.as_nanos() as u64,
+            cid_server: cid.s_uuid,
+            entry_id,
+            operation: WalOperationRecord::Modify { entry_data },
+        };
+
+        assert_eq!(record.cid_ts, 2000);
+        assert_eq!(record.entry_id, 2);
+        assert!(matches!(
+            record.operation,
+            WalOperationRecord::Modify { .. }
+        ));
+    }
+
+    #[test]
+    fn test_wal_entry_record_delete() {
+        let cid = create_test_cid(3000);
+        let entry_id = 3u64;
+
+        let record = WalEntryRecord {
+            cid_ts: cid.ts.as_nanos() as u64,
+            cid_server: cid.s_uuid,
+            entry_id,
+            operation: WalOperationRecord::Delete,
+        };
+
+        assert_eq!(record.cid_ts, 3000);
+        assert_eq!(record.entry_id, 3);
+        assert!(matches!(record.operation, WalOperationRecord::Delete));
+    }
+
+    #[test]
+    fn test_wal_entry_serialization() {
+        let record = WalEntryRecord {
+            cid_ts: 1000,
+            cid_server: Uuid::new_v4(),
+            entry_id: 1,
+            operation: WalOperationRecord::Create {
+                entry_data: vec![1, 2, 3],
+            },
+        };
+
+        let serialized = serde_json::to_vec(&record);
+        assert!(serialized.is_ok());
+
+        let deserialized: WalEntryRecord = serde_json::from_slice(&serialized.unwrap()).unwrap();
+        assert_eq!(record.cid_ts, deserialized.cid_ts);
+        assert_eq!(record.entry_id, deserialized.entry_id);
+    }
+
+    #[test]
+    fn test_wal_entry_deserialization() {
+        let json = r#"{"cid_ts":1000,"cid_server":"00000000-0000-0000-0000-000000000001","entry_id":1,"operation":{"Create":{"entry_data":[1,2,3]}}}"#;
+        let record: WalEntryRecord = serde_json::from_str(json).unwrap();
+        assert_eq!(record.cid_ts, 1000);
+        assert_eq!(record.entry_id, 1);
+    }
+
+    #[test]
+    fn test_wal_entry_ordering() {
+        let records: Vec<WalEntryRecord> = vec![
+            WalEntryRecord {
+                cid_ts: 3000,
+                cid_server: Uuid::new_v4(),
+                entry_id: 3,
+                operation: WalOperationRecord::Delete,
+            },
+            WalEntryRecord {
+                cid_ts: 1000,
+                cid_server: Uuid::new_v4(),
+                entry_id: 1,
+                operation: WalOperationRecord::Create {
+                    entry_data: vec![1],
+                },
+            },
+            WalEntryRecord {
+                cid_ts: 2000,
+                cid_server: Uuid::new_v4(),
+                entry_id: 2,
+                operation: WalOperationRecord::Modify {
+                    entry_data: vec![2],
+                },
+            },
+        ];
+
+        let sorted: Vec<u64> = records.iter().map(|r| r.cid_ts).collect();
+        assert_eq!(sorted, vec![3000, 1000, 2000]);
+    }
+
+    #[test]
     fn test_parse_recovery_target_time() {
         let timestamp = "2024-01-15T10:30:00Z";
         let result = parse_recovery_target_time(timestamp);
         assert!(result.is_ok());
+        let duration = result.unwrap();
+        assert!(duration.as_secs() > 0);
     }
 
     #[test]
@@ -525,5 +681,700 @@ mod tests {
         let timestamp = "not-a-timestamp";
         let result = parse_recovery_target_time(timestamp);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_recovery_target_time_with_timezone() {
+        let timestamp = "2024-01-15T10:30:00+05:00";
+        let result = parse_recovery_target_time(timestamp);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_recovery_target_time_microsecond_precision() {
+        let timestamp = "2024-01-15T10:30:00.123456Z";
+        let result = parse_recovery_target_time(timestamp);
+        assert!(result.is_ok());
+        let duration = result.unwrap();
+        assert!(duration.subsec_nanos() > 0);
+    }
+
+    #[test]
+    fn test_timestamp_range_query() {
+        let start_ts = Duration::from_secs(1704067200);
+        let end_ts = Duration::from_secs(1704153600);
+        let test_ts = Duration::from_secs(1704100000);
+
+        assert!(test_ts >= start_ts);
+        assert!(test_ts <= end_ts);
+    }
+
+    #[test]
+    fn test_timestamp_comparison() {
+        let ts1 = Duration::from_nanos(1000);
+        let ts2 = Duration::from_nanos(2000);
+        let ts3 = Duration::from_nanos(1000);
+
+        assert!(ts1 < ts2);
+        assert!(ts1 == ts3);
+        assert!(ts2 > ts1);
+    }
+
+    #[test]
+    fn test_recovery_state_creation() {
+        let server_uuid = Uuid::new_v4();
+        let target = RecoveryTarget::latest();
+        let segments = vec![create_test_segment(
+            server_uuid,
+            Duration::from_secs(0),
+            Duration::from_secs(100),
+        )];
+
+        let state = RecoveryState {
+            target,
+            available_segments: segments,
+            base_backup_id: "backup-001".to_string(),
+            base_backup_timestamp: "2024-01-01T00:00:00Z".to_string(),
+        };
+
+        assert_eq!(state.available_segments.len(), 1);
+        assert_eq!(state.base_backup_id, "backup-001");
+    }
+
+    #[test]
+    fn test_recovery_state_validate_target_latest() {
+        let server_uuid = Uuid::new_v4();
+        let target = RecoveryTarget::latest();
+        let segments = vec![create_test_segment(
+            server_uuid,
+            Duration::from_secs(0),
+            Duration::from_secs(100),
+        )];
+
+        let state = RecoveryState {
+            target,
+            available_segments: segments,
+            base_backup_id: "backup-001".to_string(),
+            base_backup_timestamp: "2024-01-01T00:00:00Z".to_string(),
+        };
+
+        assert!(state.validate_target().is_ok());
+    }
+
+    #[test]
+    fn test_recovery_state_validate_target_time_valid() {
+        let server_uuid = Uuid::new_v4();
+        let target = RecoveryTarget::to_time("2024-01-01T01:00:00Z").unwrap();
+        let segments = vec![create_test_segment(
+            server_uuid,
+            Duration::from_secs(0),
+            Duration::from_secs(3600),
+        )];
+
+        let state = RecoveryState {
+            target,
+            available_segments: segments,
+            base_backup_id: "backup-001".to_string(),
+            base_backup_timestamp: "2024-01-01T00:00:00Z".to_string(),
+        };
+
+        assert!(state.validate_target().is_ok());
+    }
+
+    #[test]
+    fn test_recovery_state_validate_target_time_before_backup() {
+        let server_uuid = Uuid::new_v4();
+        let target = RecoveryTarget::to_time("2023-12-31T00:00:00Z").unwrap();
+        let segments = vec![create_test_segment(
+            server_uuid,
+            Duration::from_secs(0),
+            Duration::from_secs(3600),
+        )];
+
+        let state = RecoveryState {
+            target,
+            available_segments: segments,
+            base_backup_id: "backup-001".to_string(),
+            base_backup_timestamp: "2024-01-01T00:00:00Z".to_string(),
+        };
+
+        assert!(state.validate_target().is_err());
+    }
+
+    #[test]
+    fn test_recovery_state_validate_target_time_after_latest() {
+        let server_uuid = Uuid::new_v4();
+        let target = RecoveryTarget::to_time("2030-01-01T00:00:00Z").unwrap();
+        let segments = vec![create_test_segment(
+            server_uuid,
+            Duration::from_secs(0),
+            Duration::from_secs(3600),
+        )];
+
+        let state = RecoveryState {
+            target,
+            available_segments: segments,
+            base_backup_id: "backup-001".to_string(),
+            base_backup_timestamp: "2024-01-01T00:00:00Z".to_string(),
+        };
+
+        assert!(state.validate_target().is_err());
+    }
+
+    #[test]
+    fn test_recovery_state_get_segments_for_recovery() {
+        let server_uuid = Uuid::new_v4();
+        let target = RecoveryTarget::latest();
+        let segments = vec![
+            create_test_segment(
+                server_uuid,
+                Duration::from_secs(200),
+                Duration::from_secs(300),
+            ),
+            create_test_segment(
+                server_uuid,
+                Duration::from_secs(0),
+                Duration::from_secs(100),
+            ),
+            create_test_segment(
+                server_uuid,
+                Duration::from_secs(100),
+                Duration::from_secs(200),
+            ),
+        ];
+
+        let state = RecoveryState {
+            target,
+            available_segments: segments,
+            base_backup_id: "backup-001".to_string(),
+            base_backup_timestamp: "2024-01-01T00:00:00Z".to_string(),
+        };
+
+        let sorted_segments = state.get_segments_for_recovery();
+        assert_eq!(sorted_segments.len(), 3);
+        assert!(sorted_segments[0].start_ts <= sorted_segments[1].start_ts);
+        assert!(sorted_segments[1].start_ts <= sorted_segments[2].start_ts);
+    }
+
+    #[test]
+    fn test_wal_segment_creation() {
+        let server_uuid = Uuid::new_v4();
+        let segment = create_test_segment(
+            server_uuid,
+            Duration::from_secs(0),
+            Duration::from_secs(100),
+        );
+
+        assert!(segment.segment_id.contains("wal"));
+        assert_eq!(segment.server_uuid, server_uuid);
+        assert_eq!(segment.start_ts, Duration::from_secs(0));
+        assert_eq!(segment.end_ts, Duration::from_secs(100));
+    }
+
+    #[test]
+    fn test_wal_segment_display() {
+        let server_uuid = Uuid::new_v4();
+        let segment = create_test_segment(
+            server_uuid,
+            Duration::from_secs(0),
+            Duration::from_secs(100),
+        );
+        let display = format!("{}", segment);
+        assert!(display.contains("WalSegment"));
+        assert!(display.contains(server_uuid.to_string().as_str()));
+    }
+
+    #[test]
+    fn test_wal_archiver_record_create() {
+        let server_uuid = Uuid::new_v4();
+        let config = create_test_config();
+        let base_path = std::env::temp_dir();
+        let mut archiver = WalArchiver::new(config, server_uuid, &base_path);
+
+        let cid = create_test_cid(1000);
+        let result = archiver.record_create(&cid, 1, vec![1, 2, 3]);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_wal_archiver_record_modify() {
+        let server_uuid = Uuid::new_v4();
+        let config = create_test_config();
+        let base_path = std::env::temp_dir();
+        let mut archiver = WalArchiver::new(config, server_uuid, &base_path);
+
+        let cid = create_test_cid(1000);
+        let result = archiver.record_modify(&cid, 1, vec![4, 5, 6]);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_wal_archiver_record_delete() {
+        let server_uuid = Uuid::new_v4();
+        let config = create_test_config();
+        let base_path = std::env::temp_dir();
+        let mut archiver = WalArchiver::new(config, server_uuid, &base_path);
+
+        let cid = create_test_cid(1000);
+        let result = archiver.record_delete(&cid, 1);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_wal_archiver_disabled_operations() {
+        let server_uuid = Uuid::new_v4();
+        let config = WalArchiveConfig::default();
+        let base_path = std::env::temp_dir();
+        let mut archiver = WalArchiver::new(config, server_uuid, &base_path);
+
+        let cid = create_test_cid(1000);
+        let create_result = archiver.record_create(&cid, 1, vec![1, 2, 3]);
+        let modify_result = archiver.record_modify(&cid, 1, vec![4, 5, 6]);
+        let delete_result = archiver.record_delete(&cid, 1);
+
+        assert!(create_result.is_ok());
+        assert!(modify_result.is_ok());
+        assert!(delete_result.is_ok());
+    }
+
+    #[test]
+    fn test_wal_archiver_flush_empty_segment() {
+        let server_uuid = Uuid::new_v4();
+        let config = create_test_config();
+        let base_path = std::env::temp_dir();
+        let mut archiver = WalArchiver::new(config, server_uuid, &base_path);
+
+        let result = archiver.flush_current_segment();
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
+    }
+
+    #[test]
+    fn test_wal_replayer_load_segment_uncompressed() {
+        let server_uuid = Uuid::new_v4();
+        let replayer = WalReplayer::new(server_uuid);
+
+        let entries = vec![WalEntryRecord {
+            cid_ts: 1000,
+            cid_server: server_uuid,
+            entry_id: 1,
+            operation: WalOperationRecord::Create {
+                entry_data: vec![1, 2, 3],
+            },
+        }];
+
+        let data = serde_json::to_vec(&entries).unwrap();
+        let result = replayer.load_segment(&data, BackupCompression::NoCompression);
+        assert!(result.is_ok());
+        let loaded = result.unwrap();
+        assert_eq!(loaded.len(), 1);
+    }
+
+    #[test]
+    fn test_wal_replayer_replay_until_time() {
+        let server_uuid = Uuid::new_v4();
+        let replayer = WalReplayer::new(server_uuid);
+
+        let entries = vec![
+            WalEntryRecord {
+                cid_ts: 1000,
+                cid_server: server_uuid,
+                entry_id: 1,
+                operation: WalOperationRecord::Create {
+                    entry_data: vec![1],
+                },
+            },
+            WalEntryRecord {
+                cid_ts: 2000,
+                cid_server: server_uuid,
+                entry_id: 2,
+                operation: WalOperationRecord::Create {
+                    entry_data: vec![2],
+                },
+            },
+            WalEntryRecord {
+                cid_ts: 3000,
+                cid_server: server_uuid,
+                entry_id: 3,
+                operation: WalOperationRecord::Create {
+                    entry_data: vec![3],
+                },
+            },
+        ];
+
+        let target_ts = Some(Duration::from_nanos(2500));
+        let filtered = replayer.replay_until(&entries, target_ts, None);
+        assert_eq!(filtered.len(), 2);
+    }
+
+    #[test]
+    fn test_wal_replayer_replay_all() {
+        let server_uuid = Uuid::new_v4();
+        let replayer = WalReplayer::new(server_uuid);
+
+        let entries = vec![
+            WalEntryRecord {
+                cid_ts: 1000,
+                cid_server: server_uuid,
+                entry_id: 1,
+                operation: WalOperationRecord::Create {
+                    entry_data: vec![1],
+                },
+            },
+            WalEntryRecord {
+                cid_ts: 2000,
+                cid_server: server_uuid,
+                entry_id: 2,
+                operation: WalOperationRecord::Create {
+                    entry_data: vec![2],
+                },
+            },
+        ];
+
+        let filtered = replayer.replay_until(&entries, None, None);
+        assert_eq!(filtered.len(), 2);
+    }
+
+    #[test]
+    fn test_wal_replayer_replay_until_cid() {
+        let server_uuid = Uuid::new_v4();
+        let replayer = WalReplayer::new(server_uuid);
+
+        let target_cid = Cid {
+            ts: Duration::from_nanos(1500),
+            s_uuid: server_uuid,
+        };
+
+        let entries = vec![
+            WalEntryRecord {
+                cid_ts: 1000,
+                cid_server: server_uuid,
+                entry_id: 1,
+                operation: WalOperationRecord::Create {
+                    entry_data: vec![1],
+                },
+            },
+            WalEntryRecord {
+                cid_ts: 2000,
+                cid_server: server_uuid,
+                entry_id: 2,
+                operation: WalOperationRecord::Create {
+                    entry_data: vec![2],
+                },
+            },
+        ];
+
+        let filtered = replayer.replay_until(&entries, None, Some(&target_cid));
+        assert_eq!(filtered.len(), 1);
+    }
+
+    #[test]
+    fn test_parse_recovery_target_cid_valid() {
+        let uuid = Uuid::new_v4();
+        let cid_str = format!("{:032}-{}", 1000u64, uuid);
+        let result = parse_recovery_target_cid(&cid_str);
+        assert!(result.is_ok());
+        let cid = result.unwrap();
+        assert_eq!(cid.ts, Duration::from_nanos(1000));
+        assert_eq!(cid.s_uuid, uuid);
+    }
+
+    #[test]
+    fn test_parse_recovery_target_cid_invalid_format() {
+        let cid_str = "invalid-cid";
+        let result = parse_recovery_target_cid(cid_str);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_recovery_target_cid_missing_uuid() {
+        let cid_str = "1000";
+        let result = parse_recovery_target_cid(cid_str);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_apply_retention_policy() {
+        let server_uuid = Uuid::new_v4();
+        let config = WalArchiveConfig {
+            enabled: true,
+            s3: None,
+            retention_days: 1,
+            segment_size_bytes: 1024,
+        };
+        let base_path = std::env::temp_dir();
+        let mut archiver = WalArchiver::new(config, server_uuid, &base_path);
+
+        let mut manifest = create_test_manifest(server_uuid);
+
+        let now = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap();
+
+        let old_ts = Duration::from_secs(now.as_secs() - 86400 * 2);
+        let new_ts = Duration::from_secs(now.as_secs() - 3600);
+
+        manifest.add_segment(create_test_segment(server_uuid, old_ts, old_ts));
+        manifest.add_segment(create_test_segment(server_uuid, new_ts, new_ts));
+
+        let deleted = archiver.apply_retention_policy(&mut manifest).unwrap();
+        assert!(!deleted.is_empty());
+        assert!(manifest.segments.len() < 2);
+    }
+
+    #[test]
+    fn test_apply_retention_policy_empty_manifest() {
+        let server_uuid = Uuid::new_v4();
+        let config = create_test_config();
+        let base_path = std::env::temp_dir();
+        let mut archiver = WalArchiver::new(config, server_uuid, &base_path);
+
+        let mut manifest = create_test_manifest(server_uuid);
+        assert!(manifest.segments.is_empty());
+
+        let deleted = archiver.apply_retention_policy(&mut manifest).unwrap();
+        assert!(deleted.is_empty());
+    }
+
+    #[test]
+    fn test_wal_error_display() {
+        let error = WalError::IoError(std::io::Error::new(std::io::ErrorKind::NotFound, "test"));
+        assert!(error.to_string().contains("IO error"));
+
+        let error = WalError::SerializationError("test".to_string());
+        assert!(error.to_string().contains("serialization error"));
+
+        let error = WalError::InvalidSegment("test".to_string());
+        assert!(error.to_string().contains("Invalid WAL segment"));
+
+        let error = WalError::RetentionError("test".to_string());
+        assert!(error.to_string().contains("retention error"));
+
+        let error = WalError::ConfigError("test".to_string());
+        assert!(error.to_string().contains("config error"));
+    }
+
+    #[test]
+    fn test_wal_error_from_io() {
+        let io_error = std::io::Error::new(std::io::ErrorKind::NotFound, "test");
+        let wal_error: WalError = io_error.into();
+        assert!(matches!(wal_error, WalError::IoError(_)));
+    }
+
+    #[test]
+    fn test_wal_error_from_serde_json() {
+        let serde_error = serde_json::from_str::<WalEntryRecord>("invalid json").unwrap_err();
+        let wal_error: WalError = serde_error.into();
+        assert!(matches!(wal_error, WalError::SerializationError(_)));
+    }
+
+    #[test]
+    fn test_empty_transaction_log_recovery() {
+        let server_uuid = Uuid::new_v4();
+        let replayer = WalReplayer::new(server_uuid);
+
+        let entries: Vec<WalEntryRecord> = vec![];
+        let filtered = replayer.replay_until(&entries, None, None);
+        assert!(filtered.is_empty());
+    }
+
+    #[test]
+    fn test_wal_segment_data_creation() {
+        let server_uuid = Uuid::new_v4();
+        let entries = vec![WalEntryRecord {
+            cid_ts: 1000,
+            cid_server: server_uuid,
+            entry_id: 1,
+            operation: WalOperationRecord::Create {
+                entry_data: vec![1, 2, 3],
+            },
+        }];
+
+        let segment_data = WalSegmentData {
+            segment_id: "test-segment".to_string(),
+            server_uuid,
+            entries,
+            start_ts: Duration::from_secs(0),
+            end_ts: Duration::from_secs(100),
+        };
+
+        assert_eq!(segment_data.entries.len(), 1);
+        assert_eq!(segment_data.segment_id, "test-segment");
+    }
+
+    #[test]
+    fn test_wal_config_default() {
+        let config = WalArchiveConfig::default();
+        assert!(!config.enabled);
+        assert_eq!(config.retention_days, 7);
+        assert_eq!(config.segment_size_bytes, 16 * 1024 * 1024);
+    }
+
+    #[test]
+    fn test_estimate_record_size_create() {
+        let server_uuid = Uuid::new_v4();
+        let config = create_test_config();
+        let base_path = std::env::temp_dir();
+        let archiver = WalArchiver::new(config, server_uuid, &base_path);
+
+        let record = WalEntryRecord {
+            cid_ts: 1000,
+            cid_server: server_uuid,
+            entry_id: 1,
+            operation: WalOperationRecord::Create {
+                entry_data: vec![1; 100],
+            },
+        };
+
+        let size = archiver.estimate_record_size(&record);
+        assert!(size > 100);
+    }
+
+    #[test]
+    fn test_estimate_record_size_delete() {
+        let server_uuid = Uuid::new_v4();
+        let config = create_test_config();
+        let base_path = std::env::temp_dir();
+        let archiver = WalArchiver::new(config, server_uuid, &base_path);
+
+        let record = WalEntryRecord {
+            cid_ts: 1000,
+            cid_server: server_uuid,
+            entry_id: 1,
+            operation: WalOperationRecord::Delete,
+        };
+
+        let size = archiver.estimate_record_size(&record);
+        let base_size = std::mem::size_of::<WalEntryRecord>() as u64;
+        assert_eq!(size, base_size);
+    }
+
+    #[test]
+    fn test_multiple_recovery_points() {
+        let server_uuid = Uuid::new_v4();
+        let mut manifest = create_test_manifest(server_uuid);
+
+        for i in 0..5 {
+            let ts = Duration::from_secs(i * 100);
+            manifest.add_segment(create_test_segment(server_uuid, ts, ts));
+        }
+
+        assert_eq!(manifest.segments.len(), 5);
+        assert!(manifest.earliest_recoverable_time != manifest.latest_recoverable_time);
+    }
+
+    #[test]
+    fn test_pitr_manifest_add_segment_updates_times() {
+        let server_uuid = Uuid::new_v4();
+        let mut manifest = create_test_manifest(server_uuid);
+
+        let segment1 = create_test_segment(
+            server_uuid,
+            Duration::from_secs(0),
+            Duration::from_secs(100),
+        );
+        let segment2 = create_test_segment(
+            server_uuid,
+            Duration::from_secs(100),
+            Duration::from_secs(200),
+        );
+
+        manifest.add_segment(segment1.clone());
+        assert_eq!(manifest.earliest_recoverable_time, segment1.created_at);
+        assert_eq!(manifest.latest_recoverable_time, segment1.created_at);
+
+        manifest.add_segment(segment2.clone());
+        assert_eq!(manifest.earliest_recoverable_time, segment1.created_at);
+        assert_eq!(manifest.latest_recoverable_time, segment2.created_at);
+    }
+
+    #[test]
+    fn test_timestamp_future() {
+        let now = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap();
+        let future_ts = Duration::from_secs(now.as_secs() + 86400 * 365);
+
+        let server_uuid = Uuid::new_v4();
+        let segment = create_test_segment(server_uuid, future_ts, future_ts);
+        assert!(segment.start_ts > now);
+    }
+
+    #[test]
+    fn test_timestamp_before_database_creation() {
+        let old_ts = Duration::from_secs(0);
+        let server_uuid = Uuid::new_v4();
+        let segment = create_test_segment(server_uuid, old_ts, old_ts);
+        assert_eq!(segment.start_ts, Duration::from_secs(0));
+    }
+
+    #[test]
+    fn test_wal_archiver_segment_rotation() {
+        let server_uuid = Uuid::new_v4();
+        let config = WalArchiveConfig {
+            enabled: true,
+            s3: None,
+            retention_days: 7,
+            segment_size_bytes: 1,
+        };
+        let base_path = std::env::temp_dir();
+        let mut archiver = WalArchiver::new(config, server_uuid, &base_path);
+
+        let cid1 = create_test_cid(1000);
+        let result = archiver.record_create(&cid1, 1, vec![1; 10]);
+        assert!(result.is_ok());
+
+        let cid2 = create_test_cid(2000);
+        let result = archiver.record_create(&cid2, 2, vec![2; 10]);
+        assert!(result.is_ok());
+
+        let result = archiver.flush_current_segment();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_recovery_target_time_creation() {
+        let target = RecoveryTarget::to_time("2024-01-15T10:30:00Z");
+        assert!(target.is_ok());
+        let target = target.unwrap();
+        assert!(matches!(
+            target.target_type,
+            RecoveryTargetType::Time { .. }
+        ));
+    }
+
+    #[test]
+    fn test_recovery_target_transaction_creation() {
+        let target = RecoveryTarget::to_transaction("1000-uuid");
+        assert!(target.is_ok());
+        let target = target.unwrap();
+        assert!(matches!(
+            target.target_type,
+            RecoveryTargetType::Transaction { .. }
+        ));
+    }
+
+    #[test]
+    fn test_recovery_target_transaction_empty() {
+        let target = RecoveryTarget::to_transaction("");
+        assert!(target.is_err());
+    }
+
+    #[test]
+    fn test_recovery_target_latest() {
+        let target = RecoveryTarget::latest();
+        assert!(matches!(target.target_type, RecoveryTargetType::Latest));
+    }
+
+    #[test]
+    fn test_recovery_target_display() {
+        let time_target = RecoveryTarget::to_time("2024-01-15T10:30:00Z").unwrap();
+        assert!(time_target.to_string().starts_with("time:"));
+
+        let cid_target = RecoveryTarget::to_transaction("test-cid").unwrap();
+        assert!(cid_target.to_string().starts_with("transaction:"));
+
+        let latest_target = RecoveryTarget::latest();
+        assert_eq!(latest_target.to_string(), "latest");
     }
 }
