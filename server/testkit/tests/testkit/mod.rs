@@ -1,4 +1,5 @@
 mod apidocs;
+mod delegation;
 mod domain;
 mod group;
 mod http_manifest;
