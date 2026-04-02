@@ -12,14 +12,14 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 
-use crate::prelude::*;
-use super::{
-    PipAttributeName, PipAttributeSet, PipAttributeValue, PipHealthCheck, PipHealthStatus,
-    PipId, PipResult, PipSubject, PolicyInformationPoint,
-};
 use super::cache::PipAttributeCache;
+use super::config::{HttpMethod, HttpPipConfig, PipFallbackBehavior};
 use super::health::PipHealthState;
-use super::config::{HttpPipConfig, HttpMethod, PipFallbackBehavior};
+use super::{
+    PipAttributeName, PipAttributeSet, PipAttributeValue, PipHealthCheck, PipHealthStatus, PipId,
+    PipResult, PipSubject, PolicyInformationPoint,
+};
+use crate::prelude::*;
 
 /// HTTP PIP implementation
 pub struct HttpPip {
@@ -72,10 +72,14 @@ impl HttpPip {
             builder = builder.danger_accept_invalid_certs(config.tls.allow_insecure);
         }
 
-        builder.build().map_err(|e| format!("Failed to create HTTP client: {}", e))
+        builder
+            .build()
+            .map_err(|e| format!("Failed to create HTTP client: {}", e))
     }
 
-    fn extract_provided_attributes_from_endpoint(_config: &HttpPipConfig) -> Result<Vec<String>, String> {
+    fn extract_provided_attributes_from_endpoint(
+        _config: &HttpPipConfig,
+    ) -> Result<Vec<String>, String> {
         Ok(vec!["attributes".to_string()])
     }
 
@@ -118,19 +122,17 @@ impl HttpPip {
                 super::config::PipAuthConfig::Basic { username, password } => {
                     builder.basic_auth(username, Some(password))
                 }
-                super::config::PipAuthConfig::Bearer { token } => {
-                    builder.bearer_auth(token)
-                }
-                super::config::PipAuthConfig::ApiKey { key_name, key_value, location } => {
-                    match location {
-                        super::config::ApiKeyLocation::Header => {
-                            builder.header(key_name, key_value)
-                        }
-                        super::config::ApiKeyLocation::QueryParam => {
-                            builder.query(&[(key_name, key_value)])
-                        }
+                super::config::PipAuthConfig::Bearer { token } => builder.bearer_auth(token),
+                super::config::PipAuthConfig::ApiKey {
+                    key_name,
+                    key_value,
+                    location,
+                } => match location {
+                    super::config::ApiKeyLocation::Header => builder.header(key_name, key_value),
+                    super::config::ApiKeyLocation::QueryParam => {
+                        builder.query(&[(key_name, key_value)])
                     }
-                }
+                },
                 super::config::PipAuthConfig::OAuth2ClientCredentials { .. } => {
                     admin_warn!("OAuth2 client credentials auth not yet implemented for PIP");
                     builder
@@ -186,13 +188,9 @@ impl HttpPip {
                 }
             }
             Value::String(s) => PipAttributeValue::String(s),
-            Value::Array(arr) => {
-                PipAttributeValue::Array(
-                    arr.into_iter()
-                        .map(Self::json_to_attribute_value)
-                        .collect()
-                )
-            }
+            Value::Array(arr) => PipAttributeValue::Array(
+                arr.into_iter().map(Self::json_to_attribute_value).collect(),
+            ),
             Value::Object(obj) => PipAttributeValue::Json(Value::Object(obj)),
         }
     }
@@ -281,24 +279,18 @@ impl PolicyInformationPoint for HttpPip {
                             self.update_health_failure(error.clone()).await;
 
                             match self.config.fallback_behavior {
-                                PipFallbackBehavior::UseFallback => {
-                                    PipResult::Error {
-                                        error,
-                                        fallback_used: true,
-                                    }
-                                }
-                                PipFallbackBehavior::Deny => {
-                                    PipResult::Error {
-                                        error,
-                                        fallback_used: false,
-                                    }
-                                }
-                                PipFallbackBehavior::Ignore => {
-                                    PipResult::Error {
-                                        error,
-                                        fallback_used: false,
-                                    }
-                                }
+                                PipFallbackBehavior::UseFallback => PipResult::Error {
+                                    error,
+                                    fallback_used: true,
+                                },
+                                PipFallbackBehavior::Deny => PipResult::Error {
+                                    error,
+                                    fallback_used: false,
+                                },
+                                PipFallbackBehavior::Ignore => PipResult::Error {
+                                    error,
+                                    fallback_used: false,
+                                },
                             }
                         }
                     }
@@ -307,24 +299,18 @@ impl PolicyInformationPoint for HttpPip {
                     self.update_health_failure(error.clone()).await;
 
                     match self.config.fallback_behavior {
-                        PipFallbackBehavior::UseFallback => {
-                            PipResult::Error {
-                                error,
-                                fallback_used: true,
-                            }
-                        }
-                        PipFallbackBehavior::Deny => {
-                            PipResult::Error {
-                                error,
-                                fallback_used: false,
-                            }
-                        }
-                        PipFallbackBehavior::Ignore => {
-                            PipResult::Error {
-                                error,
-                                fallback_used: false,
-                            }
-                        }
+                        PipFallbackBehavior::UseFallback => PipResult::Error {
+                            error,
+                            fallback_used: true,
+                        },
+                        PipFallbackBehavior::Deny => PipResult::Error {
+                            error,
+                            fallback_used: false,
+                        },
+                        PipFallbackBehavior::Ignore => PipResult::Error {
+                            error,
+                            fallback_used: false,
+                        },
                     }
                 }
             }
@@ -337,7 +323,9 @@ impl PolicyInformationPoint for HttpPip {
                 match self.config.fallback_behavior {
                     PipFallbackBehavior::UseFallback => {
                         if is_timeout {
-                            PipResult::Timeout { fallback_used: true }
+                            PipResult::Timeout {
+                                fallback_used: true,
+                            }
                         } else {
                             PipResult::Error {
                                 error,
@@ -347,7 +335,9 @@ impl PolicyInformationPoint for HttpPip {
                     }
                     PipFallbackBehavior::Deny => {
                         if is_timeout {
-                            PipResult::Timeout { fallback_used: false }
+                            PipResult::Timeout {
+                                fallback_used: false,
+                            }
                         } else {
                             PipResult::Error {
                                 error,
@@ -357,7 +347,9 @@ impl PolicyInformationPoint for HttpPip {
                     }
                     PipFallbackBehavior::Ignore => {
                         if is_timeout {
-                            PipResult::Timeout { fallback_used: false }
+                            PipResult::Timeout {
+                                fallback_used: false,
+                            }
                         } else {
                             PipResult::Error {
                                 error,
@@ -473,9 +465,9 @@ impl PolicyInformationPoint for HttpPip {
 
 #[cfg(test)]
 mod tests {
+    use super::super::config::PipTlsConfig;
     use super::*;
     use std::collections::BTreeMap;
-    use super::super::config::PipTlsConfig;
     use url::Url;
 
     fn create_test_config() -> HttpPipConfig {
@@ -509,8 +501,7 @@ mod tests {
         let config = create_test_config();
         let pip = HttpPip::new(config).unwrap();
 
-        let subject = PipSubject::from_uuid(uuid::Uuid::new_v4())
-            .with_username("testuser");
+        let subject = PipSubject::from_uuid(uuid::Uuid::new_v4()).with_username("testuser");
 
         let url = pip.build_url(&subject);
         assert!(url.contains("/users/testuser"));
@@ -534,6 +525,8 @@ mod tests {
         let pip = HttpPip::new(config).unwrap();
 
         assert_eq!(pip.provided_attributes().len(), 2);
-        assert!(pip.provided_attributes().contains(&"department".to_string()));
+        assert!(pip
+            .provided_attributes()
+            .contains(&"department".to_string()));
     }
 }

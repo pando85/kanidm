@@ -72,7 +72,12 @@ impl PipAttributeName {
     const PREFIX: &'static str = "pip:";
 
     pub fn new(source_id: &PipId, attribute_name: &str) -> Self {
-        PipAttributeName(format!("{}{}:{}", Self::PREFIX, source_id.as_str(), attribute_name))
+        PipAttributeName(format!(
+            "{}{}:{}",
+            Self::PREFIX,
+            source_id.as_str(),
+            attribute_name
+        ))
     }
 
     pub fn as_str(&self) -> &str {
@@ -236,19 +241,11 @@ pub enum PipResult {
     /// Successfully retrieved attributes
     Success(PipAttributeSet),
     /// PIP source is unavailable/unhealthy
-    Unavailable {
-        reason: String,
-        fallback_used: bool,
-    },
+    Unavailable { reason: String, fallback_used: bool },
     /// Timeout occurred during retrieval
-    Timeout {
-        fallback_used: bool,
-    },
+    Timeout { fallback_used: bool },
     /// Error occurred during retrieval
-    Error {
-        error: String,
-        fallback_used: bool,
-    },
+    Error { error: String, fallback_used: bool },
 }
 
 impl PipResult {
@@ -410,7 +407,10 @@ impl PipManager {
                 if let Some(pip) = self.pips.get(&pip_id) {
                     if pip.cached_health_status().can_retrieve() {
                         let result = pip
-                            .retrieve_named_attributes(subject, std::slice::from_ref(&internal_name))
+                            .retrieve_named_attributes(
+                                subject,
+                                std::slice::from_ref(&internal_name),
+                            )
                             .await;
                         if let Some(attrs) = result.attributes() {
                             all_attributes.merge(attrs.clone());
@@ -458,11 +458,10 @@ mod tests {
         let pip_id = PipId::new("hr_system");
         let attr_name = PipAttributeName::new(&pip_id, "department");
 
-        assert_eq!(
-            attr_name.as_str(),
+        assert_eq!(attr_name.as_str(), "pip:hr_system:department");
+        assert!(PipAttributeName::is_pip_attribute(
             "pip:hr_system:department"
-        );
-        assert!(PipAttributeName::is_pip_attribute("pip:hr_system:department"));
+        ));
         assert!(!PipAttributeName::is_pip_attribute("department"));
     }
 
@@ -485,7 +484,10 @@ mod tests {
         let pip_id = PipId::new("hr_system");
 
         let dept_attr = PipAttributeName::new(&pip_id, "department");
-        set.insert(dept_attr.clone(), PipAttributeValue::String("Engineering".to_string()));
+        set.insert(
+            dept_attr.clone(),
+            PipAttributeValue::String("Engineering".to_string()),
+        );
 
         assert!(set.contains(&dept_attr));
         assert_eq!(set.len(), 1);

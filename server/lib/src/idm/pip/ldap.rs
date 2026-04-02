@@ -7,21 +7,21 @@
 
 use async_trait::async_trait;
 use ldap3_client::{
-    LdapClient, LdapClientBuilder, LdapEntry, proto::LdapFilter, proto::LdapSearchScope,
+    proto::LdapFilter, proto::LdapSearchScope, LdapClient, LdapClientBuilder, LdapEntry,
 };
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 
-use crate::prelude::*;
-use super::{
-    PipAttributeName, PipAttributeSet, PipAttributeValue, PipHealthCheck, PipHealthStatus,
-    PipId, PipResult, PipSubject, PolicyInformationPoint,
-};
 use super::cache::PipAttributeCache;
-use super::health::PipHealthState;
 use super::config::{LdapPipConfig, PipFallbackBehavior};
+use super::health::PipHealthState;
+use super::{
+    PipAttributeName, PipAttributeSet, PipAttributeValue, PipHealthCheck, PipHealthStatus, PipId,
+    PipResult, PipSubject, PolicyInformationPoint,
+};
+use crate::prelude::*;
 
 /// LDAP PIP implementation
 pub struct LdapPip {
@@ -102,7 +102,8 @@ impl LdapPip {
         let mut attrs = PipAttributeSet::new();
 
         for (ldap_attr_name, values) in &entry.attrs {
-            let pip_attr_name = self.attribute_mapping
+            let pip_attr_name = self
+                .attribute_mapping
                 .get(ldap_attr_name)
                 .cloned()
                 .unwrap_or_else(|| ldap_attr_name.clone());
@@ -192,7 +193,10 @@ impl PolicyInformationPoint for LdapPip {
         match client_result {
             Ok(mut client) => {
                 let bind_result = client
-                    .bind(self.config.bind_dn.clone(), self.config.bind_password.clone())
+                    .bind(
+                        self.config.bind_dn.clone(),
+                        self.config.bind_password.clone(),
+                    )
                     .await;
 
                 match bind_result {
@@ -203,10 +207,7 @@ impl PolicyInformationPoint for LdapPip {
                         match filter {
                             Ok(ldap_filter) => {
                                 let search_result = client
-                                    .search(
-                                        self.config.base_dn.clone(),
-                                        ldap_filter,
-                                    )
+                                    .search(self.config.base_dn.clone(), ldap_filter)
                                     .scope(LdapSearchScope::Subtree)
                                     .attrs(self.config.attributes.clone())
                                     .send()
@@ -221,12 +222,11 @@ impl PolicyInformationPoint for LdapPip {
                                                 PipFallbackBehavior::UseFallback => {
                                                     PipResult::Success(self.apply_fallback())
                                                 }
-                                                PipFallbackBehavior::Deny => {
-                                                    PipResult::Error {
-                                                        error: "No LDAP entries found for subject".to_string(),
-                                                        fallback_used: false,
-                                                    }
-                                                }
+                                                PipFallbackBehavior::Deny => PipResult::Error {
+                                                    error: "No LDAP entries found for subject"
+                                                        .to_string(),
+                                                    fallback_used: false,
+                                                },
                                                 PipFallbackBehavior::Ignore => {
                                                     PipResult::Success(PipAttributeSet::new())
                                                 }
@@ -249,24 +249,18 @@ impl PolicyInformationPoint for LdapPip {
                                         self.update_health_failure(error.clone()).await;
 
                                         match self.config.fallback_behavior {
-                                            PipFallbackBehavior::UseFallback => {
-                                                PipResult::Error {
-                                                    error,
-                                                    fallback_used: true,
-                                                }
-                                            }
-                                            PipFallbackBehavior::Deny => {
-                                                PipResult::Error {
-                                                    error,
-                                                    fallback_used: false,
-                                                }
-                                            }
-                                            PipFallbackBehavior::Ignore => {
-                                                PipResult::Error {
-                                                    error,
-                                                    fallback_used: false,
-                                                }
-                                            }
+                                            PipFallbackBehavior::UseFallback => PipResult::Error {
+                                                error,
+                                                fallback_used: true,
+                                            },
+                                            PipFallbackBehavior::Deny => PipResult::Error {
+                                                error,
+                                                fallback_used: false,
+                                            },
+                                            PipFallbackBehavior::Ignore => PipResult::Error {
+                                                error,
+                                                fallback_used: false,
+                                            },
                                         }
                                     }
                                 }
@@ -287,24 +281,18 @@ impl PolicyInformationPoint for LdapPip {
                         self.update_health_failure(error.clone()).await;
 
                         match self.config.fallback_behavior {
-                            PipFallbackBehavior::UseFallback => {
-                                PipResult::Error {
-                                    error,
-                                    fallback_used: true,
-                                }
-                            }
-                            PipFallbackBehavior::Deny => {
-                                PipResult::Error {
-                                    error,
-                                    fallback_used: false,
-                                }
-                            }
-                            PipFallbackBehavior::Ignore => {
-                                PipResult::Error {
-                                    error,
-                                    fallback_used: false,
-                                }
-                            }
+                            PipFallbackBehavior::UseFallback => PipResult::Error {
+                                error,
+                                fallback_used: true,
+                            },
+                            PipFallbackBehavior::Deny => PipResult::Error {
+                                error,
+                                fallback_used: false,
+                            },
+                            PipFallbackBehavior::Ignore => PipResult::Error {
+                                error,
+                                fallback_used: false,
+                            },
                         }
                     }
                 }
@@ -313,24 +301,18 @@ impl PolicyInformationPoint for LdapPip {
                 self.update_health_failure(e.clone()).await;
 
                 match self.config.fallback_behavior {
-                    PipFallbackBehavior::UseFallback => {
-                        PipResult::Unavailable {
-                            reason: e,
-                            fallback_used: true,
-                        }
-                    }
-                    PipFallbackBehavior::Deny => {
-                        PipResult::Unavailable {
-                            reason: e,
-                            fallback_used: false,
-                        }
-                    }
-                    PipFallbackBehavior::Ignore => {
-                        PipResult::Unavailable {
-                            reason: e,
-                            fallback_used: false,
-                        }
-                    }
+                    PipFallbackBehavior::UseFallback => PipResult::Unavailable {
+                        reason: e,
+                        fallback_used: true,
+                    },
+                    PipFallbackBehavior::Deny => PipResult::Unavailable {
+                        reason: e,
+                        fallback_used: false,
+                    },
+                    PipFallbackBehavior::Ignore => PipResult::Unavailable {
+                        reason: e,
+                        fallback_used: false,
+                    },
                 }
             }
         }
@@ -367,7 +349,10 @@ impl PolicyInformationPoint for LdapPip {
         match client_result {
             Ok(mut client) => {
                 let bind_result = client
-                    .bind(self.config.bind_dn.clone(), self.config.bind_password.clone())
+                    .bind(
+                        self.config.bind_dn.clone(),
+                        self.config.bind_password.clone(),
+                    )
                     .await;
 
                 let latency_ms = start.elapsed().as_millis() as u64;
@@ -475,8 +460,7 @@ mod tests {
         let config = create_test_config();
         let pip = LdapPip::new(config).unwrap();
 
-        let subject = PipSubject::from_uuid(uuid::Uuid::new_v4())
-            .with_username("testuser");
+        let subject = PipSubject::from_uuid(uuid::Uuid::new_v4()).with_username("testuser");
 
         let filter = pip.build_search_filter(&subject);
         assert_eq!(filter, "(uid=testuser)");
@@ -488,7 +472,9 @@ mod tests {
         let pip = LdapPip::new(config).unwrap();
 
         assert_eq!(pip.provided_attributes().len(), 2);
-        assert!(pip.provided_attributes().contains(&"department".to_string()));
+        assert!(pip
+            .provided_attributes()
+            .contains(&"department".to_string()));
     }
 
     #[test]
