@@ -20,6 +20,7 @@ async fn test_authorization_endpoint_unauthorized(rsclient: &KanidmClient) {
     assert!(result.is_err());
     match result.unwrap_err() {
         kanidm_client::ClientError::Unauthorized => (),
+        kanidm_client::ClientError::Http(kanidm_client::StatusCode::UNAUTHORIZED, _, _) => (),
         other => panic!("Expected Unauthorized error, got {:?}", other),
     }
 }
@@ -61,8 +62,18 @@ async fn test_authorization_decision_deny(rsclient: &KanidmClient) {
         .await;
     assert!(res.is_ok());
 
-    let resource_uuid = Uuid::new_v4();
-    let request = AuthorizationRequest::new(None, resource_uuid, AuthorizationAction::Delete);
+    let admin_uuid = rsclient
+        .whoami()
+        .await
+        .expect("Unable to call whoami")
+        .expect("No entry matching self returned")
+        .attrs
+        .get("uuid")
+        .and_then(|v| v.first())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .expect("Unable to parse admin uuid");
+
+    let request = AuthorizationRequest::new(None, admin_uuid, AuthorizationAction::Delete);
 
     let response: AuthorizationResponse = rsclient
         .perform_post_request("/v1/authorize", request)
@@ -70,7 +81,7 @@ async fn test_authorization_decision_deny(rsclient: &KanidmClient) {
         .expect("Authorization request failed");
 
     assert_eq!(response.decision, AuthorizationDecision::Deny);
-    assert_eq!(response.resource, resource_uuid);
+    assert_eq!(response.resource, admin_uuid);
     assert_eq!(response.action, AuthorizationAction::Delete);
 }
 
@@ -81,7 +92,16 @@ async fn test_authorization_decision_types(rsclient: &KanidmClient) {
         .await;
     assert!(res.is_ok());
 
-    let resource_uuid = Uuid::new_v4();
+    let admin_uuid = rsclient
+        .whoami()
+        .await
+        .expect("Unable to call whoami")
+        .expect("No entry matching self returned")
+        .attrs
+        .get("uuid")
+        .and_then(|v| v.first())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .expect("Unable to parse admin uuid");
 
     for action in [
         AuthorizationAction::Search,
@@ -89,14 +109,14 @@ async fn test_authorization_decision_types(rsclient: &KanidmClient) {
         AuthorizationAction::Modify,
         AuthorizationAction::Delete,
     ] {
-        let request = AuthorizationRequest::new(None, resource_uuid, action);
+        let request = AuthorizationRequest::new(None, admin_uuid, action);
         let response: AuthorizationResponse = rsclient
             .perform_post_request("/v1/authorize", request)
             .await
             .expect("Authorization request failed");
 
         assert_eq!(response.action, action);
-        assert_eq!(response.resource, resource_uuid);
+        assert_eq!(response.resource, admin_uuid);
     }
 }
 
@@ -107,8 +127,18 @@ async fn test_authorization_with_explanation(rsclient: &KanidmClient) {
         .await;
     assert!(res.is_ok());
 
-    let resource_uuid = Uuid::new_v4();
-    let request = AuthorizationRequest::new(None, resource_uuid, AuthorizationAction::Search)
+    let admin_uuid = rsclient
+        .whoami()
+        .await
+        .expect("Unable to call whoami")
+        .expect("No entry matching self returned")
+        .attrs
+        .get("uuid")
+        .and_then(|v| v.first())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .expect("Unable to parse admin uuid");
+
+    let request = AuthorizationRequest::new(None, admin_uuid, AuthorizationAction::Search)
         .with_explanation(true);
 
     let response: AuthorizationResponse = rsclient
@@ -136,6 +166,7 @@ async fn test_batch_authorization_endpoint_unauthorized(rsclient: &KanidmClient)
     assert!(result.is_err());
     match result.unwrap_err() {
         kanidm_client::ClientError::Unauthorized => (),
+        kanidm_client::ClientError::Http(kanidm_client::StatusCode::UNAUTHORIZED, _, _) => (),
         other => panic!("Expected Unauthorized error, got {:?}", other),
     }
 }
@@ -147,12 +178,20 @@ async fn test_batch_authorization_endpoint_authenticated(rsclient: &KanidmClient
         .await;
     assert!(res.is_ok());
 
-    let resource_a = Uuid::new_v4();
-    let resource_b = Uuid::new_v4();
+    let admin_uuid = rsclient
+        .whoami()
+        .await
+        .expect("Unable to call whoami")
+        .expect("No entry matching self returned")
+        .attrs
+        .get("uuid")
+        .and_then(|v| v.first())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .expect("Unable to parse admin uuid");
 
     let requests = vec![
-        AuthorizationRequest::new(None, resource_a, AuthorizationAction::Search),
-        AuthorizationRequest::new(None, resource_b, AuthorizationAction::Modify),
+        AuthorizationRequest::new(None, admin_uuid, AuthorizationAction::Search),
+        AuthorizationRequest::new(None, admin_uuid, AuthorizationAction::Modify),
     ];
     let batch_request = BatchAuthorizationRequest { requests };
 
@@ -162,8 +201,8 @@ async fn test_batch_authorization_endpoint_authenticated(rsclient: &KanidmClient
         .expect("Batch authorization request failed");
 
     assert_eq!(response.responses.len(), 2);
-    assert_eq!(response.responses[0].resource, resource_a);
-    assert_eq!(response.responses[1].resource, resource_b);
+    assert_eq!(response.responses[0].resource, admin_uuid);
+    assert_eq!(response.responses[1].resource, admin_uuid);
 }
 
 #[kanidmd_testkit::test]
@@ -190,9 +229,20 @@ async fn test_batch_authorization_large_batch(rsclient: &KanidmClient) {
         .await;
     assert!(res.is_ok());
 
+    let admin_uuid = rsclient
+        .whoami()
+        .await
+        .expect("Unable to call whoami")
+        .expect("No entry matching self returned")
+        .attrs
+        .get("uuid")
+        .and_then(|v| v.first())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .expect("Unable to parse admin uuid");
+
     let num_requests = 10;
     let requests: Vec<AuthorizationRequest> = (0..num_requests)
-        .map(|_| AuthorizationRequest::new(None, Uuid::new_v4(), AuthorizationAction::Search))
+        .map(|_| AuthorizationRequest::new(None, admin_uuid, AuthorizationAction::Search))
         .collect();
     let batch_request = BatchAuthorizationRequest { requests };
 
@@ -264,7 +314,18 @@ async fn test_authorization_session_expiry_handling(rsclient: &KanidmClient) {
         .await;
     assert!(res.is_ok());
 
-    let request = AuthorizationRequest::new(None, Uuid::new_v4(), AuthorizationAction::Search);
+    let admin_uuid = rsclient
+        .whoami()
+        .await
+        .expect("Unable to call whoami")
+        .expect("No entry matching self returned")
+        .attrs
+        .get("uuid")
+        .and_then(|v| v.first())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .expect("Unable to parse admin uuid");
+
+    let request = AuthorizationRequest::new(None, admin_uuid, AuthorizationAction::Search);
 
     let response: AuthorizationResponse = rsclient
         .perform_post_request("/v1/authorize", request.clone())
@@ -282,8 +343,19 @@ async fn test_authorization_concurrent_requests(rsclient: &KanidmClient) {
         .await;
     assert!(res.is_ok());
 
+    let admin_uuid = rsclient
+        .whoami()
+        .await
+        .expect("Unable to call whoami")
+        .expect("No entry matching self returned")
+        .attrs
+        .get("uuid")
+        .and_then(|v| v.first())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .expect("Unable to parse admin uuid");
+
     let requests: Vec<AuthorizationRequest> = (0..5)
-        .map(|_| AuthorizationRequest::new(None, Uuid::new_v4(), AuthorizationAction::Search))
+        .map(|_| AuthorizationRequest::new(None, admin_uuid, AuthorizationAction::Search))
         .collect();
 
     let futures: Vec<_> = requests
@@ -310,7 +382,18 @@ async fn test_authorization_create_action_unsupported(rsclient: &KanidmClient) {
         .await;
     assert!(res.is_ok());
 
-    let request = AuthorizationRequest::new(None, Uuid::new_v4(), AuthorizationAction::Create);
+    let admin_uuid = rsclient
+        .whoami()
+        .await
+        .expect("Unable to call whoami")
+        .expect("No entry matching self returned")
+        .attrs
+        .get("uuid")
+        .and_then(|v| v.first())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .expect("Unable to parse admin uuid");
+
+    let request = AuthorizationRequest::new(None, admin_uuid, AuthorizationAction::Create);
 
     let response: AuthorizationResponse = rsclient
         .perform_post_request("/v1/authorize", request)
