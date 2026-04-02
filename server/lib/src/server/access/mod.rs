@@ -184,6 +184,7 @@ fn resolve_access_conditions(
     ident_memberof: Option<&BTreeSet<Uuid>>,
     receiver: &AccessControlReceiver,
     target: &AccessControlTarget,
+    acp_scope_filter: Option<&Filter<FilterValid>>,
     acp_resolve_filter_cache: &mut ResolveFilterCacheReadTxn<'_>,
 ) -> Option<(AccessControlReceiverCondition, AccessControlTargetCondition)> {
     let receiver_condition = match receiver {
@@ -239,15 +240,32 @@ fn resolve_access_conditions(
         // AccessControlReceiverCondition::None,
     };
 
-    let target_condition = match &target {
-        AccessControlTarget::Scope(filter) => filter
+    let acp_scope_filter_resolved = if let Some(filter) = acp_scope_filter {
+        filter
             .resolve(ident, None, Some(acp_resolve_filter_cache))
             .map_err(|e| {
-                admin_error!(?e, "A internal filter/event was passed for resolution!?!?");
+                admin_error!(?e, "Failed to resolve ACP scope filter");
                 e
             })
             .ok()
-            .map(AccessControlTargetCondition::Scope)?,
+    } else {
+        None
+    };
+
+    let target_condition = match &target {
+        AccessControlTarget::Scope(filter) => {
+            let target_filter = filter
+                .resolve(ident, None, Some(acp_resolve_filter_cache))
+                .map_err(|e| {
+                    admin_error!(?e, "A internal filter/event was passed for resolution!?!?");
+                    e
+                })
+                .ok()?;
+            AccessControlTargetCondition::Scope {
+                target_filter,
+                scope_filter: acp_scope_filter_resolved,
+            }
+        }
         AccessControlTarget::DelegatedScope {
             scope_group: _,
             scope_filter,
@@ -266,6 +284,7 @@ fn resolve_access_conditions(
 
             AccessControlTargetCondition::DelegatedScope {
                 scope_filter_resolved,
+                scope_filter: acp_scope_filter_resolved,
             }
         }
         AccessControlTarget::None => return None,
@@ -346,6 +365,7 @@ pub trait AccessControlsTransaction<'a> {
                     ident_memberof,
                     &acs.acp.receiver,
                     &acs.acp.target,
+                    acs.acp.scope_filter.as_ref(),
                     acp_resolve_filter_cache,
                 )?;
 
@@ -571,6 +591,7 @@ pub trait AccessControlsTransaction<'a> {
                     ident_memberof,
                     &acs.acp.receiver,
                     &acs.acp.target,
+                    acs.acp.scope_filter.as_ref(),
                     acp_resolve_filter_cache,
                 )?;
 
@@ -934,6 +955,7 @@ pub trait AccessControlsTransaction<'a> {
                     ident_memberof,
                     &acs.acp.receiver,
                     &acs.acp.target,
+                    acs.acp.scope_filter.as_ref(),
                     acp_resolve_filter_cache,
                 )?;
 
@@ -1021,6 +1043,7 @@ pub trait AccessControlsTransaction<'a> {
                     ident_memberof,
                     &acs.acp.receiver,
                     &acs.acp.target,
+                    acs.acp.scope_filter.as_ref(),
                     acp_resolve_filter_cache,
                 )?;
 

@@ -500,10 +500,13 @@ pub enum AccessControlTarget {
 
 #[derive(Debug, Clone)]
 pub enum AccessControlTargetCondition {
-    // None,
-    Scope(Filter<FilterValidResolved>),
+    Scope {
+        target_filter: Filter<FilterValidResolved>,
+        scope_filter: Option<Filter<FilterValidResolved>>,
+    },
     DelegatedScope {
         scope_filter_resolved: Option<Filter<FilterValidResolved>>,
+        scope_filter: Option<Filter<FilterValidResolved>>,
     },
 }
 

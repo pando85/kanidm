@@ -2354,6 +2354,9 @@ impl SchemaWriteTransaction<'_> {
                     Attribute::Description,
                     Attribute::AcpRequireReauth,
                     Attribute::AcpReauthMaxAge,
+                    Attribute::AcpTimeRestrictionStart,
+                    Attribute::AcpTimeRestrictionEnd,
+                    Attribute::AcpScopeFilter,
                 ],
                 systemmust: vec![Attribute::Name],
                 systemsupplements: vec![
