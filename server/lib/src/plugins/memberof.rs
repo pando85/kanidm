@@ -2252,7 +2252,7 @@ mod tests {
         }
 
         #[test]
-        fn test_create_time_bounded_member_short_duration() {
+        fn test_create_time_bounded_member_default_expiration() {
             let mut ea = EA_TB.clone();
             let eb = EB_TB.clone();
 
@@ -2280,15 +2280,17 @@ mod tests {
         }
 
         #[test]
-        fn test_create_time_bounded_member_extended_duration() {
+        fn test_create_time_bounded_member_with_specific_start() {
             let mut ea = EA_TB.clone();
             let eb = EB_TB.clone();
+
+            let start_time = OffsetDateTime::UNIX_EPOCH + Duration::from_secs(60);
 
             ea.add_ava(
                 Attribute::TimeBoundedMemberAttr,
                 Value::TimeBoundedMember(TimeBoundedMember::new(
                     uuid::uuid!(UUID_TB_B),
-                    None,
+                    Some(start_time),
                     OffsetDateTime::UNIX_EPOCH + Duration::from_secs(100_000_000_000),
                 )),
             );
@@ -2416,12 +2418,26 @@ mod tests {
             let mut ea = EA_TB.clone();
             let eb = EB_TB.clone();
 
+            let window1_start = OffsetDateTime::UNIX_EPOCH;
+            let window1_end = window1_start + Duration::from_secs(200);
+
+            let window2_start = window1_start + Duration::from_secs(100);
+            let window2_end = window2_start + Duration::from_secs(200);
+
             ea.add_ava(
                 Attribute::TimeBoundedMemberAttr,
                 Value::TimeBoundedMember(TimeBoundedMember::new(
                     uuid::uuid!(UUID_TB_B),
-                    None,
-                    OffsetDateTime::UNIX_EPOCH + Duration::from_secs(100_000_000_000),
+                    Some(window1_start),
+                    window1_end,
+                )),
+            );
+            ea.add_ava(
+                Attribute::TimeBoundedMemberAttr,
+                Value::TimeBoundedMember(TimeBoundedMember::new(
+                    uuid::uuid!(UUID_TB_B),
+                    Some(window2_start),
+                    window2_end,
                 )),
             );
 
@@ -2436,6 +2452,13 @@ mod tests {
                 |qs: &mut QueryServerWriteTransaction| {
                     assert_memberof!(qs, UUID_TB_B, UUID_TB_A);
                     assert_dirmemberof!(qs, UUID_TB_B, UUID_TB_A);
+
+                    let entry = qs.internal_search_uuid(uuid::uuid!(UUID_TB_A)).unwrap();
+                    let tb_members =
+                        entry.get_ava_as_time_bounded_member(Attribute::TimeBoundedMemberAttr);
+                    assert!(tb_members.is_some());
+                    let members = tb_members.unwrap();
+                    assert_eq!(members.len(), 1);
                 }
             );
         }
