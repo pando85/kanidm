@@ -122,6 +122,39 @@ impl AccessControlSearch {
         }
     }
 
+    /// ⚠️  - Manually create a search access profile with scope filter.
+    /// This is a TEST ONLY method and will never be exposed in production.
+    #[cfg(test)]
+    pub(super) fn from_raw_with_scope_filter(
+        name: &str,
+        uuid: Uuid,
+        receiver: Uuid,
+        targetscope: Filter<FilterValid>,
+        attrs: &str,
+        scope_filter: Option<Filter<FilterValid>>,
+    ) -> Self {
+        let mut attrs: BTreeSet<_> = attrs.split_whitespace().map(Attribute::from).collect();
+
+        if attrs.contains(&Attribute::MemberOf) {
+            attrs.insert(Attribute::DirectMemberOf);
+        }
+
+        AccessControlSearch {
+            acp: AccessControlProfile {
+                name: name.to_string(),
+                uuid,
+                receiver: AccessControlReceiver::Group(btreeset!(receiver)),
+                target: AccessControlTarget::Scope(targetscope),
+                require_reauth: false,
+                reauth_max_age: None,
+                time_restriction_start: None,
+                time_restriction_end: None,
+                scope_filter,
+            },
+            attrs,
+        }
+    }
+
     /// ⚠️  - Manually create a search access profile from values.
     /// This is a TEST ONLY method and will never be exposed in production.
     #[cfg(test)]

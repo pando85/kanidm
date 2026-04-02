@@ -4057,4 +4057,103 @@ mod tests {
 
         test_acp_search!(&se_admin, vec![acp], r_set, ex_set);
     }
+
+    #[test]
+    fn test_access_scope_filter_passes() {
+        sketching::test_init();
+
+        let ev1 = E_TESTPERSON_1.clone().into_sealed_committed();
+        let r_set = vec![Arc::new(ev1.clone())];
+        let ex_set = vec![Arc::new(ev1)];
+
+        let se_admin = SearchEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+        );
+
+        let acp = AccessControlSearch::from_raw_with_scope_filter(
+            "test_acp_scope_filter_pass",
+            Uuid::new_v4(),
+            UUID_TEST_GROUP_1,
+            filter_valid!(f_eq(
+                Attribute::Class,
+                PartialValue::new_iutf8("person")
+            )),
+            Attribute::Name.as_ref(),
+            Some(filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            ))),
+        );
+
+        test_acp_search!(&se_admin, vec![acp], r_set, ex_set);
+    }
+
+    #[test]
+    fn test_access_scope_filter_blocks() {
+        sketching::test_init();
+
+        let ev1 = E_TESTPERSON_1.clone().into_sealed_committed();
+        let r_set = vec![Arc::new(ev1)];
+        let ex_set = vec![];
+
+        let se_admin = SearchEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+        );
+
+        let acp = AccessControlSearch::from_raw_with_scope_filter(
+            "test_acp_scope_filter_block",
+            Uuid::new_v4(),
+            UUID_TEST_GROUP_1,
+            filter_valid!(f_eq(
+                Attribute::Class,
+                PartialValue::new_iutf8("person")
+            )),
+            Attribute::Name.as_ref(),
+            Some(filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("different_person")
+            ))),
+        );
+
+        test_acp_search!(&se_admin, vec![acp], r_set, ex_set);
+    }
+
+    #[test]
+    fn test_access_scope_filter_none_allows_target() {
+        sketching::test_init();
+
+        let ev1 = E_TESTPERSON_1.clone().into_sealed_committed();
+        let r_set = vec![Arc::new(ev1.clone())];
+        let ex_set = vec![Arc::new(ev1)];
+
+        let se_admin = SearchEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+        );
+
+        let acp = AccessControlSearch::from_raw_with_scope_filter(
+            "test_acp_scope_filter_none",
+            Uuid::new_v4(),
+            UUID_TEST_GROUP_1,
+            filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+            Attribute::Name.as_ref(),
+            None,
+        );
+
+        test_acp_search!(&se_admin, vec![acp], r_set, ex_set);
+    }
 }
