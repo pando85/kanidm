@@ -586,4 +586,410 @@ mod tests {
         );
         assert_eq!(MockS3Error::NetworkError.to_string(), "Network error");
     }
+
+    #[test]
+    fn test_mock_s3_concurrent_uploads() {
+        let ctx = MockS3TestBuilder::new().build();
+
+        let mut handles = vec![];
+
+        for i in 0..5 {
+            let data = create_test_backup_data(100 * i);
+            handles.push(std::thread::spawn(move || {
+                let thread_ctx = MockS3TestBuilder::new().build();
+                thread_ctx
+                    .upload_backup(
+                        &format!("concurrent-{}", i),
+                        &data,
+                        "2024-01-15T10:00:00Z",
+                        BackupCompression::Gzip,
+                    )
+                    .unwrap();
+                thread_ctx.object_exists(&format!("concurrent-{}", i))
+            }));
+        }
+
+        for handle in handles {
+            let result = handle.join().unwrap();
+            assert!(result);
+        }
+    }
+
+    #[test]
+    fn test_mock_s3_partial_corruption_recovery() {
+        let ctx = MockS3TestBuilder::new().build();
+        let data = create_medium_backup_data();
+
+        ctx.upload_backup(
+            "backup-1",
+            &data,
+            "2024-01-15T10:00:00Z",
+            BackupCompression::Gzip,
+        )
+        .unwrap();
+        ctx.upload_backup(
+            "backup-2",
+            &data,
+            "2024-01-16T10:00:00Z",
+            BackupCompression::Gzip,
+        )
+        .unwrap();
+        ctx.upload_backup(
+            "backup-3",
+            &data,
+            "2024-01-17T10:00:00Z",
+            BackupCompression::Gzip,
+        )
+        .unwrap();
+
+        ctx.corrupt_backup("backup-2").unwrap();
+
+        assert!(ctx.download_backup("backup-1").is_ok());
+        assert!(ctx.download_backup("backup-2").is_err());
+        assert!(ctx.download_backup("backup-3").is_ok());
+    }
+
+    #[test]
+    fn test_mock_s3_metadata_corruption() {
+        let ctx = MockS3TestBuilder::new().build();
+        let data = create_small_backup_data();
+
+        ctx.upload_backup(
+            "backup-1",
+            &data,
+            "2024-01-15T10:00:00Z",
+            BackupCompression::Gzip,
+        )
+        .unwrap();
+
+        ctx.corrupt_backup("backup-1").unwrap();
+
+        let result = ctx.download_backup("backup-1");
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), MockS3Error::InvalidChecksum));
+    }
+
+    #[test]
+    fn test_mock_s3_zero_byte_recovery() {
+        let ctx = MockS3TestBuilder::new().build();
+
+        ctx.upload_backup(
+            "zero-backup",
+            &create_empty_backup_data(),
+            "2024-01-15T10:00:00Z",
+            BackupCompression::NoCompression,
+        )
+        .unwrap();
+
+        ctx.set_backup_size("zero-backup", 1000).unwrap();
+
+        let verified = ctx.verify_backup("zero-backup").unwrap();
+        assert!(!verified);
+    }
+
+    #[test]
+    fn test_mock_s3_repeated_operations() {
+        let ctx = MockS3TestBuilder::new().build();
+        let data = create_small_backup_data();
+
+        for attempt in 0..5 {
+            ctx.upload_backup(
+                "repeated-backup",
+                &data,
+                "2024-01-15T10:00:00Z",
+                BackupCompression::Gzip,
+            )
+            .unwrap();
+            assert!(ctx.object_exists("repeated-backup"));
+
+            ctx.delete_backup("repeated-backup").unwrap();
+            assert!(!ctx.object_exists("repeated-backup"));
+        }
+    }
+
+    #[test]
+    fn test_mock_s3_backup_versioning_simulation() {
+        let ctx = MockS3TestBuilder::new().build();
+        let data_v1 = create_test_backup_data(100);
+        let data_v2 = create_test_backup_data(200);
+        let data_v3 = create_test_backup_data(300);
+
+        ctx.upload_backup(
+            "versioned-backup",
+            &data_v1,
+            "2024-01-15T10:00:00Z",
+            BackupCompression::Gzip,
+        )
+        .unwrap();
+        let meta1 = ctx.download_backup("versioned-backup").unwrap();
+
+        ctx.upload_backup(
+            "versioned-backup",
+            &data_v2,
+            "2024-01-15T11:00:00Z",
+            BackupCompression::Gzip,
+        )
+        .unwrap();
+        let meta2 = ctx.download_backup("versioned-backup").unwrap();
+
+        ctx.upload_backup(
+            "versioned-backup",
+            &data_v3,
+            "2024-01-15T12:00:00Z",
+            BackupCompression::Gzip,
+        )
+        .unwrap();
+        let (data, meta3) = ctx.download_backup("versioned-backup").unwrap();
+
+        assert_ne!(meta1.1.size_bytes, meta2.1.size_bytes);
+        assert_ne!(meta2.1.size_bytes, meta3.size_bytes);
+        assert_eq!(data.len(), data_v3.len());
+        assert_eq!(meta3.timestamp, "2024-01-15T12:00:00Z");
+    }
+
+    #[test]
+    fn test_mock_s3_boundary_sizes() {
+        let ctx = MockS3TestBuilder::new().build();
+
+        let boundary_sizes = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024];
+
+        for size in boundary_sizes {
+            let data = create_test_backup_data(size);
+            ctx.upload_backup(
+                &format!("boundary-{}", size),
+                &data,
+                "2024-01-15T10:00:00Z",
+                BackupCompression::Gzip,
+            )
+            .unwrap();
+
+            let (downloaded, meta) = ctx.download_backup(&format!("boundary-{}", size)).unwrap();
+            assert_eq!(downloaded.len(), size);
+            assert_eq!(meta.size_bytes, size as u64);
+        }
+    }
+
+    #[test]
+    fn test_mock_s3_network_failure_recovery() {
+        let failing_ctx = MockS3TestBuilder::new().simulate_errors(true).build();
+        let working_ctx = MockS3TestBuilder::new().simulate_errors(false).build();
+        let data = create_small_backup_data();
+
+        let failing_result = failing_ctx.upload_backup(
+            "failing-backup",
+            &data,
+            "2024-01-15T10:00:00Z",
+            BackupCompression::Gzip,
+        );
+        assert!(failing_result.is_err());
+
+        working_ctx
+            .upload_backup(
+                "working-backup",
+                &data,
+                "2024-01-15T10:00:00Z",
+                BackupCompression::Gzip,
+            )
+            .unwrap();
+        assert!(working_ctx.object_exists("working-backup"));
+    }
+
+    #[test]
+    fn test_mock_s3_permission_error_simulation() {
+        let ctx = MockS3TestBuilder::new().simulate_errors(true).build();
+
+        let result = ctx.upload_backup(
+            "permission-test",
+            &create_small_backup_data(),
+            "2024-01-15T10:00:00Z",
+            BackupCompression::Gzip,
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_mock_s3_quota_simulation() {
+        let ctx = MockS3TestBuilder::new().build();
+
+        for i in 0..100 {
+            let data = create_test_backup_data(1024);
+            ctx.upload_backup(
+                &format!("quota-test-{}", i),
+                &data,
+                "2024-01-15T10:00:00Z",
+                BackupCompression::Gzip,
+            )
+            .unwrap();
+        }
+
+        assert_eq!(ctx.backup_count(), 100);
+    }
+
+    #[test]
+    fn test_mock_s3_delete_nonexistent() {
+        let ctx = MockS3TestBuilder::new().build();
+
+        let result = ctx.delete_backup("nonexistent");
+        assert!(result.is_ok());
+
+        let count_before = ctx.backup_count();
+        ctx.delete_backup("another-nonexistent").unwrap();
+        assert_eq!(ctx.backup_count(), count_before);
+    }
+
+    #[test]
+    fn test_mock_s3_duplicate_metadata_handling() {
+        let ctx = MockS3TestBuilder::new().build();
+        let data = create_small_backup_data();
+
+        ctx.upload_backup(
+            "backup-1",
+            &data,
+            "2024-01-15T10:00:00Z",
+            BackupCompression::Gzip,
+        )
+        .unwrap();
+
+        ctx.upload_backup(
+            "backup-1",
+            &create_medium_backup_data(),
+            "2024-01-16T10:00:00Z",
+            BackupCompression::Gzip,
+        )
+        .unwrap();
+
+        let (_, meta) = ctx.download_backup("backup-1").unwrap();
+        assert_eq!(meta.timestamp, "2024-01-16T10:00:00Z");
+    }
+
+    #[test]
+    fn test_mock_s3_prefix_edge_cases() {
+        let ctx = MockS3TestBuilder::new().with_prefix("a/b/c/d/e/f").build();
+        let data = create_small_backup_data();
+
+        ctx.upload_backup(
+            "deep-backup",
+            &data,
+            "2024-01-15T10:00:00Z",
+            BackupCompression::Gzip,
+        )
+        .unwrap();
+
+        assert!(ctx.object_exists("deep-backup"));
+        assert!(ctx
+            .list_backups()
+            .unwrap()
+            .contains(&"deep-backup".to_string()));
+
+        let ctx_slash = MockS3TestBuilder::new()
+            .with_prefix("trailing/slash/")
+            .build();
+        ctx_slash
+            .upload_backup(
+                "slash-backup",
+                &data,
+                "2024-01-15T10:00:00Z",
+                BackupCompression::Gzip,
+            )
+            .unwrap();
+        assert!(ctx_slash.object_exists("slash-backup"));
+    }
+
+    #[test]
+    fn test_mock_s3_empty_prefix() {
+        let ctx = MockS3TestBuilder::new().with_prefix("").build();
+        let data = create_small_backup_data();
+
+        ctx.upload_backup(
+            "no-prefix",
+            &data,
+            "2024-01-15T10:00:00Z",
+            BackupCompression::Gzip,
+        )
+        .unwrap();
+
+        assert!(ctx.object_exists("no-prefix"));
+    }
+
+    #[test]
+    fn test_mock_s3_single_byte_data() {
+        let ctx = MockS3TestBuilder::new().build();
+        let data = vec![42u8];
+
+        let meta = ctx
+            .upload_backup(
+                "single-byte",
+                &data,
+                "2024-01-15T10:00:00Z",
+                BackupCompression::Gzip,
+            )
+            .unwrap();
+
+        assert_eq!(meta.size_bytes, 1);
+
+        let (downloaded, _) = ctx.download_backup("single-byte").unwrap();
+        assert_eq!(downloaded, vec![42u8]);
+    }
+
+    #[test]
+    fn test_mock_s3_all_zeros_data() {
+        let ctx = MockS3TestBuilder::new().build();
+        let data: Vec<u8> = vec![0; 1000];
+
+        ctx.upload_backup(
+            "zeros-backup",
+            &data,
+            "2024-01-15T10:00:00Z",
+            BackupCompression::Gzip,
+        )
+        .unwrap();
+
+        let (downloaded, meta) = ctx.download_backup("zeros-backup").unwrap();
+        assert_eq!(downloaded.len(), 1000);
+        assert!(downloaded.iter().all(|&b| b == 0));
+        assert_eq!(meta.size_bytes, 1000);
+    }
+
+    #[test]
+    fn test_mock_s3_all_max_value_data() {
+        let ctx = MockS3TestBuilder::new().build();
+        let data: Vec<u8> = vec![255; 1000];
+
+        ctx.upload_backup(
+            "max-values",
+            &data,
+            "2024-01-15T10:00:00Z",
+            BackupCompression::Gzip,
+        )
+        .unwrap();
+
+        let (downloaded, _) = ctx.download_backup("max-values").unwrap();
+        assert_eq!(downloaded.len(), 1000);
+        assert!(downloaded.iter().all(|&b| b == 255));
+    }
+
+    #[test]
+    fn test_mock_s3_alternating_pattern() {
+        let ctx = MockS3TestBuilder::new().build();
+        let data: Vec<u8> = (0..1000)
+            .map(|i| if i % 2 == 0 { 0 } else { 255 })
+            .collect();
+
+        ctx.upload_backup(
+            "alternating",
+            &data,
+            "2024-01-15T10:00:00Z",
+            BackupCompression::Gzip,
+        )
+        .unwrap();
+
+        let (downloaded, _) = ctx.download_backup("alternating").unwrap();
+        for (i, b) in downloaded.iter().enumerate() {
+            if i % 2 == 0 {
+                assert_eq!(*b, 0);
+            } else {
+                assert_eq!(*b, 255);
+            }
+        }
+    }
 }

@@ -533,4 +533,429 @@ mod tests {
         assert_eq!(decrypted, data);
         assert_eq!(dec_header.key_identifier, "external-key-id");
     }
+
+    #[test]
+    fn test_encryption_different_passphrases_different_output() {
+        let config = BackupEncryptionConfig::default();
+        let encryptor = BackupEncryptor::new(config);
+        let data = b"test data";
+
+        let encrypted1 = encryptor.encrypt(data, b"passphrase1", false).await.unwrap();
+        let encrypted2 = encryptor.encrypt(data, b"passphrase2", false).await.unwrap();
+
+        assert_ne!(encrypted1, encrypted2);
+    }
+
+    #[test]
+    fn test_encryption_same_passphrase_different_output() {
+        let config = BackupEncryptionConfig::default();
+        let encryptor = BackupEncryptor::new(config);
+        let data = b"test data";
+
+        let encrypted1 = encryptor.encrypt(data, b"passphrase", false).await.unwrap();
+        let encrypted2 = encryptor.encrypt(data, b"passphrase", false).await.unwrap();
+
+        assert_ne!(encrypted1, encrypted2);
+    }
+
+    #[test]
+    fn test_encryption_empty_data() {
+        let config = BackupEncryptionConfig::default();
+        let encryptor = BackupEncryptor::new(config);
+        let data = b"";
+
+        let encrypted = encryptor.encrypt(data, b"passphrase", false).await.unwrap();
+        let (decrypted, _) = BackupEncryptor::decrypt(&encrypted, b"passphrase").unwrap();
+
+        assert_eq!(decrypted, data);
+    }
+
+    #[test]
+    fn test_encryption_large_data() {
+        let config = BackupEncryptionConfig::default();
+        let encryptor = BackupEncryptor::new(config);
+        let data: Vec<u8> = (0..10000).map(|i| (i % 256) as u8).collect();
+
+        let encrypted = encryptor.encrypt(&data, b"passphrase", false).await.unwrap();
+        let (decrypted, _) = BackupEncryptor::decrypt(&encrypted, b"passphrase").unwrap();
+
+        assert_eq!(decrypted, data);
+    }
+
+    #[test]
+    fn test_encryption_key_derivation_consistency() {
+        let passphrase = b"test_passphrase";
+        let salt = vec![0u8; BACKUP_ENCRYPTION_SALT_LEN];
+        let params = KeyDerivationParams::default();
+
+        let key1 = BackupEncryptor::derive_key(passphrase, &salt, &params).unwrap();
+        let key2 = BackupEncryptor::derive_key(passphrase, &salt, &params).unwrap();
+
+        assert_eq!(key1, key2);
+    }
+
+    #[test]
+    fn test_encryption_key_derivation_different_passphrase() {
+        let salt = vec![0u8; BACKUP_ENCRYPTION_SALT_LEN];
+        let params = KeyDerivationParams::default();
+
+        let key1 = BackupEncryptor::derive_key(b"passphrase1", &salt, &params).unwrap();
+        let key2 = BackupEncryptor::derive_key(b"passphrase2", &salt, &params).unwrap();
+
+        assert_ne!(key1, key2);
+    }
+
+    #[test]
+    fn test_encryption_key_derivation_different_salt() {
+        let passphrase = b"test_passphrase";
+        let params = KeyDerivationParams::default();
+
+        let salt1 = vec![0u8; BACKUP_ENCRYPTION_SALT_LEN];
+        let salt2 = vec![1u8; BACKUP_ENCRYPTION_SALT_LEN];
+
+        let key1 = BackupEncryptor::derive_key(passphrase, &salt1, &params).unwrap();
+        let key2 = BackupEncryptor::derive_key(passphrase, &salt2, &params).unwrap();
+
+        assert_ne!(key1, key2);
+    }
+
+    #[test]
+    fn test_encryption_invalid_salt_length() {
+        let passphrase = b"test_passphrase";
+        let short_salt = vec![0u8; 8];
+        let params = KeyDerivationParams::default();
+
+        let result = BackupEncryptor::derive_key(passphrase, &short_salt, &params);
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), BackupEncryptionError::InvalidSaltLength));
+    }
+
+    #[test]
+    fn test_encryption_header_validation() {
+        let header = BackupEncryptionHeader::new(
+            "test-key".to_string(),
+            vec![0u8; BACKUP_ENCRYPTION_SALT_LEN],
+            vec![0u8; BACKUP_ENCRYPTION_NONCE_LEN],
+            KeyDerivationParams::default(),
+            false,
+        );
+
+        assert!(header.validate_magic());
+        assert!(!header.compressed);
+    }
+
+    #[test]
+    fn test_encryption_header_compressed_flag() {
+        let header_compressed = BackupEncryptionHeader::new(
+            "key-id".to_string(),
+            vec![0u8; BACKUP_ENCRYPTION_SALT_LEN],
+            vec![0u8; BACKUP_ENCRYPTION_NONCE_LEN],
+            KeyDerivationParams::default(),
+            true,
+        );
+
+        let header_not_compressed = BackupEncryptionHeader::new(
+            "key-id".to_string(),
+            vec![0u8; BACKUP_ENCRYPTION_SALT_LEN],
+            vec![0u8; BACKUP_ENCRYPTION_NONCE_LEN],
+            KeyDerivationParams::default(),
+            false,
+        );
+
+        assert!(header_compressed.compressed);
+        assert!(!header_not_compressed.compressed);
+    }
+
+    #[test]
+    fn test_encryption_tampered_data_detection() {
+        let config = BackupEncryptionConfig::default();
+        let encryptor = BackupEncryptor::new(config);
+        let data = b"sensitive data";
+
+        let mut encrypted = encryptor.encrypt(data, b"passphrase", false).await.unwrap();
+
+        if !encrypted.is_empty() {
+            encrypted[encrypted.len() - 10] ^= 0xFF;
+        }
+
+        let result = BackupEncryptor::decrypt(&encrypted, b"passphrase");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_encryption_tampered_header_detection() {
+        let config = BackupEncryptionConfig::default();
+        let encryptor = BackupEncryptor::new(config);
+        let data = b"test data";
+
+        let mut encrypted = encryptor.encrypt(data, b"passphrase", false).await.unwrap();
+
+        if encrypted.len() > 5 {
+            encrypted[BACKUP_ENCRYPTION_MAGIC.len()] ^= 0xFF;
+        }
+
+        let result = BackupEncryptor::decrypt(&encrypted, b"passphrase");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_encryption_wrong_key_identifier() {
+        let config = BackupEncryptionConfig {
+            enabled: true,
+            key_source: EncryptionKeySource::Passphrase,
+            key_derivation: KeyDerivationParams::default(),
+            key_identifier: Some("expected-key-id".to_string()),
+        };
+        let encryptor = BackupEncryptor::new(config);
+        let data = b"test data";
+
+        let encrypted = encryptor.encrypt(data, b"passphrase", false).await.unwrap();
+        let (_, header) = BackupEncryptor::decrypt(&encrypted, b"passphrase").unwrap();
+
+        assert_eq!(header.key_identifier, "expected-key-id");
+    }
+
+    #[test]
+    fn test_encryption_key_source_variants() {
+        let passphrase_config = BackupEncryptionConfig {
+            enabled: true,
+            key_source: EncryptionKeySource::Passphrase,
+            key_derivation: KeyDerivationParams::default(),
+            key_identifier: None,
+        };
+
+        let file_config = BackupEncryptionConfig {
+            enabled: true,
+            key_source: EncryptionKeySource::File {
+                path: "/path/to/key".to_string(),
+            },
+            key_derivation: KeyDerivationParams::default(),
+            key_identifier: None,
+        };
+
+        let http_config = BackupEncryptionConfig {
+            enabled: true,
+            key_source: EncryptionKeySource::HttpEndpoint {
+                url: "https://vault.example.com/key".to_string(),
+            },
+            key_derivation: KeyDerivationParams::default(),
+            key_identifier: None,
+        };
+
+        assert!(BackupEncryptor::new(passphrase_config).is_enabled());
+        assert!(BackupEncryptor::new(file_config).is_enabled());
+        assert!(BackupEncryptor::new(http_config).is_enabled());
+    }
+
+    #[test]
+    fn test_encryption_disabled_config() {
+        let config = BackupEncryptionConfig {
+            enabled: false,
+            key_source: EncryptionKeySource::Passphrase,
+            key_derivation: KeyDerivationParams::default(),
+            key_identifier: None,
+        };
+
+        let encryptor = BackupEncryptor::new(config);
+        assert!(!encryptor.is_enabled());
+        assert!(encryptor.get_key_identifier().is_none());
+    }
+
+    #[test]
+    fn test_encryption_key_derivation_params_custom() {
+        let custom_params = KeyDerivationParams {
+            m_cost: 32 * 1024,
+            t_cost: 4,
+            p_cost: 2,
+        };
+
+        let passphrase = b"test_passphrase";
+        let salt = vec![0u8; BACKUP_ENCRYPTION_SALT_LEN];
+
+        let key = BackupEncryptor::derive_key(passphrase, &salt, &custom_params).unwrap();
+        assert_eq!(key.len(), BACKUP_ENCRYPTION_KEY_LEN);
+    }
+
+    #[test]
+    fn test_encryption_nonce_uniqueness() {
+        let config = BackupEncryptionConfig::default();
+        let encryptor = BackupEncryptor::new(config);
+        let data = b"test data";
+
+        let encrypted1 = encryptor.encrypt(data, b"passphrase", false).await.unwrap();
+        let encrypted2 = encryptor.encrypt(data, b"passphrase", false).await.unwrap();
+
+        let (_, header1) = BackupEncryptor::decrypt(&encrypted1, b"passphrase").unwrap();
+        let (_, header2) = BackupEncryptor::decrypt(&encrypted2, b"passphrase").unwrap();
+
+        assert_ne!(header1.nonce, header2.nonce);
+    }
+
+    #[test]
+    fn test_encryption_salt_uniqueness() {
+        let config = BackupEncryptionConfig::default();
+        let encryptor = BackupEncryptor::new(config);
+        let data = b"test data";
+
+        let encrypted1 = encryptor.encrypt(data, b"passphrase", false).await.unwrap();
+        let encrypted2 = encryptor.encrypt(data, b"passphrase", false).await.unwrap();
+
+        let (_, header1) = BackupEncryptor::decrypt(&encrypted1, b"passphrase").unwrap();
+        let (_, header2) = BackupEncryptor::decrypt(&encrypted2, b"passphrase").unwrap();
+
+        assert_ne!(header1.salt, header2.salt);
+    }
+
+    #[test]
+    fn test_encryption_short_passphrase() {
+        let config = BackupEncryptionConfig::default();
+        let encryptor = BackupEncryptor::new(config);
+        let data = b"test data";
+        let short_passphrase = b"x";
+
+        let encrypted = encryptor.encrypt(data, short_passphrase, false).await.unwrap();
+        let (decrypted, _) = BackupEncryptor::decrypt(&encrypted, short_passphrase).unwrap();
+
+        assert_eq!(decrypted, data);
+    }
+
+    #[test]
+    fn test_encryption_long_passphrase() {
+        let config = BackupEncryptionConfig::default();
+        let encryptor = BackupEncryptor::new(config);
+        let data = b"test data";
+        let long_passphrase: Vec<u8> = (0..1000).map(|i| (i % 256) as u8).collect();
+
+        let encrypted = encryptor.encrypt(data, &long_passphrase, false).await.unwrap();
+        let (decrypted, _) = BackupEncryptor::decrypt(&encrypted, &long_passphrase).unwrap();
+
+        assert_eq!(decrypted, data);
+    }
+
+    #[test]
+    fn test_encryption_unicode_passphrase() {
+        let config = BackupEncryptionConfig::default();
+        let encryptor = BackupEncryptor::new(config);
+        let data = b"test data";
+        let unicode_passphrase = "日本語パスワード".as_bytes();
+
+        let encrypted = encryptor.encrypt(data, unicode_passphrase, false).await.unwrap();
+        let (decrypted, _) = BackupEncryptor::decrypt(&encrypted, unicode_passphrase).unwrap();
+
+        assert_eq!(decrypted, data);
+    }
+
+    #[test]
+    fn test_encryption_binary_passphrase() {
+        let config = BackupEncryptionConfig::default();
+        let encryptor = BackupEncryptor::new(config);
+        let data = b"test data";
+        let binary_passphrase: Vec<u8> = vec![0x00, 0xFF, 0x80, 0x7F, 0x01, 0xFE];
+
+        let encrypted = encryptor.encrypt(data, &binary_passphrase, false).await.unwrap();
+        let (decrypted, _) = BackupEncryptor::decrypt(&encrypted, &binary_passphrase).unwrap();
+
+        assert_eq!(decrypted, data);
+    }
+
+    #[test]
+    fn test_encryption_error_display() {
+        let err = BackupEncryptionError::InvalidMagic;
+        assert_eq!(err.to_string(), "Invalid backup magic header");
+
+        let err = BackupEncryptionError::InvalidHeader;
+        assert_eq!(err.to_string(), "Invalid backup encryption header");
+
+        let err = BackupEncryptionError::EncryptionFailed("test error".to_string());
+        assert!(err.to_string().contains("Encryption failed"));
+        assert!(err.to_string().contains("test error"));
+
+        let err = BackupEncryptionError::DecryptionFailed("decrypt error".to_string());
+        assert!(err.to_string().contains("Decryption failed"));
+
+        let err = BackupEncryptionError::KeyDerivationFailed("derive error".to_string());
+        assert!(err.to_string().contains("Key derivation failed"));
+
+        let err = BackupEncryptionError::InvalidKeyLength;
+        assert_eq!(err.to_string(), "Invalid key length");
+
+        let err = BackupEncryptionError::InvalidNonceLength;
+        assert_eq!(err.to_string(), "Invalid nonce length");
+
+        let err = BackupEncryptionError::InvalidSaltLength;
+        assert_eq!(err.to_string(), "Invalid salt length");
+
+        let err = BackupEncryptionError::KeySourceError("source error".to_string());
+        assert!(err.to_string().contains("Key source error"));
+
+        let err = BackupEncryptionError::HttpError("http error".to_string());
+        assert!(err.to_string().contains("HTTP error"));
+
+        let err = BackupEncryptionError::SerializeError("serde error".to_string());
+        assert!(err.to_string().contains("Serialize error"));
+    }
+
+    #[test]
+    fn test_encryption_io_error_conversion() {
+        let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "file not found");
+        let enc_err: BackupEncryptionError = io_err.into();
+
+        assert!(matches!(enc_err, BackupEncryptionError::IoError(_)));
+        assert!(enc_err.to_string().contains("IO error"));
+    }
+
+    #[test]
+    fn test_encryption_key_identifier_generation() {
+        let passphrase = b"test_passphrase";
+        let salt = vec![0u8; BACKUP_ENCRYPTION_SALT_LEN];
+
+        let id1 = BackupEncryptor::generate_key_identifier(passphrase, &salt);
+        let id2 = BackupEncryptor::generate_key_identifier(passphrase, &salt);
+
+        assert_eq!(id1, id2);
+        assert_eq!(id1.len(), 64);
+    }
+
+    #[test]
+    fn test_encryption_key_identifier_different_inputs() {
+        let salt = vec![0u8; BACKUP_ENCRYPTION_SALT_LEN];
+
+        let id1 = BackupEncryptor::generate_key_identifier(b"passphrase1", &salt);
+        let id2 = BackupEncryptor::generate_key_identifier(b"passphrase2", &salt);
+
+        assert_ne!(id1, id2);
+
+        let id3 = BackupEncryptor::generate_key_identifier(b"passphrase", &vec![0u8; 16]);
+        let id4 = BackupEncryptor::generate_key_identifier(b"passphrase", &vec![1u8; 16]);
+
+        assert_ne!(id3, id4);
+    }
+
+    #[test]
+    fn test_encryption_validate_key_identifier_correct() {
+        let passphrase = b"test_passphrase";
+        let salt = vec![0u8; BACKUP_ENCRYPTION_SALT_LEN];
+        let expected = BackupEncryptor::generate_key_identifier(passphrase, &salt);
+
+        let result = BackupEncryptor::validate_key_identifier(passphrase, &expected);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_encryption_decrypt_with_wrong_nonce_length() {
+        let config = BackupEncryptionConfig::default();
+        let encryptor = BackupEncryptor::new(config);
+        let data = b"test data";
+
+        let encrypted = encryptor.encrypt(data, b"passphrase", false).await.unwrap();
+
+        let mut corrupted = encrypted.clone();
+        let header_end = BACKUP_ENCRYPTION_MAGIC.len() + 4 + 100;
+        if corrupted.len() > header_end + 5 {
+            corrupted.splice(header_end..header_end + 12, vec![0u8; 5]);
+        }
+
+        let result = BackupEncryptor::decrypt(&corrupted, b"passphrase");
+        assert!(result.is_err());
+    }
 }
