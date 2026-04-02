@@ -255,13 +255,14 @@ async fn test_batch_authorization_large_batch(rsclient: &KanidmClient) {
 }
 
 #[kanidmd_testkit::test]
-async fn test_authorization_empty_resource_uuid(rsclient: &KanidmClient) {
+async fn test_authorization_nonexistent_resource_uuid(rsclient: &KanidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
     assert!(res.is_ok());
 
-    let request = AuthorizationRequest::new(None, Uuid::nil(), AuthorizationAction::Search);
+    let non_existent_uuid = Uuid::new_v4();
+    let request = AuthorizationRequest::new(None, non_existent_uuid, AuthorizationAction::Search);
 
     let result: Result<AuthorizationResponse, kanidm_client::ClientError> = rsclient
         .perform_post_request("/v1/authorize", request)
