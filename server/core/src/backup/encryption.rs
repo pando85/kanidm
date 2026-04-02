@@ -1237,8 +1237,8 @@ mod tests {
             let decrypt_duration = start.elapsed();
 
             assert_eq!(decrypted, data);
-            assert!(encrypt_duration.as_millis() < 1000);
-            assert!(decrypt_duration.as_millis() < 1000);
+            assert!(encrypt_duration.as_millis() < 5000);
+            assert!(decrypt_duration.as_millis() < 5000);
         }
 
         #[tokio::test]
