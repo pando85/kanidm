@@ -162,10 +162,7 @@ impl ApprovalRequestOpt {
 
                 if let Some(s) = state {
                     if filter_state.is_none() {
-                        warn!(
-                            "Unknown state filter: {}. Showing all requests.",
-                            s
-                        );
+                        warn!("Unknown state filter: {}. Showing all requests.", s);
                     }
                 }
 
