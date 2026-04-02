@@ -35,6 +35,7 @@ sha2 = { workspace = true }
 hex = { workspace = true }
 argon2 = { workspace = true }
 aes-gcm = { workspace = true }
+rand = { workspace = true }
 cidr = { workspace = true, features = ["serde"] }
 chrono = { workspace = true }
 compact_jwt = { workspace = true }
