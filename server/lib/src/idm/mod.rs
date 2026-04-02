@@ -5,9 +5,9 @@
 
 pub mod account;
 pub(crate) mod accountpolicy;
-pub mod approval;
 pub mod application;
 pub(crate) mod applinks;
+pub mod approval;
 pub mod audit;
 pub mod authentication;
 pub(crate) mod authsession;
