@@ -371,13 +371,14 @@ pub struct PitrManifest {
 
 impl PitrManifest {
     pub fn new(server_uuid: Uuid, base_backup_id: String, base_backup_timestamp: String) -> Self {
+        let timestamp = base_backup_timestamp.clone();
         Self {
             server_uuid,
             segments: Vec::new(),
             base_backup_id,
             base_backup_timestamp,
-            earliest_recoverable_time: base_backup_timestamp.clone(),
-            latest_recoverable_time: base_backup_timestamp,
+            earliest_recoverable_time: timestamp.clone(),
+            latest_recoverable_time: timestamp,
         }
     }
 

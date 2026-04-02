@@ -185,19 +185,6 @@ impl IntervalActor {
                         if let Some(s3_cfg) = &s3_config {
                             match S3ClientWrapper::new(s3_cfg.clone()).await {
                                 Ok(s3_client) => {
-                                    if let Err(e) = server
-                                        .handle_online_backup(
-                                            OnlineBackupEvent::new(),
-                                            &std::path::PathBuf::from("s3://backup"),
-                                            versions,
-                                            backup_compression,
-                                            Some(s3_client.clone()),
-                                        )
-                                        .await
-                                    {
-                                        error!(?e, "An S3 backup error occurred.");
-                                    }
-
                                     // Update PITR manifest after successful S3 backup
                                     if let Some(wal_cfg) = &wal_archive_config {
                                         if wal_cfg.enabled {
@@ -205,6 +192,19 @@ impl IntervalActor {
                                                 error!(?e, "Failed to update PITR manifest.");
                                             }
                                         }
+                                    }
+
+                                    if let Err(e) = server
+                                        .handle_online_backup(
+                                            OnlineBackupEvent::new(),
+                                            &std::path::PathBuf::from("s3://backup"),
+                                            versions,
+                                            backup_compression,
+                                            Some(s3_client),
+                                        )
+                                        .await
+                                    {
+                                        error!(?e, "An S3 backup error occurred.");
                                     }
                                 }
                                 Err(e) => {
@@ -272,3 +272,4 @@ async fn update_pitr_manifest(
 
     info!("Updated PITR manifest with base backup: {}", backup_id);
     Ok(())
+}

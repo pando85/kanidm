@@ -4504,6 +4504,7 @@ version = "1.10.0-dev"
 dependencies = [
  "base32",
  "base64 0.22.1",
+ "chrono",
  "clap",
  "crypto-glue",
  "enum-iterator",
@@ -4704,6 +4705,7 @@ dependencies = [
  "base64 0.22.1",
  "base64urlsafedata 0.6.0-dev",
  "bitflags 2.11.0",
+ "chrono",
  "compact_jwt",
  "concread",
  "crypto-glue",
@@ -4734,6 +4736,7 @@ dependencies = [
  "serde_cbor_2",
  "serde_json",
  "serde_with",
+ "sha2 0.11.0-rc.5",
  "sketching",
  "smolset",
  "sshkey-attest",

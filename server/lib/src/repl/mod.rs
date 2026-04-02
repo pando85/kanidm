@@ -1,7 +1,7 @@
-pub(crate) mod cid;
+pub mod cid;
 pub(crate) mod entry;
 pub(crate) mod ruv;
-pub(crate) mod wal;
+pub mod wal;
 
 pub(crate) mod consumer;
 pub mod proto;

@@ -3,26 +3,25 @@
 //! This module provides WAL archiving capabilities that allow recovery to
 //! any point in time within the configured retention window.
 
-use std::collections::BTreeMap;
 use std::io::{Read, Write};
 use std::path::PathBuf;
-use std::sync::Arc;
 use std::time::Duration;
 
 use flate2::write::GzEncoder;
 use flate2::Compression;
-use hashbrown::HashSet;
 use kanidm_proto::backup::{BackupCompression, PitrManifest, WalArchiveConfig, WalSegment};
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
-use crate::prelude::*;
 use crate::repl::cid::Cid;
-use crate::repl::proto::ReplCidRange;
 
+#[allow(dead_code)]
 pub const WAL_SEGMENT_PREFIX: &str = "wal";
+#[allow(dead_code)]
 pub const WAL_MANIFEST_FILE: &str = "pitr-manifest.json";
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct WalSegmentData {
     pub segment_id: String,
@@ -47,6 +46,7 @@ pub enum WalOperationRecord {
     Delete,
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum WalError {
     IoError(std::io::Error),
@@ -82,6 +82,7 @@ impl From<serde_json::Error> for WalError {
     }
 }
 
+#[allow(dead_code)]
 pub struct WalArchiver {
     config: WalArchiveConfig,
     server_uuid: Uuid,
@@ -89,6 +90,7 @@ pub struct WalArchiver {
     segments_path: PathBuf,
 }
 
+#[allow(dead_code)]
 struct WalSegmentBuilder {
     entries: Vec<WalEntryRecord>,
     start_ts: Duration,
@@ -96,6 +98,7 @@ struct WalSegmentBuilder {
     segment_id: String,
 }
 
+#[allow(dead_code)]
 impl WalArchiver {
     pub fn new(config: WalArchiveConfig, server_uuid: Uuid, base_path: PathBuf) -> Self {
         let segments_path = base_path.join("wal");
@@ -323,6 +326,7 @@ impl WalArchiver {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct RecoveryState {
     pub target: kanidm_proto::backup::RecoveryTarget,
@@ -331,6 +335,7 @@ pub struct RecoveryState {
     pub base_backup_timestamp: String,
 }
 
+#[allow(dead_code)]
 impl RecoveryState {
     pub fn validate_target(&self) -> Result<(), WalError> {
         match &self.target.target_type {
@@ -393,10 +398,12 @@ impl RecoveryState {
     }
 }
 
+#[allow(dead_code)]
 pub struct WalReplayer {
     server_uuid: Uuid,
 }
 
+#[allow(dead_code)]
 impl WalReplayer {
     pub fn new(server_uuid: Uuid) -> Self {
         Self { server_uuid }
@@ -421,12 +428,12 @@ impl WalReplayer {
         Ok(entries)
     }
 
-    pub fn replay_until(
+    pub fn replay_until<'a>(
         &self,
-        entries: &[WalEntryRecord],
+        entries: &'a [WalEntryRecord],
         target_ts: Option<Duration>,
         target_cid: Option<&Cid>,
-    ) -> Vec<&WalEntryRecord> {
+    ) -> Vec<&'a WalEntryRecord> {
         entries
             .iter()
             .filter(|entry| {
@@ -446,6 +453,7 @@ impl WalReplayer {
     }
 }
 
+#[allow(dead_code)]
 pub fn parse_recovery_target_time(timestamp: &str) -> Result<Duration, WalError> {
     let dt = chrono::DateTime::parse_from_rfc3339(timestamp)
         .map_err(|e| WalError::InvalidSegment(format!("Invalid timestamp format: {}", e)))?;
@@ -456,6 +464,7 @@ pub fn parse_recovery_target_time(timestamp: &str) -> Result<Duration, WalError>
     Ok(Duration::new(unix_ts as u64, nanos))
 }
 
+#[allow(dead_code)]
 pub fn parse_recovery_target_cid(cid_str: &str) -> Result<Cid, WalError> {
     let parts: Vec<&str> = cid_str.split('-').collect();
     if parts.len() < 2 {
