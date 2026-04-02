@@ -34,7 +34,6 @@ aws-credential-types = { workspace = true }
 sha2 = { workspace = true }
 hex = { workspace = true }
 argon2 = { workspace = true }
-generic-array = { workspace = true }
 rand = { workspace = true }
 cidr = { workspace = true, features = ["serde"] }
 chrono = { workspace = true }
