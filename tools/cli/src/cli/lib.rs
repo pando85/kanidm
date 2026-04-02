@@ -24,6 +24,7 @@ use uuid::Uuid;
 
 include!("../opt/kanidm.rs");
 
+mod approval;
 mod common;
 mod domain;
 mod graph;
@@ -38,7 +39,6 @@ mod session;
 mod synch;
 mod system_config;
 mod webauthn;
-mod approval;
 
 /// Throws an error and exits the program when we get an error
 pub(crate) fn handle_client_error(response: ClientError, _output_mode: OutputMode) {

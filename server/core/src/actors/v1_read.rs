@@ -1709,9 +1709,7 @@ impl QueryServerReadV1 {
                 e
             })?;
 
-        idms_prox_read
-            .qs_read
-            .approval_policy_list(&ident)
+        idms_prox_read.qs_read.approval_policy_list(&ident)
     }
 
     #[instrument(
@@ -1735,9 +1733,7 @@ impl QueryServerReadV1 {
                 e
             })?;
 
-        idms_prox_read
-            .qs_read
-            .approval_policy_get(&ident, &name)
+        idms_prox_read.qs_read.approval_policy_get(&ident, &name)
     }
 
     #[instrument(
@@ -1761,9 +1757,7 @@ impl QueryServerReadV1 {
                 e
             })?;
 
-        idms_prox_read
-            .qs_read
-            .approval_request_list(&ident, state)
+        idms_prox_read.qs_read.approval_request_list(&ident, state)
     }
 
     #[instrument(
@@ -1787,9 +1781,8 @@ impl QueryServerReadV1 {
                 e
             })?;
 
-        let request_uuid = Uuid::parse_str(&uuid).map_err(|_| {
-            OperationError::InvalidRequestState
-        })?;
+        let request_uuid =
+            Uuid::parse_str(&uuid).map_err(|_| OperationError::InvalidRequestState)?;
 
         idms_prox_read
             .qs_read

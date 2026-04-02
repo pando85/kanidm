@@ -18,7 +18,8 @@ impl KanidmClient {
         &self,
         request: &ApprovalPolicyCreateRequest,
     ) -> Result<(), ClientError> {
-        self.perform_post_request("/v1/approval/policy", request).await
+        self.perform_post_request("/v1/approval/policy", request)
+            .await
     }
 
     pub async fn approval_policy_delete(&self, name: &str) -> Result<(), ClientError> {

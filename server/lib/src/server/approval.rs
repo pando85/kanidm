@@ -4,6 +4,7 @@ use kanidm_proto::v1::{
     ApprovalPattern, ApprovalPolicy, ApprovalPolicyCreateRequest, ApprovalRequest,
     ApprovalRequestState,
 };
+use std::collections::BTreeMap;
 use time::OffsetDateTime;
 
 impl QueryServerReadTransaction<'_> {
@@ -100,7 +101,7 @@ impl QueryServerWriteTransaction<'_> {
             .map(|o| Value::new_utf8(o.to_string()))
             .collect();
 
-        let mut entry = EntryInitMap::new();
+        let mut entry = EntryInit::new();
         entry.set_ava(
             Attribute::Class,
             vec![EntryClass::ApprovalPolicy.into(), EntryClass::Object.into()],

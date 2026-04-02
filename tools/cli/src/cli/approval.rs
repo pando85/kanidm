@@ -47,11 +47,11 @@ impl ApprovalPolicyOpt {
                     println!();
                 }
             }
-            ApprovalPolicyOpt::Get { name } => {
-                let policy = match client.approval_policy_get(name).await {
+            ApprovalPolicyOpt::Get(named) => {
+                let policy = match client.approval_policy_get(&named.name).await {
                     Ok(p) => p,
                     Err(e) => {
-                        error!("Failed to get approval policy '{}': {:?}", name, e);
+                        error!("Failed to get approval policy '{}': {:?}", named.name, e);
                         return;
                     }
                 };
@@ -70,17 +70,9 @@ impl ApprovalPolicyOpt {
                 println!("Approvers: {:?}", policy.approvers);
                 println!("Backup Approvers: {:?}", policy.backup_approvers);
             }
-            ApprovalPolicyOpt::Create {
-                name,
-                description,
-                operation_types,
-                approvers,
-                backup_approvers,
-                pattern,
-                timeout_seconds,
-                escalation_timeout_seconds,
-            } => {
-                let op_types: Vec<ApprovalOperationType> = operation_types
+            ApprovalPolicyOpt::Create(opts) => {
+                let op_types: Vec<ApprovalOperationType> = opts
+                    .operation_types
                     .iter()
                     .filter_map(|s| s.parse::<ApprovalOperationType>().ok())
                     .collect();
@@ -90,7 +82,8 @@ impl ApprovalPolicyOpt {
                     return;
                 }
 
-                let approver_uuids: Vec<uuid::Uuid> = approvers
+                let approver_uuids: Vec<uuid::Uuid> = opts
+                    .approvers
                     .iter()
                     .filter_map(|s| uuid::Uuid::parse_str(s).ok())
                     .collect();
@@ -100,51 +93,58 @@ impl ApprovalPolicyOpt {
                     return;
                 }
 
-                let backup_approver_uuids: Vec<uuid::Uuid> = backup_approvers
+                let backup_approver_uuids: Vec<uuid::Uuid> = opts
+                    .backup_approvers
                     .iter()
                     .filter_map(|s| uuid::Uuid::parse_str(s).ok())
                     .collect();
 
-                let approval_pattern = match pattern.parse::<ApprovalPattern>() {
+                let approval_pattern = match opts.pattern.parse::<ApprovalPattern>() {
                     Ok(p) => p,
                     Err(_) => {
-                        error!("Invalid pattern: {}. Must be 'any_one', 'majority', or 'all'", pattern);
+                        error!(
+                            "Invalid pattern: {}. Must be 'any_one', 'majority', or 'all'",
+                            opts.pattern
+                        );
                         return;
                     }
                 };
 
                 let request = ApprovalPolicyCreateRequest {
-                    name: name.to_string(),
-                    description: description.as_deref().map(String::from),
+                    name: opts.name.to_string(),
+                    description: opts.description.as_deref().map(String::from),
                     operation_types: op_types,
                     approvers: approver_uuids,
                     backup_approvers: backup_approver_uuids,
                     pattern: approval_pattern,
-                    timeout_seconds: *timeout_seconds,
-                    escalation_timeout_seconds: *escalation_timeout_seconds,
+                    timeout_seconds: opts.timeout_seconds,
+                    escalation_timeout_seconds: opts.escalation_timeout_seconds,
                 };
 
                 match client.approval_policy_create(&request).await {
-                    Ok(_) => println!("Approval policy '{}' created successfully", name),
-                    Err(e) => error!("Failed to create approval policy '{}': {:?}", name, e),
+                    Ok(_) => println!("Approval policy '{}' created successfully", opts.name),
+                    Err(e) => error!("Failed to create approval policy '{}': {:?}", opts.name, e),
                 }
             }
-            ApprovalPolicyOpt::Delete { name } => {
-                match client.approval_policy_delete(name).await {
-                    Ok(_) => println!("Approval policy '{}' deleted successfully", name),
-                    Err(e) => error!("Failed to delete approval policy '{}': {:?}", name, e),
+            ApprovalPolicyOpt::Delete(named) => {
+                match client.approval_policy_delete(&named.name).await {
+                    Ok(_) => println!("Approval policy '{}' deleted successfully", named.name),
+                    Err(e) => error!("Failed to delete approval policy '{}': {:?}", named.name, e),
                 }
             }
-            ApprovalPolicyOpt::Enable { name } => {
-                match client.approval_policy_enable(name).await {
-                    Ok(_) => println!("Approval policy '{}' enabled successfully", name),
-                    Err(e) => error!("Failed to enable approval policy '{}': {:?}", name, e),
+            ApprovalPolicyOpt::Enable(named) => {
+                match client.approval_policy_enable(&named.name).await {
+                    Ok(_) => println!("Approval policy '{}' enabled successfully", named.name),
+                    Err(e) => error!("Failed to enable approval policy '{}': {:?}", named.name, e),
                 }
             }
-            ApprovalPolicyOpt::Disable { name } => {
-                match client.approval_policy_disable(name).await {
-                    Ok(_) => println!("Approval policy '{}' disabled successfully", name),
-                    Err(e) => error!("Failed to disable approval policy '{}': {:?}", name, e),
+            ApprovalPolicyOpt::Disable(named) => {
+                match client.approval_policy_disable(&named.name).await {
+                    Ok(_) => println!("Approval policy '{}' disabled successfully", named.name),
+                    Err(e) => error!(
+                        "Failed to disable approval policy '{}': {:?}",
+                        named.name, e
+                    ),
                 }
             }
         }
@@ -161,7 +161,10 @@ impl ApprovalRequestOpt {
                 };
 
                 if state.is_some() && filter_state.is_none() {
-                    warn!("Unknown state filter: {}. Showing all requests.", state.unwrap());
+                    warn!(
+                        "Unknown state filter: {}. Showing all requests.",
+                        state.unwrap()
+                    );
                 }
 
                 let requests = match client.approval_request_list(filter_state).await {
@@ -182,23 +185,37 @@ impl ApprovalRequestOpt {
                     println!("  Policy: {} ({})", req.policy_name, req.policy_uuid);
                     println!("  Operation: {}", req.operation_type);
                     println!("  Target: {} ({})", req.target_spn, req.target_uuid);
-                    println!("  Requestor: {} ({})", req.requestor_spn, req.requestor_uuid);
+                    println!(
+                        "  Requestor: {} ({})",
+                        req.requestor_spn, req.requestor_uuid
+                    );
                     println!("  Created: {:?}", req.created_at);
                     if let Some(exp) = req.expires_at {
                         println!("  Expires: {:?}", exp);
                     }
                     println!("  Escalation Level: {}", req.escalation_level);
-                    let approve_count = req.decisions.iter().filter(|d| d.action == kanidm_proto::v1::ApprovalDecisionAction::Approve).count();
-                    let reject_count = req.decisions.iter().filter(|d| d.action == kanidm_proto::v1::ApprovalDecisionAction::Reject).count();
-                    println!("  Decisions: {} approve, {} reject", approve_count, reject_count);
+                    let approve_count = req
+                        .decisions
+                        .iter()
+                        .filter(|d| d.action == kanidm_proto::v1::ApprovalDecisionAction::Approve)
+                        .count();
+                    let reject_count = req
+                        .decisions
+                        .iter()
+                        .filter(|d| d.action == kanidm_proto::v1::ApprovalDecisionAction::Reject)
+                        .count();
+                    println!(
+                        "  Decisions: {} approve, {} reject",
+                        approve_count, reject_count
+                    );
                     println!();
                 }
             }
-            ApprovalRequestOpt::Get { uuid } => {
-                let req = match client.approval_request_get(uuid).await {
+            ApprovalRequestOpt::Get(named) => {
+                let req = match client.approval_request_get(&named.uuid).await {
                     Ok(r) => r,
                     Err(e) => {
-                        error!("Failed to get approval request '{}': {:?}", uuid, e);
+                        error!("Failed to get approval request '{}': {:?}", named.uuid, e);
                         return;
                     }
                 };
@@ -217,28 +234,37 @@ impl ApprovalRequestOpt {
                 println!("Operation Details: {:?}", req.operation_details);
                 println!("Decisions:");
                 for dec in &req.decisions {
-                    println!("  - {} ({}): {} at {:?}", dec.approver_spn, dec.approver_uuid, dec.action, dec.decision_time);
+                    println!(
+                        "  - {} ({}): {:?} at {:?}",
+                        dec.approver_spn, dec.approver_uuid, dec.action, dec.decision_time
+                    );
                     if let Some(c) = &dec.comment {
                         println!("    Comment: {}", c);
                     }
                 }
             }
-            ApprovalRequestOpt::Approve { uuid, comment } => {
-                match client.approval_request_approve(uuid, comment.as_deref()).await {
-                    Ok(_) => println!("Approval request '{}' approved successfully", uuid),
-                    Err(e) => error!("Failed to approve request '{}': {:?}", uuid, e),
+            ApprovalRequestOpt::Approve(opts) => {
+                match client
+                    .approval_request_approve(&opts.uuid, opts.comment.as_deref())
+                    .await
+                {
+                    Ok(_) => println!("Approval request '{}' approved successfully", opts.uuid),
+                    Err(e) => error!("Failed to approve request '{}': {:?}", opts.uuid, e),
                 }
             }
-            ApprovalRequestOpt::Reject { uuid, comment } => {
-                match client.approval_request_reject(uuid, comment.as_deref()).await {
-                    Ok(_) => println!("Approval request '{}' rejected successfully", uuid),
-                    Err(e) => error!("Failed to reject request '{}': {:?}", uuid, e),
+            ApprovalRequestOpt::Reject(opts) => {
+                match client
+                    .approval_request_reject(&opts.uuid, opts.comment.as_deref())
+                    .await
+                {
+                    Ok(_) => println!("Approval request '{}' rejected successfully", opts.uuid),
+                    Err(e) => error!("Failed to reject request '{}': {:?}", opts.uuid, e),
                 }
             }
-            ApprovalRequestOpt::Cancel { uuid } => {
-                match client.approval_request_cancel(uuid).await {
-                    Ok(_) => println!("Approval request '{}' cancelled successfully", uuid),
-                    Err(e) => error!("Failed to cancel request '{}': {:?}", uuid, e),
+            ApprovalRequestOpt::Cancel(named) => {
+                match client.approval_request_cancel(&named.uuid).await {
+                    Ok(_) => println!("Approval request '{}' cancelled successfully", named.uuid),
+                    Err(e) => error!("Failed to cancel request '{}': {:?}", named.uuid, e),
                 }
             }
         }

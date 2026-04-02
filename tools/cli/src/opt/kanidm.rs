@@ -1423,7 +1423,7 @@ pub enum SystemOpt {
 pub struct ApprovalPolicyCreateOpt {
     #[clap(name = "name")]
     pub name: String,
-    #[clap(long, short)]
+    #[clap(long)]
     pub description: Option<String>,
     #[clap(long = "operation-type", short = 'o')]
     pub operation_types: Vec<String>,

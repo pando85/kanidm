@@ -3435,19 +3435,31 @@ pub(crate) fn route_setup(state: ServerState) -> Router<ServerState> {
             "/v1/recycle_bin/{id}/_revive",
             post(recycle_bin_revive_id_post),
         )
-        .route("/v1/approval/policy", get(approval_policy_list).post(approval_policy_create))
+        .route(
+            "/v1/approval/policy",
+            get(approval_policy_list).post(approval_policy_create),
+        )
         .route(
             "/v1/approval/policy/{name}",
             get(approval_policy_get).delete(approval_policy_delete),
         )
-        .route("/v1/approval/policy/{name}/_enable", post(approval_policy_enable))
-        .route("/v1/approval/policy/{name}/_disable", post(approval_policy_disable))
+        .route(
+            "/v1/approval/policy/{name}/_enable",
+            post(approval_policy_enable),
+        )
+        .route(
+            "/v1/approval/policy/{name}/_disable",
+            post(approval_policy_disable),
+        )
         .route("/v1/approval/request", get(approval_request_list))
         .route(
             "/v1/approval/request/{uuid}",
             get(approval_request_get).delete(approval_request_cancel),
         )
-        .route("/v1/approval/request/{uuid}/_decision", post(approval_request_decision))
+        .route(
+            "/v1/approval/request/{uuid}/_decision",
+            post(approval_request_decision),
+        )
         // .route("/v1/access_profile", get(|| async { "TODO" }))
         // .route("/v1/access_profile/{id}", get(|| async { "TODO" }))
         // .route(

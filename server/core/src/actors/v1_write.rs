@@ -1899,9 +1899,8 @@ impl QueryServerWriteV1 {
                 e
             })?;
 
-        let request_uuid = Uuid::parse_str(&uuid).map_err(|_| {
-            OperationError::InvalidRequestState
-        })?;
+        let request_uuid =
+            Uuid::parse_str(&uuid).map_err(|_| OperationError::InvalidRequestState)?;
 
         idms_prox_write
             .qs_write
@@ -1930,9 +1929,8 @@ impl QueryServerWriteV1 {
                 e
             })?;
 
-        let request_uuid = Uuid::parse_str(&uuid).map_err(|_| {
-            OperationError::InvalidRequestState
-        })?;
+        let request_uuid =
+            Uuid::parse_str(&uuid).map_err(|_| OperationError::InvalidRequestState)?;
 
         idms_prox_write
             .qs_write
