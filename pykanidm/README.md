@@ -56,7 +56,7 @@ generate_openapi_client(
     verify_tls=True,
     ca_file=Path("/tmp/kanidm/ca.pem"),
     # season to taste
-    output=Path("pykanidm/kanidm_openapi_client"), 
+    output=Path("pykanidm/kanidm_openapi_client"),
 )
 ```
 

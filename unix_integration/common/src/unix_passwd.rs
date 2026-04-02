@@ -528,7 +528,7 @@ wheel:x:481:admin,testuser
         // empty group
         let group_data = r#"
         # $FreeBSD$
-# 
+#
 wheel:*:0:"#;
         let groups = parse_etc_group(group_data.as_bytes()).expect("Failed to parse groups");
         assert_eq!(
