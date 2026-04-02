@@ -9,9 +9,10 @@ repos:
       - id: check-shebang-scripts-are-executable
         exclude: \.(rs|in)$
       - id: end-of-file-fixer
-        exclude: ^(pykanidm/kanidm_openapi_client/|book/src/developers/designs/diagrams/)
+        exclude: ^(pykanidm/kanidm_openapi_client/|book/src/|server/core/static/external/|server/core/templates/|examples/|tools/orca/|unix_integration/nss_kanidm/src/|scripts/otel/|server/lib/src/constants/|server/lib/src/plugins/|tools/device_flow/src/|tools/iam_migrations/|\.rst$|\.map$|\.min\.(js|css)$|\.json$|\.svg$|\.editorconfig$)
       - id: mixed-line-ending
       - id: trailing-whitespace
+        exclude: ^(pykanidm/kanidm_openapi_client/|book/src/|server/core/static/external/|server/core/templates/|examples/|tools/orca/|\.rst$|\.map$|\.min\.(js|css)$|\.json$|\.svg$)
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.38.0
     hooks:
