@@ -152,3 +152,165 @@ impl SingleStringRequest {
         SingleStringRequest { value: s }
     }
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, ToSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum ApprovalPattern {
+    AnyOne,
+    Majority,
+    All,
+}
+
+impl fmt::Display for ApprovalPattern {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ApprovalPattern::AnyOne => f.write_str("any_one"),
+            ApprovalPattern::Majority => f.write_str("majority"),
+            ApprovalPattern::All => f.write_str("all"),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash, ToSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum ApprovalOperationType {
+    CreateHighPrivilegeEntry,
+    DeleteHighPrivilegeEntry,
+    ModifyHighPrivilegeEntry,
+    CredentialResetHighPrivilege,
+    PrivilegeGrant,
+    PrivilegeRevoke,
+    SchemaModify,
+    AccessControlModify,
+    DomainConfigModify,
+    KeyProviderModify,
+    SyncAccountModify,
+    OAuth2ClientModify,
+    ApplicationModify,
+    GroupMembershipHighPrivilege,
+}
+
+impl fmt::Display for ApprovalOperationType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ApprovalOperationType::CreateHighPrivilegeEntry => {
+                f.write_str("create_high_privilege_entry")
+            }
+            ApprovalOperationType::DeleteHighPrivilegeEntry => {
+                f.write_str("delete_high_privilege_entry")
+            }
+            ApprovalOperationType::ModifyHighPrivilegeEntry => {
+                f.write_str("modify_high_privilege_entry")
+            }
+            ApprovalOperationType::CredentialResetHighPrivilege => {
+                f.write_str("credential_reset_high_privilege")
+            }
+            ApprovalOperationType::PrivilegeGrant => f.write_str("privilege_grant"),
+            ApprovalOperationType::PrivilegeRevoke => f.write_str("privilege_revoke"),
+            ApprovalOperationType::SchemaModify => f.write_str("schema_modify"),
+            ApprovalOperationType::AccessControlModify => f.write_str("access_control_modify"),
+            ApprovalOperationType::DomainConfigModify => f.write_str("domain_config_modify"),
+            ApprovalOperationType::KeyProviderModify => f.write_str("key_provider_modify"),
+            ApprovalOperationType::SyncAccountModify => f.write_str("sync_account_modify"),
+            ApprovalOperationType::OAuth2ClientModify => f.write_str("oauth2_client_modify"),
+            ApprovalOperationType::ApplicationModify => f.write_str("application_modify"),
+            ApprovalOperationType::GroupMembershipHighPrivilege => {
+                f.write_str("group_membership_high_privilege")
+            }
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, ToSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum ApprovalRequestState {
+    Pending,
+    Approved,
+    Rejected,
+    Expired,
+    Cancelled,
+    Escalated,
+}
+
+impl fmt::Display for ApprovalRequestState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ApprovalRequestState::Pending => f.write_str("pending"),
+            ApprovalRequestState::Approved => f.write_str("approved"),
+            ApprovalRequestState::Rejected => f.write_str("rejected"),
+            ApprovalRequestState::Expired => f.write_str("expired"),
+            ApprovalRequestState::Cancelled => f.write_str("cancelled"),
+            ApprovalRequestState::Escalated => f.write_str("escalated"),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, ToSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum ApprovalDecisionAction {
+    Approve,
+    Reject,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct ApprovalDecision {
+    pub approver_uuid: Uuid,
+    pub approver_spn: String,
+    #[serde(with = "time::serde::timestamp")]
+    pub decision_time: time::OffsetDateTime,
+    pub action: ApprovalDecisionAction,
+    pub comment: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct ApprovalRequest {
+    pub uuid: Uuid,
+    pub policy_uuid: Uuid,
+    pub policy_name: String,
+    pub operation_type: ApprovalOperationType,
+    pub target_uuid: Uuid,
+    pub target_spn: String,
+    pub requestor_uuid: Uuid,
+    pub requestor_spn: String,
+    #[serde(with = "time::serde::timestamp")]
+    pub created_at: time::OffsetDateTime,
+    #[serde(with = "time::serde::timestamp::option")]
+    pub expires_at: Option<time::OffsetDateTime>,
+    pub state: ApprovalRequestState,
+    pub decisions: Vec<ApprovalDecision>,
+    pub escalation_level: u32,
+    pub required_decisions: u32,
+    pub operation_details: BTreeMap<String, String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct ApprovalPolicy {
+    pub uuid: Uuid,
+    pub name: String,
+    pub description: Option<String>,
+    pub operation_types: Vec<ApprovalOperationType>,
+    pub approvers: Vec<Uuid>,
+    pub backup_approvers: Vec<Uuid>,
+    pub pattern: ApprovalPattern,
+    pub timeout_seconds: u32,
+    pub escalation_timeout_seconds: Option<u32>,
+    pub enabled: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct ApprovalPolicyCreateRequest {
+    pub name: String,
+    pub description: Option<String>,
+    pub operation_types: Vec<ApprovalOperationType>,
+    pub approvers: Vec<Uuid>,
+    pub backup_approvers: Vec<Uuid>,
+    pub pattern: ApprovalPattern,
+    pub timeout_seconds: u32,
+    pub escalation_timeout_seconds: Option<u32>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct ApprovalDecisionRequest {
+    pub action: ApprovalDecisionAction,
+    pub comment: Option<String>,
+}
