@@ -8,6 +8,27 @@ use std::collections::BTreeSet;
 use std::ops::Sub;
 use std::sync::Arc;
 
+fn check_time_restriction(
+    time_start: Option<time::OffsetDateTime>,
+    time_end: Option<time::OffsetDateTime>,
+) -> bool {
+    match (time_start, time_end) {
+        (None, None) => true,
+        (Some(start), None) => {
+            let now = time::OffsetDateTime::now_utc();
+            now >= start
+        }
+        (None, Some(end)) => {
+            let now = time::OffsetDateTime::now_utc();
+            now <= end
+        }
+        (Some(start), Some(end)) => {
+            let now = time::OffsetDateTime::now_utc();
+            now >= start && now <= end
+        }
+    }
+}
+
 pub enum SearchResult {
     Deny,
     Grant,
@@ -218,6 +239,15 @@ fn search_filter_entry(
                     }
                 }
             };
+
+            // Check time restrictions
+            if !check_time_restriction(
+                acs.acp.acp.time_restriction_start,
+                acs.acp.acp.time_restriction_end,
+            ) {
+                debug!(entry = ?entry.get_display_id(), acs = %acs.acp.acp.name, "time restriction not satisfied");
+                return None;
+            }
 
             // -- Conditions pass -- release the attributes.
             debug!(entry = ?entry.get_display_id(), acs = %acs.acp.acp.name, "acs applied to entry");

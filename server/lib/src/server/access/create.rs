@@ -7,6 +7,27 @@ use crate::prelude::*;
 use std::collections::BTreeSet;
 use std::ops::Sub;
 
+fn check_time_restriction(
+    time_start: Option<time::OffsetDateTime>,
+    time_end: Option<time::OffsetDateTime>,
+) -> bool {
+    match (time_start, time_end) {
+        (None, None) => true,
+        (Some(start), None) => {
+            let now = time::OffsetDateTime::now_utc();
+            now >= start
+        }
+        (None, Some(end)) => {
+            let now = time::OffsetDateTime::now_utc();
+            now <= end
+        }
+        (Some(start), Some(end)) => {
+            let now = time::OffsetDateTime::now_utc();
+            now >= start && now <= end
+        }
+    }
+}
+
 pub enum CreateResult<'a> {
     Deny,
     Grant,
@@ -200,6 +221,15 @@ fn create_filter_entry<'a>(
                 // Delegated scope is handled at filter resolution time
             }
         };
+
+        // Check time restrictions
+        if !check_time_restriction(
+            accr.acp.acp.time_restriction_start,
+            accr.acp.acp.time_restriction_end,
+        ) {
+            debug!(entry = ?entry.get_display_id(), accr = %accr.acp.acp.name, "time restriction not satisfied");
+            return false;
+        }
 
         // -- Conditions pass -- now verify the attributes.
 

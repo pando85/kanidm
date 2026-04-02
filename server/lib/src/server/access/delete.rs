@@ -7,6 +7,27 @@ use crate::prelude::*;
 use std::ops::Sub;
 use std::sync::Arc;
 
+fn check_time_restriction(
+    time_start: Option<time::OffsetDateTime>,
+    time_end: Option<time::OffsetDateTime>,
+) -> bool {
+    match (time_start, time_end) {
+        (None, None) => true,
+        (Some(start), None) => {
+            let now = time::OffsetDateTime::now_utc();
+            now >= start
+        }
+        (None, Some(end)) => {
+            let now = time::OffsetDateTime::now_utc();
+            now <= end
+        }
+        (Some(start), Some(end)) => {
+            let now = time::OffsetDateTime::now_utc();
+            now >= start && now <= end
+        }
+    }
+}
+
 pub enum DeleteResult {
     Deny,
     Grant,
@@ -181,6 +202,15 @@ fn delete_filter_entry<'a>(
                 }
             }
         };
+
+        // Check time restrictions
+        if !check_time_restriction(
+            acd.acp.acp.time_restriction_start,
+            acd.acp.acp.time_restriction_end,
+        ) {
+            debug!(entry = ?entry.get_display_id(), acd = %acd.acp.acp.name, "time restriction not satisfied");
+            return false;
+        }
 
         let entry_name = entry.get_display_id();
         security_access!(

@@ -14,6 +14,27 @@ use std::collections::BTreeSet;
 use std::ops::Sub;
 use std::sync::Arc;
 
+fn check_time_restriction(
+    time_start: Option<time::OffsetDateTime>,
+    time_end: Option<time::OffsetDateTime>,
+) -> bool {
+    match (time_start, time_end) {
+        (None, None) => true,
+        (Some(start), None) => {
+            let now = time::OffsetDateTime::now_utc();
+            now >= start
+        }
+        (None, Some(end)) => {
+            let now = time::OffsetDateTime::now_utc();
+            now <= end
+        }
+        (Some(start), Some(end)) => {
+            let now = time::OffsetDateTime::now_utc();
+            now >= start && now <= end
+        }
+    }
+}
+
 pub enum ModifyResult<'a> {
     Deny,
     Grant,
@@ -195,6 +216,15 @@ pub fn apply_modify_access<'a>(
                         }
                     }
                 };
+
+                // Check time restrictions
+                if !check_time_restriction(
+                    acm.acp.acp.time_restriction_start,
+                    acm.acp.acp.time_restriction_end,
+                ) {
+                    debug!(entry = ?entry.get_display_id(), acm = %acm.acp.acp.name, "time restriction not satisfied");
+                    return None;
+                }
 
                 debug!(entry = ?entry.get_display_id(), acs = %acm.acp.acp.name, "acs applied to entry");
 
