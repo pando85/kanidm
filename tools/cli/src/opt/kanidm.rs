@@ -1629,7 +1629,6 @@ pub struct KanidmClientParser {
     accept_invalid_certs: bool,
     /// Path to a file to cache tokens in, defaults to ~/.cache/kanidm_tokens
     #[clap(
-        short,
         long,
         env = "KANIDM_TOKEN_CACHE_PATH",
     hide = true,
