@@ -149,8 +149,9 @@ pub struct SingleStringRequest {
 
 impl SingleStringRequest {
     pub fn new(s: String) -> Self {
-SingleStringRequest { value: s }
+        SingleStringRequest { value: s }
     }
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, ToSchema)]
 #[serde(rename_all = "lowercase")]
