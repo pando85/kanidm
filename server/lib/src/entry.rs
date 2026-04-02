@@ -40,7 +40,7 @@ use crate::schema::{SchemaAttribute, SchemaClass, SchemaTransaction};
 use crate::server::access::AccessEffectivePermission;
 use crate::value::{
     ApiToken, CredentialType, IndexType, IntentTokenState, Oauth2Session, PartialValue, Session,
-    SyntaxType, Value,
+    SyntaxType, TimeBoundedMember, Value,
 };
 use crate::valueset::{self, ScimResolveStatus, ValueSet, ValueSetSpn};
 use compact_jwt::JwsEs256Signer;
@@ -2749,6 +2749,14 @@ impl<VALID, STATE> Entry<VALID, STATE> {
     ) -> Option<&std::collections::BTreeMap<Uuid, Oauth2Session>> {
         self.get_ava_set(attr)
             .and_then(|vs| vs.as_oauth2session_map())
+    }
+
+    pub fn get_ava_as_time_bounded_member<A: AsRef<Attribute>>(
+        &self,
+        attr: A,
+    ) -> Option<&std::collections::BTreeMap<Uuid, TimeBoundedMember>> {
+        self.get_ava_set(attr)
+            .and_then(|vs| vs.as_time_bounded_member_set())
     }
 
     pub fn get_ava_as_s256_set<A: AsRef<Attribute>>(
