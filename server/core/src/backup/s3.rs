@@ -55,6 +55,7 @@ impl From<std::io::Error> for S3BackupError {
     }
 }
 
+#[derive(Clone)]
 pub struct S3ClientWrapper {
     client: S3Client,
     config: S3Config,

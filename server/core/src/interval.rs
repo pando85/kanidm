@@ -227,7 +227,6 @@ async fn update_pitr_manifest(
     backup_id: &str,
     backup_timestamp: &str,
 ) -> Result<(), String> {
-    use kanidm_proto::backup::WalSegment;
     use uuid::Uuid;
 
     let manifest_key = "pitr-manifest.json";

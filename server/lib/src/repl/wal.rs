@@ -12,6 +12,7 @@ use flate2::Compression;
 use kanidm_proto::backup::{BackupCompression, PitrManifest, WalArchiveConfig, WalSegment};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use tracing::info;
 use uuid::Uuid;
 
 use crate::repl::cid::Cid;

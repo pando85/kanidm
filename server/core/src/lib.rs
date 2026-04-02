@@ -50,14 +50,13 @@ use crypto_glue::{
     s256::{Sha256, Sha256Output},
     traits::Digest,
 };
-use kanidm_proto::backup::{BackupCompression, PitrManifest, RecoveryTarget, S3Config, WalArchiveConfig, WalSegment};
+use kanidm_proto::backup::{BackupCompression, PitrManifest, RecoveryTarget, S3Config};
 use kanidm_proto::config::ServerRole;
 use kanidm_proto::internal::OperationError;
 use kanidm_proto::scim_v1::client::ScimAssertGeneric;
 use kanidmd_lib::be::{Backend, BackendConfig, BackendTransaction};
 use kanidmd_lib::idm::ldap::LdapServer;
 use kanidmd_lib::prelude::*;
-use kanidmd_lib::repl::cid::Cid;
 use kanidmd_lib::repl::wal::{
     parse_recovery_target_cid, parse_recovery_target_time, WalEntryRecord, WalOperationRecord,
     WalReplayer, RecoveryState,
@@ -72,7 +71,6 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::LazyLock;
-use std::time::Duration;
 use tokio::sync::broadcast;
 use tokio::task;
 
@@ -585,7 +583,7 @@ pub async fn verify_s3_backup_core(s3_config: &S3Config, object_key: &str) -> bo
 }
 
 pub async fn pitr_list_recoverable_points_core(
-    config: &Configuration,
+    _config: &Configuration,
     s3_config: Option<&S3Config>,
 ) -> Result<PitrManifest, String> {
     info!("Listing recoverable points for PITR");
@@ -691,7 +689,7 @@ pub async fn pitr_recover_core(
             Some(parse_recovery_target_time(timestamp)
                 .map_err(|e| format!("Failed to parse target time: {}", e))?)
         }
-        kanidm_proto::backup::RecoveryTargetType::Transaction { cid } => {
+        kanidm_proto::backup::RecoveryTargetType::Transaction { cid: _ } => {
             None
         }
         kanidm_proto::backup::RecoveryTargetType::Latest => None,
@@ -737,13 +735,13 @@ pub async fn pitr_recover_core(
     Ok(())
 }
 
-fn apply_wal_entries(be: &Backend, entries: &[&WalEntryRecord]) -> Result<(), OperationError> {
+fn apply_wal_entries(_be: &Backend, entries: &[&WalEntryRecord]) -> Result<(), OperationError> {
     for entry in entries {
         match &entry.operation {
-            WalOperationRecord::Create { entry_data } => {
+            WalOperationRecord::Create { entry_data: _ } => {
                 trace!("Applying CREATE for entry {}", entry.entry_id);
             }
-            WalOperationRecord::Modify { entry_data } => {
+            WalOperationRecord::Modify { entry_data: _ } => {
                 trace!("Applying MODIFY for entry {}", entry.entry_id);
             }
             WalOperationRecord::Delete => {
