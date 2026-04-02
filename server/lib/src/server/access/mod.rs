@@ -4182,7 +4182,7 @@ mod tests {
             ))),
         );
 
-        test_acp_modify!(&me_pres, vec![acp], r_set.clone(), true);
+        test_acp_modify!(&me_pres, vec![acp], &r_set, true);
     }
 
     #[test]
@@ -4216,7 +4216,7 @@ mod tests {
             ))),
         );
 
-        test_acp_modify!(&me_pres, vec![acp], r_set, false);
+        test_acp_modify!(&me_pres, vec![acp], &r_set, false);
     }
 
     #[test]
@@ -4305,7 +4305,7 @@ mod tests {
             ))),
         );
 
-        test_acp_delete!(&de_admin, vec![acp], r_set.clone(), true);
+        test_acp_delete!(&de_admin, vec![acp], &r_set, true);
     }
 
     #[test]
@@ -4334,6 +4334,6 @@ mod tests {
             ))),
         );
 
-        test_acp_delete!(&de_admin, vec![acp], r_set, false);
+        test_acp_delete!(&de_admin, vec![acp], &r_set, false);
     }
 }
