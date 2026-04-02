@@ -1230,9 +1230,9 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
 
             match s3_config {
                 Some(s3) => {
-                    match s3.replication {
+                    match &s3.replication {
                         Some(replication) if replication.enabled => {
-                            match kanidmd_core::replication_status_core(&config, s3, detailed).await {
+                            match kanidmd_core::replication_status_core(&config, s3, *detailed).await {
                                 Ok(health) => {
                                     info!("Replication Health Check:");
                                     info!("  Overall Status: {}", health.overall_status);
@@ -1257,7 +1257,7 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
                                         }
                                     }
 
-                                    if detailed {
+                                    if *detailed {
                                         match kanidmd_core::replication_lag_metrics_core(&config, s3).await {
                                             Ok(metrics) => {
                                                 info!("Detailed Lag Metrics:");
