@@ -88,3 +88,7 @@ jobs:
             oras login -u "${{ github.actor }}" --password-stdin ghcr.io
           oras copy --from-oci-layout "/tmp/kanidm-docker.tar:devel" \
             "ghcr.io/${{ needs.set_tag_values.outputs.owner_lc }}/kanidm:devel"
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            oras copy --from-oci-layout "/tmp/kanidm-docker.tar:${{ needs.set_tag_values.outputs.ref_name }}" \
+              "ghcr.io/${{ needs.set_tag_values.outputs.owner_lc }}/kanidm:${{ needs.set_tag_values.outputs.ref_name }}"
+          fi
