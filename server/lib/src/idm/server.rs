@@ -2129,8 +2129,6 @@ impl IdmServerProxyWriteTransaction<'_> {
     }
 
     #[instrument(level = "debug", skip_all)]
-<<<<<<< HEAD
-=======
     fn process_approval_timeout_check(
         &mut self,
         atc: &ApprovalTimeoutCheck,
@@ -2149,7 +2147,6 @@ impl IdmServerProxyWriteTransaction<'_> {
     }
 
     #[instrument(level = "debug", skip_all)]
->>>>>>> origin/master
     fn process_unixpwupgrade(&mut self, pwu: &UnixPasswordUpgrade) -> Result<(), OperationError> {
         info!(session_id = %pwu.target_uuid, "Processing unix password hash upgrade");
 
@@ -2301,13 +2298,10 @@ impl IdmServerProxyWriteTransaction<'_> {
             DelayedAction::WebauthnCounterIncrement(wci) => self.process_webauthncounterinc(wci),
             DelayedAction::BackupCodeRemoval(bcr) => self.process_backupcoderemoval(bcr),
             DelayedAction::AuthSessionRecord(asr) => self.process_authsessionrecord(asr),
-<<<<<<< HEAD
-=======
             DelayedAction::ApprovalTimeoutCheck(atc) => self.process_approval_timeout_check(atc),
             DelayedAction::ApprovalEscalationCheck(aec) => {
                 self.process_approval_escalation_check(aec)
             }
->>>>>>> origin/master
         }
     }
 
