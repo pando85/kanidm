@@ -454,6 +454,29 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_pip_id_creation() {
+        let id = PipId::new("test_pip");
+        assert_eq!(id.as_str(), "test_pip");
+
+        let id_from_str: PipId = "another_pip".into();
+        assert_eq!(id_from_str.as_str(), "another_pip");
+
+        let id_from_string: PipId = String::from("string_pip").into();
+        assert_eq!(id_from_string.as_str(), "string_pip");
+    }
+
+    #[test]
+    fn test_pip_id_equality_and_ordering() {
+        let id1 = PipId::new("alpha");
+        let id2 = PipId::new("beta");
+        let id3 = PipId::new("alpha");
+
+        assert_eq!(id1, id3);
+        assert_ne!(id1, id2);
+        assert!(id1 < id2);
+    }
+
+    #[test]
     fn test_pip_attribute_name_format() {
         let pip_id = PipId::new("hr_system");
         let attr_name = PipAttributeName::new(&pip_id, "department");
@@ -466,20 +489,35 @@ mod tests {
     }
 
     #[test]
-    fn test_pip_attribute_name_parse() {
+    fn test_pip_attribute_name_parse_valid() {
         let parsed = PipAttributeName::parse("pip:hr_system:department");
         assert!(parsed.is_some());
 
         let (pip_id, internal_name) = parsed.unwrap();
         assert_eq!(pip_id.as_str(), "hr_system");
         assert_eq!(internal_name, "department");
-
-        let invalid = PipAttributeName::parse("department");
-        assert!(invalid.is_none());
     }
 
     #[test]
-    fn test_pip_attribute_set() {
+    fn test_pip_attribute_name_parse_invalid() {
+        assert!(PipAttributeName::parse("department").is_none());
+        assert!(PipAttributeName::parse("pip:").is_none());
+        assert!(PipAttributeName::parse("pip:only_source").is_none());
+        assert!(PipAttributeName::parse("").is_none());
+    }
+
+    #[test]
+    fn test_pip_attribute_name_special_characters() {
+        let pip_id = PipId::new("source-with-dashes");
+        let attr_name = PipAttributeName::new(&pip_id, "attr_with_underscores");
+        assert_eq!(attr_name.as_str(), "pip:source-with-dashes:attr_with_underscores");
+
+        let parsed = PipAttributeName::parse("pip:source-with-dashes:attr_with_underscores");
+        assert!(parsed.is_some());
+    }
+
+    #[test]
+    fn test_pip_attribute_set_insert_and_get() {
         let mut set = PipAttributeSet::new();
         let pip_id = PipId::new("hr_system");
 
@@ -495,25 +533,156 @@ mod tests {
     }
 
     #[test]
-    fn test_pip_attribute_value_types() {
-        let string_val = PipAttributeValue::String("test".to_string());
-        assert_eq!(string_val.as_str(), Some("test"));
+    fn test_pip_attribute_set_multiple_attributes() {
+        let mut set = PipAttributeSet::new();
+        let pip_id = PipId::new("hr_system");
 
-        let int_val = PipAttributeValue::Integer(42);
-        assert_eq!(int_val.as_int(), Some(42));
+        set.insert(
+            PipAttributeName::new(&pip_id, "department"),
+            PipAttributeValue::String("Engineering".to_string()),
+        );
+        set.insert(
+            PipAttributeName::new(&pip_id, "role"),
+            PipAttributeValue::String("Developer".to_string()),
+        );
+        set.insert(
+            PipAttributeName::new(&pip_id, "level"),
+            PipAttributeValue::Integer(5),
+        );
 
-        let bool_val = PipAttributeValue::Boolean(true);
-        assert_eq!(bool_val.as_bool(), Some(true));
-
-        let array_val = PipAttributeValue::Array(vec![
-            PipAttributeValue::String("a".to_string()),
-            PipAttributeValue::String("b".to_string()),
-        ]);
-        assert_eq!(array_val.as_array().unwrap().len(), 2);
+        assert_eq!(set.len(), 3);
+        assert!(set.contains(&PipAttributeName::new(&pip_id, "department")));
+        assert!(set.contains(&PipAttributeName::new(&pip_id, "role")));
+        assert!(set.contains(&PipAttributeName::new(&pip_id, "level")));
     }
 
     #[test]
-    fn test_pip_subject() {
+    fn test_pip_attribute_set_merge() {
+        let mut set1 = PipAttributeSet::new();
+        let pip_id = PipId::new("source1");
+        set1.insert(
+            PipAttributeName::new(&pip_id, "attr1"),
+            PipAttributeValue::String("value1".to_string()),
+        );
+
+        let mut set2 = PipAttributeSet::new();
+        let pip_id2 = PipId::new("source2");
+        set2.insert(
+            PipAttributeName::new(&pip_id2, "attr2"),
+            PipAttributeValue::String("value2".to_string()),
+        );
+
+        set1.merge(set2);
+        assert_eq!(set1.len(), 2);
+        assert!(set1.contains(&PipAttributeName::new(&pip_id, "attr1")));
+        assert!(set1.contains(&PipAttributeName::new(&pip_id2, "attr2")));
+    }
+
+    #[test]
+    fn test_pip_attribute_set_empty() {
+        let set = PipAttributeSet::new();
+        assert!(set.is_empty());
+        assert_eq!(set.len(), 0);
+    }
+
+    #[test]
+    fn test_pip_attribute_set_default() {
+        let set = PipAttributeSet::default();
+        assert!(set.is_empty());
+    }
+
+    #[test]
+    fn test_pip_attribute_value_string() {
+        let val = PipAttributeValue::String("test".to_string());
+        assert_eq!(val.as_str(), Some("test"));
+        assert_eq!(val.as_int(), None);
+        assert_eq!(val.as_bool(), None);
+        assert_eq!(val.as_array(), None);
+        assert_eq!(val.as_json(), None);
+    }
+
+    #[test]
+    fn test_pip_attribute_value_integer() {
+        let val = PipAttributeValue::Integer(42);
+        assert_eq!(val.as_int(), Some(42));
+        assert_eq!(val.as_str(), None);
+        assert_eq!(val.as_bool(), None);
+    }
+
+    #[test]
+    fn test_pip_attribute_value_boolean() {
+        let val_true = PipAttributeValue::Boolean(true);
+        assert_eq!(val_true.as_bool(), Some(true));
+
+        let val_false = PipAttributeValue::Boolean(false);
+        assert_eq!(val_false.as_bool(), Some(false));
+    }
+
+    #[test]
+    fn test_pip_attribute_value_array() {
+        let arr = vec![
+            PipAttributeValue::String("a".to_string()),
+            PipAttributeValue::Integer(1),
+            PipAttributeValue::Boolean(true),
+        ];
+        let val = PipAttributeValue::Array(arr);
+        assert_eq!(val.as_array().unwrap().len(), 3);
+    }
+
+    #[test]
+    fn test_pip_attribute_value_json() {
+        let json = serde_json::json!({"key": "value"});
+        let val = PipAttributeValue::Json(json.clone());
+        assert_eq!(val.as_json(), Some(&json));
+    }
+
+    #[test]
+    fn test_pip_attribute_value_equality() {
+        assert_eq!(
+            PipAttributeValue::String("test".to_string()),
+            PipAttributeValue::String("test".to_string())
+        );
+        assert_ne!(
+            PipAttributeValue::String("test".to_string()),
+            PipAttributeValue::String("other".to_string())
+        );
+        assert_eq!(PipAttributeValue::Integer(42), PipAttributeValue::Integer(42));
+        assert_eq!(PipAttributeValue::Boolean(true), PipAttributeValue::Boolean(true));
+    }
+
+    #[test]
+    fn test_pip_subject_from_uuid() {
+        let uuid = Uuid::new_v4();
+        let subject = PipSubject::from_uuid(uuid);
+        assert_eq!(subject.uuid, uuid);
+        assert!(subject.username.is_none());
+        assert!(subject.email.is_none());
+        assert!(subject.context.is_empty());
+    }
+
+    #[test]
+    fn test_pip_subject_with_username() {
+        let subject = PipSubject::from_uuid(Uuid::new_v4()).with_username("testuser");
+        assert_eq!(subject.username, Some("testuser".to_string()));
+    }
+
+    #[test]
+    fn test_pip_subject_with_email() {
+        let subject = PipSubject::from_uuid(Uuid::new_v4()).with_email("test@example.com");
+        assert_eq!(subject.email, Some("test@example.com".to_string()));
+    }
+
+    #[test]
+    fn test_pip_subject_with_context() {
+        let subject = PipSubject::from_uuid(Uuid::new_v4())
+            .with_context("device_id", "device123")
+            .with_context("location", "office");
+        assert_eq!(subject.context.get("device_id"), Some(&"device123".to_string()));
+        assert_eq!(subject.context.get("location"), Some(&"office".to_string()));
+    }
+
+    #[test]
+    fn test_pip_subject_full() {
         let subject = PipSubject::from_uuid(Uuid::new_v4())
             .with_username("testuser")
             .with_email("test@example.com")
@@ -522,5 +691,190 @@ mod tests {
         assert!(subject.username.is_some());
         assert!(subject.email.is_some());
         assert!(subject.context.contains_key("device_id"));
+    }
+
+    #[test]
+    fn test_pip_result_success() {
+        let attrs = PipAttributeSet::new();
+        let result = PipResult::Success(attrs);
+        assert!(result.is_success());
+        assert!(result.attributes().is_some());
+        assert!(!result.fallback_used());
+    }
+
+    #[test]
+    fn test_pip_result_unavailable() {
+        let result = PipResult::Unavailable {
+            reason: "source down".to_string(),
+            fallback_used: true,
+        };
+        assert!(!result.is_success());
+        assert!(result.attributes().is_none());
+        assert!(result.fallback_used());
+    }
+
+    #[test]
+    fn test_pip_result_timeout() {
+        let result = PipResult::Timeout { fallback_used: false };
+        assert!(!result.is_success());
+        assert!(result.attributes().is_none());
+        assert!(!result.fallback_used());
+    }
+
+    #[test]
+    fn test_pip_result_error() {
+        let result = PipResult::Error {
+            error: "connection failed".to_string(),
+            fallback_used: true,
+        };
+        assert!(!result.is_success());
+        assert!(result.attributes().is_none());
+        assert!(result.fallback_used());
+    }
+
+    #[test]
+    fn test_pip_health_status_healthy() {
+        let status = PipHealthStatus::Healthy;
+        assert!(status.is_healthy());
+        assert!(status.can_retrieve());
+    }
+
+    #[test]
+    fn test_pip_health_status_degraded() {
+        let status = PipHealthStatus::Degraded;
+        assert!(!status.is_healthy());
+        assert!(status.can_retrieve());
+    }
+
+    #[test]
+    fn test_pip_health_status_unhealthy() {
+        let status = PipHealthStatus::Unhealthy;
+        assert!(!status.is_healthy());
+        assert!(!status.can_retrieve());
+    }
+
+    #[test]
+    fn test_pip_health_status_unknown() {
+        let status = PipHealthStatus::Unknown;
+        assert!(!status.is_healthy());
+        assert!(!status.can_retrieve());
+    }
+
+    #[test]
+    fn test_pip_health_check_fields() {
+        let check = PipHealthCheck {
+            pip_id: PipId::new("test"),
+            status: PipHealthStatus::Healthy,
+            last_check: Instant::now(),
+            latency_ms: Some(50),
+            error_message: None,
+        };
+        assert_eq!(check.pip_id.as_str(), "test");
+        assert!(check.status.is_healthy());
+        assert!(check.latency_ms.is_some());
+        assert!(check.error_message.is_none());
+    }
+
+    #[test]
+    fn test_pip_health_check_with_error() {
+        let check = PipHealthCheck {
+            pip_id: PipId::new("test"),
+            status: PipHealthStatus::Unhealthy,
+            last_check: Instant::now(),
+            latency_ms: None,
+            error_message: Some("connection timeout".to_string()),
+        };
+        assert!(check.error_message.is_some());
+        assert!(check.latency_ms.is_none());
+    }
+
+    #[test]
+    fn test_pip_manager_new() {
+        let manager = PipManager::new(Duration::from_secs(300));
+        assert!(manager.health_summary().is_empty());
+    }
+
+    #[test]
+    fn test_pip_manager_register_and_get() {
+        let mut manager = PipManager::new(Duration::from_secs(300));
+        let mock_pip = Arc::new(MockPip::new(PipId::new("test_pip")));
+        manager.register(mock_pip.clone());
+
+        assert!(manager.get(&PipId::new("test_pip")).is_some());
+        assert!(manager.get(&PipId::new("nonexistent")).is_none());
+    }
+
+    #[test]
+    fn test_pip_manager_iter() {
+        let mut manager = PipManager::new(Duration::from_secs(300));
+        manager.register(Arc::new(MockPip::new(PipId::new("pip1"))));
+        manager.register(Arc::new(MockPip::new(PipId::new("pip2"))));
+
+        let count = manager.iter().count();
+        assert_eq!(count, 2);
+    }
+
+    #[test]
+    fn test_pip_manager_health_summary() {
+        let mut manager = PipManager::new(Duration::from_secs(300));
+        manager.register(Arc::new(MockPip::new(PipId::new("healthy_pip"))));
+
+        let summary = manager.health_summary();
+        assert_eq!(summary.len(), 1);
+        assert_eq!(
+            summary.get(&PipId::new("healthy_pip")),
+            Some(&PipHealthStatus::Unknown)
+        );
+    }
+
+    struct MockPip {
+        id: PipId,
+    }
+
+    impl MockPip {
+        fn new(id: PipId) -> Self {
+            MockPip { id }
+        }
+    }
+
+    #[async_trait]
+    impl PolicyInformationPoint for MockPip {
+        fn id(&self) -> &PipId {
+            &self.id
+        }
+
+        async fn retrieve_attributes(&self, _subject: &PipSubject) -> PipResult {
+            PipResult::Success(PipAttributeSet::new())
+        }
+
+        async fn retrieve_named_attributes(
+            &self,
+            _subject: &PipSubject,
+            _attribute_names: &[String],
+        ) -> PipResult {
+            PipResult::Success(PipAttributeSet::new())
+        }
+
+        async fn health_check(&self) -> PipHealthCheck {
+            PipHealthCheck {
+                pip_id: self.id.clone(),
+                status: PipHealthStatus::Healthy,
+                last_check: Instant::now(),
+                latency_ms: Some(10),
+                error_message: None,
+            }
+        }
+
+        fn cached_health_status(&self) -> PipHealthStatus {
+            PipHealthStatus::Unknown
+        }
+
+        fn provided_attributes(&self) -> &[String] {
+            &[]
+        }
+
+        async fn clear_cache(&self, _subject: &PipSubject) {}
+
+        async fn clear_all_cache(&self) {}
     }
 }
