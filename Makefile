@@ -323,7 +323,7 @@ cert/clean:
 	rm -f /tmp/kanidm/*.pem
 	rm -f /tmp/kanidm/*.cnf
 	rm -f /tmp/kanidm/*.csr
-	rm -f /tmp/kanidm/ca.txt*
+	rm -f /tmp/kanidm/*.ca.txt*
 	rm -f /tmp/kanidm/ca.{cnf,srl,srl.old}
 
 
@@ -389,3 +389,14 @@ rust_container:
 		--rm -it \
 		--name kanidm \
 		--mount type=bind,source=$(PWD),target=/kanidm -w /kanidm kanidm_rust:latest
+
+.PHONY: update-changelog
+update-changelog: ## Update CHANGELOG.md from git history using git-cliff
+update-changelog:
+	git cliff --output CHANGELOG.md
+
+.PHONY: update-version
+update-version: ## Update version across workspace from root Cargo.toml
+update-version:
+	@VERSION=$$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n1); \
+	echo "Workspace version: $$VERSION"
