@@ -10,26 +10,16 @@ repos:
       - id: check-shebang-scripts-are-executable
         exclude: \.(rs|in)$
       - id: end-of-file-fixer
-        exclude: >
-          ^(pykanidm/kanidm_openapi_client/|book/src/|server/core/static/|
-          server/core/templates/|server/lib/src/|server/testkit/|examples/|
-          tools/orca/|unix_integration/|scripts/|rlm_python/|platform/|proto/|
-          artwork/|\.rst$|\.map$|\.min\.(js|css)$|\.json$|\.svg$|\.pem$|\.toml$|
-          \.rs$|\.sh$|\.service$|\.conf$|\.md$|\.js$|\.yml$|\.yaml$|\.lock$|
-          Makefile$|Dockerfile$|\.gitignore$|\.editorconfig$|\.rustfmt\.toml$|
-          deno\.json$|Cargo\.toml$|rust-toolchain\.toml$)
+        exclude_types: [binary]
+        exclude: (^pykanidm/kanidm_openapi_client/|^book/src/|^server/core/static/|^server/core/templates/|^server/lib/src/|^server/testkit/|^examples/|^tools/orca/|^unix_integration/|^scripts/|^rlm_python/|^platform/|^proto/|^artwork/|\.(rst|map|min\.js|min\.css|json|svg|pem|toml|rs|sh|service|conf|cfg|ini|md|js|yml|yaml|lock)$|Makefile$|Dockerfile$|\.gitignore$|\.editorconfig$|\.rustfmt\.toml$|deno\.json$|Cargo\.toml$|rust-toolchain\.toml$|prettier-ignore|eslint\.config\.mjs)
       - id: mixed-line-ending
       - id: trailing-whitespace
-        exclude: >
-          ^(pykanidm/kanidm_openapi_client/|book/src/|server/core/static/|
-          server/core/templates/|examples/|tools/orca/|\.rst$|\.map$|
-          \.min\.(js|css)$|\.json$|\.svg$)
+        exclude: (^pykanidm/kanidm_openapi_client/|^book/src/|^server/core/static/|^server/core/templates/|^examples/|^tools/orca/|\.(rst|map|min\.js|min\.css|json|svg)$)
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.38.0
     hooks:
       - id: yamllint
-        exclude: >
-          ^(scripts/otel/|.github/workflows/docker_build_)
+        exclude: (^scripts/otel/|^\.github/workflows/docker_build_)
   - repo: https://github.com/gruntwork-io/pre-commit
     rev: v0.1.30
     hooks:
