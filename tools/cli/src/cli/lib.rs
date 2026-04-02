@@ -38,6 +38,7 @@ mod session;
 mod synch;
 mod system_config;
 mod webauthn;
+mod approval;
 
 /// Throws an error and exits the program when we get an error
 pub(crate) fn handle_client_error(response: ClientError, _output_mode: OutputMode) {
@@ -153,6 +154,7 @@ impl SystemOpt {
             SystemOpt::Domain { commands } => commands.exec(opt).await,
             SystemOpt::Message { commands } => commands.exec(opt).await,
             SystemOpt::Synch { commands } => commands.exec(opt).await,
+            SystemOpt::Approval { commands } => commands.exec(opt).await,
         }
     }
 }
