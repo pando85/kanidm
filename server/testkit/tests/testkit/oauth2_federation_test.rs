@@ -1,5 +1,6 @@
 #![deny(warnings)]
 use kanidm_client::{ClientError, KanidmClient, StatusCode};
+use kanidmd_testkit::{ADMIN_TEST_PASSWORD, ADMIN_TEST_USER, NOT_ADMIN_TEST_PASSWORD};
 use std::collections::BTreeMap;
 use url::Url;
 
@@ -14,10 +15,6 @@ fn get_federation_test_client_id() -> String {
 fn get_federation_test_issuer() -> Url {
     Url::parse("https://idp.example.com").expect("Invalid issuer URL")
 }
-
-const ADMIN_TEST_USER: &str = "admin";
-const ADMIN_TEST_PASSWORD: &str = "integration test admin password";
-const NOT_ADMIN_TEST_PASSWORD: &str = "eicieY7ahchaoCh0eeTa";
 
 async fn create_federation_idp(
     rsclient: &KanidmClient,
