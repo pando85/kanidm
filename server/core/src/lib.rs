@@ -50,7 +50,10 @@ use crypto_glue::{
     s256::{Sha256, Sha256Output},
     traits::Digest,
 };
-use kanidm_proto::backup::{BackupCompression, PitrManifest, RecoveryTarget, S3Config};
+use kanidm_proto::backup::{
+    BackupCompression, PitrManifest, RecoveryTarget, ReplicationHealthCheck,
+    ReplicationLagMetrics, S3Config,
+};
 use kanidm_proto::config::ServerRole;
 use kanidm_proto::internal::OperationError;
 use kanidm_proto::scim_v1::client::ScimAssertGeneric;
@@ -580,6 +583,49 @@ pub async fn verify_s3_backup_core(s3_config: &S3Config, object_key: &str) -> bo
             false
         }
     }
+}
+
+pub async fn replication_status_core(
+    _config: &Configuration,
+    s3_config: &S3Config,
+    _detailed: bool,
+) -> Result<ReplicationHealthCheck, String> {
+    info!("Checking cross-region backup replication status");
+
+    let s3_client = S3ClientWrapper::new(s3_config.clone())
+        .await
+        .map_err(|e| format!("Failed to create S3 client: {}", e))?;
+
+    let replication_config = s3_config
+        .replication
+        .as_ref()
+        .ok_or("Replication configuration not found")?;
+
+    s3_client
+        .check_replication_health(replication_config)
+        .await
+        .map_err(|e| format!("Failed to check replication health: {}", e))
+}
+
+pub async fn replication_lag_metrics_core(
+    _config: &Configuration,
+    s3_config: &S3Config,
+) -> Result<Vec<ReplicationLagMetrics>, String> {
+    info!("Getting detailed replication lag metrics");
+
+    let s3_client = S3ClientWrapper::new(s3_config.clone())
+        .await
+        .map_err(|e| format!("Failed to create S3 client: {}", e))?;
+
+    let replication_config = s3_config
+        .replication
+        .as_ref()
+        .ok_or("Replication configuration not found")?;
+
+    s3_client
+        .get_replication_lag_metrics(replication_config)
+        .await
+        .map_err(|e| format!("Failed to get replication lag metrics: {}", e))
 }
 
 pub async fn pitr_list_recoverable_points_core(
