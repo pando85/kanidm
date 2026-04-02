@@ -28,6 +28,7 @@ test = []                   # Enable this for cross-package test features.
 base64 = { workspace = true }
 base64urlsafedata = { workspace = true }
 bitflags = { workspace = true }
+chrono = { workspace = true }
 compact_jwt = { workspace = true }
 concread = { workspace = true }
 crypto-glue = { workspace = true }
@@ -56,6 +57,7 @@ rusqlite = { workspace = true, features = ["array", "bundled"] }
 serde = { workspace = true, features = ["derive"] }
 serde_cbor = { workspace = true }
 serde_json = { workspace = true }
+sha2 = { workspace = true }
 sketching = { workspace = true }
 smolset = { workspace = true }
 sshkey-attest = { workspace = true }
