@@ -183,10 +183,7 @@ impl BackupEncryptor {
         Ok(output)
     }
 
-    pub fn decrypt(
-        data: &[u8],
-        passphrase: &[u8],
-    ) -> Result<(Vec<u8>, BackupEncryptionHeader), BackupEncryptionError> {
+    fn parse_header(data: &[u8]) -> Result<(BackupEncryptionHeader, usize), BackupEncryptionError> {
         if data.len() < BACKUP_ENCRYPTION_MAGIC.len() + 4 {
             return Err(BackupEncryptionError::InvalidHeader);
         }
@@ -197,7 +194,11 @@ impl BackupEncryptor {
         }
 
         let header_len_bytes = &data[BACKUP_ENCRYPTION_MAGIC.len()..BACKUP_ENCRYPTION_MAGIC.len() + 4];
-        let header_len = u32::from_le_bytes(header_len_bytes.try_into().unwrap());
+        let header_len = u32::from_le_bytes(
+            header_len_bytes
+                .try_into()
+                .map_err(|_| BackupEncryptionError::InvalidHeader)?,
+        );
 
         let header_start = BACKUP_ENCRYPTION_MAGIC.len() + 4;
         let header_end = header_start + header_len as usize;
@@ -213,6 +214,15 @@ impl BackupEncryptor {
         if !header.validate_magic() {
             return Err(BackupEncryptionError::InvalidMagic);
         }
+
+        Ok((header, header_end))
+    }
+
+    pub fn decrypt(
+        data: &[u8],
+        passphrase: &[u8],
+    ) -> Result<(Vec<u8>, BackupEncryptionHeader), BackupEncryptionError> {
+        let (header, header_end) = Self::parse_header(data)?;
 
         if header.salt.len() < BACKUP_ENCRYPTION_SALT_LEN {
             return Err(BackupEncryptionError::InvalidSaltLength);
@@ -240,32 +250,7 @@ impl BackupEncryptor {
         data: &[u8],
         key_material: &[u8],
     ) -> Result<(Vec<u8>, BackupEncryptionHeader), BackupEncryptionError> {
-        if data.len() < BACKUP_ENCRYPTION_MAGIC.len() + 4 {
-            return Err(BackupEncryptionError::InvalidHeader);
-        }
-
-        let magic = &data[..BACKUP_ENCRYPTION_MAGIC.len()];
-        if magic != BACKUP_ENCRYPTION_MAGIC {
-            return Err(BackupEncryptionError::InvalidMagic);
-        }
-
-        let header_len_bytes = &data[BACKUP_ENCRYPTION_MAGIC.len()..BACKUP_ENCRYPTION_MAGIC.len() + 4];
-        let header_len = u32::from_le_bytes(header_len_bytes.try_into().unwrap());
-
-        let header_start = BACKUP_ENCRYPTION_MAGIC.len() + 4;
-        let header_end = header_start + header_len as usize;
-
-        if data.len() < header_end {
-            return Err(BackupEncryptionError::InvalidHeader);
-        }
-
-        let header_json = &data[header_start..header_end];
-        let header: BackupEncryptionHeader = serde_json::from_slice(header_json)
-            .map_err(|e| BackupEncryptionError::SerializeError(e.to_string()))?;
-
-        if !header.validate_magic() {
-            return Err(BackupEncryptionError::InvalidMagic);
-        }
+        let (header, header_end) = Self::parse_header(data)?;
 
         if header.nonce.len() < BACKUP_ENCRYPTION_NONCE_LEN {
             return Err(BackupEncryptionError::InvalidNonceLength);
@@ -336,12 +321,17 @@ impl<W: Write> Write for EncryptedWriter<W> {
 
 impl<W: Write> EncryptedWriter<W> {
     pub async fn finalize(self) -> Result<W, BackupEncryptionError> {
+        let mut inner = self
+            .inner
+            .ok_or(BackupEncryptionError::IoError(std::io::Error::new(
+                std::io::ErrorKind::InvalidState,
+                "Writer already finalized",
+            )))?;
         let encrypted_data = self
             .encryptor
             .encrypt(&self.buffer, &self.passphrase, self.compressed)
             .await?;
 
-        let mut inner = self.inner.unwrap();
         inner.write_all(&encrypted_data)?;
         inner.flush()?;
         Ok(inner)

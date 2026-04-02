@@ -268,17 +268,16 @@ impl Display for KeyDerivationParams {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize, PartialEq, Eq)]
 pub enum EncryptionKeySource {
+    #[default]
     Passphrase,
-    File { path: String },
-    HttpEndpoint { url: String },
-}
-
-impl Default for EncryptionKeySource {
-    fn default() -> Self {
-        EncryptionKeySource::Passphrase
-    }
+    File {
+        path: String,
+    },
+    HttpEndpoint {
+        url: String,
+    },
 }
 
 impl Display for EncryptionKeySource {
