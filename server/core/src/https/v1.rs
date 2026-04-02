@@ -22,7 +22,8 @@ use kanidm_proto::internal::{
     COOKIE_AUTH_SESSION_ID, COOKIE_BEARER_TOKEN,
 };
 use kanidm_proto::v1::{
-    AccountUnixExtend, ApiTokenGenerate, AuthIssueSession, AuthRequest, AuthResponse,
+    AccountUnixExtend, ApiTokenGenerate, ApprovalDecisionRequest, ApprovalPolicy,
+    ApprovalPolicyCreateRequest, ApprovalRequest, AuthIssueSession, AuthRequest, AuthResponse,
     AuthState as ProtoAuthState, Entry as ProtoEntry, GroupUnixExtend, SingleStringRequest,
     UatStatus, UnixGroupToken, UnixUserToken, WhoamiResponse,
 };
@@ -3435,6 +3436,31 @@ pub(crate) fn route_setup(state: ServerState) -> Router<ServerState> {
             "/v1/recycle_bin/{id}/_revive",
             post(recycle_bin_revive_id_post),
         )
+        .route(
+            "/v1/approval/policy",
+            get(approval_policy_list).post(approval_policy_create),
+        )
+        .route(
+            "/v1/approval/policy/{name}",
+            get(approval_policy_get).delete(approval_policy_delete),
+        )
+        .route(
+            "/v1/approval/policy/{name}/_enable",
+            post(approval_policy_enable),
+        )
+        .route(
+            "/v1/approval/policy/{name}/_disable",
+            post(approval_policy_disable),
+        )
+        .route("/v1/approval/request", get(approval_request_list))
+        .route(
+            "/v1/approval/request/{uuid}",
+            get(approval_request_get).delete(approval_request_cancel),
+        )
+        .route(
+            "/v1/approval/request/{uuid}/_decision",
+            post(approval_request_decision),
+        )
         // .route("/v1/access_profile", get(|| async { "TODO" }))
         // .route("/v1/access_profile/{id}", get(|| async { "TODO" }))
         // .route(
@@ -3449,4 +3475,249 @@ pub(crate) fn route_setup(state: ServerState) -> Router<ServerState> {
         .layer(from_fn(dont_cache_me))
         .merge(cacheable_routes(state))
         .route("/v1/debug/ipinfo", get(debug_ipinfo))
+}
+
+#[utoipa::path(
+    get,
+    path = "/v1/approval/policy",
+    responses(
+        (status = 200, body=Vec<ApprovalPolicy>, content_type=APPLICATION_JSON),
+        ApiResponseWithout200,
+    ),
+    security(("token_jwt" = [])),
+    tag = "approval",
+    operation_id="approval_policy_list"
+)]
+pub async fn approval_policy_list(
+    State(state): State<ServerState>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+) -> Result<Json<Vec<kanidm_proto::v1::ApprovalPolicy>>, WebError> {
+    state
+        .qe_r_ref
+        .handle_approval_policy_list(client_auth_info, kopid.eventid)
+        .await
+        .map(Json::from)
+        .map_err(WebError::from)
+}
+
+#[utoipa::path(
+    get,
+    path = "/v1/approval/policy/{name}",
+    responses(
+        (status = 200, body=ApprovalPolicy, content_type=APPLICATION_JSON),
+        ApiResponseWithout200,
+    ),
+    security(("token_jwt" = [])),
+    tag = "approval",
+    operation_id="approval_policy_get"
+)]
+pub async fn approval_policy_get(
+    State(state): State<ServerState>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+    Path(name): Path<String>,
+) -> Result<Json<kanidm_proto::v1::ApprovalPolicy>, WebError> {
+    state
+        .qe_r_ref
+        .handle_approval_policy_get(client_auth_info, name, kopid.eventid)
+        .await
+        .map(Json::from)
+        .map_err(WebError::from)
+}
+
+#[utoipa::path(
+    post,
+    path = "/v1/approval/policy",
+    responses(
+        DefaultApiResponse,
+    ),
+    request_body=ApprovalPolicyCreateRequest,
+    security(("token_jwt" = [])),
+    tag = "approval",
+    operation_id="approval_policy_create"
+)]
+pub async fn approval_policy_create(
+    State(state): State<ServerState>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+    Json(request): Json<kanidm_proto::v1::ApprovalPolicyCreateRequest>,
+) -> Result<Json<()>, WebError> {
+    state
+        .qe_w_ref
+        .handle_approval_policy_create(client_auth_info, request, kopid.eventid)
+        .await
+        .map(Json::from)
+        .map_err(WebError::from)
+}
+
+#[utoipa::path(
+    delete,
+    path = "/v1/approval/policy/{name}",
+    responses(
+        DefaultApiResponse,
+    ),
+    security(("token_jwt" = [])),
+    tag = "approval",
+    operation_id="approval_policy_delete"
+)]
+pub async fn approval_policy_delete(
+    State(state): State<ServerState>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+    Path(name): Path<String>,
+) -> Result<Json<()>, WebError> {
+    state
+        .qe_w_ref
+        .handle_approval_policy_delete(client_auth_info, name, kopid.eventid)
+        .await
+        .map(Json::from)
+        .map_err(WebError::from)
+}
+
+#[utoipa::path(
+    post,
+    path = "/v1/approval/policy/{name}/_enable",
+    responses(
+        DefaultApiResponse,
+    ),
+    security(("token_jwt" = [])),
+    tag = "approval",
+    operation_id="approval_policy_enable"
+)]
+pub async fn approval_policy_enable(
+    State(state): State<ServerState>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+    Path(name): Path<String>,
+) -> Result<Json<()>, WebError> {
+    state
+        .qe_w_ref
+        .handle_approval_policy_enable(client_auth_info, name, true, kopid.eventid)
+        .await
+        .map(Json::from)
+        .map_err(WebError::from)
+}
+
+#[utoipa::path(
+    post,
+    path = "/v1/approval/policy/{name}/_disable",
+    responses(
+        DefaultApiResponse,
+    ),
+    security(("token_jwt" = [])),
+    tag = "approval",
+    operation_id="approval_policy_disable"
+)]
+pub async fn approval_policy_disable(
+    State(state): State<ServerState>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+    Path(name): Path<String>,
+) -> Result<Json<()>, WebError> {
+    state
+        .qe_w_ref
+        .handle_approval_policy_enable(client_auth_info, name, false, kopid.eventid)
+        .await
+        .map(Json::from)
+        .map_err(WebError::from)
+}
+
+#[utoipa::path(
+    get,
+    path = "/v1/approval/request",
+    responses(
+        (status = 200, body=Vec<ApprovalRequest>, content_type=APPLICATION_JSON),
+        ApiResponseWithout200,
+    ),
+    security(("token_jwt" = [])),
+    tag = "approval",
+    operation_id="approval_request_list"
+)]
+pub async fn approval_request_list(
+    State(state): State<ServerState>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+) -> Result<Json<Vec<kanidm_proto::v1::ApprovalRequest>>, WebError> {
+    state
+        .qe_r_ref
+        .handle_approval_request_list(client_auth_info, None, kopid.eventid)
+        .await
+        .map(Json::from)
+        .map_err(WebError::from)
+}
+
+#[utoipa::path(
+    get,
+    path = "/v1/approval/request/{uuid}",
+    responses(
+        (status = 200, body=ApprovalRequest, content_type=APPLICATION_JSON),
+        ApiResponseWithout200,
+    ),
+    security(("token_jwt" = [])),
+    tag = "approval",
+    operation_id="approval_request_get"
+)]
+pub async fn approval_request_get(
+    State(state): State<ServerState>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+    Path(uuid): Path<String>,
+) -> Result<Json<kanidm_proto::v1::ApprovalRequest>, WebError> {
+    state
+        .qe_r_ref
+        .handle_approval_request_get(client_auth_info, uuid, kopid.eventid)
+        .await
+        .map(Json::from)
+        .map_err(WebError::from)
+}
+
+#[utoipa::path(
+    post,
+    path = "/v1/approval/request/{uuid}/_decision",
+    responses(
+        DefaultApiResponse,
+    ),
+    request_body=ApprovalDecisionRequest,
+    security(("token_jwt" = [])),
+    tag = "approval",
+    operation_id="approval_request_decision"
+)]
+pub async fn approval_request_decision(
+    State(state): State<ServerState>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+    Path(uuid): Path<String>,
+    Json(request): Json<kanidm_proto::v1::ApprovalDecisionRequest>,
+) -> Result<Json<()>, WebError> {
+    state
+        .qe_w_ref
+        .handle_approval_request_decision(client_auth_info, uuid, request, kopid.eventid)
+        .await
+        .map(Json::from)
+        .map_err(WebError::from)
+}
+
+#[utoipa::path(
+    delete,
+    path = "/v1/approval/request/{uuid}",
+    responses(
+        DefaultApiResponse,
+    ),
+    security(("token_jwt" = [])),
+    tag = "approval",
+    operation_id="approval_request_cancel"
+)]
+pub async fn approval_request_cancel(
+    State(state): State<ServerState>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+    Path(uuid): Path<String>,
+) -> Result<Json<()>, WebError> {
+    state
+        .qe_w_ref
+        .handle_approval_request_cancel(client_auth_info, uuid, kopid.eventid)
+        .await
+        .map(Json::from)
+        .map_err(WebError::from)
 }

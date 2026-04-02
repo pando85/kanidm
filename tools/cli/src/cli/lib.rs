@@ -24,6 +24,7 @@ use uuid::Uuid;
 
 include!("../opt/kanidm.rs");
 
+mod approval;
 mod common;
 mod domain;
 mod graph;
@@ -153,6 +154,7 @@ impl SystemOpt {
             SystemOpt::Domain { commands } => commands.exec(opt).await,
             SystemOpt::Message { commands } => commands.exec(opt).await,
             SystemOpt::Synch { commands } => commands.exec(opt).await,
+            SystemOpt::Approval { commands } => commands.exec(opt).await,
         }
     }
 }

@@ -1688,4 +1688,104 @@ impl QueryServerReadV1 {
 
         Ok(kanidm_proto::internal::BatchAuthorizationResponse { responses })
     }
+
+    #[instrument(
+        level = "info",
+        name = "approval_policy_list",
+        skip_all,
+        fields(uuid = ?eventid)
+    )]
+    pub async fn handle_approval_policy_list(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        eventid: Uuid,
+    ) -> Result<Vec<kanidm_proto::v1::ApprovalPolicy>, OperationError> {
+        let ct = duration_from_epoch_now();
+        let mut idms_prox_read = self.idms.proxy_read().await?;
+        let ident = idms_prox_read
+            .validate_client_auth_info_to_ident(client_auth_info, ct)
+            .map_err(|e| {
+                error!(?e, "Invalid identity");
+                e
+            })?;
+
+        idms_prox_read.qs_read.approval_policy_list(&ident)
+    }
+
+    #[instrument(
+        level = "info",
+        name = "approval_policy_get",
+        skip_all,
+        fields(uuid = ?eventid)
+    )]
+    pub async fn handle_approval_policy_get(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        name: String,
+        eventid: Uuid,
+    ) -> Result<kanidm_proto::v1::ApprovalPolicy, OperationError> {
+        let ct = duration_from_epoch_now();
+        let mut idms_prox_read = self.idms.proxy_read().await?;
+        let ident = idms_prox_read
+            .validate_client_auth_info_to_ident(client_auth_info, ct)
+            .map_err(|e| {
+                error!(?e, "Invalid identity");
+                e
+            })?;
+
+        idms_prox_read.qs_read.approval_policy_get(&ident, &name)
+    }
+
+    #[instrument(
+        level = "info",
+        name = "approval_request_list",
+        skip_all,
+        fields(uuid = ?eventid)
+    )]
+    pub async fn handle_approval_request_list(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        state: Option<kanidm_proto::v1::ApprovalRequestState>,
+        eventid: Uuid,
+    ) -> Result<Vec<kanidm_proto::v1::ApprovalRequest>, OperationError> {
+        let ct = duration_from_epoch_now();
+        let mut idms_prox_read = self.idms.proxy_read().await?;
+        let ident = idms_prox_read
+            .validate_client_auth_info_to_ident(client_auth_info, ct)
+            .map_err(|e| {
+                error!(?e, "Invalid identity");
+                e
+            })?;
+
+        idms_prox_read.qs_read.approval_request_list(&ident, state)
+    }
+
+    #[instrument(
+        level = "info",
+        name = "approval_request_get",
+        skip_all,
+        fields(uuid = ?eventid)
+    )]
+    pub async fn handle_approval_request_get(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        uuid: String,
+        eventid: Uuid,
+    ) -> Result<kanidm_proto::v1::ApprovalRequest, OperationError> {
+        let ct = duration_from_epoch_now();
+        let mut idms_prox_read = self.idms.proxy_read().await?;
+        let ident = idms_prox_read
+            .validate_client_auth_info_to_ident(client_auth_info, ct)
+            .map_err(|e| {
+                error!(?e, "Invalid identity");
+                e
+            })?;
+
+        let request_uuid =
+            Uuid::parse_str(&uuid).map_err(|_| OperationError::InvalidRequestState)?;
+
+        idms_prox_read
+            .qs_read
+            .approval_request_get(&ident, request_uuid)
+    }
 }
