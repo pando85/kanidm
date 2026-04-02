@@ -3,6 +3,8 @@
 //! This module provides a PIP implementation that retrieves attributes from
 //! LDAP servers.
 
+#![allow(dead_code)]
+
 use async_trait::async_trait;
 use ldap3_client::{
     LdapClient, LdapClientBuilder, LdapEntry, proto::LdapFilter, proto::LdapSearchScope,
@@ -229,8 +231,7 @@ impl PolicyInformationPoint for LdapPip {
                                                     PipResult::Success(PipAttributeSet::new())
                                                 }
                                             }
-                                        } else {
-                                            let entry = &entries.entries[0];
+                                        } else if let Some(entry) = entries.entries.first() {
                                             let attrs = self.parse_ldap_entry(entry);
 
                                             {
@@ -239,6 +240,8 @@ impl PolicyInformationPoint for LdapPip {
                                             }
 
                                             PipResult::Success(attrs)
+                                        } else {
+                                            PipResult::Success(PipAttributeSet::new())
                                         }
                                     }
                                     Err(e) => {
@@ -411,7 +414,7 @@ impl PolicyInformationPoint for LdapPip {
 
     fn cached_health_status(&self) -> PipHealthStatus {
         let state = self.health_status.blocking_read();
-        state.status.clone()
+        state.status
     }
 
     fn provided_attributes(&self) -> &[String] {

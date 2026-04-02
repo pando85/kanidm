@@ -3,6 +3,8 @@
 //! This module defines the configuration schema for Policy Information Points,
 //! including HTTP and LDAP source configurations.
 
+#![allow(dead_code)]
+
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::PathBuf;

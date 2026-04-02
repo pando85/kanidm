@@ -3,6 +3,8 @@
 //! This module provides a PIP implementation that retrieves attributes from
 //! HTTP REST endpoints.
 
+#![allow(dead_code)]
+
 use async_trait::async_trait;
 use reqwest::Client;
 use serde_json::Value;
@@ -148,8 +150,10 @@ impl HttpPip {
 
         let attr_map = match json {
             Value::Object(map) => map,
-            Value::Array(arr) if arr.len() == 1 && arr[0].is_object() => {
-                arr[0].as_object().unwrap().clone()
+            Value::Array(arr) if arr.len() == 1 && arr.first().is_some_and(|v| v.is_object()) => {
+                arr.first()
+                    .and_then(|v| v.as_object().cloned())
+                    .unwrap_or_default()
             }
             _ => {
                 admin_debug!("PIP response is not a JSON object, wrapping in 'response' attribute");
@@ -449,7 +453,7 @@ impl PolicyInformationPoint for HttpPip {
 
     fn cached_health_status(&self) -> PipHealthStatus {
         let state = self.health_status.blocking_read();
-        state.status.clone()
+        state.status
     }
 
     fn provided_attributes(&self) -> &[String] {

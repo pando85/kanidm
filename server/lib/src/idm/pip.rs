@@ -89,10 +89,8 @@ impl PipAttributeName {
         }
         let rest = name.strip_prefix(Self::PREFIX)?;
         let parts: Vec<&str> = rest.splitn(2, ':').collect();
-        if parts.len() != 2 {
-            return None;
-        }
-        Some((PipId::new(parts[0]), parts[1].to_string()))
+        let (first, second) = parts.first().zip(parts.get(1))?;
+        Some((PipId::new(*first), (*second).to_string()))
     }
 }
 
@@ -285,11 +283,11 @@ pub enum PipHealthStatus {
 }
 
 impl PipHealthStatus {
-    pub fn is_healthy(&self) -> bool {
+    pub fn is_healthy(self) -> bool {
         matches!(self, PipHealthStatus::Healthy)
     }
 
-    pub fn can_retrieve(&self) -> bool {
+    pub fn can_retrieve(self) -> bool {
         matches!(self, PipHealthStatus::Healthy | PipHealthStatus::Degraded)
     }
 }
@@ -412,7 +410,7 @@ impl PipManager {
                 if let Some(pip) = self.pips.get(&pip_id) {
                     if pip.cached_health_status().can_retrieve() {
                         let result = pip
-                            .retrieve_named_attributes(subject, &[internal_name.clone()])
+                            .retrieve_named_attributes(subject, std::slice::from_ref(&internal_name))
                             .await;
                         if let Some(attrs) = result.attributes() {
                             all_attributes.merge(attrs.clone());
