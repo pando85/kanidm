@@ -19,13 +19,13 @@ repos:
     rev: v1.38.0
     hooks:
       - id: yamllint
-        args: [-d, "{rules: {line-length: {max: 120, level: warning}}}", -s]
+        args: [-d, "{rules: {line-length: {max: 120, level: warning}}}"]
         exclude: (^scripts/otel/|^\.github/workflows/)
   - repo: https://github.com/gruntwork-io/pre-commit
     rev: v0.1.30
     hooks:
       - id: shellcheck
-        exclude: (^server/builder\.sh$)
+        exclude: (^server/builder\.sh$|^rlm_python/)
   - repo: https://github.com/renovatebot/pre-commit-hooks
     rev: 43.102.3
     hooks:
