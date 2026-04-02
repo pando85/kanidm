@@ -1425,7 +1425,7 @@ pub struct ApprovalPolicyCreateOpt {
     pub name: String,
     #[clap(long)]
     pub description: Option<String>,
-    #[clap(long = "operation-type", short = 'o')]
+    #[clap(long = "operation-type")]
     pub operation_types: Vec<String>,
     #[clap(long = "approver", short = 'a')]
     pub approvers: Vec<String>,
