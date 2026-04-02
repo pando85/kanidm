@@ -3,8 +3,9 @@ use kanidm_proto::backup::{
     S3BackupMetadata, S3Config, S3Credentials, S3EncryptionAlgorithm, S3ServerSideEncryption,
 };
 use kanidmd_core::backup::{
-    create_empty_backup_data, create_medium_backup_data, create_small_backup_data,
-    create_test_backup_data, MockS3Error, MockS3TestBuilder, MockS3TestContext,
+    create_empty_backup_data, create_large_backup_data, create_medium_backup_data,
+    create_small_backup_data, create_test_backup_data, MockS3Error, MockS3TestBuilder,
+    MockS3TestContext,
 };
 
 fn create_test_context() -> MockS3TestContext {
