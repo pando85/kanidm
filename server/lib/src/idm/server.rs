@@ -9,8 +9,8 @@ use crate::idm::authentication::{AuthState, PreValidatedTokenStatus};
 use crate::idm::authsession::{AuthSession, AuthSessionData};
 use crate::idm::credupdatesession::CredentialUpdateSessionMutex;
 use crate::idm::delayed::{
-    AuthSessionRecord, BackupCodeRemoval, DelayedAction, PasswordUpgrade, UnixPasswordUpgrade,
-    WebauthnCounterIncrement,
+    ApprovalEscalationCheck, ApprovalTimeoutCheck, AuthSessionRecord, BackupCodeRemoval,
+    DelayedAction, PasswordUpgrade, UnixPasswordUpgrade, WebauthnCounterIncrement,
 };
 use crate::idm::event::{
     AuthEvent, AuthEventStep, AuthResult, CredentialStatusEvent, LdapAuthEvent, LdapTokenAuthEvent,
@@ -2129,6 +2129,24 @@ impl IdmServerProxyWriteTransaction<'_> {
     }
 
     #[instrument(level = "debug", skip_all)]
+    fn process_approval_timeout_check(
+        &mut self,
+        atc: &ApprovalTimeoutCheck,
+    ) -> Result<(), OperationError> {
+        info!(request_uuid = %atc.request_uuid, "Processing approval timeout check");
+        Ok(())
+    }
+
+    #[instrument(level = "debug", skip_all)]
+    fn process_approval_escalation_check(
+        &mut self,
+        aec: &ApprovalEscalationCheck,
+    ) -> Result<(), OperationError> {
+        info!(request_uuid = %aec.request_uuid, "Processing approval escalation check");
+        Ok(())
+    }
+
+    #[instrument(level = "debug", skip_all)]
     fn process_unixpwupgrade(&mut self, pwu: &UnixPasswordUpgrade) -> Result<(), OperationError> {
         info!(session_id = %pwu.target_uuid, "Processing unix password hash upgrade");
 
@@ -2280,6 +2298,10 @@ impl IdmServerProxyWriteTransaction<'_> {
             DelayedAction::WebauthnCounterIncrement(wci) => self.process_webauthncounterinc(wci),
             DelayedAction::BackupCodeRemoval(bcr) => self.process_backupcoderemoval(bcr),
             DelayedAction::AuthSessionRecord(asr) => self.process_authsessionrecord(asr),
+            DelayedAction::ApprovalTimeoutCheck(atc) => self.process_approval_timeout_check(atc),
+            DelayedAction::ApprovalEscalationCheck(aec) => {
+                self.process_approval_escalation_check(aec)
+            }
         }
     }
 

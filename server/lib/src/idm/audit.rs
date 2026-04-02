@@ -1,3 +1,4 @@
+use crate::idm::approval::ApprovalAuditEvent;
 use crate::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
@@ -18,32 +19,6 @@ impl From<Source> for AuditSource {
             Source::Ldaps(ip) => AuditSource::Ldaps(ip),
         }
     }
-}
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
-pub enum ApprovalAuditAction {
-    RequestCreated,
-    DecisionSubmitted,
-    RequestApproved,
-    RequestRejected,
-    RequestExpired,
-    RequestCancelled,
-    RequestEscalated,
-    PolicyCreated,
-    PolicyModified,
-    PolicyDeleted,
-    PolicyEnabled,
-    PolicyDisabled,
-}
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
-pub struct ApprovalAuditEvent {
-    pub action: ApprovalAuditAction,
-    pub request_uuid: Option<Uuid>,
-    pub policy_uuid: Option<Uuid>,
-    pub actor_uuid: Uuid,
-    #[serde(with = "time::serde::timestamp")]
-    pub timestamp: OffsetDateTime,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]

@@ -134,9 +134,9 @@ pub struct ApprovalRequest {
 }
 
 impl ApprovalRequest {
-    pub fn is_expired(&self) -> bool {
+    pub fn is_expired(&self, current_time: OffsetDateTime) -> bool {
         if let Some(expires_at) = self.expires_at {
-            expires_at < OffsetDateTime::now_utc()
+            expires_at < current_time
         } else {
             false
         }
@@ -247,7 +247,7 @@ impl ApprovalAuditAction {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct ApprovalAuditEvent {
     pub action: ApprovalAuditAction,
     pub request_uuid: Option<Uuid>,
