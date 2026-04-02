@@ -10,6 +10,7 @@ mod ldap_basic;
 mod oauth2_test;
 mod person;
 mod proto_v1_test;
+mod s3_backup_test;
 mod scim_test;
 mod service_account;
 mod system;
