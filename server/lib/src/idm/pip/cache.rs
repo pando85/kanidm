@@ -286,7 +286,7 @@ mod tests {
         let mut cache = PipAttributeCache::with_settings(Duration::from_secs(60), 3);
         let pip_id = PipId::new("test_pip");
 
-        for i in 0..5 {
+        for _ in 0..5 {
             let subject = PipSubject::from_uuid(Uuid::new_v4());
             cache.put(&pip_id, &subject, PipAttributeSet::new());
         }

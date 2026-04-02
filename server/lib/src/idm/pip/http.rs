@@ -16,6 +16,7 @@ use super::{
     PipId, PipResult, PipSubject, PolicyInformationPoint,
 };
 use super::cache::PipAttributeCache;
+use super::health::PipHealthState;
 use super::config::{HttpPipConfig, HttpMethod, PipFallbackBehavior};
 
 /// HTTP PIP implementation
@@ -26,54 +27,6 @@ pub struct HttpPip {
     cache: Arc<RwLock<PipAttributeCache>>,
     health_status: Arc<RwLock<PipHealthState>>,
     provided_attributes: Vec<String>,
-}
-
-/// Internal health state tracking
-#[derive(Debug, Clone)]
-struct PipHealthState {
-    status: PipHealthStatus,
-    consecutive_failures: u32,
-    consecutive_successes: u32,
-    last_check: Option<Instant>,
-    last_error: Option<String>,
-}
-
-impl PipHealthState {
-    fn new() -> Self {
-        PipHealthState {
-            status: PipHealthStatus::Unknown,
-            consecutive_failures: 0,
-            consecutive_successes: 0,
-            last_check: None,
-            last_error: None,
-        }
-    }
-
-    fn record_success(&mut self, config: &HttpPipConfig) {
-        self.consecutive_failures = 0;
-        self.consecutive_successes += 1;
-
-        if self.consecutive_successes >= config.health_check.success_threshold {
-            self.status = PipHealthStatus::Healthy;
-        }
-
-        self.last_check = Some(Instant::now());
-        self.last_error = None;
-    }
-
-    fn record_failure(&mut self, config: &HttpPipConfig, error: String) {
-        self.consecutive_successes = 0;
-        self.consecutive_failures += 1;
-
-        if self.consecutive_failures >= config.health_check.failure_threshold {
-            self.status = PipHealthStatus::Unhealthy;
-        } else if self.consecutive_failures > 0 {
-            self.status = PipHealthStatus::Degraded;
-        }
-
-        self.last_check = Some(Instant::now());
-        self.last_error = Some(error);
-    }
 }
 
 impl HttpPip {
@@ -253,12 +206,12 @@ impl HttpPip {
 
     async fn update_health_success(&self) {
         let mut state = self.health_status.write().await;
-        state.record_success(&self.config);
+        state.record_success(&self.config.health_check);
     }
 
     async fn update_health_failure(&self, error: String) {
         let mut state = self.health_status.write().await;
-        state.record_failure(&self.config, error);
+        state.record_failure(&self.config.health_check, error);
     }
 }
 
@@ -517,6 +470,9 @@ impl PolicyInformationPoint for HttpPip {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::BTreeMap;
+    use super::super::config::PipTlsConfig;
+    use url::Url;
 
     fn create_test_config() -> HttpPipConfig {
         HttpPipConfig {

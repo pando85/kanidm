@@ -6,6 +6,11 @@
 //! The PIP framework allows Kanidm to incorporate attributes from external systems
 //! like HR databases, CRM systems, asset management tools, and risk signals from
 //! SIEM/UEBA systems into access control decisions.
+//!
+//! NOTE: This framework is implemented but awaiting integration into the authorization
+//! flow. Dead code warnings are suppressed until integration is complete.
+
+#![allow(dead_code)]
 
 use crate::prelude::*;
 use async_trait::async_trait;
@@ -17,6 +22,7 @@ use tokio::sync::RwLock;
 
 pub mod cache;
 pub mod config;
+pub mod health;
 pub mod http;
 pub mod ldap;
 
