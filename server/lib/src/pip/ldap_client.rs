@@ -22,9 +22,7 @@ impl LdapPipClient {
     }
 
     pub fn build_ldap_filter(&self, request: &PipRequest) -> String {
-        let subject_str = request
-            .subject
-            .map_or("*".to_string(), |u| u.to_string());
+        let subject_str = request.subject.map_or("*".to_string(), |u| u.to_string());
         if let Some(template) = &self.config.query_template {
             template
                 .replace("{subject}", &subject_str)
@@ -36,9 +34,7 @@ impl LdapPipClient {
 
     pub fn get_bind_dn(&self) -> Option<(String, String)> {
         self.config.auth_config.as_ref().and_then(|auth| {
-            if let (Some(username), Some(password)) =
-                (&auth.basic_username, &auth.basic_password)
-            {
+            if let (Some(username), Some(password)) = (&auth.basic_username, &auth.basic_password) {
                 Some((username.clone(), password.clone()))
             } else {
                 None
@@ -60,8 +56,13 @@ impl PolicyInformationPoint for LdapPipClient {
         &self,
         _request: &PipRequest,
         _attributes: &[String],
-    ) -> Pin<Box<dyn std::future::Future<Output = Result<BTreeMap<String, String>, OperationError>> + Send + '_>>
-    {
+    ) -> Pin<
+        Box<
+            dyn std::future::Future<Output = Result<BTreeMap<String, String>, OperationError>>
+                + Send
+                + '_,
+        >,
+    > {
         Box::pin(async move {
             error!(
                 "LDAP PIP source '{}' requested but LDAP client support is not yet available. \
@@ -109,8 +110,11 @@ mod tests {
     fn test_build_ldap_filter_default() {
         let config = PipSourceDefinition::new_ldap("test", "ldap://ldap.example.com");
         let client = LdapPipClient::new(config);
-        let request =
-            PipRequest::new(Some(Uuid::nil()), Uuid::nil(), vec!["department".to_string()]);
+        let request = PipRequest::new(
+            Some(Uuid::nil()),
+            Uuid::nil(),
+            vec!["department".to_string()],
+        );
 
         let filter = client.build_ldap_filter(&request);
         assert!(filter.contains("uuid="));
@@ -122,8 +126,11 @@ mod tests {
             .with_query_template("(&(objectClass=user)(uuid={subject}))");
 
         let client = LdapPipClient::new(config);
-        let request =
-            PipRequest::new(Some(Uuid::nil()), Uuid::nil(), vec!["department".to_string()]);
+        let request = PipRequest::new(
+            Some(Uuid::nil()),
+            Uuid::nil(),
+            vec!["department".to_string()],
+        );
 
         let filter = client.build_ldap_filter(&request);
         assert!(filter.contains("objectClass=user"));

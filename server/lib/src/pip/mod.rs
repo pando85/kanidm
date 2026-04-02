@@ -32,7 +32,11 @@ pub trait PolicyInformationPoint: Send + Sync + std::fmt::Debug {
         request: &PipRequest,
         attributes: &[String],
     ) -> std::pin::Pin<
-        Box<dyn std::future::Future<Output = Result<BTreeMap<String, String>, OperationError>> + Send + '_>,
+        Box<
+            dyn std::future::Future<Output = Result<BTreeMap<String, String>, OperationError>>
+                + Send
+                + '_,
+        >,
     >;
     fn health_check(
         &self,
@@ -64,7 +68,11 @@ impl PolicyInformationPoint for PipSource {
         request: &PipRequest,
         attributes: &[String],
     ) -> std::pin::Pin<
-        Box<dyn std::future::Future<Output = Result<BTreeMap<String, String>, OperationError>> + Send + '_>,
+        Box<
+            dyn std::future::Future<Output = Result<BTreeMap<String, String>, OperationError>>
+                + Send
+                + '_,
+        >,
     > {
         match self {
             PipSource::Http(client) => client.retrieve_attributes(request, attributes),
@@ -102,11 +110,9 @@ impl PipCoordinator {
         let sources: Vec<PipSource> = config
             .sources
             .iter()
-            .map(|source_def| {
-                match source_def.source_type {
-                    PipSourceType::Http => PipSource::Http(HttpPipClient::new(source_def.clone())),
-                    PipSourceType::Ldap => PipSource::Ldap(LdapPipClient::new(source_def.clone())),
-                }
+            .map(|source_def| match source_def.source_type {
+                PipSourceType::Http => PipSource::Http(HttpPipClient::new(source_def.clone())),
+                PipSourceType::Ldap => PipSource::Ldap(LdapPipClient::new(source_def.clone())),
             })
             .collect();
 

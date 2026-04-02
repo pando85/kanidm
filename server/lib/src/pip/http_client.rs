@@ -21,34 +21,38 @@ impl HttpPipClient {
 
         if let Some(ca_path) = &config.tls_ca_path {
             match std::fs::read(ca_path) {
-                Ok(ca_content) => {
-                    match reqwest::Certificate::from_pem(&ca_content) {
-                        Ok(cert) => {
-                            client_builder = client_builder.add_root_certificate(cert);
-                        }
-                        Err(e) => {
-                            admin_warn!(
-                                "Failed to parse CA certificate from {} for PIP source {}: {}",
-                                ca_path, config.name, e
-                            );
-                        }
+                Ok(ca_content) => match reqwest::Certificate::from_pem(&ca_content) {
+                    Ok(cert) => {
+                        client_builder = client_builder.add_root_certificate(cert);
                     }
-                }
+                    Err(e) => {
+                        admin_warn!(
+                            "Failed to parse CA certificate from {} for PIP source {}: {}",
+                            ca_path,
+                            config.name,
+                            e
+                        );
+                    }
+                },
                 Err(e) => {
                     admin_warn!(
                         "Failed to read CA certificate file {} for PIP source {}: {}",
-                        ca_path, config.name, e
+                        ca_path,
+                        config.name,
+                        e
                     );
                 }
             }
         }
 
-        let client = client_builder
-            .build()
-            .unwrap_or_else(|e| {
-                admin_warn!("Failed to build HTTP client for PIP source {}: {}", config.name, e);
-                reqwest::Client::new()
-            });
+        let client = client_builder.build().unwrap_or_else(|e| {
+            admin_warn!(
+                "Failed to build HTTP client for PIP source {}: {}",
+                config.name,
+                e
+            );
+            reqwest::Client::new()
+        });
 
         Self { config, client }
     }
@@ -67,8 +71,13 @@ impl PolicyInformationPoint for HttpPipClient {
         &self,
         request: &PipRequest,
         attributes: &[String],
-    ) -> Pin<Box<dyn std::future::Future<Output = Result<BTreeMap<String, String>, OperationError>> + Send + '_>>
-    {
+    ) -> Pin<
+        Box<
+            dyn std::future::Future<Output = Result<BTreeMap<String, String>, OperationError>>
+                + Send
+                + '_,
+        >,
+    > {
         let request = request.clone();
         let attributes = attributes.to_vec();
         let config = self.config.clone();
@@ -154,7 +163,9 @@ impl PolicyInformationPoint for HttpPipClient {
         })
     }
 
-    fn health_check(&self) -> Pin<Box<dyn std::future::Future<Output = PipSourceStatus> + Send + '_>> {
+    fn health_check(
+        &self,
+    ) -> Pin<Box<dyn std::future::Future<Output = PipSourceStatus> + Send + '_>> {
         let config = self.config.clone();
         let client = self.client.clone();
 
@@ -175,8 +186,7 @@ impl PolicyInformationPoint for HttpPipClient {
                 client.get(&health_url)
             };
 
-            let result =
-                tokio::time::timeout(Duration::from_secs(5), request_builder.send()).await;
+            let result = tokio::time::timeout(Duration::from_secs(5), request_builder.send()).await;
 
             match result {
                 Ok(Ok(response)) => {
