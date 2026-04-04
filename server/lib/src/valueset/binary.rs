@@ -338,4 +338,66 @@ mod tests {
 
         assert!(vs.to_scim_value().is_none());
     }
+
+    #[test]
+    fn test_valueset_private_binary_new() {
+        let vs: ValueSet = ValueSetPrivateBinary::new(vec![0xDE, 0xAD, 0xBE, 0xEF]);
+        assert_eq!(vs.len(), 1);
+    }
+
+    #[test]
+    fn test_valueset_private_binary_insert() {
+        let mut vs: ValueSet = ValueSetPrivateBinary::new(vec![0x01]);
+        assert!(vs
+            .insert_checked(crate::prelude::Value::PrivateBinary(vec![0x02]))
+            .unwrap());
+        assert!(!vs
+            .insert_checked(crate::prelude::Value::PrivateBinary(vec![0x01]))
+            .unwrap());
+        assert_eq!(vs.len(), 2);
+    }
+
+    #[test]
+    fn test_valueset_private_binary_equal() {
+        let vs1: ValueSet = ValueSetPrivateBinary::new(vec![0xAA, 0xBB]);
+        let vs2: ValueSet = ValueSetPrivateBinary::new(vec![0xAA, 0xBB]);
+        assert!(vs1.equal(&vs2));
+    }
+
+    #[test]
+    fn test_valueset_private_binary_merge() {
+        let mut vs_a: ValueSet = ValueSetPrivateBinary::new(vec![0x01]);
+        let vs_b: ValueSet = ValueSetPrivateBinary::new(vec![0x02]);
+        vs_a.merge(&vs_b).expect("Failed to merge");
+        assert_eq!(vs_a.len(), 2);
+    }
+
+    #[test]
+    fn test_valueset_private_binary_clear() {
+        let mut vs: ValueSet = ValueSetPrivateBinary::new(vec![0x00]);
+        vs.clear();
+        assert_eq!(vs.len(), 0);
+    }
+
+    #[test]
+    fn test_valueset_private_binary_to_single() {
+        let vs: ValueSet = ValueSetPrivateBinary::new(vec![0xAB, 0xCD]);
+        assert_eq!(vs.to_private_binary_single(), Some([0xAB, 0xCD].as_slice()));
+    }
+
+    #[test]
+    fn test_valueset_private_binary_to_single_none_when_multiple() {
+        let mut vs: ValueSet = ValueSetPrivateBinary::new(vec![0x01]);
+        vs.insert_checked(crate::prelude::Value::PrivateBinary(vec![0x02]))
+            .unwrap();
+        assert_eq!(vs.to_private_binary_single(), None);
+    }
+
+    #[test]
+    fn test_valueset_private_binary_dbv2_roundtrip() {
+        let vs: ValueSet = ValueSetPrivateBinary::new(vec![0xCA, 0xFE]);
+        let dbvs = vs.to_db_valueset_v2();
+        let vs2 = crate::valueset::from_db_valueset_v2(dbvs).expect("Failed to restore");
+        assert!(vs.equal(&vs2));
+    }
 }

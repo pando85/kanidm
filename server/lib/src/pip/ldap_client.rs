@@ -149,4 +149,84 @@ mod tests {
         assert_eq!(dn, "cn=admin");
         assert_eq!(pw, "secret");
     }
+
+    #[test]
+    fn test_bind_dn_none_when_no_auth() {
+        let config = PipSourceDefinition::new_ldap("test", "ldap://ldap.example.com");
+        let client = LdapPipClient::new(config);
+        assert!(client.get_bind_dn().is_none());
+    }
+
+    #[test]
+    fn test_bind_dn_none_when_bearer_only() {
+        let config = PipSourceDefinition::new_ldap("test", "ldap://ldap.example.com")
+            .with_bearer_token("some-token");
+        let client = LdapPipClient::new(config);
+        assert!(client.get_bind_dn().is_none());
+    }
+
+    #[test]
+    fn test_build_ldap_filter_no_subject() {
+        let config = PipSourceDefinition::new_ldap("test", "ldap://ldap.example.com");
+        let client = LdapPipClient::new(config);
+        let request = PipRequest::new(None, uuid::Uuid::nil(), vec!["department".to_string()]);
+
+        let filter = client.build_ldap_filter(&request);
+        assert!(filter.contains("uuid=*"));
+    }
+
+    #[test]
+    fn test_build_ldap_filter_with_subject_uuid() {
+        let uuid = uuid::Uuid::parse_str("12345678-1234-1234-1234-123456789abc").unwrap();
+        let config = PipSourceDefinition::new_ldap("test", "ldap://ldap.example.com");
+        let client = LdapPipClient::new(config);
+        let request = PipRequest::new(Some(uuid), uuid::Uuid::nil(), vec!["department".to_string()]);
+
+        let filter = client.build_ldap_filter(&request);
+        assert!(filter.contains("12345678-1234-1234-1234-123456789abc"));
+    }
+
+    #[test]
+    fn test_build_ldap_filter_template_replaces_resource() {
+        let config = PipSourceDefinition::new_ldap("test", "ldap://ldap.example.com")
+            .with_query_template("(&(objectClass=*)(resource={resource})(uid={subject}))");
+        let client = LdapPipClient::new(config);
+
+        let resource = uuid::Uuid::parse_str("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee").unwrap();
+        let request = PipRequest::new(None, resource, vec!["department".to_string()]);
+
+        let filter = client.build_ldap_filter(&request);
+        assert!(filter.contains("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"));
+        assert!(filter.contains("resource="));
+    }
+
+    #[test]
+    fn test_ldap_pip_client_debug_format() {
+        let config = PipSourceDefinition::new_ldap("test", "ldap://ldap.example.com")
+            .with_timeout(5);
+        let client = LdapPipClient::new(config);
+        let debug_str = format!("{:?}", client);
+        assert!(debug_str.contains("test"));
+        assert!(debug_str.contains("ldap://ldap.example.com"));
+    }
+
+    #[tokio::test]
+    async fn test_ldap_retrieve_attributes_returns_error() {
+        let config = PipSourceDefinition::new_ldap("test", "ldap://ldap.example.com");
+        let client = LdapPipClient::new(config);
+        let request = PipRequest::new(None, uuid::Uuid::nil(), vec!["department".to_string()]);
+
+        let result = client
+            .retrieve_attributes(&request, &["department".to_string()])
+            .await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_ldap_health_check_returns_unavailable() {
+        let config = PipSourceDefinition::new_ldap("test", "ldap://ldap.example.com");
+        let client = LdapPipClient::new(config);
+        let status = client.health_check().await;
+        assert_eq!(status, PipSourceStatus::Unavailable);
+    }
 }
