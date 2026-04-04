@@ -4498,6 +4498,7 @@ name = "kanidm_lib_file_permissions"
 version = "1.10.0-alpha.3"
 dependencies = [
  "kanidm_utils_users",
+ "tempfile",
 ]
 
 [[package]]

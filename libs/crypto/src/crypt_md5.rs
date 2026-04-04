@@ -97,3 +97,184 @@ pub fn do_md5_crypt(pass: &[u8], salt: &[u8]) -> Vec<u8> {
 
     md5_sha2_hash64_encode(&hash_b).into_bytes()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_hash64_encode_empty() {
+        let result = md5_sha2_hash64_encode(&[]);
+        assert_eq!(result, "");
+    }
+
+    #[test]
+    fn test_hash64_encode_single_byte() {
+        // Single byte: 0x00 -> ".." (2 chars for 1 byte mod 3 == 1)
+        let result = md5_sha2_hash64_encode(&[0x00]);
+        assert_eq!(result, "..");
+    }
+
+    #[test]
+    fn test_hash64_encode_two_bytes() {
+        // Two bytes: mod 3 == 2, should produce 3 chars
+        let result = md5_sha2_hash64_encode(&[0x00, 0x00]);
+        assert_eq!(result.len(), 3);
+    }
+
+    #[test]
+    fn test_hash64_encode_three_bytes() {
+        // Three bytes: exact group, should produce 4 chars
+        let result = md5_sha2_hash64_encode(&[0x00, 0x00, 0x00]);
+        assert_eq!(result, "....");
+    }
+
+    #[test]
+    fn test_hash64_encode_sixteen_bytes() {
+        // Standard MD5 hash length (16 bytes): 16 % 3 == 1, so 22 chars
+        let input = [0u8; 16];
+        let result = md5_sha2_hash64_encode(&input);
+        assert_eq!(result.len(), 22);
+    }
+
+    #[test]
+    fn test_hash64_encode_known_value() {
+        // Test with a known pattern to verify encoding correctness
+        // 16 bytes of 0xff
+        let input = [0xFFu8; 16];
+        let result = md5_sha2_hash64_encode(&input);
+        assert_eq!(result.len(), 22);
+        // All characters should be from the CRYPT_HASH64 alphabet
+        for c in result.chars() {
+            assert!(
+                CRYPT_HASH64.contains(&(c as u8)),
+                "Invalid character '{}' in output",
+                c
+            );
+        }
+    }
+
+    #[test]
+    fn test_hash64_encode_length_mod_3_is_1() {
+        // 4 bytes: 4 % 3 == 1, should produce 6 chars (8 - 2)
+        let result = md5_sha2_hash64_encode(&[0x00, 0x00, 0x00, 0x00]);
+        assert_eq!(result.len(), 6);
+    }
+
+    #[test]
+    fn test_hash64_encode_length_mod_3_is_2() {
+        // 5 bytes: 5 % 3 == 2, should produce 7 chars (8 - 1)
+        let result = md5_sha2_hash64_encode(&[0x00, 0x00, 0x00, 0x00, 0x00]);
+        assert_eq!(result.len(), 7);
+    }
+
+    #[test]
+    fn test_hash64_encode_all_chars_in_alphabet() {
+        // Test with varied input to ensure output only uses valid characters
+        let input: Vec<u8> = (0..32).collect();
+        let result = md5_sha2_hash64_encode(&input);
+        for c in result.chars() {
+            assert!(
+                CRYPT_HASH64.contains(&(c as u8)),
+                "Invalid character '{}' in output",
+                c
+            );
+        }
+    }
+
+    // Test vectors generated with: openssl passwd -1 -salt SALT PASSWORD
+    #[test]
+    fn test_md5_crypt_password_salt_12345678() {
+        // openssl passwd -1 -salt "12345678" "password"
+        // Output: $1$12345678$o2n/JiO/h5VviOInWJ4OQ/
+        let result = do_md5_crypt(b"password", b"12345678");
+        assert_eq!(result, b"o2n/JiO/h5VviOInWJ4OQ/");
+    }
+
+    #[test]
+    fn test_md5_crypt_hello_world() {
+        // openssl passwd -1 -salt "world" "hello"
+        // Output: $1$world$9570e6rgzRsa0dGF.W93f.
+        let result = do_md5_crypt(b"hello", b"world");
+        assert_eq!(result, b"9570e6rgzRsa0dGF.W93f.");
+    }
+
+    #[test]
+    fn test_md5_crypt_empty_password() {
+        // openssl passwd -1 -salt "12345678" ""
+        // Output: $1$12345678$xek.CpjQUVgdf/P2N9KQf/
+        let result = do_md5_crypt(b"", b"12345678");
+        assert_eq!(result, b"xek.CpjQUVgdf/P2N9KQf/");
+    }
+
+    #[test]
+    fn test_md5_crypt_deterministic() {
+        // Ensure the function is deterministic
+        let result1 = do_md5_crypt(b"test_password", b"testsalt");
+        let result2 = do_md5_crypt(b"test_password", b"testsalt");
+        assert_eq!(result1, result2);
+    }
+
+    #[test]
+    fn test_md5_crypt_different_salts() {
+        // Different salts should produce different hashes
+        let result1 = do_md5_crypt(b"password", b"salt1");
+        let result2 = do_md5_crypt(b"password", b"salt2");
+        assert_ne!(result1, result2);
+    }
+
+    #[test]
+    fn test_md5_crypt_different_passwords() {
+        // Different passwords should produce different hashes
+        let result1 = do_md5_crypt(b"password1", b"salt");
+        let result2 = do_md5_crypt(b"password2", b"salt");
+        assert_ne!(result1, result2);
+    }
+
+    #[test]
+    fn test_md5_crypt_long_password() {
+        // Test password longer than 16 bytes (tests the while loop in do_md5_crypt)
+        let long_password = b"this_is_a_very_long_password_that_exceeds_sixteen_bytes";
+        let result = do_md5_crypt(long_password, b"longsalt");
+        assert_eq!(result.len(), 22);
+        // Verify all characters are valid
+        for &b in &result {
+            assert!(CRYPT_HASH64.contains(&b), "Invalid byte {} in output", b);
+        }
+    }
+
+    #[test]
+    fn test_md5_crypt_special_characters() {
+        // Test with special characters in password
+        let result = do_md5_crypt(b"p@ss!w0rd#$%^&*()", b"special");
+        assert_eq!(result.len(), 22);
+    }
+
+    #[test]
+    fn test_md5_crypt_binary_data() {
+        // Test with binary data in password
+        let binary_password: &[u8] = &[0x00, 0x01, 0x02, 0xFF, 0xFE, 0xFD];
+        let result = do_md5_crypt(binary_password, b"binary");
+        assert_eq!(result.len(), 22);
+    }
+
+    #[test]
+    fn test_md5_crypt_output_length() {
+        // All outputs should be 22 characters (standard crypt-md5 hash length)
+        for (pass, salt) in &[
+            (b"a" as &[u8], b"s" as &[u8]),
+            (b"short", b"sal"),
+            (b"medium_length_pw", b"medium_salt"),
+            (b"x".repeat(100).as_slice(), b"long_salt_value"),
+        ] {
+            let result = do_md5_crypt(pass, salt);
+            assert_eq!(
+                result.len(),
+                22,
+                "Output length mismatch for pass={:?}, salt={:?}",
+                pass,
+                salt
+            );
+        }
+    }
+}
