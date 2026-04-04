@@ -329,4 +329,56 @@ jAGGiQIwHFj+dJZYUJR786osByBelJYsVZd2GbHQu209b5RCmGQ21gpSAk9QZW4B
 
         assert_eq!(rap.webauthn_att_ca_list, Some(att_ca_list_ex));
     }
+
+    #[test]
+    fn test_resolved_account_policy_empty_fold() {
+        let policies: Vec<AccountPolicy> = vec![];
+        let resolved = ResolvedAccountPolicy::fold_from(policies.into_iter());
+        assert_eq!(resolved.privilege_expiry(), MAXIMUM_AUTH_PRIVILEGE_EXPIRY);
+        assert_eq!(resolved.authsession_expiry(), MAXIMUM_AUTH_SESSION_EXPIRY);
+        assert_eq!(resolved.pw_min_length(), PW_MIN_LENGTH);
+        assert!(resolved.limit_search_max_results().is_none());
+        assert!(resolved.limit_search_max_filter_test().is_none());
+        assert!(resolved.allow_primary_cred_fallback().is_none());
+    }
+
+    #[test]
+    fn test_resolved_account_policy_single_policy() {
+        let mut policy = AccountPolicy::default();
+        policy.pw_min_length = 12;
+        policy.privilege_expiry = 3600;
+        let resolved = ResolvedAccountPolicy::fold_from(vec![policy].into_iter());
+        assert_eq!(resolved.pw_min_length(), 12);
+        assert_eq!(resolved.privilege_expiry(), 3600);
+    }
+
+    #[test]
+    fn test_resolved_account_policy_credential_type_max() {
+        let mut policy1 = AccountPolicy::default();
+        policy1.credential_policy = CredentialType::Mfa;
+        let mut policy2 = AccountPolicy::default();
+        policy2.credential_policy = CredentialType::Passkey;
+        let resolved = ResolvedAccountPolicy::fold_from(vec![policy1, policy2].into_iter());
+        assert_eq!(resolved.credential_policy(), CredentialType::Passkey);
+    }
+
+    #[test]
+    fn test_resolved_account_policy_allow_primary_cred_fallback_and_logic() {
+        let mut policy1 = AccountPolicy::default();
+        policy1.allow_primary_cred_fallback = Some(true);
+        let mut policy2 = AccountPolicy::default();
+        policy2.allow_primary_cred_fallback = Some(false);
+        let resolved = ResolvedAccountPolicy::fold_from(vec![policy1, policy2].into_iter());
+        assert_eq!(resolved.allow_primary_cred_fallback(), Some(false));
+    }
+
+    #[test]
+    fn test_resolved_account_policy_limit_search_max_results_max() {
+        let mut policy1 = AccountPolicy::default();
+        policy1.limit_search_max_results = Some(100);
+        let mut policy2 = AccountPolicy::default();
+        policy2.limit_search_max_results = Some(50);
+        let resolved = ResolvedAccountPolicy::fold_from(vec![policy1, policy2].into_iter());
+        assert_eq!(resolved.limit_search_max_results(), Some(100));
+    }
 }

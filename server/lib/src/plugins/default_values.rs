@@ -145,10 +145,8 @@ mod tests {
             .internal_search_uuid(UUID_IDM_ALL_ACCOUNTS)
             .expect("must not fail");
 
-        assert!(e_all_accounts.attribute_equality(
-            Attribute::Class,
-            &PartialValue::new_iutf8("account_policy")
-        ));
+        assert!(e_all_accounts
+            .attribute_equality(Attribute::Class, &PartialValue::new_iutf8("account_policy")));
     }
 
     #[qs_test]

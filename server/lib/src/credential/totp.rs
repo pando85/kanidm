@@ -414,4 +414,74 @@ mod tests {
         // This is step + 1
         assert!(!otp.verify(972806, d));
     }
+
+    #[test]
+    fn test_totp_digits_try_from() {
+        assert!(TotpDigits::try_from(6u8).is_ok());
+        assert!(TotpDigits::try_from(8u8).is_ok());
+        assert!(TotpDigits::try_from(0u8).is_err());
+        assert!(TotpDigits::try_from(5u8).is_err());
+        assert!(TotpDigits::try_from(7u8).is_err());
+        assert!(TotpDigits::try_from(9u8).is_err());
+        assert!(TotpDigits::try_from(10u8).is_err());
+        assert!(TotpDigits::try_from(255u8).is_err());
+    }
+
+    #[test]
+    fn test_totp_is_legacy_and_downgrade() {
+        let totp_sha256 = Totp::new(
+            vec![0u8; 20],
+            TOTP_DEFAULT_STEP,
+            TotpAlgo::Sha256,
+            TotpDigits::Six,
+        );
+        assert!(!totp_sha256.is_legacy_algo());
+        let downgraded = totp_sha256.downgrade_to_legacy();
+        assert!(downgraded.is_legacy_algo());
+    }
+
+    #[test]
+    fn test_totp_generate_secure() {
+        let totp = Totp::generate_secure(TOTP_DEFAULT_STEP);
+        assert_eq!(totp.secret.len(), 32);
+        assert_eq!(totp.step, TOTP_DEFAULT_STEP);
+    }
+
+    #[test]
+    fn test_totp_to_dbtotpv1_roundtrip() {
+        let original = Totp::new(
+            vec![1, 2, 3, 4, 5, 6, 7, 8],
+            TOTP_DEFAULT_STEP,
+            TotpAlgo::Sha1,
+            TotpDigits::Six,
+        );
+        let dbv1 = original.to_dbtotpv1();
+        let restored: Totp = dbv1.try_into().expect("Should convert from DbTotpV1");
+        assert_eq!(restored.step, original.step);
+    }
+
+    #[test]
+    fn test_totp_same_key_different_algo_different_output() {
+        let key = vec![0x00; 20];
+        let time = Duration::from_secs(12345678);
+        let totp_sha1 = Totp::new(
+            key.clone(),
+            TOTP_DEFAULT_STEP,
+            TotpAlgo::Sha1,
+            TotpDigits::Six,
+        );
+        let totp_sha256 = Totp::new(
+            key.clone(),
+            TOTP_DEFAULT_STEP,
+            TotpAlgo::Sha256,
+            TotpDigits::Six,
+        );
+        let totp_sha512 = Totp::new(key, TOTP_DEFAULT_STEP, TotpAlgo::Sha512, TotpDigits::Six);
+        let out_sha1 = totp_sha1.do_totp_duration_from_epoch(&time);
+        let out_sha256 = totp_sha256.do_totp_duration_from_epoch(&time);
+        let out_sha512 = totp_sha512.do_totp_duration_from_epoch(&time);
+        assert_ne!(out_sha1, out_sha256);
+        assert_ne!(out_sha1, out_sha512);
+        assert_ne!(out_sha256, out_sha512);
+    }
 }

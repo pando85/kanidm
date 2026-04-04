@@ -244,8 +244,8 @@ mod tests {
 
     #[test]
     fn test_http_pip_client_debug_format() {
-        let config = PipSourceDefinition::new_http("debug-svc", "https://debug.example.com")
-            .with_timeout(7);
+        let config =
+            PipSourceDefinition::new_http("debug-svc", "https://debug.example.com").with_timeout(7);
         let client = HttpPipClient::new(config);
         let debug_str = format!("{:?}", client);
         assert!(debug_str.contains("debug-svc"));

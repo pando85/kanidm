@@ -180,7 +180,11 @@ mod tests {
         let uuid = uuid::Uuid::parse_str("12345678-1234-1234-1234-123456789abc").unwrap();
         let config = PipSourceDefinition::new_ldap("test", "ldap://ldap.example.com");
         let client = LdapPipClient::new(config);
-        let request = PipRequest::new(Some(uuid), uuid::Uuid::nil(), vec!["department".to_string()]);
+        let request = PipRequest::new(
+            Some(uuid),
+            uuid::Uuid::nil(),
+            vec!["department".to_string()],
+        );
 
         let filter = client.build_ldap_filter(&request);
         assert!(filter.contains("12345678-1234-1234-1234-123456789abc"));
@@ -202,8 +206,8 @@ mod tests {
 
     #[test]
     fn test_ldap_pip_client_debug_format() {
-        let config = PipSourceDefinition::new_ldap("test", "ldap://ldap.example.com")
-            .with_timeout(5);
+        let config =
+            PipSourceDefinition::new_ldap("test", "ldap://ldap.example.com").with_timeout(5);
         let client = LdapPipClient::new(config);
         let debug_str = format!("{:?}", client);
         assert!(debug_str.contains("test"));

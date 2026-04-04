@@ -415,3 +415,274 @@ pub enum ReplIncrementalContext {
         entries: Vec<ReplIncrementalEntryV1>,
     },
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_repl_cid_v1_serde_roundtrip() {
+        let original = ReplCidV1 {
+            ts: Duration::from_secs(12345),
+            s_uuid: Uuid::new_v4(),
+        };
+        let json = serde_json::to_string(&original).unwrap();
+        let restored: ReplCidV1 = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, restored);
+    }
+
+    #[test]
+    fn test_repl_anchored_cid_range_serde_roundtrip() {
+        let original = ReplAnchoredCidRange {
+            ts_min: Duration::from_secs(100),
+            anchors: vec![Duration::from_secs(150), Duration::from_secs(200)],
+            ts_max: Duration::from_secs(300),
+        };
+        let json = serde_json::to_string(&original).unwrap();
+        let restored: ReplAnchoredCidRange = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, restored);
+    }
+
+    #[test]
+    fn test_repl_anchored_cid_range_empty_anchors_serde_roundtrip() {
+        let original = ReplAnchoredCidRange {
+            ts_min: Duration::from_secs(100),
+            anchors: vec![],
+            ts_max: Duration::from_secs(300),
+        };
+        let json = serde_json::to_string(&original).unwrap();
+        let restored: ReplAnchoredCidRange = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, restored);
+    }
+
+    #[test]
+    fn test_repl_cid_range_serde_roundtrip() {
+        let original = ReplCidRange {
+            ts_min: Duration::from_secs(100),
+            ts_max: Duration::from_secs(300),
+        };
+        let json = serde_json::to_string(&original).unwrap();
+        let restored: ReplCidRange = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, restored);
+    }
+
+    #[test]
+    fn test_repl_ruv_range_v1_empty_serde_roundtrip() {
+        let original = ReplRuvRange::V1 {
+            domain_uuid: Uuid::new_v4(),
+            ranges: BTreeMap::new(),
+        };
+        let json = serde_json::to_string(&original).unwrap();
+        let restored: ReplRuvRange = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, restored);
+    }
+
+    #[test]
+    fn test_repl_ruv_range_v1_with_ranges_serde_roundtrip() {
+        let mut ranges = BTreeMap::new();
+        ranges.insert(
+            Uuid::new_v4(),
+            ReplCidRange {
+                ts_min: Duration::from_secs(100),
+                ts_max: Duration::from_secs(300),
+            },
+        );
+        let original = ReplRuvRange::V1 {
+            domain_uuid: Uuid::new_v4(),
+            ranges,
+        };
+        let json = serde_json::to_string(&original).unwrap();
+        let restored: ReplRuvRange = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, restored);
+    }
+
+    #[test]
+    fn test_repl_ruv_range_is_empty() {
+        let empty = ReplRuvRange::V1 {
+            domain_uuid: Uuid::new_v4(),
+            ranges: BTreeMap::new(),
+        };
+        assert!(empty.is_empty());
+
+        let mut ranges = BTreeMap::new();
+        ranges.insert(
+            Uuid::new_v4(),
+            ReplCidRange {
+                ts_min: Duration::from_secs(100),
+                ts_max: Duration::from_secs(300),
+            },
+        );
+        let non_empty = ReplRuvRange::V1 {
+            domain_uuid: Uuid::new_v4(),
+            ranges,
+        };
+        assert!(!non_empty.is_empty());
+    }
+
+    #[test]
+    fn test_repl_attr_state_v1_serde_roundtrip_no_value() {
+        let original = ReplAttrStateV1 {
+            cid: ReplCidV1 {
+                ts: Duration::from_secs(12345),
+                s_uuid: Uuid::new_v4(),
+            },
+            attr: None,
+        };
+        let json = serde_json::to_string(&original).unwrap();
+        let restored: ReplAttrStateV1 = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, restored);
+    }
+
+    #[test]
+    fn test_repl_attr_state_v1_serde_roundtrip_with_value() {
+        let original = ReplAttrStateV1 {
+            cid: ReplCidV1 {
+                ts: Duration::from_secs(12345),
+                s_uuid: Uuid::new_v4(),
+            },
+            attr: Some(DbValueSetV2::Utf8(vec!["test_value".to_string()])),
+        };
+        let json = serde_json::to_string(&original).unwrap();
+        let restored: ReplAttrStateV1 = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, restored);
+    }
+
+    #[test]
+    fn test_repl_state_v1_tombstone_serde_roundtrip() {
+        let original = ReplStateV1::Tombstone {
+            at: ReplCidV1 {
+                ts: Duration::from_secs(12345),
+                s_uuid: Uuid::new_v4(),
+            },
+        };
+        let json = serde_json::to_string(&original).unwrap();
+        let restored: ReplStateV1 = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, restored);
+    }
+
+    #[test]
+    fn test_repl_state_v1_live_serde_roundtrip() {
+        let original = ReplStateV1::Live {
+            at: ReplCidV1 {
+                ts: Duration::from_secs(12345),
+                s_uuid: Uuid::new_v4(),
+            },
+            attrs: BTreeMap::new(),
+        };
+        let json = serde_json::to_string(&original).unwrap();
+        let restored: ReplStateV1 = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, restored);
+    }
+
+    #[test]
+    fn test_repl_entry_v1_tombstone_serde_roundtrip() {
+        let original = ReplEntryV1 {
+            uuid: Uuid::new_v4(),
+            st: ReplStateV1::Tombstone {
+                at: ReplCidV1 {
+                    ts: Duration::from_secs(12345),
+                    s_uuid: Uuid::new_v4(),
+                },
+            },
+        };
+        let json = serde_json::to_string(&original).unwrap();
+        let restored: ReplEntryV1 = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, restored);
+    }
+
+    #[test]
+    fn test_repl_entry_v1_live_empty_attrs_serde_roundtrip() {
+        let original = ReplEntryV1 {
+            uuid: Uuid::new_v4(),
+            st: ReplStateV1::Live {
+                at: ReplCidV1 {
+                    ts: Duration::from_secs(12345),
+                    s_uuid: Uuid::new_v4(),
+                },
+                attrs: BTreeMap::new(),
+            },
+        };
+        let json = serde_json::to_string(&original).unwrap();
+        let restored: ReplEntryV1 = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, restored);
+    }
+
+    #[test]
+    fn test_repl_incremental_entry_v1_tombstone_serde_roundtrip() {
+        let original = ReplIncrementalEntryV1 {
+            uuid: Uuid::new_v4(),
+            st: ReplStateV1::Tombstone {
+                at: ReplCidV1 {
+                    ts: Duration::from_secs(99999),
+                    s_uuid: Uuid::new_v4(),
+                },
+            },
+        };
+        let json = serde_json::to_string(&original).unwrap();
+        let restored: ReplIncrementalEntryV1 = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, restored);
+    }
+
+    #[test]
+    fn test_repl_refresh_context_v1_serde_roundtrip() {
+        let original = ReplRefreshContext::V1 {
+            domain_version: 1,
+            domain_devel: false,
+            domain_uuid: Uuid::new_v4(),
+            ranges: BTreeMap::new(),
+            schema_entries: vec![],
+            meta_entries: vec![],
+            entries: vec![],
+        };
+        let json = serde_json::to_string(&original).unwrap();
+        let restored: ReplRefreshContext = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, restored);
+    }
+
+    #[test]
+    fn test_repl_incremental_context_simple_variants_serde_roundtrip() {
+        let variants = [
+            ReplIncrementalContext::DomainMismatch,
+            ReplIncrementalContext::NoChangesAvailable,
+            ReplIncrementalContext::RefreshRequired,
+            ReplIncrementalContext::UnwillingToSupply,
+        ];
+        for original in variants {
+            let json = serde_json::to_string(&original).unwrap();
+            let restored: ReplIncrementalContext = serde_json::from_str(&json).unwrap();
+            assert_eq!(original, restored);
+        }
+    }
+
+    #[test]
+    fn test_repl_incremental_context_v1_serde_roundtrip() {
+        let original = ReplIncrementalContext::V1 {
+            domain_version: 1,
+            domain_patch_level: 0,
+            domain_uuid: Uuid::new_v4(),
+            ranges: BTreeMap::new(),
+            schema_entries: vec![],
+            meta_entries: vec![],
+            entries: vec![],
+        };
+        let json = serde_json::to_string(&original).unwrap();
+        let restored: ReplIncrementalContext = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, restored);
+    }
+
+    #[test]
+    fn test_repl_cid_v1_from_cid_roundtrip() {
+        let cid = Cid::new_count(42);
+        let repl_cid: ReplCidV1 = (&cid).into();
+        let restored_cid: Cid = repl_cid.into();
+        assert_eq!(cid, restored_cid);
+    }
+
+    #[test]
+    fn test_repl_cid_v1_from_ref_roundtrip() {
+        let cid = Cid::new_count(99);
+        let repl_cid: ReplCidV1 = (&cid).into();
+        let restored_cid: Cid = (&repl_cid).into();
+        assert_eq!(cid, restored_cid);
+    }
+}
