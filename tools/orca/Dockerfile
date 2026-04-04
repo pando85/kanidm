@@ -1,40 +1,32 @@
 # This builds the kanidm CLI tools
-ARG BASE_IMAGE=opensuse/tumbleweed:latest
-# ARG BASE_IMAGE=opensuse/leap:15.5
+ARG BASE_IMAGE=debian:trixie-slim
 
-FROM ${BASE_IMAGE} AS repos
-ADD ../../scripts/zypper_fixing.sh /zypper_fixing.sh
-RUN --mount=type=cache,id=zypp,target=/var/cache/zypp /zypper_fixing.sh
-
-FROM repos AS builder
+FROM ${BASE_IMAGE} AS builder
 ARG KANIDM_FEATURES
 ARG KANIDM_BUILD_PROFILE
 ARG KANIDM_BUILD_OPTIONS=""
 
-# Set the build profile
 ENV KANIDM_BUILD_PROFILE=${KANIDM_BUILD_PROFILE:-container_generic}
 ENV RUSTFLAGS="-Clinker=clang"
 
-RUN \
-    --mount=type=cache,id=zypp,target=/var/cache/zypp \
-    zypper install -y --no-recommends \
-        sccache \
-        cargo \
-        clang \
-        gcc \
-        make \
-        automake \
-        autoconf \
-        pam-devel \
-        libudev-devel \
-        sqlite3-devel \
-        rsync
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    sccache \
+    cargo \
+    clang \
+    gcc \
+    make \
+    automake \
+    autoconf \
+    libpam0g-dev \
+    libudev-dev \
+    libsqlite3-dev \
+    rsync \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY . /usr/src/kanidm
 
 WORKDIR /usr/src/kanidm/
 
-# build the CLI
 RUN \
     --mount=type=cache,id=cargo,target=/cargo \
     --mount=type=cache,id=sccache,target=/sccache \
@@ -53,8 +45,7 @@ RUN \
         --target-dir="/usr/src/kanidm/target/" && \
     sccache -s
 
-# == Construct the orca container
-FROM repos
+FROM ${BASE_IMAGE}
 
 ENV RUST_BACKTRACE=1
 
@@ -63,6 +54,4 @@ COPY ./tools/orca/profile-sample.toml /etc/kanidm/profile-sample.toml
 
 RUN chmod +x /sbin/orca
 
-
 CMD [ "/sbin/orca", "-h" ]
-

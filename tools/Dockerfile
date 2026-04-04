@@ -1,41 +1,34 @@
 # This builds the kanidm CLI tools
-ARG BASE_IMAGE=opensuse/tumbleweed:latest
-# ARG BASE_IMAGE=opensuse/leap:15.5
+ARG BASE_IMAGE=debian:trixie-slim
 
-FROM ${BASE_IMAGE} AS repos
-ADD ../scripts/zypper_fixing.sh /zypper_fixing.sh
-RUN --mount=type=cache,id=zypp,target=/var/cache/zypp /zypper_fixing.sh
-
-FROM repos AS builder
+FROM rust:1 AS builder
 ARG KANIDM_FEATURES
 ARG KANIDM_BUILD_PROFILE
 ARG KANIDM_BUILD_OPTIONS=""
 
-# Set the build profile
 ENV KANIDM_BUILD_PROFILE=${KANIDM_BUILD_PROFILE:-container_generic}
 ENV RUSTFLAGS="-Clinker=clang"
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
-RUN \
-    --mount=type=cache,id=zypp,target=/var/cache/zypp \
-    zypper install -y --no-recommends \
-        sccache \
-        cargo \
-        cargo-auditable \
-        clang \
-        gcc \
-        make \
-        automake \
-        autoconf \
-        pam-devel \
-        libudev-devel \
-        sqlite3-devel \
-        rsync
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    sccache \
+    clang \
+    gcc \
+    make \
+    automake \
+    autoconf \
+    libpam0g-dev \
+    libudev-dev \
+    libsqlite3-dev \
+    rsync \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN cargo install cargo-auditable
 
 COPY . /usr/src/kanidm
 
 WORKDIR /usr/src/kanidm/
 
-# build the CLI
 RUN \
     --mount=type=cache,id=cargo,target=/cargo \
     --mount=type=cache,id=sccache,target=/sccache \
@@ -66,25 +59,20 @@ RUN \
         --target-dir="/usr/src/kanidm/target/" && \
     sccache -s
 
-# == Construct the tools container
-FROM repos
+FROM ${BASE_IMAGE}
 
 ENV RUST_BACKTRACE=1
 
-RUN \
-    --mount=type=cache,id=zypp,target=/var/cache/zypp \
-    zypper install -y \
-        timezone \
-        openssl-3
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    openssl \
+    tzdata \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /usr/src/kanidm/target/release/kanidm /sbin/
-COPY --from=builder /usr/src/kanidm/target/release/kanidm-ipa-sync /sbin/
-COPY --from=builder /usr/src/kanidm/target/release/kanidm-ldap-sync /sbin/
-COPY --from=builder /usr/src/kanidm/target/release/fido-mds-tool /sbin/
-RUN chmod +x /sbin/kanidm
-RUN chmod +x /sbin/kanidm-ipa-sync
-RUN chmod +x /sbin/kanidm-ldap-sync
-RUN chmod +x /sbin/fido-mds-tool
+COPY --from=builder --chmod=0755 /usr/src/kanidm/target/release/kanidm /sbin/
+COPY --from=builder --chmod=0755 /usr/src/kanidm/target/release/kanidm-ipa-sync /sbin/
+COPY --from=builder --chmod=0755 /usr/src/kanidm/target/release/kanidm-ldap-sync /sbin/
+COPY --from=builder --chmod=0755 /usr/src/kanidm/target/release/fido-mds-tool /sbin/
 
 RUN mkdir /etc/kanidm && \
     touch /etc/kanidm/config
