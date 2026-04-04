@@ -315,3 +315,274 @@ fn migration_filter_entry<'a>(ident: &Identity, entry: &Entry<EntryInit, EntryNe
         _ => IResult::Ignore,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::entry::{Entry, EntryInit, EntryNew};
+    use crate::server::identity::Identity;
+    use std::sync::Arc;
+
+    fn make_user_ident_rw() -> Identity {
+        let entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Name, Value::new_iname("testuser")),
+                (
+                    Attribute::Uuid,
+                    Value::Uuid(uuid::uuid!("00000000-0000-0000-0000-000000000001"))
+                )
+            )
+            .into_sealed_committed(),
+        );
+        Identity::from_impersonate_entry_readwrite(entry)
+    }
+
+    fn make_user_ident_ro() -> Identity {
+        let entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Name, Value::new_iname("testuser")),
+                (
+                    Attribute::Uuid,
+                    Value::Uuid(uuid::uuid!("00000000-0000-0000-0000-000000000001"))
+                )
+            )
+            .into_sealed_committed(),
+        );
+        Identity::from_impersonate_entry_readonly(entry)
+    }
+
+    fn make_entry_with_class(class: &str) -> Entry<EntryInit, EntryNew> {
+        entry_init!((Attribute::Class, Value::new_iutf8(class)))
+    }
+
+    fn make_entry_with_class_and_uuid(class: &str, uuid: Uuid) -> Entry<EntryInit, EntryNew> {
+        entry_init!(
+            (Attribute::Class, Value::new_iutf8(class)),
+            (Attribute::Uuid, Value::Uuid(uuid))
+        )
+    }
+
+    #[test]
+    fn test_protected_filter_entry_internal_system_ignores() {
+        let ident = Identity::from_internal();
+        let entry = make_entry_with_class("system");
+        let result = protected_filter_entry(&ident, &entry);
+        match result {
+            IResult::Ignore => {}
+            _ => panic!("Expected Ignore for internal system"),
+        }
+    }
+
+    #[test]
+    fn test_protected_filter_entry_user_with_protected_class_denied() {
+        let ident = make_user_ident_rw();
+        let entry = make_entry_with_class("system");
+        let result = protected_filter_entry(&ident, &entry);
+        match result {
+            IResult::Deny => {}
+            _ => panic!("Expected Deny for user with protected class"),
+        }
+    }
+
+    #[test]
+    fn test_protected_filter_entry_user_with_nonprotected_class_ignores() {
+        let ident = make_user_ident_rw();
+        let entry = make_entry_with_class("account");
+        let result = protected_filter_entry(&ident, &entry);
+        match result {
+            IResult::Ignore => {}
+            _ => panic!("Expected Ignore for user with non-protected class"),
+        }
+    }
+
+    #[test]
+    fn test_protected_filter_entry_user_with_system_uuid_denied() {
+        let ident = make_user_ident_rw();
+        let entry = make_entry_with_class_and_uuid("account", UUID_ANONYMOUS);
+        let result = protected_filter_entry(&ident, &entry);
+        match result {
+            IResult::Deny => {}
+            _ => panic!("Expected Deny for user with system UUID"),
+        }
+    }
+
+    #[test]
+    fn test_protected_filter_entry_user_no_classes_ignores() {
+        let ident = make_user_ident_rw();
+        let entry: Entry<EntryInit, EntryNew> = entry_init!();
+        let result = protected_filter_entry(&ident, &entry);
+        match result {
+            IResult::Ignore => {}
+            _ => panic!("Expected Ignore for entry with no classes"),
+        }
+    }
+
+    #[test]
+    fn test_migration_filter_entry_non_migration_ignores() {
+        let ident = Identity::from_internal();
+        let entry = make_entry_with_class("account");
+        let result = migration_filter_entry(&ident, &entry);
+        match result {
+            IResult::Ignore => {}
+            _ => panic!("Expected Ignore for non-migration identity"),
+        }
+    }
+
+    #[test]
+    fn test_migration_filter_entry_user_ignores() {
+        let ident = make_user_ident_rw();
+        let entry = make_entry_with_class("account");
+        let result = migration_filter_entry(&ident, &entry);
+        match result {
+            IResult::Ignore => {}
+            _ => panic!("Expected Ignore for user identity"),
+        }
+    }
+
+    #[test]
+    fn test_migration_filter_entry_migration_with_valid_class_allows() {
+        let ident = Identity::migration();
+        let entry = make_entry_with_class("account");
+        let result = migration_filter_entry(&ident, &entry);
+        match result {
+            IResult::Allow { .. } => {}
+            _ => panic!("Expected Allow for migration with valid class"),
+        }
+    }
+
+    #[test]
+    fn test_migration_filter_entry_migration_with_group_allows() {
+        let ident = Identity::migration();
+        let entry = make_entry_with_class("group");
+        let result = migration_filter_entry(&ident, &entry);
+        match result {
+            IResult::Allow { .. } => {}
+            _ => panic!("Expected Allow for migration with group class"),
+        }
+    }
+
+    #[test]
+    fn test_migration_filter_entry_migration_with_invalid_class_denied() {
+        let ident = Identity::migration();
+        let entry = make_entry_with_class("tombstone");
+        let result = migration_filter_entry(&ident, &entry);
+        match result {
+            IResult::Deny => {}
+            _ => panic!("Expected Deny for migration with invalid class"),
+        }
+    }
+
+    #[test]
+    fn test_migration_filter_entry_migration_no_class_denied() {
+        let ident = Identity::migration();
+        let entry: Entry<EntryInit, EntryNew> = entry_init!();
+        let result = migration_filter_entry(&ident, &entry);
+        match result {
+            IResult::Deny => {}
+            _ => panic!("Expected Deny for migration with no class"),
+        }
+    }
+
+    #[test]
+    fn test_create_filter_entry_internal_system_grants() {
+        let ident = Identity::from_internal();
+        let entry = make_entry_with_class("account");
+        let acps: Vec<AccessControlCreateResolved> = vec![];
+        let result = create_filter_entry(&ident, &acps, &entry);
+        match result {
+            IResult::Grant => {}
+            _ => panic!("Expected Grant for internal system"),
+        }
+    }
+
+    #[test]
+    fn test_create_filter_entry_readonly_denied() {
+        let ident = make_user_ident_ro();
+        let entry = make_entry_with_class("account");
+        let acps: Vec<AccessControlCreateResolved> = vec![];
+        let result = create_filter_entry(&ident, &acps, &entry);
+        match result {
+            IResult::Deny => {}
+            _ => panic!("Expected Deny for read-only identity"),
+        }
+    }
+
+    #[test]
+    fn test_create_filter_entry_user_no_acps_ignores() {
+        let ident = make_user_ident_rw();
+        let entry = make_entry_with_class("account");
+        let acps: Vec<AccessControlCreateResolved> = vec![];
+        let result = create_filter_entry(&ident, &acps, &entry);
+        match result {
+            IResult::Ignore => {}
+            _ => panic!("Expected Ignore for user with no ACPs"),
+        }
+    }
+
+    #[test]
+    fn test_apply_create_access_internal_system_grants() {
+        let ident = Identity::from_internal();
+        let entry = make_entry_with_class("account");
+        let acps: Vec<AccessControlCreateResolved> = vec![];
+        let result = apply_create_access(&ident, &acps, &entry);
+        match result {
+            CreateResult::Grant => {}
+            _ => panic!("Expected Grant for internal system"),
+        }
+    }
+
+    #[test]
+    fn test_apply_create_access_user_no_acps_empty_allow() {
+        let ident = make_user_ident_rw();
+        let entry = make_entry_with_class("account");
+        let acps: Vec<AccessControlCreateResolved> = vec![];
+        let result = apply_create_access(&ident, &acps, &entry);
+        match result {
+            CreateResult::Allow { pres, pres_cls } => {
+                assert!(pres.is_empty());
+                assert!(pres_cls.is_empty());
+            }
+            _ => panic!("Expected Allow with empty sets for user with no ACPs"),
+        }
+    }
+
+    #[test]
+    fn test_apply_create_access_protected_class_denied() {
+        let ident = make_user_ident_rw();
+        let entry = make_entry_with_class("system");
+        let acps: Vec<AccessControlCreateResolved> = vec![];
+        let result = apply_create_access(&ident, &acps, &entry);
+        match result {
+            CreateResult::Deny => {}
+            _ => panic!("Expected Deny for protected class"),
+        }
+    }
+
+    #[test]
+    fn test_apply_create_access_system_uuid_denied() {
+        let ident = make_user_ident_rw();
+        let entry = make_entry_with_class_and_uuid("account", UUID_ANONYMOUS);
+        let acps: Vec<AccessControlCreateResolved> = vec![];
+        let result = apply_create_access(&ident, &acps, &entry);
+        match result {
+            CreateResult::Deny => {}
+            _ => panic!("Expected Deny for system UUID"),
+        }
+    }
+
+    #[test]
+    fn test_apply_create_access_migration_allows() {
+        let ident = Identity::migration();
+        let entry = make_entry_with_class("account");
+        let acps: Vec<AccessControlCreateResolved> = vec![];
+        let result = apply_create_access(&ident, &acps, &entry);
+        match result {
+            CreateResult::Allow { pres, .. } => {
+                assert!(!pres.is_empty());
+            }
+            _ => panic!("Expected Allow for migration with valid class"),
+        }
+    }
+}

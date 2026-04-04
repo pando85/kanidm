@@ -266,3 +266,14 @@ impl KeyObjectManagement {
 // Unlike other plugins, tests for this plugin will be located in server/lib/src/server/keys.
 //
 // The reason is because we can preconfigure different providers to test these paths in future.
+
+#[cfg(test)]
+mod tests {
+    use crate::plugins::keyobject::KeyObjectManagement;
+    use crate::plugins::Plugin;
+
+    #[test]
+    fn test_keyobject_management_plugin_id() {
+        assert_eq!(KeyObjectManagement::id(), "plugin_keyobject_management");
+    }
+}

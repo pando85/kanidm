@@ -244,4 +244,100 @@ mod tests {
             }
         );
     }
+
+    #[test]
+    fn test_oauth2_non_rs_entry_not_modified() {
+        let preload: Vec<Entry<EntryInit, EntryNew>> = Vec::with_capacity(0);
+
+        let uuid = Uuid::new_v4();
+        let e: Entry<EntryInit, EntryNew> = entry_init!(
+            (Attribute::Class, EntryClass::Object.to_value()),
+            (Attribute::Class, EntryClass::Account.to_value()),
+            (Attribute::Class, EntryClass::ServiceAccount.to_value()),
+            (Attribute::Uuid, Value::Uuid(uuid)),
+            (Attribute::Name, Value::new_iname("test_plain_account")),
+            (
+                Attribute::DisplayName,
+                Value::new_utf8s("test_plain_account")
+            )
+        );
+
+        let create = vec![e];
+
+        run_create_test!(
+            Ok(None),
+            preload,
+            create,
+            None,
+            |qs: &mut QueryServerWriteTransaction| {
+                let e = qs
+                    .internal_search_uuid(uuid)
+                    .expect("failed to get account");
+                assert!(!e.attribute_pres(Attribute::OAuth2RsBasicSecret));
+                assert!(!e.attribute_pres(Attribute::OAuth2RsTokenKey));
+            }
+        );
+    }
+
+    #[test]
+    fn test_pre_create_oauth2_preserves_existing_secret() {
+        let preload: Vec<Entry<EntryInit, EntryNew>> = Vec::with_capacity(0);
+
+        let uuid = Uuid::new_v4();
+        let e: Entry<EntryInit, EntryNew> = entry_init!(
+            (Attribute::Class, EntryClass::Object.to_value()),
+            (Attribute::Class, EntryClass::Account.to_value()),
+            (
+                Attribute::Class,
+                EntryClass::OAuth2ResourceServer.to_value()
+            ),
+            (
+                Attribute::Class,
+                EntryClass::OAuth2ResourceServerBasic.to_value()
+            ),
+            (Attribute::Uuid, Value::Uuid(uuid)),
+            (
+                Attribute::DisplayName,
+                Value::new_utf8s("test_resource_server_preserved")
+            ),
+            (
+                Attribute::Name,
+                Value::new_iname("test_resource_server_preserved")
+            ),
+            (
+                Attribute::OAuth2RsOriginLanding,
+                Value::new_url_s("https://demo.example.com").unwrap()
+            ),
+            (
+                Attribute::OAuth2RsScopeMap,
+                Value::new_oauthscopemap(
+                    UUID_IDM_ALL_ACCOUNTS,
+                    btreeset![OAUTH2_SCOPE_READ.to_string()]
+                )
+                .expect("invalid oauthscope")
+            ),
+            (
+                Attribute::OAuth2RsBasicSecret,
+                Value::new_secret_str("existing_secret_value")
+            )
+        );
+
+        let create = vec![e];
+
+        run_create_test!(
+            Ok(None),
+            preload,
+            create,
+            None,
+            |qs: &mut QueryServerWriteTransaction| {
+                let e = qs
+                    .internal_search_uuid(uuid)
+                    .expect("failed to get oauth2 config");
+                let secret = e
+                    .get_ava_single_secret(Attribute::OAuth2RsBasicSecret)
+                    .expect("secret should be present");
+                assert_eq!(secret, "existing_secret_value");
+            }
+        );
+    }
 }

@@ -345,3 +345,506 @@ impl PartialEq for EntryChangeState {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::be::dbrepl::DbEntryChangeState;
+    use crate::be::dbvalue::DbCidV1;
+    use std::time::Duration;
+
+    fn make_cid(s_uuid: Uuid, secs: u64) -> Cid {
+        Cid::new(s_uuid, Duration::from_secs(secs))
+    }
+
+    fn make_live_ecstate() -> EntryChangeState {
+        let cid = make_cid(uuid!("00000000-0000-0000-0000-000000000001"), 10);
+        let mut attrs = Eattrs::default();
+        attrs.insert(Attribute::Name, vs_iutf8!["testperson"]);
+        attrs.insert(
+            Attribute::Uuid,
+            vs_uuid![uuid!("00000000-0000-0000-0000-000000000001")],
+        );
+        attrs.insert(Attribute::Class, vs_iutf8!["object", "account"]);
+        EntryChangeState::new_without_schema(&cid, &attrs)
+    }
+
+    fn make_tombstone_ecstate() -> EntryChangeState {
+        let cid = make_cid(uuid!("00000000-0000-0000-0000-000000000001"), 20);
+        let mut attrs = Eattrs::default();
+        attrs.insert(
+            Attribute::Uuid,
+            vs_uuid![uuid!("00000000-0000-0000-0000-000000000001")],
+        );
+        attrs.insert(Attribute::Class, vs_iutf8!["object", "tombstone"]);
+        attrs.insert(Attribute::LastModifiedCid, vs_cid![cid.clone()]);
+        EntryChangeState::new_without_schema(&cid, &attrs)
+    }
+
+    #[test]
+    fn test_entry_change_state_new_without_schema_live() {
+        let cid = make_cid(uuid!("00000000-0000-0000-0000-000000000001"), 5);
+        let mut attrs = Eattrs::default();
+        attrs.insert(Attribute::Name, vs_iutf8!["testentry"]);
+        attrs.insert(
+            Attribute::Uuid,
+            vs_uuid![uuid!("00000000-0000-0000-0000-000000000001")],
+        );
+
+        let ecs = EntryChangeState::new_without_schema(&cid, &attrs);
+
+        assert!(ecs.is_live());
+        assert_eq!(ecs.at(), &cid);
+        match ecs.current() {
+            State::Live { at, changes } => {
+                assert_eq!(at, &cid);
+                assert_eq!(changes.len(), 2);
+                assert!(changes.contains_key(&Attribute::Name));
+                assert!(changes.contains_key(&Attribute::Uuid));
+                for change_cid in changes.values() {
+                    assert_eq!(change_cid, &cid);
+                }
+            }
+            _ => panic!("Expected Live state"),
+        }
+    }
+
+    #[test]
+    fn test_entry_change_state_new_without_schema_tombstone() {
+        let cid = make_cid(uuid!("00000000-0000-0000-0000-000000000001"), 10);
+        let mut attrs = Eattrs::default();
+        attrs.insert(Attribute::Class, vs_iutf8!["object", "tombstone"]);
+        attrs.insert(
+            Attribute::Uuid,
+            vs_uuid![uuid!("00000000-0000-0000-0000-000000000001")],
+        );
+
+        let ecs = EntryChangeState::new_without_schema(&cid, &attrs);
+
+        assert!(!ecs.is_live());
+        assert_eq!(ecs.at(), &cid);
+        match ecs.current() {
+            State::Tombstone { at } => assert_eq!(at, &cid),
+            _ => panic!("Expected Tombstone state"),
+        }
+    }
+
+    #[test]
+    fn test_entry_change_state_new_without_schema_empty_attrs() {
+        let cid = make_cid(uuid!("00000000-0000-0000-0000-000000000001"), 1);
+        let attrs = Eattrs::default();
+        let ecs = EntryChangeState::new_without_schema(&cid, &attrs);
+        assert!(ecs.is_live());
+        match ecs.current() {
+            State::Live { at, changes } => {
+                assert_eq!(at, &cid);
+                assert!(changes.is_empty());
+            }
+            _ => panic!("Expected Live state"),
+        }
+    }
+
+    #[test]
+    fn test_entry_change_state_build_live() {
+        let cid = make_cid(uuid!("00000000-0000-0000-0000-000000000001"), 5);
+        let state = State::Live {
+            at: cid,
+            changes: BTreeMap::default(),
+        };
+        let ecs = EntryChangeState::build(state);
+        assert!(ecs.is_live());
+    }
+
+    #[test]
+    fn test_entry_change_state_build_tombstone() {
+        let cid = make_cid(uuid!("00000000-0000-0000-0000-000000000001"), 5);
+        let state = State::Tombstone { at: cid };
+        let ecs = EntryChangeState::build(state);
+        assert!(!ecs.is_live());
+    }
+
+    #[test]
+    fn test_entry_change_state_at_live() {
+        let cid = make_cid(uuid!("00000000-0000-0000-0000-000000000001"), 10);
+        let attrs = Eattrs::default();
+        let ecs = EntryChangeState::new_without_schema(&cid, &attrs);
+        assert_eq!(ecs.at(), &cid);
+    }
+
+    #[test]
+    fn test_entry_change_state_at_tombstone() {
+        let cid = make_cid(uuid!("00000000-0000-0000-0000-000000000001"), 10);
+        let mut attrs = Eattrs::default();
+        attrs.insert(Attribute::Class, vs_iutf8!["tombstone"]);
+        let ecs = EntryChangeState::new_without_schema(&cid, &attrs);
+        assert_eq!(ecs.at(), &cid);
+    }
+
+    #[test]
+    fn test_entry_change_state_change_ava_update_existing() {
+        let mut ecs = make_live_ecstate();
+        let new_cid = make_cid(uuid!("00000000-0000-0000-0000-000000000002"), 15);
+        ecs.change_ava(&new_cid, &Attribute::Name);
+        let attr_cid = ecs.get_attr_cid(&Attribute::Name).unwrap();
+        assert_eq!(attr_cid, &new_cid);
+    }
+
+    #[test]
+    fn test_entry_change_state_change_ava_add_new() {
+        let mut ecs = make_live_ecstate();
+        let new_cid = make_cid(uuid!("00000000-0000-0000-0000-000000000002"), 15);
+        assert!(ecs.get_attr_cid(&Attribute::Description).is_none());
+        ecs.change_ava(&new_cid, &Attribute::Description);
+        let attr_cid = ecs.get_attr_cid(&Attribute::Description).unwrap();
+        assert_eq!(attr_cid, &new_cid);
+    }
+
+    #[test]
+    fn test_entry_change_state_change_ava_same_cid_noop() {
+        let mut ecs = make_live_ecstate();
+        let original_cid = ecs.get_attr_cid(&Attribute::Name).unwrap().clone();
+        ecs.change_ava(&original_cid, &Attribute::Name);
+        let after_cid = ecs.get_attr_cid(&Attribute::Name).unwrap().clone();
+        assert_eq!(original_cid, after_cid);
+    }
+
+    #[test]
+    fn test_entry_change_state_tombstone_from_live() {
+        let mut ecs = make_live_ecstate();
+        let ts_cid = make_cid(uuid!("00000000-0000-0000-0000-000000000003"), 30);
+        assert!(ecs.is_live());
+        ecs.tombstone(&ts_cid);
+        assert!(!ecs.is_live());
+        assert_eq!(ecs.at(), &ts_cid);
+    }
+
+    #[test]
+    fn test_entry_change_state_tombstone_idempotent() {
+        let original_cid = make_cid(uuid!("00000000-0000-0000-0000-000000000001"), 20);
+        let mut ecs = make_tombstone_ecstate();
+        let ts_cid = make_cid(uuid!("00000000-0000-0000-0000-000000000003"), 30);
+        ecs.tombstone(&ts_cid);
+        assert!(!ecs.is_live());
+        assert_eq!(ecs.at(), &original_cid);
+    }
+
+    #[test]
+    fn test_entry_change_state_can_delete_live() {
+        let ecs = make_live_ecstate();
+        let cid = make_cid(uuid!("00000000-0000-0000-0000-000000000001"), 100);
+        assert!(!ecs.can_delete(&cid));
+    }
+
+    #[test]
+    fn test_entry_change_state_can_delete_tombstone_with_later_cid() {
+        let ecs = make_tombstone_ecstate();
+        let later_cid = make_cid(uuid!("00000000-0000-0000-0000-000000000001"), 100);
+        assert!(ecs.can_delete(&later_cid));
+    }
+
+    #[test]
+    fn test_entry_change_state_can_delete_tombstone_with_earlier_cid() {
+        let ecs = make_tombstone_ecstate();
+        let earlier_cid = make_cid(uuid!("00000000-0000-0000-0000-000000000001"), 1);
+        assert!(!ecs.can_delete(&earlier_cid));
+    }
+
+    #[test]
+    fn test_entry_change_state_can_delete_tombstone_with_same_cid() {
+        let cid = make_cid(uuid!("00000000-0000-0000-0000-000000000001"), 20);
+        let mut attrs = Eattrs::default();
+        attrs.insert(Attribute::Class, vs_iutf8!["tombstone"]);
+        let ecs = EntryChangeState::new_without_schema(&cid, &attrs);
+        assert!(!ecs.can_delete(&cid));
+    }
+
+    #[test]
+    fn test_entry_change_state_stub_live() {
+        let ecs = make_live_ecstate();
+        let stub = ecs.stub();
+        assert!(stub.is_live());
+        assert_eq!(stub.at(), ecs.at());
+        match stub.current() {
+            State::Live { changes, .. } => assert!(changes.is_empty()),
+            _ => panic!("Expected Live state"),
+        }
+    }
+
+    #[test]
+    fn test_entry_change_state_stub_tombstone() {
+        let ecs = make_tombstone_ecstate();
+        let stub = ecs.stub();
+        assert!(!stub.is_live());
+        assert_eq!(stub.at(), ecs.at());
+    }
+
+    #[test]
+    fn test_entry_change_state_contains_tail_cid_live() {
+        let ecs = make_live_ecstate();
+        match ecs.current() {
+            State::Live { changes, .. } => {
+                for cid in changes.values() {
+                    assert!(ecs.contains_tail_cid(cid));
+                }
+            }
+            _ => panic!("Expected Live state"),
+        }
+        let other_cid = make_cid(uuid!("00000000-0000-0000-0000-000000000099"), 999);
+        assert!(!ecs.contains_tail_cid(&other_cid));
+    }
+
+    #[test]
+    fn test_entry_change_state_contains_tail_cid_tombstone() {
+        let ecs = make_tombstone_ecstate();
+        assert!(ecs.contains_tail_cid(ecs.at()));
+        let other_cid = make_cid(uuid!("00000000-0000-0000-0000-000000000099"), 999);
+        assert!(!ecs.contains_tail_cid(&other_cid));
+    }
+
+    #[test]
+    fn test_entry_change_state_get_max_cid_single_attr() {
+        let cid = make_cid(uuid!("00000000-0000-0000-0000-000000000001"), 10);
+        let mut attrs = Eattrs::default();
+        attrs.insert(Attribute::Name, vs_iutf8!["test"]);
+        let ecs = EntryChangeState::new_without_schema(&cid, &attrs);
+        assert_eq!(ecs.get_max_cid(), &cid);
+    }
+
+    #[test]
+    fn test_entry_change_state_get_max_cid_multiple_attrs() {
+        let cid_a = make_cid(uuid!("00000000-0000-0000-0000-000000000001"), 10);
+        let mut ecs = EntryChangeState::build(State::Live {
+            at: cid_a,
+            changes: BTreeMap::default(),
+        });
+        let cid_early = make_cid(uuid!("00000000-0000-0000-0000-000000000001"), 5);
+        let cid_late = make_cid(uuid!("00000000-0000-0000-0000-000000000001"), 15);
+        ecs.change_ava(&cid_early, &Attribute::Name);
+        ecs.change_ava(&cid_late, &Attribute::Description);
+        assert_eq!(ecs.get_max_cid(), &cid_late);
+    }
+
+    #[test]
+    fn test_entry_change_state_get_max_cid_tombstone() {
+        let cid = make_cid(uuid!("00000000-0000-0000-0000-000000000001"), 20);
+        let mut attrs = Eattrs::default();
+        attrs.insert(Attribute::Class, vs_iutf8!["tombstone"]);
+        let ecs = EntryChangeState::new_without_schema(&cid, &attrs);
+        assert_eq!(ecs.get_max_cid(), &cid);
+    }
+
+    #[test]
+    fn test_entry_change_state_cid_iter_live_dedup() {
+        let cid = make_cid(uuid!("00000000-0000-0000-0000-000000000001"), 10);
+        let mut attrs = Eattrs::default();
+        attrs.insert(Attribute::Name, vs_iutf8!["test"]);
+        attrs.insert(
+            Attribute::Uuid,
+            vs_uuid![uuid!("00000000-0000-0000-0000-000000000001")],
+        );
+        let ecs = EntryChangeState::new_without_schema(&cid, &attrs);
+        let cids = ecs.cid_iter();
+        assert_eq!(cids.len(), 1);
+        assert_eq!(cids[0], &cid);
+    }
+
+    #[test]
+    fn test_entry_change_state_cid_iter_live_multiple() {
+        let cid_a = make_cid(uuid!("00000000-0000-0000-0000-000000000001"), 10);
+        let mut ecs = EntryChangeState::build(State::Live {
+            at: cid_a,
+            changes: BTreeMap::default(),
+        });
+        let cid_5 = make_cid(uuid!("00000000-0000-0000-0000-000000000001"), 5);
+        let cid_15 = make_cid(uuid!("00000000-0000-0000-0000-000000000002"), 15);
+        ecs.change_ava(&cid_5, &Attribute::Name);
+        ecs.change_ava(&cid_15, &Attribute::Description);
+        let cids = ecs.cid_iter();
+        assert_eq!(cids.len(), 2);
+        assert!(cids.contains(&&cid_5));
+        assert!(cids.contains(&&cid_15));
+    }
+
+    #[test]
+    fn test_entry_change_state_cid_iter_tombstone() {
+        let ecs = make_tombstone_ecstate();
+        let cids = ecs.cid_iter();
+        assert_eq!(cids.len(), 1);
+        assert_eq!(cids[0], ecs.at());
+    }
+
+    #[test]
+    fn test_entry_change_state_retain() {
+        let mut ecs = make_live_ecstate();
+        assert!(ecs.get_attr_cid(&Attribute::Name).is_some());
+        assert!(ecs.get_attr_cid(&Attribute::Uuid).is_some());
+        ecs.retain(|attr, _| attr != &Attribute::Name);
+        assert!(ecs.get_attr_cid(&Attribute::Name).is_none());
+        assert!(ecs.get_attr_cid(&Attribute::Uuid).is_some());
+    }
+
+    #[test]
+    fn test_entry_change_state_retain_tombstone_noop() {
+        let mut ecs = make_tombstone_ecstate();
+        ecs.retain(|_, _| false);
+        assert!(!ecs.is_live());
+    }
+
+    #[test]
+    fn test_entry_change_state_get_attr_cid_live() {
+        let ecs = make_live_ecstate();
+        assert!(ecs.get_attr_cid(&Attribute::Name).is_some());
+        assert!(ecs.get_attr_cid(&Attribute::Mail).is_none());
+    }
+
+    #[test]
+    fn test_entry_change_state_get_attr_cid_tombstone() {
+        let ecs = make_tombstone_ecstate();
+        assert!(ecs.get_attr_cid(&Attribute::Name).is_none());
+    }
+
+    #[test]
+    fn test_entry_change_state_partial_eq_live_equal() {
+        let ecs1 = make_live_ecstate();
+        let ecs2 = make_live_ecstate();
+        assert_eq!(ecs1, ecs2);
+    }
+
+    #[test]
+    fn test_entry_change_state_partial_eq_live_different_at() {
+        let cid1 = make_cid(uuid!("00000000-0000-0000-0000-000000000001"), 10);
+        let cid2 = make_cid(uuid!("00000000-0000-0000-0000-000000000001"), 20);
+        let attrs = Eattrs::default();
+        let ecs1 = EntryChangeState::new_without_schema(&cid1, &attrs);
+        let ecs2 = EntryChangeState::new_without_schema(&cid2, &attrs);
+        assert_ne!(ecs1, ecs2);
+    }
+
+    #[test]
+    fn test_entry_change_state_partial_eq_tombstone_equal() {
+        let ecs1 = make_tombstone_ecstate();
+        let ecs2 = make_tombstone_ecstate();
+        assert_eq!(ecs1, ecs2);
+    }
+
+    #[test]
+    fn test_entry_change_state_partial_eq_live_vs_tombstone() {
+        let ecs_live = make_live_ecstate();
+        let ecs_ts = make_tombstone_ecstate();
+        assert_ne!(ecs_live, ecs_ts);
+    }
+
+    #[test]
+    fn test_entry_change_state_to_db_changestate_live() {
+        let ecs = make_live_ecstate();
+        let db = ecs.to_db_changestate();
+        match db {
+            DbEntryChangeState::V1Live { at, changes } => {
+                assert_eq!(at.server_id, uuid!("00000000-0000-0000-0000-000000000001"));
+                assert_eq!(at.timestamp, Duration::from_secs(10));
+                assert!(!changes.is_empty());
+            }
+            DbEntryChangeState::V1Tombstone { .. } => panic!("Expected V1Live"),
+        }
+    }
+
+    #[test]
+    fn test_entry_change_state_to_db_changestate_tombstone() {
+        let ecs = make_tombstone_ecstate();
+        let db = ecs.to_db_changestate();
+        match db {
+            DbEntryChangeState::V1Tombstone { at } => {
+                assert_eq!(at.server_id, uuid!("00000000-0000-0000-0000-000000000001"));
+                assert_eq!(at.timestamp, Duration::from_secs(20));
+            }
+            DbEntryChangeState::V1Live { .. } => panic!("Expected V1Tombstone"),
+        }
+    }
+
+    #[test]
+    fn test_entry_change_state_from_db_changestate_live() {
+        let db = DbEntryChangeState::V1Live {
+            at: DbCidV1 {
+                server_id: uuid!("00000000-0000-0000-0000-000000000001"),
+                timestamp: Duration::from_secs(10),
+            },
+            changes: btreemap!((
+                Attribute::Name,
+                DbCidV1 {
+                    server_id: uuid!("00000000-0000-0000-0000-000000000001"),
+                    timestamp: Duration::from_secs(5),
+                }
+            )),
+        };
+        let ecs = EntryChangeState::from_db_changestate(db);
+        assert!(ecs.is_live());
+        match ecs.current() {
+            State::Live { at, changes } => {
+                assert_eq!(at.s_uuid, uuid!("00000000-0000-0000-0000-000000000001"));
+                assert_eq!(at.ts, Duration::from_secs(10));
+                assert_eq!(changes.len(), 1);
+                let name_cid = changes.get(&Attribute::Name).unwrap();
+                assert_eq!(name_cid.ts, Duration::from_secs(5));
+            }
+            _ => panic!("Expected Live state"),
+        }
+    }
+
+    #[test]
+    fn test_entry_change_state_from_db_changestate_tombstone() {
+        let db = DbEntryChangeState::V1Tombstone {
+            at: DbCidV1 {
+                server_id: uuid!("00000000-0000-0000-0000-000000000002"),
+                timestamp: Duration::from_secs(99),
+            },
+        };
+        let ecs = EntryChangeState::from_db_changestate(db);
+        assert!(!ecs.is_live());
+        assert_eq!(
+            ecs.at().s_uuid,
+            uuid!("00000000-0000-0000-0000-000000000002")
+        );
+        assert_eq!(ecs.at().ts, Duration::from_secs(99));
+    }
+
+    #[test]
+    fn test_entry_change_state_db_roundtrip_live() {
+        let original = make_live_ecstate();
+        let db = original.to_db_changestate();
+        let restored = EntryChangeState::from_db_changestate(db);
+        assert_eq!(original, restored);
+    }
+
+    #[test]
+    fn test_entry_change_state_db_roundtrip_tombstone() {
+        let original = make_tombstone_ecstate();
+        let db = original.to_db_changestate();
+        let restored = EntryChangeState::from_db_changestate(db);
+        assert_eq!(original, restored);
+    }
+
+    #[test]
+    fn test_entry_change_state_db_roundtrip_live_with_changes() {
+        let cid = make_cid(uuid!("00000000-0000-0000-0000-000000000001"), 10);
+        let mut ecs = EntryChangeState::build(State::Live {
+            at: cid,
+            changes: BTreeMap::default(),
+        });
+        ecs.change_ava(
+            &make_cid(uuid!("00000000-0000-0000-0000-000000000001"), 10),
+            &Attribute::Name,
+        );
+        let cid2 = make_cid(uuid!("00000000-0000-0000-0000-000000000002"), 20);
+        ecs.change_ava(&cid2, &Attribute::Description);
+        let db = ecs.to_db_changestate();
+        let restored = EntryChangeState::from_db_changestate(db);
+        assert_eq!(ecs, restored);
+    }
+
+    #[test]
+    fn test_entry_change_state_current_returns_ref() {
+        let ecs = make_live_ecstate();
+        let current = ecs.current();
+        assert!(matches!(current, State::Live { .. }));
+    }
+}

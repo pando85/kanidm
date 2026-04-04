@@ -547,3 +547,367 @@ fn modify_migration_attrs<'a>(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::server::identity::Identity;
+
+    fn make_user_ident_rw() -> Identity {
+        let entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Name, Value::new_iname("testuser")),
+                (
+                    Attribute::Uuid,
+                    Value::Uuid(uuid::uuid!("00000000-0000-0000-0000-000000000001"))
+                )
+            )
+            .into_sealed_committed(),
+        );
+        Identity::from_impersonate_entry_readwrite(entry)
+    }
+
+    fn make_user_ident_ro() -> Identity {
+        let entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Name, Value::new_iname("testuser")),
+                (
+                    Attribute::Uuid,
+                    Value::Uuid(uuid::uuid!("00000000-0000-0000-0000-000000000001"))
+                )
+            )
+            .into_sealed_committed(),
+        );
+        Identity::from_impersonate_entry_readonly(entry)
+    }
+
+    fn make_sealed_entry(class: &str) -> Arc<EntrySealedCommitted> {
+        Arc::new(
+            entry_init!(
+                (Attribute::Class, Value::new_iutf8(class)),
+                (
+                    Attribute::Uuid,
+                    Value::Uuid(uuid::uuid!("00000000-0000-0000-0000-000000000100"))
+                )
+            )
+            .into_sealed_committed(),
+        )
+    }
+
+    fn make_sealed_entry_two_classes(
+        class1: &str,
+        class2: &str,
+        uuid: Uuid,
+    ) -> Arc<EntrySealedCommitted> {
+        Arc::new(
+            entry_init!(
+                (Attribute::Class, Value::new_iutf8(class1)),
+                (Attribute::Class, Value::new_iutf8(class2)),
+                (Attribute::Uuid, Value::Uuid(uuid))
+            )
+            .into_sealed_committed(),
+        )
+    }
+
+    #[test]
+    fn test_modify_protected_entry_attrs_tombstone_denied() {
+        let classes = btreeset!["tombstone".to_string()];
+        let result = modify_protected_entry_attrs(&classes);
+        assert!(matches!(result, AccessModResult::Deny));
+    }
+
+    #[test]
+    fn test_modify_protected_entry_attrs_recycled_constrains() {
+        let classes = btreeset!["recycled".to_string()];
+        let result = modify_protected_entry_attrs(&classes);
+        match result {
+            AccessModResult::Constrain {
+                pres_attr,
+                rem_attr,
+                ..
+            } => {
+                assert!(pres_attr.contains(&Attribute::Class));
+                assert!(rem_attr.contains(&Attribute::Class));
+            }
+            _ => panic!("Expected Constrain for recycled"),
+        }
+    }
+
+    #[test]
+    fn test_modify_protected_entry_attrs_domain_info_constrains() {
+        let classes = btreeset!["domain_info".to_string()];
+        let result = modify_protected_entry_attrs(&classes);
+        match result {
+            AccessModResult::Constrain { pres_attr, .. } => {
+                assert!(pres_attr.contains(&Attribute::DomainSsid));
+                assert!(pres_attr.contains(&Attribute::DomainDisplayName));
+            }
+            _ => panic!("Expected Constrain for domain_info"),
+        }
+    }
+
+    #[test]
+    fn test_modify_protected_entry_attrs_system_config_constrains() {
+        let classes = btreeset!["system_config".to_string()];
+        let result = modify_protected_entry_attrs(&classes);
+        match result {
+            AccessModResult::Constrain { pres_attr, .. } => {
+                assert!(pres_attr.contains(&Attribute::BadlistPassword));
+            }
+            _ => panic!("Expected Constrain for system_config"),
+        }
+    }
+
+    #[test]
+    fn test_modify_protected_entry_attrs_classtype_constrains() {
+        let classes = btreeset!["classtype".to_string()];
+        let result = modify_protected_entry_attrs(&classes);
+        match result {
+            AccessModResult::Constrain { pres_attr, .. } => {
+                assert!(pres_attr.contains(&Attribute::May));
+                assert!(pres_attr.contains(&Attribute::Must));
+            }
+            _ => panic!("Expected Constrain for classtype"),
+        }
+    }
+
+    #[test]
+    fn test_modify_protected_entry_attrs_account_constrains() {
+        let classes = btreeset!["account".to_string()];
+        let result = modify_protected_entry_attrs(&classes);
+        match result {
+            AccessModResult::Constrain { pres_attr, .. } => {
+                assert!(pres_attr.contains(&Attribute::AccountExpire));
+                assert!(pres_attr.contains(&Attribute::AccountValidFrom));
+            }
+            _ => panic!("Expected Constrain for account"),
+        }
+    }
+
+    #[test]
+    fn test_modify_protected_entry_attrs_service_account_constrains() {
+        let classes = btreeset!["service_account".to_string()];
+        let result = modify_protected_entry_attrs(&classes);
+        match result {
+            AccessModResult::Constrain { pres_attr, .. } => {
+                assert!(pres_attr.contains(&Attribute::SshPublicKey));
+                assert!(pres_attr.contains(&Attribute::Mail));
+            }
+            _ => panic!("Expected Constrain for service_account"),
+        }
+    }
+
+    #[test]
+    fn test_modify_protected_entry_attrs_group_constrains() {
+        let classes = btreeset!["group".to_string()];
+        let result = modify_protected_entry_attrs(&classes);
+        match result {
+            AccessModResult::Constrain { pres_attr, .. } => {
+                assert!(pres_attr.contains(&Attribute::Member));
+            }
+            _ => panic!("Expected Constrain for group"),
+        }
+    }
+
+    #[test]
+    fn test_modify_protected_entry_attrs_dyngroup_constrains() {
+        let classes = btreeset!["dyngroup".to_string()];
+        let result = modify_protected_entry_attrs(&classes);
+        match result {
+            AccessModResult::Constrain { pres_attr, .. } => {
+                assert!(pres_attr.contains(&Attribute::AuthSessionExpiry));
+                assert!(pres_attr.contains(&Attribute::PrivilegeExpiry));
+            }
+            _ => panic!("Expected Constrain for dyngroup"),
+        }
+    }
+
+    #[test]
+    fn test_modify_protected_entry_attrs_unknown_denied() {
+        let classes = btreeset!["oauth2_resource_server".to_string()];
+        let result = modify_protected_entry_attrs(&classes);
+        assert!(matches!(result, AccessModResult::Deny));
+    }
+
+    #[test]
+    fn test_modify_protected_entry_attrs_empty_denied() {
+        let classes = BTreeSet::<String>::new();
+        let result = modify_protected_entry_attrs(&classes);
+        assert!(matches!(result, AccessModResult::Deny));
+    }
+
+    #[test]
+    fn test_modify_ident_test_internal_system_grants() {
+        let ident = Identity::from_internal();
+        let result = modify_ident_test(&ident);
+        assert!(matches!(result, AccessBasicResult::Grant));
+    }
+
+    #[test]
+    fn test_modify_ident_test_migration_grants() {
+        let ident = Identity::migration();
+        let result = modify_ident_test(&ident);
+        assert!(matches!(result, AccessBasicResult::Grant));
+    }
+
+    #[test]
+    fn test_modify_ident_test_user_rw_ignores() {
+        let ident = make_user_ident_rw();
+        let result = modify_ident_test(&ident);
+        assert!(matches!(result, AccessBasicResult::Ignore));
+    }
+
+    #[test]
+    fn test_modify_ident_test_user_ro_denied() {
+        let ident = make_user_ident_ro();
+        let result = modify_ident_test(&ident);
+        assert!(matches!(result, AccessBasicResult::Deny));
+    }
+
+    #[test]
+    fn test_modify_pres_test_empty_acps() {
+        let acps: Vec<&AccessControlModify> = vec![];
+        let result = modify_pres_test(&acps);
+        match result {
+            AccessModResult::Allow {
+                pres_attr,
+                rem_attr,
+                pres_class,
+                rem_class,
+            } => {
+                assert!(pres_attr.is_empty());
+                assert!(rem_attr.is_empty());
+                assert!(pres_class.is_empty());
+                assert!(rem_class.is_empty());
+            }
+            _ => panic!("Expected Allow with empty sets"),
+        }
+    }
+
+    #[test]
+    fn test_modify_protected_attrs_internal_system_ignores() {
+        let ident = Identity::from_internal();
+        let entry = make_sealed_entry("system");
+        let result = modify_protected_attrs(&ident, &entry);
+        assert!(matches!(result, AccessModResult::Ignore));
+    }
+
+    #[test]
+    fn test_modify_protected_attrs_user_nonprotected_ignores() {
+        let ident = make_user_ident_rw();
+        let entry = make_sealed_entry("account");
+        let result = modify_protected_attrs(&ident, &entry);
+        assert!(matches!(result, AccessModResult::Ignore));
+    }
+
+    #[test]
+    fn test_modify_protected_attrs_user_protected_constrains() {
+        let ident = make_user_ident_rw();
+        let entry = make_sealed_entry("account");
+        let result = modify_protected_attrs(&ident, &entry);
+        assert!(matches!(result, AccessModResult::Ignore));
+    }
+
+    #[test]
+    fn test_modify_sync_constrain_internal_ignores() {
+        let ident = Identity::from_internal();
+        let entry = make_sealed_entry("account");
+        let sync_agreements = HashMap::new();
+        let result = modify_sync_constrain(&ident, &entry, &sync_agreements);
+        assert!(matches!(result, AccessModResult::Ignore));
+    }
+
+    #[test]
+    fn test_modify_sync_constrain_user_non_sync_ignores() {
+        let ident = make_user_ident_rw();
+        let entry = make_sealed_entry("account");
+        let sync_agreements = HashMap::new();
+        let result = modify_sync_constrain(&ident, &entry, &sync_agreements);
+        assert!(matches!(result, AccessModResult::Ignore));
+    }
+
+    #[test]
+    fn test_modify_sync_constrain_user_sync_no_parent_denied() {
+        let ident = make_user_ident_rw();
+        let entry = make_sealed_entry_two_classes(
+            "sync_object",
+            "account",
+            uuid::uuid!("00000000-0000-0000-0000-000000000100"),
+        );
+        let sync_agreements = HashMap::new();
+        let result = modify_sync_constrain(&ident, &entry, &sync_agreements);
+        assert!(matches!(result, AccessModResult::Deny));
+    }
+
+    #[test]
+    fn test_modify_migration_attrs_migration_valid_allows() {
+        let ident = Identity::migration();
+        let entry = make_sealed_entry("account");
+        let result = modify_migration_attrs(&ident, &entry);
+        match result {
+            AccessModResult::Allow { pres_attr, .. } => {
+                assert!(!pres_attr.is_empty());
+            }
+            _ => panic!("Expected Allow for migration with valid class"),
+        }
+    }
+
+    #[test]
+    fn test_modify_migration_attrs_migration_invalid_denied() {
+        let ident = Identity::migration();
+        let entry = make_sealed_entry("tombstone");
+        let result = modify_migration_attrs(&ident, &entry);
+        assert!(matches!(result, AccessModResult::Deny));
+    }
+
+    #[test]
+    fn test_modify_migration_attrs_non_migration_ignores() {
+        let ident = Identity::from_internal();
+        let entry = make_sealed_entry("account");
+        let result = modify_migration_attrs(&ident, &entry);
+        assert!(matches!(result, AccessModResult::Ignore));
+    }
+
+    #[test]
+    fn test_modify_migration_attrs_user_ignores() {
+        let ident = make_user_ident_rw();
+        let entry = make_sealed_entry("account");
+        let result = modify_migration_attrs(&ident, &entry);
+        assert!(matches!(result, AccessModResult::Ignore));
+    }
+
+    #[test]
+    fn test_apply_modify_access_internal_system_grants() {
+        let ident = Identity::from_internal();
+        let entry = make_sealed_entry("account");
+        let acps: Vec<AccessControlModifyResolved> = vec![];
+        let sync_agreements = HashMap::new();
+        let result = apply_modify_access(&ident, &acps, &sync_agreements, &entry);
+        assert!(matches!(result, ModifyResult::Grant));
+    }
+
+    #[test]
+    fn test_apply_modify_access_user_no_acps_empty_allow() {
+        let ident = make_user_ident_rw();
+        let entry = make_sealed_entry("account");
+        let acps: Vec<AccessControlModifyResolved> = vec![];
+        let sync_agreements = HashMap::new();
+        let result = apply_modify_access(&ident, &acps, &sync_agreements, &entry);
+        match result {
+            ModifyResult::Allow {
+                pres,
+                rem,
+                pres_cls,
+                rem_cls,
+            } => {
+                assert!(pres.is_empty());
+                assert!(rem.is_empty());
+                assert!(pres_cls.is_empty());
+                assert!(rem_cls.is_empty());
+            }
+            _ => panic!("Expected Allow with empty sets"),
+        }
+    }
+}

@@ -402,3 +402,214 @@ fn search_sync_account_filter_entry(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::server::identity::Identity;
+
+    fn make_user_ident_rw() -> Identity {
+        let entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Name, Value::new_iname("testuser")),
+                (
+                    Attribute::Uuid,
+                    Value::Uuid(uuid::uuid!("00000000-0000-0000-0000-000000000001"))
+                )
+            )
+            .into_sealed_committed(),
+        );
+        Identity::from_impersonate_entry_readwrite(entry)
+    }
+
+    fn make_user_ident_ro() -> Identity {
+        let entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Name, Value::new_iname("testuser")),
+                (
+                    Attribute::Uuid,
+                    Value::Uuid(uuid::uuid!("00000000-0000-0000-0000-000000000001"))
+                )
+            )
+            .into_sealed_committed(),
+        );
+        Identity::from_impersonate_entry_readonly(entry)
+    }
+
+    fn make_sealed_entry(class: &str, uuid: Uuid) -> Arc<EntrySealedCommitted> {
+        Arc::new(
+            entry_init!(
+                (Attribute::Class, Value::new_iutf8(class)),
+                (Attribute::Uuid, Value::Uuid(uuid))
+            )
+            .into_sealed_committed(),
+        )
+    }
+
+    #[test]
+    fn test_search_filter_entry_internal_system_grants() {
+        let ident = Identity::from_internal();
+        let entry = make_sealed_entry(
+            "account",
+            uuid::uuid!("00000000-0000-0000-0000-000000000100"),
+        );
+        let acps: Vec<AccessControlSearchResolved> = vec![];
+        let result = search_filter_entry(&ident, &acps, &entry);
+        assert!(matches!(result, AccessSrchResult::Grant));
+    }
+
+    #[test]
+    fn test_search_filter_entry_migration_with_valid_class_grants() {
+        let ident = Identity::migration();
+        let entry = make_sealed_entry(
+            "account",
+            uuid::uuid!("00000000-0000-0000-0000-000000000100"),
+        );
+        let acps: Vec<AccessControlSearchResolved> = vec![];
+        let result = search_filter_entry(&ident, &acps, &entry);
+        assert!(matches!(result, AccessSrchResult::Grant));
+    }
+
+    #[test]
+    fn test_search_filter_entry_migration_with_invalid_class_denied() {
+        let ident = Identity::migration();
+        let entry = make_sealed_entry(
+            "tombstone",
+            uuid::uuid!("00000000-0000-0000-0000-000000000100"),
+        );
+        let acps: Vec<AccessControlSearchResolved> = vec![];
+        let result = search_filter_entry(&ident, &acps, &entry);
+        assert!(matches!(result, AccessSrchResult::Deny));
+    }
+
+    #[test]
+    fn test_search_filter_entry_migration_no_class_denied() {
+        let ident = Identity::migration();
+        let entry = Arc::new(
+            entry_init!((
+                Attribute::Uuid,
+                Value::Uuid(uuid::uuid!("00000000-0000-0000-0000-000000000100"))
+            ))
+            .into_sealed_committed(),
+        );
+        let acps: Vec<AccessControlSearchResolved> = vec![];
+        let result = search_filter_entry(&ident, &acps, &entry);
+        assert!(matches!(result, AccessSrchResult::Deny));
+    }
+
+    #[test]
+    fn test_search_filter_entry_user_synchronise_denied() {
+        let entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Name, Value::new_iname("testuser")),
+                (
+                    Attribute::Uuid,
+                    Value::Uuid(uuid::uuid!("00000000-0000-0000-0000-000000000001"))
+                )
+            )
+            .into_sealed_committed(),
+        );
+        let ident = Identity::from_impersonate_entry_readwrite(entry)
+            .project_with_scope(AccessScope::Synchronise);
+        let target = make_sealed_entry(
+            "account",
+            uuid::uuid!("00000000-0000-0000-0000-000000000100"),
+        );
+        let acps: Vec<AccessControlSearchResolved> = vec![];
+        let result = search_filter_entry(&ident, &acps, &target);
+        assert!(matches!(result, AccessSrchResult::Deny));
+    }
+
+    #[test]
+    fn test_search_filter_entry_user_readonly_no_acps_empty_allow() {
+        let ident = make_user_ident_ro();
+        let entry = make_sealed_entry(
+            "account",
+            uuid::uuid!("00000000-0000-0000-0000-000000000100"),
+        );
+        let acps: Vec<AccessControlSearchResolved> = vec![];
+        let result = search_filter_entry(&ident, &acps, &entry);
+        match result {
+            AccessSrchResult::Allow { attr } => assert!(attr.is_empty()),
+            _ => panic!("Expected Allow with empty attrs"),
+        }
+    }
+
+    #[test]
+    fn test_search_filter_entry_user_rw_no_acps_empty_allow() {
+        let ident = make_user_ident_rw();
+        let entry = make_sealed_entry(
+            "account",
+            uuid::uuid!("00000000-0000-0000-0000-000000000100"),
+        );
+        let acps: Vec<AccessControlSearchResolved> = vec![];
+        let result = search_filter_entry(&ident, &acps, &entry);
+        match result {
+            AccessSrchResult::Allow { attr } => assert!(attr.is_empty()),
+            _ => panic!("Expected Allow with empty attrs"),
+        }
+    }
+
+    #[test]
+    fn test_search_oauth2_filter_entry_internal_ignores() {
+        let ident = Identity::from_internal();
+        let entry = make_sealed_entry(
+            "oauth2_resource_server",
+            uuid::uuid!("00000000-0000-0000-0000-000000000100"),
+        );
+        let result = search_oauth2_filter_entry(&ident, &entry);
+        assert!(matches!(result, AccessSrchResult::Ignore));
+    }
+
+    #[test]
+    fn test_search_applications_filter_entry_internal_ignores() {
+        let ident = Identity::from_internal();
+        let entry = make_sealed_entry(
+            "application",
+            uuid::uuid!("00000000-0000-0000-0000-000000000100"),
+        );
+        let result = search_applications_filter_entry(&ident, &entry);
+        assert!(matches!(result, AccessSrchResult::Ignore));
+    }
+
+    #[test]
+    fn test_search_sync_account_filter_entry_internal_ignores() {
+        let ident = Identity::from_internal();
+        let entry = make_sealed_entry(
+            "sync_account",
+            uuid::uuid!("00000000-0000-0000-0000-000000000100"),
+        );
+        let result = search_sync_account_filter_entry(&ident, &entry);
+        assert!(matches!(result, AccessSrchResult::Ignore));
+    }
+
+    #[test]
+    fn test_apply_search_access_internal_system_grants() {
+        let ident = Identity::from_internal();
+        let entry = make_sealed_entry(
+            "account",
+            uuid::uuid!("00000000-0000-0000-0000-000000000100"),
+        );
+        let acps: Vec<AccessControlSearchResolved> = vec![];
+        let result = apply_search_access(&ident, &acps, &entry);
+        assert!(matches!(result, SearchResult::Grant));
+    }
+
+    #[test]
+    fn test_apply_search_access_user_no_acps_empty_allow() {
+        let ident = make_user_ident_rw();
+        let entry = make_sealed_entry(
+            "account",
+            uuid::uuid!("00000000-0000-0000-0000-000000000100"),
+        );
+        let acps: Vec<AccessControlSearchResolved> = vec![];
+        let result = apply_search_access(&ident, &acps, &entry);
+        match result {
+            SearchResult::Allow(attrs) => assert!(attrs.is_empty()),
+            _ => panic!("Expected Allow with empty attrs"),
+        }
+    }
+}
