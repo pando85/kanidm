@@ -1,18 +1,17 @@
 # This builds the kanidm CLI tools
 ARG BASE_IMAGE=debian:trixie-slim
 
-FROM ${BASE_IMAGE} AS builder
+FROM rust:1 AS builder
 ARG KANIDM_FEATURES
 ARG KANIDM_BUILD_PROFILE
 ARG KANIDM_BUILD_OPTIONS=""
 
 ENV KANIDM_BUILD_PROFILE=${KANIDM_BUILD_PROFILE:-container_generic}
 ENV RUSTFLAGS="-Clinker=clang"
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     sccache \
-    cargo \
-    cargo-auditable \
     clang \
     gcc \
     make \
@@ -21,11 +20,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpam0g-dev \
     libudev-dev \
     libsqlite3-dev \
-    ca-certificates \
     rsync \
     && rm -rf /var/lib/apt/lists/*
 
-ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+RUN cargo install cargo-auditable
 
 COPY . /usr/src/kanidm
 

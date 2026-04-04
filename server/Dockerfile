@@ -1,7 +1,7 @@
 # Build the main Kanidmd server
 ARG BASE_IMAGE=debian:trixie-slim
 
-FROM ${BASE_IMAGE} AS builder
+FROM rust:1 AS builder
 ARG KANIDM_FEATURES
 ARG KANIDM_BUILD_PROFILE="container_generic"
 ARG KANIDM_BUILD_OPTIONS=""
@@ -12,9 +12,6 @@ ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     sccache \
-    cargo \
-    cargo-auditable \
-    ca-certificates \
     clang \
     cmake \
     gcc \
@@ -27,6 +24,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsystemd-dev \
     rsync \
     && rm -rf /var/lib/apt/lists/*
+
+RUN cargo install cargo-auditable
 
 COPY . /usr/src/kanidm
 
