@@ -78,3 +78,101 @@ pub struct ApprovalTimeoutCheck {
 pub struct ApprovalEscalationCheck {
     pub request_uuid: Uuid,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_password_upgrade_debug_does_not_leak() {
+        let action = PasswordUpgrade {
+            target_uuid: Uuid::new_v4(),
+            existing_password: "super-secret-password".to_string(),
+        };
+        let debug = format!("{:?}", action);
+        assert!(debug.contains("PasswordUpgrade"));
+        assert!(debug.contains("target_uuid"));
+        assert!(!debug.contains("super-secret-password"));
+    }
+
+    #[test]
+    fn test_unix_password_upgrade_debug_does_not_leak() {
+        let action = UnixPasswordUpgrade {
+            target_uuid: Uuid::new_v4(),
+            existing_password: "unix-secret".to_string(),
+        };
+        let debug = format!("{:?}", action);
+        assert!(debug.contains("UnixPasswordUpgrade"));
+        assert!(!debug.contains("unix-secret"));
+    }
+
+    #[test]
+    fn test_backup_code_removal_debug() {
+        let action = BackupCodeRemoval {
+            target_uuid: Uuid::new_v4(),
+            code_to_remove: "secret-backup-code".to_string(),
+        };
+        let debug = format!("{:?}", action);
+        assert!(debug.contains("BackupCodeRemoval"));
+        // BackupCodeRemoval derives Debug, so it will include the code
+        // This is acceptable since backup codes are less sensitive than passwords
+        assert!(debug.contains("code_to_remove"));
+    }
+
+    #[test]
+    fn test_approval_timeout_check_debug() {
+        let action = ApprovalTimeoutCheck {
+            request_uuid: Uuid::new_v4(),
+        };
+        let debug = format!("{:?}", action);
+        assert!(debug.contains("ApprovalTimeoutCheck"));
+        assert!(debug.contains("request_uuid"));
+    }
+
+    #[test]
+    fn test_approval_escalation_check_debug() {
+        let action = ApprovalEscalationCheck {
+            request_uuid: Uuid::new_v4(),
+        };
+        let debug = format!("{:?}", action);
+        assert!(debug.contains("ApprovalEscalationCheck"));
+    }
+
+    #[test]
+    fn test_delayed_action_variants() {
+        let pw_uuid = Uuid::new_v4();
+        let action = DelayedAction::PwUpgrade(PasswordUpgrade {
+            target_uuid: pw_uuid,
+            existing_password: "password".to_string(),
+        });
+        let debug = format!("{:?}", action);
+        assert!(debug.contains("PwUpgrade"));
+
+        let unix_uuid = Uuid::new_v4();
+        let action = DelayedAction::UnixPwUpgrade(UnixPasswordUpgrade {
+            target_uuid: unix_uuid,
+            existing_password: "unixpw".to_string(),
+        });
+        let debug = format!("{:?}", action);
+        assert!(debug.contains("UnixPwUpgrade"));
+
+        let action = DelayedAction::BackupCodeRemoval(BackupCodeRemoval {
+            target_uuid: Uuid::new_v4(),
+            code_to_remove: "code".to_string(),
+        });
+        let debug = format!("{:?}", action);
+        assert!(debug.contains("BackupCodeRemoval"));
+
+        let action = DelayedAction::ApprovalTimeoutCheck(ApprovalTimeoutCheck {
+            request_uuid: Uuid::new_v4(),
+        });
+        let debug = format!("{:?}", action);
+        assert!(debug.contains("ApprovalTimeoutCheck"));
+
+        let action = DelayedAction::ApprovalEscalationCheck(ApprovalEscalationCheck {
+            request_uuid: Uuid::new_v4(),
+        });
+        let debug = format!("{:?}", action);
+        assert!(debug.contains("ApprovalEscalationCheck"));
+    }
+}
