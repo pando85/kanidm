@@ -8,23 +8,24 @@ ARG KANIDM_BUILD_OPTIONS=""
 
 ENV KANIDM_BUILD_PROFILE=${KANIDM_BUILD_PROFILE:-container_generic}
 ENV RUSTFLAGS="-Clinker=clang"
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     sccache \
     cargo \
     cargo-auditable \
+    ca-certificates \
     clang \
-    gcc \
     cmake \
-    gawk \
+    gcc \
     make \
     automake \
     autoconf \
     libpam0g-dev \
     libsqlite3-dev \
+    libcap-dev \
     libsystemd-dev \
     rsync \
-    findutils \
     && rm -rf /var/lib/apt/lists/*
 
 COPY . /usr/src/kanidm
@@ -57,7 +58,6 @@ FROM scratch
 WORKDIR /
 
 COPY --from=builder /etc/ssl/certs /etc/ssl/certs
-
 COPY --from=builder --chmod=0755 /usr/src/kanidm/target/release/kanidmd /sbin/
 COPY --from=builder /usr/src/kanidm/server/core/static /hpkg/
 

@@ -26,8 +26,9 @@ COPY rlm_python/sites-available/ /etc/freeradius/sites-available/
 
 WORKDIR /etc/freeradius
 
-RUN ln -s /etc/freeradius/mods-available/python3 /etc/freeradius/mods-enabled/python3 && \
-    ln -s /etc/freeradius/sites-available/check-eap-tls /etc/freeradius/sites-enabled/check-eap-tls
+RUN mkdir -p /etc/freeradius/mods-enabled /etc/freeradius/sites-enabled && \
+    ln -sf /etc/freeradius/mods-available/python3 /etc/freeradius/mods-enabled/python3 && \
+    ln -sf /etc/freeradius/sites-available/check-eap-tls /etc/freeradius/sites-enabled/check-eap-tls
 
 RUN rm -f /etc/freeradius/mods-available/sql && \
     rm -f /etc/freeradius/mods-enabled/passwd && \

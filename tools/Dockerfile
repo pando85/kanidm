@@ -21,8 +21,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpam0g-dev \
     libudev-dev \
     libsqlite3-dev \
+    ca-certificates \
     rsync \
     && rm -rf /var/lib/apt/lists/*
+
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 COPY . /usr/src/kanidm
 
