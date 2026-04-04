@@ -185,4 +185,99 @@ mod tests {
             ValueSetHexString::new("D68475C760A7A0F6A924C28F095573A967F600D6".to_string());
         crate::valueset::scim_json_reflexive(&vs, r#""D68475C760A7A0F6A924C28F095573A967F600D6""#);
     }
+
+    #[test]
+    fn test_valueset_hexstring_new() {
+        let vs: ValueSet = ValueSetHexString::new("0xABCD".to_string());
+        assert_eq!(vs.len(), 1);
+    }
+
+    #[test]
+    fn test_valueset_hexstring_insert_checked() {
+        let mut vs: ValueSet = ValueSetHexString::new("0xABCD".to_string());
+        assert!(vs
+            .insert_checked(crate::prelude::Value::HexString("0xEF01".to_string()))
+            .unwrap());
+        assert!(!vs
+            .insert_checked(crate::prelude::Value::HexString("0xABCD".to_string()))
+            .unwrap());
+        assert_eq!(vs.len(), 2);
+    }
+
+    #[test]
+    fn test_valueset_hexstring_equal() {
+        let vs1: ValueSet = ValueSetHexString::new("0xABCD".to_string());
+        let vs2: ValueSet = ValueSetHexString::new("0xABCD".to_string());
+        assert!(vs1.equal(&vs2));
+    }
+
+    #[test]
+    fn test_valueset_hexstring_not_equal() {
+        let vs1: ValueSet = ValueSetHexString::new("0xABCD".to_string());
+        let vs2: ValueSet = ValueSetHexString::new("0xEF01".to_string());
+        assert!(!vs1.equal(&vs2));
+    }
+
+    #[test]
+    fn test_valueset_hexstring_merge() {
+        let mut vs_a: ValueSet = ValueSetHexString::new("0xAAAA".to_string());
+        let vs_b: ValueSet = ValueSetHexString::new("0xBBBB".to_string());
+        vs_a.merge(&vs_b).expect("Failed to merge");
+        assert_eq!(vs_a.len(), 2);
+    }
+
+    #[test]
+    fn test_valueset_hexstring_clear() {
+        let mut vs: ValueSet = ValueSetHexString::new("0xABCD".to_string());
+        assert_eq!(vs.len(), 1);
+        vs.clear();
+        assert_eq!(vs.len(), 0);
+    }
+
+    #[test]
+    fn test_valueset_hexstring_len() {
+        let mut vs: ValueSet = ValueSetHexString::new("0x01".to_string());
+        assert_eq!(vs.len(), 1);
+        vs.insert_checked(crate::prelude::Value::HexString("0x02".to_string()))
+            .unwrap();
+        assert_eq!(vs.len(), 2);
+    }
+
+    #[test]
+    fn test_valueset_hexstring_dbv2_roundtrip() {
+        let mut vs: ValueSet = ValueSetHexString::new("0xCAFE".to_string());
+        vs.insert_checked(crate::prelude::Value::HexString("0xBEEF".to_string()))
+            .unwrap();
+        let dbvs = vs.to_db_valueset_v2();
+        let vs2 = crate::valueset::from_db_valueset_v2(dbvs).expect("Failed to restore");
+        assert!(vs.equal(&vs2));
+    }
+
+    #[test]
+    fn test_valueset_hexstring_push() {
+        use crate::valueset::ValueSetT;
+        let mut vs = ValueSetHexString::new("0xABCD".to_string());
+        assert!(vs.push("0xEF01"));
+        assert!(!vs.push("0xef01"));
+        assert_eq!(vs.len(), 2);
+    }
+
+    #[test]
+    fn test_valueset_hexstring_contains() {
+        let vs: ValueSet = ValueSetHexString::new("0xABCD".to_string());
+        assert!(vs.contains(&crate::prelude::PartialValue::HexString(
+            "0xABCD".to_string()
+        )));
+        assert!(!vs.contains(&crate::prelude::PartialValue::HexString(
+            "0xEF01".to_string()
+        )));
+    }
+
+    #[test]
+    fn test_valueset_hexstring_substring() {
+        let vs: ValueSet = ValueSetHexString::new("0xABCDEF".to_string());
+        assert!(vs.substring(&crate::prelude::PartialValue::HexString("ABCD".to_string())));
+        assert!(vs.substring(&crate::prelude::PartialValue::HexString("CDEF".to_string())));
+        assert!(!vs.substring(&crate::prelude::PartialValue::HexString("XYZ".to_string())));
+    }
 }

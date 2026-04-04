@@ -190,4 +190,94 @@ mod tests {
         let vs: ValueSet = ValueSetSpn::new(("claire".to_string(), "example.com".to_string()));
         crate::valueset::scim_json_reflexive(&vs, r#""claire@example.com""#);
     }
+
+    #[test]
+    fn test_valueset_spn_new() {
+        let vs: ValueSet = ValueSetSpn::new(("admin".to_string(), "test.com".to_string()));
+        assert_eq!(vs.len(), 1);
+    }
+
+    #[test]
+    fn test_valueset_spn_insert_checked() {
+        let mut vs: ValueSet = ValueSetSpn::new(("user1".to_string(), "example.com".to_string()));
+        assert!(vs
+            .insert_checked(crate::prelude::Value::Spn(
+                "user2".to_string(),
+                "example.com".to_string()
+            ))
+            .unwrap());
+        assert!(!vs
+            .insert_checked(crate::prelude::Value::Spn(
+                "user1".to_string(),
+                "example.com".to_string()
+            ))
+            .unwrap());
+        assert_eq!(vs.len(), 2);
+    }
+
+    #[test]
+    fn test_valueset_spn_equal() {
+        let vs1: ValueSet = ValueSetSpn::new(("alice".to_string(), "domain.com".to_string()));
+        let vs2: ValueSet = ValueSetSpn::new(("alice".to_string(), "domain.com".to_string()));
+        assert!(vs1.equal(&vs2));
+    }
+
+    #[test]
+    fn test_valueset_spn_not_equal() {
+        let vs1: ValueSet = ValueSetSpn::new(("alice".to_string(), "domain.com".to_string()));
+        let vs2: ValueSet = ValueSetSpn::new(("bob".to_string(), "domain.com".to_string()));
+        assert!(!vs1.equal(&vs2));
+    }
+
+    #[test]
+    fn test_valueset_spn_merge() {
+        let mut vs_a: ValueSet = ValueSetSpn::new(("user1".to_string(), "example.com".to_string()));
+        let vs_b: ValueSet = ValueSetSpn::new(("user2".to_string(), "example.com".to_string()));
+        vs_a.merge(&vs_b).expect("Failed to merge");
+        assert_eq!(vs_a.len(), 2);
+    }
+
+    #[test]
+    fn test_valueset_spn_clear() {
+        let mut vs: ValueSet = ValueSetSpn::new(("admin".to_string(), "test.com".to_string()));
+        vs.clear();
+        assert_eq!(vs.len(), 0);
+    }
+
+    #[test]
+    fn test_valueset_spn_len() {
+        let mut vs: ValueSet = ValueSetSpn::new(("a".to_string(), "b".to_string()));
+        assert_eq!(vs.len(), 1);
+        vs.insert_checked(crate::prelude::Value::Spn("c".to_string(), "d".to_string()))
+            .unwrap();
+        assert_eq!(vs.len(), 2);
+    }
+
+    #[test]
+    fn test_valueset_spn_dbv2_roundtrip() {
+        let vs: ValueSet = ValueSetSpn::new(("claire".to_string(), "example.com".to_string()));
+        let dbvs = vs.to_db_valueset_v2();
+        let vs2 = crate::valueset::from_db_valueset_v2(dbvs).expect("Failed to restore");
+        assert!(vs.equal(&vs2));
+    }
+
+    #[test]
+    fn test_valueset_spn_contains() {
+        let vs: ValueSet = ValueSetSpn::new(("admin".to_string(), "test.com".to_string()));
+        assert!(vs.contains(&crate::prelude::PartialValue::Spn(
+            "admin".to_string(),
+            "test.com".to_string()
+        )));
+        assert!(!vs.contains(&crate::prelude::PartialValue::Spn(
+            "nobody".to_string(),
+            "test.com".to_string()
+        )));
+    }
+
+    #[test]
+    fn test_valueset_spn_proto_string_format() {
+        let vs: ValueSet = ValueSetSpn::new(("alice".to_string(), "example.com".to_string()));
+        let strings: Vec<String> = vs.to_proto_string_clone_iter().collect();
+        assert_eq!(strings, vec!["alice@example.com"]);
+    }
 }
