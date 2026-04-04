@@ -37,7 +37,7 @@ RUN rm -f /etc/freeradius/mods-available/sql && \
 RUN chown -R $RADIUS_USER:$RADIUS_USER /etc/freeradius/ && \
     mkdir -p /etc/freeradius/certs && \
     chmod 775 /etc/freeradius/certs && \
-    chmod 640 /etc/freeradius/clients.conf
+    if [ -f /etc/freeradius/clients.conf ]; then chmod 640 /etc/freeradius/clients.conf; fi
 
 RUN mkdir -p /pkg/pykanidm/
 COPY pykanidm/ /pkg/pykanidm/
