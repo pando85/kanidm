@@ -338,3 +338,275 @@ impl Identity {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::be::Limits;
+    use kanidm_proto::internal::{ApiTokenPurpose, UatPurpose};
+
+    #[test]
+    fn test_source_equality() {
+        assert_eq!(Source::Internal, Source::Internal);
+        let ip: std::net::IpAddr = "127.0.0.1".parse().unwrap();
+        assert_eq!(Source::Https(ip), Source::Https(ip));
+        assert_eq!(Source::Ldaps(ip), Source::Ldaps(ip));
+        assert_ne!(Source::Internal, Source::Https(ip));
+        assert_ne!(Source::Https(ip), Source::Ldaps(ip));
+    }
+
+    #[test]
+    fn test_source_debug() {
+        let debug = format!("{:?}", Source::Internal);
+        assert!(debug.contains("Internal"));
+        let ip: std::net::IpAddr = "10.0.0.1".parse().unwrap();
+        let debug = format!("{:?}", Source::Https(ip));
+        assert!(debug.contains("Https"));
+    }
+
+    #[test]
+    fn test_source_clone() {
+        let ip: std::net::IpAddr = "192.168.1.1".parse().unwrap();
+        let source = Source::Ldaps(ip);
+        let cloned = source.clone();
+        assert_eq!(source, cloned);
+    }
+
+    #[test]
+    fn test_access_scope_display() {
+        assert_eq!(AccessScope::ReadOnly.to_string(), "read only");
+        assert_eq!(AccessScope::ReadWrite.to_string(), "read write");
+        assert_eq!(AccessScope::Synchronise.to_string(), "synchronise");
+    }
+
+    #[test]
+    fn test_access_scope_equality() {
+        assert_eq!(AccessScope::ReadOnly, AccessScope::ReadOnly);
+        assert_ne!(AccessScope::ReadOnly, AccessScope::ReadWrite);
+        assert_ne!(AccessScope::ReadWrite, AccessScope::Synchronise);
+    }
+
+    #[test]
+    fn test_access_scope_from_api_token_purpose() {
+        assert_eq!(
+            AccessScope::from(&ApiTokenPurpose::ReadOnly),
+            AccessScope::ReadOnly
+        );
+        assert_eq!(
+            AccessScope::from(&ApiTokenPurpose::ReadWrite),
+            AccessScope::ReadWrite
+        );
+        assert_eq!(
+            AccessScope::from(&ApiTokenPurpose::Synchronise),
+            AccessScope::Synchronise
+        );
+    }
+
+    #[test]
+    fn test_access_scope_from_uat_purpose() {
+        assert_eq!(
+            AccessScope::from(&UatPurpose::ReadOnly),
+            AccessScope::ReadOnly
+        );
+        assert_eq!(
+            AccessScope::from(&UatPurpose::ReadWrite { expiry: None }),
+            AccessScope::ReadWrite
+        );
+    }
+
+    #[test]
+    fn test_access_scope_copy() {
+        let scope = AccessScope::ReadWrite;
+        let copied = scope;
+        assert_eq!(scope, copied);
+    }
+
+    #[test]
+    fn test_internal_role_display() {
+        assert_eq!(InternalRole::System.to_string(), "System");
+        assert_eq!(InternalRole::Migration.to_string(), "Migration");
+    }
+
+    #[test]
+    fn test_internal_role_get_uuid() {
+        assert_eq!(InternalRole::System.get_uuid(), UUID_SYSTEM);
+        assert_eq!(InternalRole::Migration.get_uuid(), UUID_INTERNAL_MIGRATION);
+    }
+
+    #[test]
+    fn test_ident_type_debug() {
+        let ident = IdentType::Internal(InternalRole::System);
+        let debug = format!("{:?}", ident);
+        assert!(debug.contains("Internal"));
+    }
+
+    #[test]
+    fn test_identity_id_from_internal_ident_type() {
+        let ident_type = IdentType::Internal(InternalRole::System);
+        let id = IdentityId::from(&ident_type);
+        assert_eq!(id, IdentityId::Internal(UUID_SYSTEM));
+    }
+
+    #[test]
+    fn test_identity_id_from_synch_ident_type() {
+        let sync_uuid = Uuid::new_v4();
+        let ident_type = IdentType::Synch(sync_uuid);
+        let id = IdentityId::from(&ident_type);
+        assert_eq!(id, IdentityId::Synch(sync_uuid));
+    }
+
+    #[test]
+    fn test_identity_id_to_uuid() {
+        let uuid = Uuid::new_v4();
+        let id = IdentityId::User(uuid);
+        let result: Uuid = Uuid::from(&id);
+        assert_eq!(result, uuid);
+
+        let id = IdentityId::Internal(UUID_SYSTEM);
+        let result: Uuid = Uuid::from(&id);
+        assert_eq!(result, UUID_SYSTEM);
+
+        let sync_uuid = Uuid::new_v4();
+        let id = IdentityId::Synch(sync_uuid);
+        let result: Uuid = Uuid::from(&id);
+        assert_eq!(result, sync_uuid);
+    }
+
+    #[test]
+    fn test_identity_id_serde_roundtrip() {
+        let uuid = Uuid::new_v4();
+        let variants = vec![
+            IdentityId::User(uuid),
+            IdentityId::Synch(Uuid::new_v4()),
+            IdentityId::Internal(UUID_SYSTEM),
+        ];
+        for variant in variants {
+            let json = serde_json::to_string(&variant).unwrap();
+            let parsed: IdentityId = serde_json::from_str(&json).unwrap();
+            assert_eq!(variant, parsed);
+        }
+    }
+
+    #[test]
+    fn test_identity_id_hash_eq() {
+        use std::collections::HashSet;
+        let uuid = Uuid::new_v4();
+        let mut set = HashSet::new();
+        set.insert(IdentityId::User(uuid));
+        assert!(set.contains(&IdentityId::User(uuid)));
+        assert!(!set.contains(&IdentityId::Internal(uuid)));
+    }
+
+    #[test]
+    fn test_identity_id_ordering() {
+        assert!(IdentityId::User(Uuid::new_v4()) < IdentityId::Internal(UUID_SYSTEM));
+        assert!(IdentityId::User(Uuid::new_v4()) < IdentityId::Synch(Uuid::new_v4()));
+        assert!(IdentityId::Synch(Uuid::new_v4()) < IdentityId::Internal(UUID_SYSTEM));
+    }
+
+    #[test]
+    fn test_identity_from_internal() {
+        let ident = Identity::from_internal();
+        assert!(ident.is_internal());
+        assert_eq!(ident.get_uuid(), Some(UUID_SYSTEM));
+        assert_eq!(ident.access_scope(), AccessScope::ReadWrite);
+        assert!(!ident.can_logout());
+        assert_eq!(ident.get_session_id(), UUID_INTERNAL_SESSION_ID);
+    }
+
+    #[test]
+    fn test_identity_migration() {
+        let ident = Identity::migration();
+        assert!(ident.is_internal());
+        assert_eq!(ident.get_uuid(), Some(UUID_INTERNAL_MIGRATION));
+        assert_eq!(ident.access_scope(), AccessScope::ReadWrite);
+    }
+
+    #[test]
+    fn test_identity_project_with_scope() {
+        let ident = Identity::from_internal();
+        let projected = ident.project_with_scope(AccessScope::ReadOnly);
+        assert_eq!(projected.access_scope(), AccessScope::ReadOnly);
+        assert_eq!(ident.access_scope(), AccessScope::ReadWrite);
+    }
+
+    #[test]
+    fn test_identity_get_memberof_internal() {
+        let ident = Identity::from_internal();
+        assert!(ident.get_memberof().is_none());
+    }
+
+    #[test]
+    fn test_identity_get_user_entry_internal() {
+        let ident = Identity::from_internal();
+        assert!(ident.get_user_entry().is_none());
+    }
+
+    #[test]
+    fn test_identity_get_session_internal() {
+        let ident = Identity::from_internal();
+        assert!(ident.get_session().is_none());
+    }
+
+    #[test]
+    fn test_identity_get_oauth2_consent_scopes_internal() {
+        let ident = Identity::from_internal();
+        assert!(ident.get_oauth2_consent_scopes(Uuid::new_v4()).is_none());
+    }
+
+    #[test]
+    fn test_identity_get_event_origin_id() {
+        let ident = Identity::from_internal();
+        let origin_id = ident.get_event_origin_id();
+        assert_eq!(origin_id, IdentityId::Internal(UUID_SYSTEM));
+    }
+
+    #[test]
+    fn test_identity_from_impersonate() {
+        let ident = Identity::from_internal();
+        let impersonated = Identity::from_impersonate(&ident);
+        assert_eq!(impersonated.get_uuid(), ident.get_uuid());
+        assert_eq!(impersonated.access_scope(), ident.access_scope());
+    }
+
+    #[test]
+    fn test_identity_clone() {
+        let ident = Identity::from_internal();
+        let cloned = ident.clone();
+        assert_eq!(cloned.get_uuid(), ident.get_uuid());
+        assert_eq!(cloned.access_scope(), ident.access_scope());
+    }
+
+    #[test]
+    fn test_identity_limits() {
+        let ident = Identity::from_internal();
+        let limits = ident.limits();
+        assert!(limits.unindexed_allow);
+    }
+
+    #[test]
+    fn test_identity_new_custom() {
+        let ident = Identity::new(
+            IdentType::Synch(Uuid::new_v4()),
+            Source::Internal,
+            Uuid::new_v4(),
+            AccessScope::Synchronise,
+            Limits::unlimited(),
+        );
+        assert!(!ident.is_internal());
+        assert_eq!(ident.access_scope(), AccessScope::Synchronise);
+        assert!(!ident.can_logout());
+    }
+
+    #[test]
+    fn test_identity_source_method() {
+        let ident = Identity::new(
+            IdentType::Internal(InternalRole::System),
+            Source::Internal,
+            UUID_INTERNAL_SESSION_ID,
+            AccessScope::ReadOnly,
+            Limits::default(),
+        );
+        assert_eq!(*ident.source(), Source::Internal);
+    }
+}

@@ -244,3 +244,227 @@ fn protected_filter_entry(ident: &Identity, entry: &Arc<EntrySealedCommitted>) -
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::server::identity::Identity;
+
+    fn make_user_ident_rw() -> Identity {
+        let entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Name, Value::new_iname("testuser")),
+                (
+                    Attribute::Uuid,
+                    Value::Uuid(uuid::uuid!("00000000-0000-0000-0000-000000000001"))
+                )
+            )
+            .into_sealed_committed(),
+        );
+        Identity::from_impersonate_entry_readwrite(entry)
+    }
+
+    fn make_sealed_entry(class: &str, uuid: Uuid) -> Arc<EntrySealedCommitted> {
+        Arc::new(
+            entry_init!(
+                (Attribute::Class, Value::new_iutf8(class)),
+                (Attribute::Uuid, Value::Uuid(uuid))
+            )
+            .into_sealed_committed(),
+        )
+    }
+
+    #[test]
+    fn test_protected_filter_entry_internal_system_ignores() {
+        let ident = Identity::from_internal();
+        let entry = make_sealed_entry(
+            "system",
+            uuid::uuid!("ffffffff-ffff-ffff-ffff-000000000100"),
+        );
+        let result = protected_filter_entry(&ident, &entry);
+        match result {
+            IResult::Ignore => {}
+            _ => panic!("Expected Ignore for internal system"),
+        }
+    }
+
+    #[test]
+    fn test_protected_filter_entry_user_with_protected_class_denied() {
+        let ident = make_user_ident_rw();
+        let entry = make_sealed_entry(
+            "system",
+            uuid::uuid!("ffffffff-ffff-ffff-ffff-000000000100"),
+        );
+        let result = protected_filter_entry(&ident, &entry);
+        match result {
+            IResult::Deny => {}
+            _ => panic!("Expected Deny for user with protected class"),
+        }
+    }
+
+    #[test]
+    fn test_protected_filter_entry_user_with_nonprotected_class_ignores() {
+        let ident = make_user_ident_rw();
+        let entry = make_sealed_entry(
+            "account",
+            uuid::uuid!("ffffffff-ffff-ffff-ffff-000000000100"),
+        );
+        let result = protected_filter_entry(&ident, &entry);
+        match result {
+            IResult::Ignore => {}
+            _ => panic!("Expected Ignore for user with non-protected class"),
+        }
+    }
+
+    #[test]
+    fn test_protected_filter_entry_user_with_system_uuid_denied() {
+        let ident = make_user_ident_rw();
+        let entry = make_sealed_entry("account", UUID_ANONYMOUS);
+        let result = protected_filter_entry(&ident, &entry);
+        match result {
+            IResult::Deny => {}
+            _ => panic!("Expected Deny for system UUID"),
+        }
+    }
+
+    #[test]
+    fn test_protected_filter_entry_user_no_classes_ignores() {
+        let ident = make_user_ident_rw();
+        let entry = Arc::new(
+            entry_init!((
+                Attribute::Uuid,
+                Value::Uuid(uuid::uuid!("ffffffff-ffff-ffff-ffff-000000000100"))
+            ))
+            .into_sealed_committed(),
+        );
+        let result = protected_filter_entry(&ident, &entry);
+        match result {
+            IResult::Ignore => {}
+            _ => panic!("Expected Ignore for entry with no classes"),
+        }
+    }
+
+    #[test]
+    fn test_delete_filter_entry_internal_system_grants() {
+        let ident = Identity::from_internal();
+        let entry = make_sealed_entry(
+            "account",
+            uuid::uuid!("ffffffff-ffff-ffff-ffff-000000000100"),
+        );
+        let acps: Vec<AccessControlDeleteResolved> = vec![];
+        let result = delete_filter_entry(&ident, &acps, &entry);
+        match result {
+            IResult::Grant => {}
+            _ => panic!("Expected Grant for internal system"),
+        }
+    }
+
+    #[test]
+    fn test_delete_filter_entry_migration_with_valid_class_grants() {
+        let ident = Identity::migration();
+        let entry = make_sealed_entry(
+            "account",
+            uuid::uuid!("ffffffff-ffff-ffff-ffff-000000000100"),
+        );
+        let acps: Vec<AccessControlDeleteResolved> = vec![];
+        let result = delete_filter_entry(&ident, &acps, &entry);
+        match result {
+            IResult::Grant => {}
+            _ => panic!("Expected Grant for migration with valid class"),
+        }
+    }
+
+    #[test]
+    fn test_delete_filter_entry_migration_with_invalid_class_denied() {
+        let ident = Identity::migration();
+        let entry = make_sealed_entry(
+            "tombstone",
+            uuid::uuid!("ffffffff-ffff-ffff-ffff-000000000100"),
+        );
+        let acps: Vec<AccessControlDeleteResolved> = vec![];
+        let result = delete_filter_entry(&ident, &acps, &entry);
+        match result {
+            IResult::Deny => {}
+            _ => panic!("Expected Deny for migration with invalid class"),
+        }
+    }
+
+    #[test]
+    fn test_delete_filter_entry_migration_no_class_denied() {
+        let ident = Identity::migration();
+        let entry = Arc::new(
+            entry_init!((
+                Attribute::Uuid,
+                Value::Uuid(uuid::uuid!("ffffffff-ffff-ffff-ffff-000000000100"))
+            ))
+            .into_sealed_committed(),
+        );
+        let acps: Vec<AccessControlDeleteResolved> = vec![];
+        let result = delete_filter_entry(&ident, &acps, &entry);
+        match result {
+            IResult::Deny => {}
+            _ => panic!("Expected Deny for migration with no class"),
+        }
+    }
+
+    #[test]
+    fn test_delete_filter_entry_user_no_acps_ignores() {
+        let ident = make_user_ident_rw();
+        let entry = make_sealed_entry(
+            "account",
+            uuid::uuid!("ffffffff-ffff-ffff-ffff-000000000100"),
+        );
+        let acps: Vec<AccessControlDeleteResolved> = vec![];
+        let result = delete_filter_entry(&ident, &acps, &entry);
+        match result {
+            IResult::Ignore => {}
+            _ => panic!("Expected Ignore for user with no ACPs"),
+        }
+    }
+
+    #[test]
+    fn test_apply_delete_access_internal_system_grants() {
+        let ident = Identity::from_internal();
+        let entry = make_sealed_entry(
+            "account",
+            uuid::uuid!("ffffffff-ffff-ffff-ffff-000000000100"),
+        );
+        let acps: Vec<AccessControlDeleteResolved> = vec![];
+        let result = apply_delete_access(&ident, &acps, &entry);
+        match result {
+            DeleteResult::Grant => {}
+            _ => panic!("Expected Grant for internal system"),
+        }
+    }
+
+    #[test]
+    fn test_apply_delete_access_user_no_acps_denied() {
+        let ident = make_user_ident_rw();
+        let entry = make_sealed_entry(
+            "account",
+            uuid::uuid!("ffffffff-ffff-ffff-ffff-000000000100"),
+        );
+        let acps: Vec<AccessControlDeleteResolved> = vec![];
+        let result = apply_delete_access(&ident, &acps, &entry);
+        match result {
+            DeleteResult::Deny => {}
+            _ => panic!("Expected Deny for user with no ACPs"),
+        }
+    }
+
+    #[test]
+    fn test_apply_delete_access_protected_class_denied() {
+        let ident = make_user_ident_rw();
+        let entry = make_sealed_entry(
+            "system",
+            uuid::uuid!("ffffffff-ffff-ffff-ffff-000000000100"),
+        );
+        let acps: Vec<AccessControlDeleteResolved> = vec![];
+        let result = apply_delete_access(&ident, &acps, &entry);
+        match result {
+            DeleteResult::Deny => {}
+            _ => panic!("Expected Deny for protected class"),
+        }
+    }
+}

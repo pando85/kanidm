@@ -302,3 +302,38 @@ mod tests {
 
 }
 */
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_key_providers_default_empty() {
+        let providers = KeyProviders::default();
+        let read_txn = providers.read();
+        assert!(read_txn.get_key_object_handle(Uuid::new_v4()).is_none());
+    }
+
+    #[test]
+    fn test_key_providers_write_commit() {
+        let providers = KeyProviders::default();
+        let write_txn = providers.write();
+        write_txn.commit().expect("commit should succeed");
+    }
+
+    #[test]
+    fn test_key_providers_get_or_create_in_default_no_provider() {
+        let providers = KeyProviders::default();
+        let mut write_txn = providers.write();
+        let result = write_txn.get_or_create_in_default(Uuid::new_v4());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_key_providers_get_default_no_provider() {
+        let providers = KeyProviders::default();
+        let write_txn = providers.write();
+        let result = write_txn.get_default();
+        assert!(result.is_err());
+    }
+}

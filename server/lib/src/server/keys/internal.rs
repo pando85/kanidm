@@ -2328,4 +2328,195 @@ mod tests {
 
         write_txn.commit().expect("Failed to commit");
     }
+
+    #[test]
+    fn test_key_object_internal_hs256_sign_verify() {
+        let ct = duration_from_epoch_now();
+        let provider = Arc::new(KeyProviderInternal::create_test_provider());
+
+        let mut key_object = provider
+            .create_new_key_object(Uuid::new_v4(), provider.clone())
+            .expect("Unable to create new key object");
+
+        key_object
+            .jws_hs256_assert(ct, &Cid::new_count(ct.as_secs()))
+            .expect("Unable to assert hs256 key");
+
+        let jws = JwsBuilder::from(vec![5, 6, 7, 8, 9]).build();
+
+        let sig = key_object
+            .jws_hs256_sign(&jws, ct)
+            .expect("Unable to sign jws with hs256");
+
+        let released = key_object
+            .jws_verify(&sig)
+            .expect("Unable to validate hs256 jws");
+
+        assert_eq!(released.payload(), &[5, 6, 7, 8, 9]);
+    }
+
+    #[test]
+    fn test_key_object_internal_rs256_sign_verify() {
+        let ct = duration_from_epoch_now();
+        let provider = Arc::new(KeyProviderInternal::create_test_provider());
+
+        let mut key_object = provider
+            .create_new_key_object(Uuid::new_v4(), provider.clone())
+            .expect("Unable to create new key object");
+
+        key_object
+            .jws_rs256_assert(ct, &Cid::new_count(ct.as_secs()))
+            .expect("Unable to assert rs256 key");
+
+        let jws = JwsBuilder::from(vec![10, 11, 12, 13]).build();
+
+        let sig = key_object
+            .jws_rs256_sign(&jws, ct)
+            .expect("Unable to sign jws with rs256");
+
+        let released = key_object
+            .jws_verify(&sig)
+            .expect("Unable to validate rs256 jws");
+
+        assert_eq!(released.payload(), &[10, 11, 12, 13]);
+    }
+
+    #[test]
+    fn test_key_object_internal_jwe_a128gcm_encrypt_decrypt() {
+        let ct = duration_from_epoch_now();
+        let provider = Arc::new(KeyProviderInternal::create_test_provider());
+
+        let mut key_object = provider
+            .create_new_key_object(Uuid::new_v4(), provider.clone())
+            .expect("Unable to create new key object");
+
+        key_object
+            .jwe_a128gcm_assert(ct, &Cid::new_count(ct.as_secs()))
+            .expect("Unable to assert jwe a128gcm key");
+
+        let jwe = compact_jwt::jwe::JweBuilder::from(vec![20, 21, 22, 23]).build();
+
+        let encrypted = key_object
+            .jwe_a128gcm_encrypt(&jwe, ct)
+            .expect("Unable to encrypt jwe");
+
+        let decrypted = key_object
+            .jwe_decrypt(&encrypted)
+            .expect("Unable to decrypt jwe");
+
+        assert_eq!(decrypted.payload(), &[20, 21, 22, 23]);
+    }
+
+    #[test]
+    fn test_key_object_internal_hkdf_s256_expand() {
+        let ct = duration_from_epoch_now();
+        let provider = Arc::new(KeyProviderInternal::create_test_provider());
+
+        let mut key_object = provider
+            .create_new_key_object(Uuid::new_v4(), provider.clone())
+            .expect("Unable to create new key object");
+
+        key_object
+            .hkdf_s256_assert(ct, &Cid::new_count(ct.as_secs()))
+            .expect("Unable to assert hkdf s256 key");
+
+        let mut output_key = [0u8; 32];
+        key_object
+            .hkdf_s256_expand(b"test context info", &mut output_key, ct)
+            .expect("Unable to expand hkdf key");
+
+        assert_ne!(output_key, [0u8; 32]);
+    }
+
+    #[test]
+    fn test_key_object_internal_es256_rotation() {
+        let ct = duration_from_epoch_now();
+        let provider = Arc::new(KeyProviderInternal::create_test_provider());
+
+        let mut key_object = provider
+            .create_new_key_object(Uuid::new_v4(), provider.clone())
+            .expect("Unable to create new key object");
+
+        key_object
+            .jws_es256_assert(ct, &Cid::new_count(ct.as_secs()))
+            .expect("Unable to assert es256 key");
+
+        let jws = JwsBuilder::from(vec![30, 31, 32]).build();
+
+        let sig_old = key_object
+            .jws_es256_sign(&jws, ct)
+            .expect("Unable to sign with old key");
+
+        let ct_future = ct + Duration::from_secs(300);
+        key_object
+            .rotate_keys(ct_future, &Cid::new_count(ct_future.as_secs()))
+            .expect("Unable to rotate keys");
+
+        let sig_new = key_object
+            .jws_es256_sign(&jws, ct_future)
+            .expect("Unable to sign with new key");
+
+        assert_ne!(sig_old.kid(), sig_new.kid());
+
+        key_object
+            .jws_verify(&sig_old)
+            .expect("Old signature should still validate");
+
+        key_object
+            .jws_verify(&sig_new)
+            .expect("New signature should validate");
+    }
+
+    #[test]
+    fn test_key_object_internal_es256_revocation() {
+        let ct = duration_from_epoch_now();
+        let provider = Arc::new(KeyProviderInternal::create_test_provider());
+
+        let mut key_object = provider
+            .create_new_key_object(Uuid::new_v4(), provider.clone())
+            .expect("Unable to create new key object");
+
+        key_object
+            .jws_es256_assert(ct, &Cid::new_count(ct.as_secs()))
+            .expect("Unable to assert es256 key");
+
+        let jws = JwsBuilder::from(vec![40, 41, 42]).build();
+
+        let sig = key_object
+            .jws_es256_sign(&jws, ct)
+            .expect("Unable to sign jws");
+
+        let kid = KeyId::from(sig.kid().unwrap().to_string());
+
+        let mut revoke_set = BTreeSet::new();
+        revoke_set.insert(kid.to_string());
+
+        key_object
+            .revoke_keys(&revoke_set, &Cid::new_count(ct.as_secs() + 1))
+            .expect("Unable to revoke key");
+
+        let result = key_object.jws_verify(&sig);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_key_object_internal_as_valuesets() {
+        let ct = duration_from_epoch_now();
+        let provider = Arc::new(KeyProviderInternal::create_test_provider());
+
+        let mut key_object = provider
+            .create_new_key_object(Uuid::new_v4(), provider.clone())
+            .expect("Unable to create new key object");
+
+        key_object
+            .jws_es256_assert(ct, &Cid::new_count(ct.as_secs()))
+            .expect("Unable to assert es256 key");
+
+        let vs = key_object.as_valuesets().expect("Unable to get valuesets");
+        assert!(vs.iter().any(|(attr, _)| attr == &Attribute::Class));
+        assert!(vs
+            .iter()
+            .any(|(attr, _)| attr == &Attribute::KeyInternalData));
+        assert!(vs.iter().any(|(attr, _)| attr == &Attribute::KeyProvider));
+    }
 }

@@ -143,3 +143,125 @@ pub struct KanidmdCli {
     )]
     pub online_backup_schedule: Option<String>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::ServerRole;
+    use std::str::FromStr;
+
+    fn empty_cli() -> KanidmdCli {
+        KanidmdCli {
+            log_level: None,
+            otel_grpc_url: None,
+            domain: None,
+            origin: None,
+            role: None,
+            db_path: None,
+            db_fs_type: None,
+            db_arc_size: None,
+            admin_bind_path: None,
+            tls_chain: None,
+            tls_key: None,
+            tls_client_ca: None,
+            bindaddress: None,
+            ldapbindaddress: None,
+            trust_all_x_forwarded_for: None,
+            replication_origin: None,
+            replication_bindaddress: None,
+            replication_task_poll_interval: None,
+            online_backup_path: None,
+            online_backup_versions: None,
+            online_backup_schedule: None,
+        }
+    }
+
+    #[test]
+    fn test_kanidmd_cli_default_fields() {
+        let cli = empty_cli();
+        assert!(cli.log_level.is_none());
+        assert!(cli.otel_grpc_url.is_none());
+        assert!(cli.domain.is_none());
+        assert!(cli.origin.is_none());
+        assert!(cli.role.is_none());
+        assert!(cli.db_path.is_none());
+        assert!(cli.db_fs_type.is_none());
+        assert!(cli.db_arc_size.is_none());
+        assert!(cli.admin_bind_path.is_none());
+        assert!(cli.tls_chain.is_none());
+        assert!(cli.tls_key.is_none());
+        assert!(cli.tls_client_ca.is_none());
+        assert!(cli.bindaddress.is_none());
+        assert!(cli.ldapbindaddress.is_none());
+        assert!(cli.trust_all_x_forwarded_for.is_none());
+        assert!(cli.replication_origin.is_none());
+        assert!(cli.replication_bindaddress.is_none());
+        assert!(cli.replication_task_poll_interval.is_none());
+        assert!(cli.online_backup_path.is_none());
+        assert!(cli.online_backup_versions.is_none());
+        assert!(cli.online_backup_schedule.is_none());
+    }
+
+    #[test]
+    fn test_kanidmd_cli_debug() {
+        let cli = empty_cli();
+        let debug = format!("{:?}", cli);
+        assert!(debug.contains("KanidmdCli"));
+        assert!(debug.contains("log_level"));
+        assert!(debug.contains("domain"));
+        assert!(debug.contains("role"));
+        assert!(debug.contains("bindaddress"));
+    }
+
+    #[test]
+    fn test_kanidmd_cli_clone() {
+        let cli = empty_cli();
+        let cloned = cli.clone();
+        assert!(cloned.log_level.is_none());
+        assert!(cloned.domain.is_none());
+        assert!(cloned.role.is_none());
+    }
+
+    #[test]
+    fn test_kanidmd_cli_with_fields() {
+        let cli = KanidmdCli {
+            domain: Some("example.com".to_string()),
+            role: Some(ServerRole::WriteReplicaNoUI),
+            bindaddress: Some("127.0.0.1:8443".to_string()),
+            db_arc_size: Some(2048),
+            trust_all_x_forwarded_for: Some(true),
+            ..empty_cli()
+        };
+        assert_eq!(cli.domain.as_deref(), Some("example.com"));
+        assert_eq!(cli.role, Some(ServerRole::WriteReplicaNoUI));
+        assert_eq!(cli.bindaddress.as_deref(), Some("127.0.0.1:8443"));
+        assert_eq!(cli.db_arc_size, Some(2048));
+        assert_eq!(cli.trust_all_x_forwarded_for, Some(true));
+    }
+
+    #[test]
+    fn test_kanidmd_cli_field_types_serde() {
+        let role: ServerRole = serde_json::from_str("\"WriteReplicaNoUI\"").unwrap();
+        assert_eq!(role, ServerRole::WriteReplicaNoUI);
+        let serialized = serde_json::to_string(&role).unwrap();
+        assert_eq!(serialized, "\"WriteReplicaNoUI\"");
+
+        let fs_type: FsType = serde_json::from_str("\"zfs\"").unwrap();
+        assert_eq!(fs_type, FsType::Zfs);
+
+        let fs_type: FsType = serde_json::from_str("\"generic\"").unwrap();
+        assert_eq!(fs_type, FsType::Generic);
+    }
+
+    #[test]
+    fn test_kanidmd_cli_role_field_from_str() {
+        assert_eq!(
+            ServerRole::from_str("write_replica").unwrap(),
+            ServerRole::WriteReplica
+        );
+        assert_eq!(
+            ServerRole::from_str("read_only_replica").unwrap(),
+            ServerRole::ReadOnlyReplica
+        );
+    }
+}

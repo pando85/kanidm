@@ -227,4 +227,52 @@ mod tests {
         assert_eq!(client.source_type(), PipSourceType::Http);
         assert_eq!(client.source_name(), "test-api");
     }
+
+    #[test]
+    fn test_http_pip_client_source_type() {
+        let config = PipSourceDefinition::new_http("svc", "https://svc.example.com");
+        let client = HttpPipClient::new(config);
+        assert_eq!(client.source_type(), PipSourceType::Http);
+    }
+
+    #[test]
+    fn test_http_pip_client_source_name() {
+        let config = PipSourceDefinition::new_http("my-service", "https://my.example.com");
+        let client = HttpPipClient::new(config);
+        assert_eq!(client.source_name(), "my-service");
+    }
+
+    #[test]
+    fn test_http_pip_client_debug_format() {
+        let config =
+            PipSourceDefinition::new_http("debug-svc", "https://debug.example.com").with_timeout(7);
+        let client = HttpPipClient::new(config);
+        let debug_str = format!("{:?}", client);
+        assert!(debug_str.contains("debug-svc"));
+        assert!(debug_str.contains("https://debug.example.com"));
+        assert!(debug_str.contains("7"));
+    }
+
+    #[test]
+    fn test_http_pip_client_with_basic_auth() {
+        let config = PipSourceDefinition::new_http("svc", "https://svc.example.com")
+            .with_basic_auth("user", "pass");
+        let client = HttpPipClient::new(config);
+        assert_eq!(client.source_name(), "svc");
+    }
+
+    #[test]
+    fn test_http_pip_client_no_auth() {
+        let config = PipSourceDefinition::new_http("svc", "https://svc.example.com");
+        let client = HttpPipClient::new(config);
+        assert_eq!(client.source_name(), "svc");
+    }
+
+    #[test]
+    fn test_http_pip_client_invalid_ca_path_still_creates() {
+        let config = PipSourceDefinition::new_http("svc", "https://svc.example.com")
+            .with_tls_ca("/nonexistent/ca.pem");
+        let client = HttpPipClient::new(config);
+        assert_eq!(client.source_name(), "svc");
+    }
 }

@@ -350,3 +350,121 @@ impl ValueSetT for ValueSetJwsKeyRs256 {
         Some(&self.set)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{ValueSetJwsKeyEs256, ValueSetJwsKeyRs256};
+    use crate::prelude::ValueSet;
+    use compact_jwt::crypto::JwsRs256Signer;
+    use compact_jwt::{JwsEs256Signer, JwsSigner};
+
+    #[test]
+    fn test_valueset_jws_es256_new() {
+        let signer = JwsEs256Signer::generate_es256().unwrap();
+        let vs: ValueSet = ValueSetJwsKeyEs256::new(signer);
+        assert_eq!(vs.len(), 1);
+    }
+
+    #[test]
+    fn test_valueset_jws_es256_insert_checked() {
+        let signer = JwsEs256Signer::generate_es256().unwrap();
+        let signer2 = JwsEs256Signer::generate_es256().unwrap();
+        let mut vs: ValueSet = ValueSetJwsKeyEs256::new(signer);
+        let result = vs.insert_checked(crate::prelude::Value::JwsKeyEs256(signer2));
+        assert!(result.unwrap());
+        assert_eq!(vs.len(), 2);
+    }
+
+    #[test]
+    fn test_valueset_jws_es256_to_single() {
+        let signer = JwsEs256Signer::generate_es256().unwrap();
+        let vs: ValueSet = ValueSetJwsKeyEs256::new(signer);
+        assert!(vs.to_jws_key_es256_single().is_some());
+    }
+
+    #[test]
+    fn test_valueset_jws_es256_to_single_none_when_multiple() {
+        let signer = JwsEs256Signer::generate_es256().unwrap();
+        let signer2 = JwsEs256Signer::generate_es256().unwrap();
+        let mut vs: ValueSet = ValueSetJwsKeyEs256::new(signer);
+        vs.insert_checked(crate::prelude::Value::JwsKeyEs256(signer2))
+            .unwrap();
+        assert!(vs.to_jws_key_es256_single().is_none());
+    }
+
+    #[test]
+    fn test_valueset_jws_es256_contains_by_kid() {
+        let signer = JwsEs256Signer::generate_es256().unwrap();
+        let kid = signer.get_kid().to_string();
+        let vs: ValueSet = ValueSetJwsKeyEs256::new(signer);
+        assert!(vs.contains(&crate::prelude::PartialValue::Iutf8(kid)));
+        assert!(!vs.contains(&crate::prelude::PartialValue::Iutf8(
+            "nonexistent".to_string()
+        )));
+    }
+
+    #[test]
+    fn test_valueset_jws_es256_dbv2_roundtrip() {
+        let signer = JwsEs256Signer::generate_es256().unwrap();
+        let vs: ValueSet = ValueSetJwsKeyEs256::new(signer);
+        let dbvs = vs.to_db_valueset_v2();
+        let vs2 = crate::valueset::from_db_valueset_v2(dbvs).expect("Failed to restore");
+        assert!(vs.equal(&vs2));
+    }
+
+    #[test]
+    fn test_valueset_jws_es256_syntax() {
+        let signer = JwsEs256Signer::generate_es256().unwrap();
+        let vs: ValueSet = ValueSetJwsKeyEs256::new(signer);
+        assert_eq!(vs.syntax(), crate::prelude::SyntaxType::JwsKeyEs256);
+    }
+
+    #[test]
+    fn test_valueset_jws_rs256_new() {
+        let signer = JwsRs256Signer::generate_rs256().unwrap();
+        let vs: ValueSet = ValueSetJwsKeyRs256::new(signer);
+        assert_eq!(vs.len(), 1);
+    }
+
+    #[test]
+    fn test_valueset_jws_rs256_insert_checked() {
+        let signer = JwsRs256Signer::generate_rs256().unwrap();
+        let signer2 = JwsRs256Signer::generate_rs256().unwrap();
+        let mut vs: ValueSet = ValueSetJwsKeyRs256::new(signer);
+        let result = vs.insert_checked(crate::prelude::Value::JwsKeyRs256(signer2));
+        assert!(result.unwrap());
+        assert_eq!(vs.len(), 2);
+    }
+
+    #[test]
+    fn test_valueset_jws_rs256_to_single() {
+        let signer = JwsRs256Signer::generate_rs256().unwrap();
+        let vs: ValueSet = ValueSetJwsKeyRs256::new(signer);
+        assert!(vs.to_jws_key_rs256_single().is_some());
+    }
+
+    #[test]
+    fn test_valueset_jws_rs256_to_single_none_when_multiple() {
+        let signer = JwsRs256Signer::generate_rs256().unwrap();
+        let signer2 = JwsRs256Signer::generate_rs256().unwrap();
+        let mut vs: ValueSet = ValueSetJwsKeyRs256::new(signer);
+        vs.insert_checked(crate::prelude::Value::JwsKeyRs256(signer2))
+            .unwrap();
+        assert!(vs.to_jws_key_rs256_single().is_none());
+    }
+
+    #[test]
+    fn test_valueset_jws_rs256_contains_always_false() {
+        let signer = JwsRs256Signer::generate_rs256().unwrap();
+        let kid = signer.get_kid().to_string();
+        let vs: ValueSet = ValueSetJwsKeyRs256::new(signer);
+        assert!(!vs.contains(&crate::prelude::PartialValue::Iutf8(kid)));
+    }
+
+    #[test]
+    fn test_valueset_jws_rs256_syntax() {
+        let signer = JwsRs256Signer::generate_rs256().unwrap();
+        let vs: ValueSet = ValueSetJwsKeyRs256::new(signer);
+        assert_eq!(vs.syntax(), crate::prelude::SyntaxType::JwsKeyRs256);
+    }
+}

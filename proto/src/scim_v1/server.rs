@@ -577,3 +577,413 @@ impl From<Vec<Sha256Output>> for ScimValueKanidm {
         Self::Sha256(set)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::attribute::Attribute;
+    use crate::scim_v1::{ScimMail, ScimOauth2ClaimMapJoinChar};
+
+    fn test_datetime() -> OffsetDateTime {
+        OffsetDateTime::from_unix_timestamp(1700000000).unwrap()
+    }
+
+    #[test]
+    fn scim_effective_access_serialize() {
+        let ea = ScimEffectiveAccess {
+            ident: Uuid::new_v4(),
+            delete: true,
+            search: ScimAttributeEffectiveAccess::Grant,
+            modify_present: ScimAttributeEffectiveAccess::Deny,
+            modify_remove: ScimAttributeEffectiveAccess::Allow(BTreeSet::from([Attribute::Name])),
+        };
+        let json = serde_json::to_value(&ea).unwrap();
+        assert!(json.get("ident").is_some());
+        assert_eq!(json["delete"], true);
+        assert!(json.get("search").is_some());
+        assert!(json.get("modifyPresent").is_some());
+        assert!(json.get("modifyRemove").is_some());
+    }
+
+    #[test]
+    fn scim_attribute_effective_access_grant() {
+        let json = serde_json::to_value(ScimAttributeEffectiveAccess::Grant).unwrap();
+        assert_eq!(json, serde_json::json!("Grant"));
+    }
+
+    #[test]
+    fn scim_attribute_effective_access_deny() {
+        let json = serde_json::to_value(ScimAttributeEffectiveAccess::Deny).unwrap();
+        assert_eq!(json, serde_json::json!("Deny"));
+    }
+
+    #[test]
+    fn scim_attribute_effective_access_allow() {
+        let json = serde_json::to_value(ScimAttributeEffectiveAccess::Allow(BTreeSet::from([
+            Attribute::Name,
+            Attribute::Spn,
+        ])))
+        .unwrap();
+        assert!(json.is_object());
+        assert!(json.get("Allow").is_some());
+    }
+
+    #[test]
+    fn scim_application_password_reference_serialize() {
+        let r = ScimApplicationPasswordReference {
+            uuid: Uuid::new_v4(),
+            application_uuid: Uuid::new_v4(),
+            label: "myapp".to_string(),
+        };
+        let json = serde_json::to_value(&r).unwrap();
+        assert!(json.get("uuid").is_some());
+        assert!(json.get("applicationUuid").is_some());
+        assert_eq!(json["label"], "myapp");
+    }
+
+    #[test]
+    fn scim_binary_serialize() {
+        let bin = ScimBinary {
+            label: "testfile".to_string(),
+            value: vec![0x01, 0x02, 0x03, 0x04],
+        };
+        let json = serde_json::to_value(&bin).unwrap();
+        assert_eq!(json["label"], "testfile");
+        assert!(json.get("value").is_some());
+    }
+
+    #[test]
+    fn scim_certificate_serialize() {
+        let cert = ScimCertificate {
+            s256: vec![0xAB, 0xCD],
+            der: vec![0x01, 0x02, 0x03],
+        };
+        let json = serde_json::to_value(&cert).unwrap();
+        assert!(json.get("s256").is_some());
+        assert!(json.get("der").is_some());
+    }
+
+    #[test]
+    fn scim_audit_string_serialize() {
+        let audit = ScimAuditString {
+            date_time: test_datetime(),
+            value: "test audit entry".to_string(),
+        };
+        let json = serde_json::to_value(&audit).unwrap();
+        assert!(json.get("dateTime").is_some());
+        assert_eq!(json["value"], "test audit entry");
+    }
+
+    #[test]
+    fn scim_intent_token_state_serialize() {
+        assert_eq!(
+            serde_json::to_value(ScimIntentTokenState::Valid).unwrap(),
+            serde_json::json!("valid")
+        );
+        assert_eq!(
+            serde_json::to_value(ScimIntentTokenState::InProgress).unwrap(),
+            serde_json::json!("inProgress")
+        );
+        assert_eq!(
+            serde_json::to_value(ScimIntentTokenState::Consumed).unwrap(),
+            serde_json::json!("consumed")
+        );
+    }
+
+    #[test]
+    fn scim_intent_token_serialize() {
+        let token = ScimIntentToken {
+            token_id: "abc123".to_string(),
+            state: ScimIntentTokenState::Valid,
+            expires: test_datetime(),
+        };
+        let json = serde_json::to_value(&token).unwrap();
+        assert_eq!(json["tokenId"], "abc123");
+        assert_eq!(json["state"], "valid");
+        assert!(json.get("expires").is_some());
+    }
+
+    #[test]
+    fn scim_key_internal_serialize() {
+        let key = ScimKeyInternal {
+            key_id: "key1".to_string(),
+            status: "valid".to_string(),
+            usage: "encryption".to_string(),
+            valid_from: test_datetime(),
+        };
+        let json = serde_json::to_value(&key).unwrap();
+        assert_eq!(json["keyId"], "key1");
+        assert_eq!(json["status"], "valid");
+        assert!(json.get("validFrom").is_some());
+    }
+
+    #[test]
+    fn scim_auth_session_serialize() {
+        let session = ScimAuthSession {
+            id: Uuid::new_v4(),
+            expires: Some(test_datetime()),
+            revoked: None,
+            issued_at: test_datetime(),
+            issued_by: Uuid::new_v4(),
+            credential_id: Uuid::new_v4(),
+            auth_type: "password".to_string(),
+            session_scope: "read".to_string(),
+        };
+        let json = serde_json::to_value(&session).unwrap();
+        assert!(json.get("id").is_some());
+        assert!(json.get("expires").is_some());
+        assert!(json.get("revoked").is_none());
+        assert!(json.get("issuedAt").is_some());
+        assert_eq!(json["authType"], "password");
+    }
+
+    #[test]
+    fn scim_oauth2_session_serialize() {
+        let session = ScimOAuth2Session {
+            id: Uuid::new_v4(),
+            parent_id: Some(Uuid::new_v4()),
+            client_id: Uuid::new_v4(),
+            issued_at: test_datetime(),
+            expires: None,
+            revoked: None,
+        };
+        let json = serde_json::to_value(&session).unwrap();
+        assert!(json.get("id").is_some());
+        assert!(json.get("parentId").is_some());
+        assert!(json.get("clientId").is_some());
+        assert!(json.get("expires").is_none());
+    }
+
+    #[test]
+    fn scim_api_token_serialize() {
+        let token = ScimApiToken {
+            id: Uuid::new_v4(),
+            label: "mytoken".to_string(),
+            expires: None,
+            issued_at: test_datetime(),
+            issued_by: Uuid::new_v4(),
+            scope: "read write".to_string(),
+        };
+        let json = serde_json::to_value(&token).unwrap();
+        assert_eq!(json["label"], "mytoken");
+        assert!(json.get("expires").is_none());
+        assert_eq!(json["scope"], "read write");
+    }
+
+    #[test]
+    fn scim_oauth2_scope_map_server_serialize() {
+        let sm = ScimOAuth2ScopeMap {
+            group: "testgroup".to_string(),
+            group_uuid: Uuid::new_v4(),
+            scopes: BTreeSet::from(["read".to_string(), "write".to_string()]),
+        };
+        let json = serde_json::to_value(&sm).unwrap();
+        assert_eq!(json["group"], "testgroup");
+        assert!(json.get("groupUuid").is_some());
+    }
+
+    #[test]
+    fn scim_oauth2_claim_map_server_serialize() {
+        let cm = ScimOAuth2ClaimMap {
+            group: "testgroup".to_string(),
+            group_uuid: Uuid::new_v4(),
+            claim: "email".to_string(),
+            join_char: ScimOauth2ClaimMapJoinChar::CommaSeparatedValue,
+            values: BTreeSet::from(["a@example.com".to_string()]),
+        };
+        let json = serde_json::to_value(&cm).unwrap();
+        assert_eq!(json["claim"], "email");
+    }
+
+    #[test]
+    fn scim_value_kanidm_bool() {
+        let json = serde_json::to_value(ScimValueKanidm::Bool(true)).unwrap();
+        assert_eq!(json, serde_json::json!(true));
+    }
+
+    #[test]
+    fn scim_value_kanidm_uint32() {
+        let json = serde_json::to_value(ScimValueKanidm::Uint32(42)).unwrap();
+        assert_eq!(json, serde_json::json!(42));
+    }
+
+    #[test]
+    fn scim_value_kanidm_int64() {
+        let json = serde_json::to_value(ScimValueKanidm::Int64(-100)).unwrap();
+        assert_eq!(json, serde_json::json!(-100));
+    }
+
+    #[test]
+    fn scim_value_kanidm_uint64() {
+        let json = serde_json::to_value(ScimValueKanidm::Uint64(999)).unwrap();
+        assert_eq!(json, serde_json::json!(999));
+    }
+
+    #[test]
+    fn scim_value_kanidm_integer() {
+        let json = serde_json::to_value(ScimValueKanidm::Integer(-42)).unwrap();
+        assert_eq!(json, serde_json::json!(-42));
+    }
+
+    #[test]
+    fn scim_value_kanidm_decimal() {
+        let json = serde_json::to_value(ScimValueKanidm::Decimal(3.14)).unwrap();
+        assert!(json.is_number());
+    }
+
+    #[test]
+    fn scim_value_kanidm_string() {
+        let json = serde_json::to_value(ScimValueKanidm::String("hello".to_string())).unwrap();
+        assert_eq!(json, serde_json::json!("hello"));
+    }
+
+    #[test]
+    fn scim_value_kanidm_datetime() {
+        let json = serde_json::to_value(ScimValueKanidm::DateTime(test_datetime())).unwrap();
+        assert!(json.is_string());
+    }
+
+    #[test]
+    fn scim_value_kanidm_reference() {
+        let json = serde_json::to_value(ScimValueKanidm::Reference(
+            Url::parse("https://example.com").unwrap(),
+        ))
+        .unwrap();
+        assert_eq!(json, "https://example.com/");
+    }
+
+    #[test]
+    fn scim_value_kanidm_uuid() {
+        let uuid = Uuid::new_v4();
+        let json = serde_json::to_value(ScimValueKanidm::Uuid(uuid)).unwrap();
+        assert_eq!(json, uuid.to_string());
+    }
+
+    #[test]
+    fn scim_value_kanidm_entry_reference() {
+        let json = serde_json::to_value(ScimValueKanidm::EntryReference(ScimReference {
+            uuid: Uuid::new_v4(),
+            value: "test".to_string(),
+        }))
+        .unwrap();
+        assert!(json.is_object());
+    }
+
+    #[test]
+    fn scim_value_kanidm_entry_references() {
+        let json = serde_json::to_value(ScimValueKanidm::EntryReferences(vec![
+            ScimReference {
+                uuid: Uuid::new_v4(),
+                value: "a".to_string(),
+            },
+            ScimReference {
+                uuid: Uuid::new_v4(),
+                value: "b".to_string(),
+            },
+        ]))
+        .unwrap();
+        assert!(json.is_array());
+        assert_eq!(json.as_array().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn scim_value_kanidm_array_string() {
+        let json = serde_json::to_value(ScimValueKanidm::ArrayString(vec![
+            "a".to_string(),
+            "b".to_string(),
+        ]))
+        .unwrap();
+        assert_eq!(json, serde_json::json!(["a", "b"]));
+    }
+
+    #[test]
+    fn scim_value_kanidm_array_datetime() {
+        let json = serde_json::to_value(ScimValueKanidm::ArrayDateTime(vec![
+            test_datetime(),
+            test_datetime(),
+        ]))
+        .unwrap();
+        assert!(json.is_array());
+    }
+
+    #[test]
+    fn scim_value_kanidm_array_uuid() {
+        let uuids = vec![Uuid::new_v4(), Uuid::new_v4()];
+        let json = serde_json::to_value(ScimValueKanidm::ArrayUuid(uuids.clone())).unwrap();
+        assert_eq!(json[0], uuids[0].to_string());
+        assert_eq!(json[1], uuids[1].to_string());
+    }
+
+    #[test]
+    fn scim_value_kanidm_mail() {
+        let json = serde_json::to_value(ScimValueKanidm::Mail(vec![ScimMail {
+            primary: true,
+            value: "test@example.com".to_string(),
+        }]))
+        .unwrap();
+        assert!(json.is_array());
+    }
+
+    #[test]
+    fn scim_value_kanidm_address() {
+        let json = serde_json::to_value(ScimValueKanidm::Address(vec![super::ScimAddress {
+            formatted: String::new(),
+            street_address: "123 Main".to_string(),
+            locality: "Town".to_string(),
+            region: "ST".to_string(),
+            postal_code: "00000".to_string(),
+            country: "US".to_string(),
+        }]))
+        .unwrap();
+        assert!(json.is_array());
+    }
+
+    #[test]
+    fn scim_person_serialize() {
+        let person = ScimPerson {
+            uuid: Uuid::new_v4(),
+            name: "testuser".to_string(),
+            displayname: "Test User".to_string(),
+            spn: "testuser@example.com".to_string(),
+            description: Some("A test user".to_string()),
+            mails: vec![ScimMail {
+                primary: true,
+                value: "test@example.com".to_string(),
+            }],
+            managed_by: Some(ScimReference {
+                uuid: Uuid::new_v4(),
+                value: "admin".to_string(),
+            }),
+            groups: vec![ScimReference {
+                uuid: Uuid::new_v4(),
+                value: "group1".to_string(),
+            }],
+        };
+        let json = serde_json::to_value(&person).unwrap();
+        assert_eq!(json["name"], "testuser");
+        assert_eq!(json["displayname"], "Test User");
+        assert_eq!(json["spn"], "testuser@example.com");
+        assert!(json.get("description").is_some());
+        assert!(json.get("mails").is_some());
+        assert!(json.get("managed_by").is_some());
+        assert!(json.get("groups").is_some());
+    }
+
+    #[test]
+    fn scim_group_serialize() {
+        let group = ScimGroup {
+            uuid: Uuid::new_v4(),
+            name: "testgroup".to_string(),
+            description: Some("A test group".to_string()),
+            members: vec![ScimReference {
+                uuid: Uuid::new_v4(),
+                value: "user1".to_string(),
+            }],
+        };
+        let json = serde_json::to_value(&group).unwrap();
+        assert_eq!(json["name"], "testgroup");
+        assert!(json.get("description").is_some());
+        assert!(json.get("members").is_some());
+        assert_eq!(json["members"].as_array().unwrap().len(), 1);
+    }
+}

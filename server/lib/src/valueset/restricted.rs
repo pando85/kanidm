@@ -207,4 +207,84 @@ mod tests {
         let vs: ValueSet = ValueSetRestricted::new("Test".to_string());
         crate::valueset::scim_json_reflexive(&vs, r#""Test""#);
     }
+
+    #[test]
+    fn test_valueset_restricted_new() {
+        let vs: ValueSet = ValueSetRestricted::new("value1".to_string());
+        assert_eq!(vs.len(), 1);
+    }
+
+    #[test]
+    fn test_valueset_restricted_insert_checked() {
+        let mut vs: ValueSet = ValueSetRestricted::new("alpha".to_string());
+        assert!(vs
+            .insert_checked(crate::prelude::Value::RestrictedString("beta".to_string()))
+            .unwrap());
+        assert!(!vs
+            .insert_checked(crate::prelude::Value::RestrictedString("alpha".to_string()))
+            .unwrap());
+        assert_eq!(vs.len(), 2);
+    }
+
+    #[test]
+    fn test_valueset_restricted_equal() {
+        let vs1: ValueSet = ValueSetRestricted::new("same".to_string());
+        let vs2: ValueSet = ValueSetRestricted::new("same".to_string());
+        assert!(vs1.equal(&vs2));
+    }
+
+    #[test]
+    fn test_valueset_restricted_not_equal() {
+        let vs1: ValueSet = ValueSetRestricted::new("alpha".to_string());
+        let vs2: ValueSet = ValueSetRestricted::new("beta".to_string());
+        assert!(!vs1.equal(&vs2));
+    }
+
+    #[test]
+    fn test_valueset_restricted_merge() {
+        let mut vs_a: ValueSet = ValueSetRestricted::new("one".to_string());
+        let vs_b: ValueSet = ValueSetRestricted::new("two".to_string());
+        vs_a.merge(&vs_b).expect("Failed to merge");
+        assert_eq!(vs_a.len(), 2);
+    }
+
+    #[test]
+    fn test_valueset_restricted_clear() {
+        let mut vs: ValueSet = ValueSetRestricted::new("value".to_string());
+        vs.clear();
+        assert_eq!(vs.len(), 0);
+    }
+
+    #[test]
+    fn test_valueset_restricted_len() {
+        let mut vs: ValueSet = ValueSetRestricted::new("a".to_string());
+        assert_eq!(vs.len(), 1);
+        vs.insert_checked(crate::prelude::Value::RestrictedString("b".to_string()))
+            .unwrap();
+        assert_eq!(vs.len(), 2);
+    }
+
+    #[test]
+    fn test_valueset_restricted_dbv2_roundtrip() {
+        let vs: ValueSet = ValueSetRestricted::new("persisted".to_string());
+        let dbvs = vs.to_db_valueset_v2();
+        let vs2 = crate::valueset::from_db_valueset_v2(dbvs).expect("Failed to restore");
+        assert!(vs.equal(&vs2));
+    }
+
+    #[test]
+    fn test_valueset_restricted_to_single() {
+        let vs: ValueSet = ValueSetRestricted::new("only".to_string());
+        assert_eq!(vs.to_restricted_string_single(), Some("only"));
+    }
+
+    #[test]
+    fn test_valueset_restricted_to_single_none_when_multiple() {
+        let mut vs: ValueSet = ValueSetRestricted::new("first".to_string());
+        vs.insert_checked(crate::prelude::Value::RestrictedString(
+            "second".to_string(),
+        ))
+        .unwrap();
+        assert_eq!(vs.to_restricted_string_single(), None);
+    }
 }

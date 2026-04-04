@@ -326,3 +326,210 @@ impl std::fmt::Debug for PipCoordinator {
             .finish()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use kanidm_proto::internal::{PipSourceStatus, PipSourceType};
+    use uuid::Uuid;
+
+    #[test]
+    fn test_pip_coordinator_new_empty_config() {
+        let config = PipConfig::default();
+        let coordinator = PipCoordinator::new(config);
+        let debug = format!("{:?}", coordinator);
+        assert!(debug.contains("sources_count: 0"));
+    }
+
+    #[test]
+    fn test_pip_coordinator_new_with_http_source() {
+        let config = PipConfig {
+            enabled: true,
+            sources: vec![PipSourceDefinition::new_http(
+                "hr",
+                "https://hr.example.com",
+            )],
+            default_timeout_seconds: 10,
+            default_cache_ttl_seconds: 60,
+            attribute_mappings: BTreeMap::new(),
+        };
+
+        let coordinator = PipCoordinator::new(config);
+        let debug = format!("{:?}", coordinator);
+        assert!(debug.contains("sources_count: 1"));
+    }
+
+    #[test]
+    fn test_pip_coordinator_new_with_ldap_source() {
+        let config = PipConfig {
+            enabled: true,
+            sources: vec![PipSourceDefinition::new_ldap(
+                "ldap",
+                "ldap://corp.example.com",
+            )],
+            default_timeout_seconds: 10,
+            default_cache_ttl_seconds: 60,
+            attribute_mappings: BTreeMap::new(),
+        };
+
+        let coordinator = PipCoordinator::new(config);
+        let debug = format!("{:?}", coordinator);
+        assert!(debug.contains("sources_count: 1"));
+    }
+
+    #[test]
+    fn test_pip_coordinator_new_with_mixed_sources() {
+        let config = PipConfig {
+            enabled: true,
+            sources: vec![
+                PipSourceDefinition::new_http("hr", "https://hr.example.com"),
+                PipSourceDefinition::new_ldap("ldap", "ldap://corp.example.com"),
+                PipSourceDefinition::new_http("rbac", "https://rbac.example.com"),
+            ],
+            default_timeout_seconds: 10,
+            default_cache_ttl_seconds: 60,
+            attribute_mappings: BTreeMap::new(),
+        };
+
+        let coordinator = PipCoordinator::new(config);
+        let debug = format!("{:?}", coordinator);
+        assert!(debug.contains("sources_count: 3"));
+    }
+
+    #[tokio::test]
+    async fn test_pip_coordinator_cache_size_empty() {
+        let config = PipConfig::default();
+        let coordinator = PipCoordinator::new(config);
+        assert_eq!(coordinator.cache_size().await, 0);
+    }
+
+    #[tokio::test]
+    async fn test_pip_coordinator_clear_cache() {
+        let config = PipConfig::default();
+        let coordinator = PipCoordinator::new(config);
+        coordinator.clear_cache().await;
+        assert_eq!(coordinator.cache_size().await, 0);
+    }
+
+    #[tokio::test]
+    async fn test_pip_coordinator_retrieve_attributes_no_sources() {
+        let config = PipConfig::default();
+        let coordinator = PipCoordinator::new(config);
+        let request = PipRequest::new(
+            Some(Uuid::nil()),
+            Uuid::nil(),
+            vec!["department".to_string()],
+        );
+
+        let response = coordinator.retrieve_attributes(&request).await;
+        assert!(response.attributes.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_pip_coordinator_health_check_no_sources() {
+        let config = PipConfig::default();
+        let coordinator = PipCoordinator::new(config);
+        let health = coordinator.health_check().await;
+        assert!(health.sources.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_pip_coordinator_health_check_with_ldap_source() {
+        let config = PipConfig {
+            enabled: true,
+            sources: vec![PipSourceDefinition::new_ldap(
+                "ldap",
+                "ldap://corp.example.com",
+            )],
+            default_timeout_seconds: 10,
+            default_cache_ttl_seconds: 60,
+            attribute_mappings: BTreeMap::new(),
+        };
+
+        let coordinator = PipCoordinator::new(config);
+        let health = coordinator.health_check().await;
+        assert_eq!(health.sources.len(), 1);
+        assert_eq!(
+            health.sources.get("ldap").map(|h| h.status),
+            Some(PipSourceStatus::Unavailable)
+        );
+    }
+
+    #[test]
+    fn test_pip_source_debug_http() {
+        let config =
+            PipSourceDefinition::new_http("test", "https://test.example.com").with_timeout(5);
+        let source = PipSource::Http(HttpPipClient::new(config));
+        let debug = format!("{:?}", source);
+        assert!(debug.contains("test"));
+    }
+
+    #[test]
+    fn test_pip_source_debug_ldap() {
+        let config = PipSourceDefinition::new_ldap("test", "ldap://test.example.com");
+        let source = PipSource::Ldap(LdapPipClient::new(config));
+        let debug = format!("{:?}", source);
+        assert!(debug.contains("test"));
+    }
+
+    #[test]
+    fn test_pip_source_type_http_variant() {
+        let config =
+            PipSourceDefinition::new_http("test", "https://test.example.com").with_timeout(5);
+        let source = PipSource::Http(HttpPipClient::new(config));
+        assert_eq!(source.source_type(), PipSourceType::Http);
+    }
+
+    #[test]
+    fn test_pip_source_type_ldap_variant() {
+        let config = PipSourceDefinition::new_ldap("test", "ldap://test.example.com");
+        let source = PipSource::Ldap(LdapPipClient::new(config));
+        assert_eq!(source.source_type(), PipSourceType::Ldap);
+    }
+
+    #[test]
+    fn test_pip_source_name_http_variant() {
+        let config =
+            PipSourceDefinition::new_http("my-http", "https://test.example.com").with_timeout(5);
+        let source = PipSource::Http(HttpPipClient::new(config));
+        assert_eq!(source.source_name(), "my-http");
+    }
+
+    #[test]
+    fn test_pip_source_name_ldap_variant() {
+        let config = PipSourceDefinition::new_ldap("my-ldap", "ldap://test.example.com");
+        let source = PipSource::Ldap(LdapPipClient::new(config));
+        assert_eq!(source.source_name(), "my-ldap");
+    }
+
+    #[test]
+    fn test_get_source_uri_found() {
+        let config = PipConfig {
+            enabled: true,
+            sources: vec![PipSourceDefinition::new_http(
+                "hr",
+                "https://hr.example.com",
+            )],
+            default_timeout_seconds: 10,
+            default_cache_ttl_seconds: 60,
+            attribute_mappings: BTreeMap::new(),
+        };
+
+        let coordinator = PipCoordinator::new(config);
+        let uri = coordinator.get_source_uri("hr");
+        assert_eq!(uri, "https://hr.example.com");
+    }
+
+    #[test]
+    fn test_get_source_uri_not_found() {
+        let config = PipConfig::default();
+        let coordinator = PipCoordinator::new(config);
+        let uri = coordinator.get_source_uri("nonexistent");
+        assert_eq!(uri, "unknown");
+    }
+
+    #[test]
+    fn test_default_cache_ttl_constant() {
+        assert_eq!(DEFAULT_CACHE_TTL_SECONDS, 60);
+    }
+}
