@@ -1,5 +1,5 @@
 use crate::core::{self, RequestOptions};
-use kanidm_unix_common::unix_passwd::{EtcGroup, EtcUser};
+use kubidm_unix_common::unix_passwd::{EtcGroup, EtcUser};
 use libnss::interop::Response;
 
 impl RequestOptions {

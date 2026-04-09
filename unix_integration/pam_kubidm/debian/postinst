@@ -1,5 +1,5 @@
 #!/bin/sh
-# postinst script for libpam-kanidm
+# postinst script for libpam-kubidm
 #
 # see: dh_installdeb(1)
 

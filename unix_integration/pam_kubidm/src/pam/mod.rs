@@ -35,8 +35,8 @@ use std::collections::BTreeSet;
 use std::convert::TryFrom;
 use std::ffi::CStr;
 
-use kanidm_unix_common::constants::DEFAULT_CONFIG_PATH;
-use kanidm_unix_common::unix_config::PamNssConfig;
+use kubidm_unix_common::constants::DEFAULT_CONFIG_PATH;
+use kubidm_unix_common::unix_config::PamNssConfig;
 
 use crate::core::{self, RequestOptions};
 use crate::pam::constants::*;
@@ -99,11 +99,11 @@ impl TryFrom<&Vec<&CStr>> for ModuleOptions {
     }
 }
 
-pub struct PamKanidm;
+pub struct PamKubidm;
 
-pam_hooks!(PamKanidm);
+pam_hooks!(PamKubidm);
 
-impl PamHooks for PamKanidm {
+impl PamHooks for PamKubidm {
     fn sm_authenticate(pamh: &PamHandle, args: Vec<&CStr>, _flags: PamFlag) -> PamResultCode {
         let opts = match ModuleOptions::try_from(&args) {
             Ok(o) => o,

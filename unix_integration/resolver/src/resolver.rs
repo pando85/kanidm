@@ -1012,7 +1012,7 @@ impl Resolver {
                 debug!(?account_id, "account unknown to system provider, continue.");
             }
             // The provider knows the account, and is unable to proceed,
-            // We return unknown here so that pam_kanidm can be skipped and fall back
+            // We return unknown here so that pam_kubidm can be skipped and fall back
             // to pam_unix.so.
             SystemProviderAuthInit::ShadowMissing => {
                 warn!(
@@ -1369,7 +1369,7 @@ impl Resolver {
         let (_shutdown_tx, shutdown_rx) = broadcast::channel(1);
 
         let pam_info = PamServiceInfo {
-            service: "kanidm-unix-test".to_string(),
+            service: "kubidm-unix-test".to_string(),
             tty: Some("/dev/null".to_string()),
             rhost: None,
         };

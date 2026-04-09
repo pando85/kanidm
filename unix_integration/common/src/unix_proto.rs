@@ -1,5 +1,5 @@
 use crate::unix_passwd::{EtcDb, EtcGroup, EtcUser};
-use kanidm_proto::internal::OperationError;
+use kubidm_proto::internal::OperationError;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
