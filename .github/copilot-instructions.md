@@ -1,13 +1,13 @@
-# Kanidm Repository Copilot Instructions (Lean)
+# Kubidm Repository Copilot Instructions (Lean)
 
 Optimized high-signal guidance for this Rust monorepo (Identity management server + CLI + Python SDK + Unix integration). Always prefer existing Make targets.
 
 ## Project Overview
 
 - Purpose: Simple, secure, fast identity management platform (LDAP, OAuth2/OIDC, RADIUS, Unix PAM/NSS).
-- Stack: Rust stable, Cargo workspace, Python (pykanidm), JavaScript (Web UI), Docker multi-arch, mdBook docs.
-- Components: `server/daemon`, `server/core`, `server/lib`, `libs/client`, `tools/cli`, `unix_integration/`, `pykanidm/`.
-- Registry: `ghcr.io/kanidm/server`, `ghcr.io/kanidm/tools`, `ghcr.io/kanidm/radius`.
+- Stack: Rust stable, Cargo workspace, Python (pykubidm), JavaScript (Web UI), Docker multi-arch, mdBook docs.
+- Components: `server/daemon`, `server/core`, `server/lib`, `libs/client`, `tools/cli`, `unix_integration/`, `pykubidm/`.
+- Registry: `ghcr.io/pando85/kubidm/server`, `ghcr.io/pando85/kubidm/tools`, `ghcr.io/pando85/kubidm/radius`.
 
 ## Engineering Contract
 
@@ -21,7 +21,7 @@ Optimized high-signal guidance for this Rust monorepo (Identity management serve
 - Performance: avoid unnecessary `clone`; prefer refs/iterators.
 - Output: provide minimal diff hunks, not whole files.
 - Imports: Always place `use` statements at top level, grouped (std, external, internal).
-- Underspecified ask: state ≤2 assumptions, proceed.
+- Underspecified ask: state <=2 assumptions, proceed.
 
 LLM Style:
 - Lead with intent + next action; bullets > prose; no filler.
@@ -31,7 +31,7 @@ LLM Style:
 
 Lint / Build / Test:
 
-- `make precommit` - All checks (test + codespell + pykanidm + doc/format)
+- `make precommit` - All checks (test + codespell + pykubidm + doc/format)
 - `make test` - Cargo test
 - `make codespell` - Spell check
 - `make doc/format` - Markdown format check
@@ -40,23 +40,23 @@ Lint / Build / Test:
 Build / Run:
 
 - `make run` - Dev server (insecure)
-- `make build/kanidmd` - Local Docker image
-- `make buildx/kanidmd` - Multi-arch Docker push
-- `make release/kanidm` - CLI release binary
-- `make release/kanidmd` - Daemon release binary
+- `make build/kubidmd` - Local Docker image
+- `make buildx/kubidmd` - Multi-arch Docker push
+- `make release/kubidm` - CLI release binary
+- `make release/kubidmd` - Daemon release binary
 
-Python (pykanidm):
+Python (pykubidm):
 
-- `make test/pykanidm` - All Python tests (pytest + mypy + ruff)
-- `make test/pykanidm/pytest` - pytest only
-- `make test/pykanidm/mypy` - mypy strict check
-- `make test/pykanidm/lint` - ruff lint
+- `make test/pykubidm` - All Python tests (pytest + mypy + ruff)
+- `make test/pykubidm/pytest` - pytest only
+- `make test/pykubidm/mypy` - mypy strict check
+- `make test/pykubidm/lint` - ruff lint
 
 Docs:
 
 - `make book` - Build mdBook
 - `make doc` - Rust docs
-- `make docs/pykanidm/serve` - Local pykanidm docs
+- `make docs/pykubidm/serve` - Local pykubidm docs
 
 Release:
 
@@ -64,11 +64,11 @@ Release:
 
 ## Common Pitfalls
 
-- Using `HashMap`/`HashSet` → Use `BTreeMap`/`BTreeSet` for determinism.
-- Calling `OffsetDateTime::now_utc` → Inject time as parameter.
-- Blocking calls in async → Use proper async patterns.
-- Forgetting `make precommit` → CI will fail.
-- Missing spell check → Run `make codespell`.
+- Using `HashMap`/`HashSet` -> Use `BTreeMap`/`BTreeSet` for determinism.
+- Calling `OffsetDateTime::now_utc` -> Inject time as parameter.
+- Blocking calls in async -> Use proper async patterns.
+- Forgetting `make precommit` -> CI will fail.
+- Missing spell check -> Run `make codespell`.
 
 ## Trust These Instructions
 

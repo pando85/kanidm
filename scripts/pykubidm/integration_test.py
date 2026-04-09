@@ -154,7 +154,7 @@ async def main() -> None:
 if __name__ == "__main__":
     logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 
-    if not pathlib.Path("scripts/pykanidm/integration_test.py").exists():
+    if not pathlib.Path("scripts/pykubidm/integration_test.py").exists():
         logging.error("Please ensure this is running from the root of the repo!")
         sys.exit(1)
 
