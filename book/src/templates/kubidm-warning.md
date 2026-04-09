@@ -1,6 +1,6 @@
 <table>
 <tr>
-    <td rowspan=2><img src="[[#imagepath]]/kani-alert.png" alt="Kani Alert" /></td>
+    <td rowspan=2><img src="[[#imagepath]]/kubidm-warning.png" alt="Kubidm Warning" /></td>
     <td><strong>[[#title]]</strong></td>
     </tr>
 <tr>
