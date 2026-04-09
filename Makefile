@@ -291,29 +291,29 @@ prep:
 	cargo outdated -R
 	cargo audit
 
-.PHONY: release/kanidm
-release/kanidm: ## Build the Kubidm CLI - ensure you include the environment variable KANIDM_BUILD_PROFILE
+.PHONY: release/kubidm
+release/kubidm: ## Build the Kubidm CLI - ensure you include the environment variable KANIDM_BUILD_PROFILE
 	cargo build -p kubidm_tools --bin kubidm --release
 
-.PHONY: release/kanidmd
-release/kanidmd: ## Build the Kanidm daemon - ensure you include the environment variable KANIDM_BUILD_PROFILE
-	cargo build -p daemon --bin kanidmd --release
+.PHONY: release/kubidmd
+release/kubidmd: ## Build the Kubidm daemon - ensure you include the environment variable KANIDM_BUILD_PROFILE
+	cargo build -p daemon --bin kubidmd --release
 
-.PHONY: release/kanidm-ssh
-release/kanidm-ssh: ## Build the Kanidm SSH tools - ensure you include the environment variable KANIDM_BUILD_PROFILE
+.PHONY: release/kubidm-ssh
+release/kubidm-ssh: ## Build the Kubidm SSH tools - ensure you include the environment variable KANIDM_BUILD_PROFILE
 	cargo build --release \
-		--bin kanidm_ssh_authorizedkeys \
-		--bin kanidm_ssh_authorizedkeys_direct
+		--bin kubidm_ssh_authorizedkeys \
+		--bin kubidm_ssh_authorizedkeys_direct
 
-.PHONY: release/kanidm-unixd
-release/kanidm-unixd: ## Build the Kanidm UNIX tools - ensure you include the environment variable KANIDM_BUILD_PROFILE
-release/kanidm-unixd:
-	cargo build -p pam_kanidm --release
-	cargo build -p nss_kanidm --release
-	cargo build --features unix -p kanidm_unix_int --release \
-		--bin kanidm_unixd \
-		--bin kanidm_unixd_tasks \
-		--bin kanidm-unix
+.PHONY: release/kubidm-unixd
+release/kubidm-unixd: ## Build the Kubidm UNIX tools - ensure you include the environment variable KANIDM_BUILD_PROFILE
+release/kubidm-unixd:
+	cargo build -p pam_kubidm --release
+	cargo build -p nss_kubidm --release
+	cargo build --features unix -p kubidm_unix_int --release \
+		--bin kubidm_unixd \
+		--bin kubidm_unixd_tasks \
+		--bin kubidm-unix
 
 # cert things
 

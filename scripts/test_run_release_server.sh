@@ -14,7 +14,7 @@ fi
 
 echo "Building release binaries..."
 # shellcheck disable=SC2086
-cargo build --locked $BUILD_MODE --bin kanidm --bin kanidmd --quiet || {
+cargo build --locked $BUILD_MODE --bin kubidm --bin kubidmd --quiet || {
     echo "Failed to build release binaries, please check the output above."
     exit 1
 }
@@ -37,17 +37,17 @@ mkdir -p /tmp/kanidm/client_ca
 
 echo "Generating certificates..."
 # shellcheck disable=SC2086
-cargo run --bin kanidmd $BUILD_MODE cert-generate
+cargo run --bin kubidmd $BUILD_MODE cert-generate
 
 echo "Making sure it runs with the DB..."
 # shellcheck disable=SC2086
-cargo run --bin kanidmd $BUILD_MODE scripting recover-account idm_admin
+cargo run --bin kubidmd $BUILD_MODE scripting recover-account idm_admin
 
 echo "Running the server..."
 # shellcheck disable=SC2086
-cargo run --bin kanidmd $BUILD_MODE server  &
-KANIDMD_PID=$!
-echo "Kanidm PID: ${KANIDMD_PID}"
+cargo run --bin kubidmd $BUILD_MODE server  &
+KUBIDMD_PID=$!
+echo "Kubidm PID: ${KUBIDMD_PID}"
 
 if [ "$(jobs -p | wc -l)" -eq 0 ]; then
     echo "Kanidmd failed to start!"
@@ -77,7 +77,7 @@ while true; do
     fi
 done
 
-BUILD_MODE=$BUILD_MODE ../../scripts/setup_dev_environment.sh || kill -9 "${KANIDMD_PID}"
+BUILD_MODE=$BUILD_MODE ../../scripts/setup_dev_environment.sh || kill -9 "${KUBIDMD_PID}"
 
 
 if [ -n "$CURRENT_DIR" ]; then
@@ -88,8 +88,8 @@ echo "Running the OpenAPI schema checks"
 
 bash -c ./scripts/openapi_tests/check_openapi_spec.sh || exit 1
 
-echo "Waiting ${WAIT_TIMER} seconds and terminating Kanidmd"
+echo "Waiting ${WAIT_TIMER} seconds and terminating Kubidmd"
 sleep "${WAIT_TIMER}"
-if [ "$(pgrep kanidmd | wc -l)" -gt 0 ]; then
-    kill $(pgrep kanidmd)
+if [ "$(pgrep kubidmd | wc -l)" -gt 0 ]; then
+    kill $(pgrep kubidmd)
 fi
