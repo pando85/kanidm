@@ -50,29 +50,29 @@ KUBIDMD_PID=$!
 echo "Kubidm PID: ${KUBIDMD_PID}"
 
 if [ "$(jobs -p | wc -l)" -eq 0 ]; then
-    echo "Kanidmd failed to start!"
+    echo "Kubidmd failed to start!"
     exit 1
 fi
 
 ATTEMPT=0
 
-KANIDM_CONFIG_FILE="./insecure_server.toml"
-if [ -f "${KANIDM_CONFIG_FILE}" ]; then
-    echo "Found config file ${KANIDM_CONFIG_FILE}"
+KUBIDM_CONFIG_FILE="./insecure_server.toml"
+if [ -f "${KUBIDM_CONFIG_FILE}" ]; then
+    echo "Found config file ${KUBIDM_CONFIG_FILE}"
 else
-    echo "Config file ${KANIDM_CONFIG_FILE} not found!"
+    echo "Config file ${KUBIDM_CONFIG_FILE} not found!"
     exit 1
 fi
-KANIDM_URL="$(grep -E '^origin.*https' "${KANIDM_CONFIG_FILE}" | awk '{print $NF}' | tr -d '"')"
-KANIDM_CA_PATH="/tmp/kubidm/chain.pem"
+KUBIDM_URL="$(grep -E '^origin.*https' "${KUBIDM_CONFIG_FILE}" | awk '{print $NF}' | tr -d '"')"
+KUBIDM_CA_PATH="/tmp/kubidm/chain.pem"
 
 while true; do
-    echo "Waiting for the server to start... testing url '${KANIDM_URL}'"
-    curl --cacert "${KANIDM_CA_PATH}" -f "${KANIDM_URL}/status" >/dev/null && break
+    echo "Waiting for the server to start... testing url '${KUBIDM_URL}'"
+    curl --cacert "${KUBIDM_CA_PATH}" -f "${KUBIDM_URL}/status" >/dev/null && break
     sleep 2
     ATTEMPT="$((ATTEMPT + 1))"
     if [ "${ATTEMPT}" -gt 3 ]; then
-        echo "Kanidmd failed to start!"
+        echo "Kubidmd failed to start!"
         exit 1
     fi
 done
