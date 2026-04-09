@@ -33,7 +33,7 @@ fi
 
 export KANIDM_CONFIG="./insecure_server.toml"
 
-mkdir -p /tmp/kanidm/client_ca
+mkdir -p /tmp/kubidm/client_ca
 
 echo "Generating certificates..."
 # shellcheck disable=SC2086
@@ -64,7 +64,7 @@ else
     exit 1
 fi
 KANIDM_URL="$(grep -E '^origin.*https' "${KANIDM_CONFIG_FILE}" | awk '{print $NF}' | tr -d '"')"
-KANIDM_CA_PATH="/tmp/kanidm/ca.pem"
+KANIDM_CA_PATH="/tmp/kubidm/chain.pem"
 
 while true; do
     echo "Waiting for the server to start... testing url '${KANIDM_URL}'"
