@@ -1,8 +1,8 @@
-use kanidm_client::KanidmClient;
+use kubidm_client::KubidmClient;
 
 /// This literally tests that the thing exists and responds in a way we expect, probably worth testing it better...
-#[kanidmd_testkit::test]
-async fn test_v1_service_account_id_attr_attr_delete(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_v1_service_account_id_attr_attr_delete(rsclient: &KubidmClient) {
     // We need to do manual reqwests here.
     let client = rsclient.client();
 

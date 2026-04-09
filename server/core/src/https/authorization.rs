@@ -8,7 +8,7 @@ use axum::routing::post;
 use axum::Extension;
 use axum::Json;
 use axum::Router;
-use kanidm_proto::internal::{
+use kubidm_proto::internal::{
     AuthorizationRequest, AuthorizationResponse, BatchAuthorizationRequest,
     BatchAuthorizationResponse,
 };

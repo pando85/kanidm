@@ -1,8 +1,8 @@
-use kanidm_client::KanidmClient;
-use kanidmd_testkit::{create_user, ADMIN_TEST_PASSWORD, ADMIN_TEST_USER};
+use kubidm_client::KubidmClient;
+use kubidmd_testkit::{create_user, ADMIN_TEST_PASSWORD, ADMIN_TEST_USER};
 
-#[kanidmd_testkit::test]
-async fn test_time_bounded_group_membership_basic(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_time_bounded_group_membership_basic(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -18,8 +18,8 @@ async fn test_time_bounded_group_membership_basic(rsclient: &KanidmClient) {
     assert!(user_entry.is_some());
 }
 
-#[kanidmd_testkit::test]
-async fn test_time_bounded_access_multiple_groups(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_time_bounded_access_multiple_groups(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -57,8 +57,8 @@ async fn test_time_bounded_access_multiple_groups(rsclient: &KanidmClient) {
     assert!(group_list.len() >= 2);
 }
 
-#[kanidmd_testkit::test]
-async fn test_time_bounded_access_nested_groups(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_time_bounded_access_nested_groups(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -91,8 +91,8 @@ async fn test_time_bounded_access_nested_groups(rsclient: &KanidmClient) {
     assert!(group_list.len() >= 2);
 }
 
-#[kanidmd_testkit::test]
-async fn test_time_bounded_access_group_delete(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_time_bounded_access_group_delete(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -128,8 +128,8 @@ async fn test_time_bounded_access_group_delete(rsclient: &KanidmClient) {
     }
 }
 
-#[kanidmd_testkit::test]
-async fn test_time_bounded_access_member_remove(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_time_bounded_access_member_remove(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -164,8 +164,8 @@ async fn test_time_bounded_access_member_remove(rsclient: &KanidmClient) {
     }
 }
 
-#[kanidmd_testkit::test]
-async fn test_time_bounded_access_cycle_groups(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_time_bounded_access_cycle_groups(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -203,8 +203,8 @@ async fn test_time_bounded_access_cycle_groups(rsclient: &KanidmClient) {
     assert!(group_list.len() >= 2);
 }
 
-#[kanidmd_testkit::test]
-async fn test_time_bounded_access_large_group(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_time_bounded_access_large_group(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -230,8 +230,8 @@ async fn test_time_bounded_access_large_group(rsclient: &KanidmClient) {
     assert_eq!(member_list.len(), 10);
 }
 
-#[kanidmd_testkit::test]
-async fn test_time_bounded_access_user_attributes(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_time_bounded_access_user_attributes(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;

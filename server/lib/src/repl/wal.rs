@@ -9,7 +9,7 @@ use std::time::Duration;
 
 use flate2::write::GzEncoder;
 use flate2::Compression;
-use kanidm_proto::backup::{BackupCompression, PitrManifest, WalArchiveConfig, WalSegment};
+use kubidm_proto::backup::{BackupCompression, PitrManifest, WalArchiveConfig, WalSegment};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tracing::info;
@@ -330,7 +330,7 @@ impl WalArchiver {
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct RecoveryState {
-    pub target: kanidm_proto::backup::RecoveryTarget,
+    pub target: kubidm_proto::backup::RecoveryTarget,
     pub available_segments: Vec<WalSegment>,
     pub base_backup_id: String,
     pub base_backup_timestamp: String,
@@ -340,7 +340,7 @@ pub struct RecoveryState {
 impl RecoveryState {
     pub fn validate_target(&self) -> Result<(), WalError> {
         match &self.target.target_type {
-            kanidm_proto::backup::RecoveryTargetType::Time { timestamp } => {
+            kubidm_proto::backup::RecoveryTargetType::Time { timestamp } => {
                 let target_time = chrono::DateTime::parse_from_rfc3339(timestamp)
                     .map_err(|e| WalError::InvalidSegment(format!("Invalid timestamp: {}", e)))?;
 
@@ -372,7 +372,7 @@ impl RecoveryState {
                     )));
                 }
             }
-            kanidm_proto::backup::RecoveryTargetType::Transaction { cid } => {
+            kubidm_proto::backup::RecoveryTargetType::Transaction { cid } => {
                 let cid_found = self.available_segments.iter().any(|s| {
                     s.segment_id.contains(cid)
                         || format!("{}-{}", s.server_uuid, s.start_ts.as_nanos()).contains(cid)
@@ -385,7 +385,7 @@ impl RecoveryState {
                     )));
                 }
             }
-            kanidm_proto::backup::RecoveryTargetType::Latest => {}
+            kubidm_proto::backup::RecoveryTargetType::Latest => {}
         }
 
         Ok(())
@@ -489,7 +489,7 @@ pub fn parse_recovery_target_cid(cid_str: &str) -> Result<Cid, WalError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use kanidm_proto::backup::{PitrManifest, RecoveryTarget, RecoveryTargetType};
+    use kubidm_proto::backup::{PitrManifest, RecoveryTarget, RecoveryTargetType};
     use std::time::SystemTime;
 
     fn create_test_config() -> WalArchiveConfig {

@@ -1,20 +1,20 @@
 use compact_jwt::{JweCompact, Jwk, JwsCompact};
-use kanidm_proto::backup::BackupCompression;
-use kanidm_proto::internal::{
+use kubidm_proto::backup::BackupCompression;
+use kubidm_proto::internal::{
     ApiToken, AppLink, CURequest, CUSessionToken, CUStatus, CredentialStatus, IdentifyUserRequest,
     IdentifyUserResponse, ImageValue, OperationError, RadiusAuthToken, SearchRequest,
     SearchResponse, UserAuthToken,
 };
-use kanidm_proto::oauth2::OidcWebfingerResponse;
-use kanidm_proto::v1::{
+use kubidm_proto::oauth2::OidcWebfingerResponse;
+use kubidm_proto::v1::{
     AuthIssueSession, Entry as ProtoEntry, UatStatus, UnixGroupToken, UnixUserToken, WhoamiResponse,
 };
-use kanidmd_lib::be::BackendTransaction;
-use kanidmd_lib::idm::identityverification::{
+use kubidmd_lib::be::BackendTransaction;
+use kubidmd_lib::idm::identityverification::{
     IdentifyUserDisplayCodeEvent, IdentifyUserStartEvent, IdentifyUserSubmitCodeEvent,
 };
-use kanidmd_lib::prelude::*;
-use kanidmd_lib::{
+use kubidmd_lib::prelude::*;
+use kubidmd_lib::{
     event::{OnlineBackupEvent, SearchEvent, SearchResult, WhoamiResult},
     filter::{Filter, FilterInvalid},
     idm::account::ListUserAuthTokenEvent,
@@ -1646,9 +1646,9 @@ impl QueryServerReadV1 {
     pub async fn handle_authorization_request(
         &self,
         client_auth_info: ClientAuthInfo,
-        req: kanidm_proto::internal::AuthorizationRequest,
+        req: kubidm_proto::internal::AuthorizationRequest,
         eventid: Uuid,
-    ) -> Result<kanidm_proto::internal::AuthorizationResponse, OperationError> {
+    ) -> Result<kubidm_proto::internal::AuthorizationResponse, OperationError> {
         let ct = duration_from_epoch_now();
         let mut idms_prox_read = self.idms.proxy_read().await?;
         let ident = idms_prox_read
@@ -1658,7 +1658,7 @@ impl QueryServerReadV1 {
                 e
             })?;
 
-        kanidmd_lib::server::authorization::make_authorization_decision(
+        kubidmd_lib::server::authorization::make_authorization_decision(
             &mut idms_prox_read.qs_read,
             &ident,
             &req,
@@ -1674,9 +1674,9 @@ impl QueryServerReadV1 {
     pub async fn handle_batch_authorization_request(
         &self,
         client_auth_info: ClientAuthInfo,
-        req: kanidm_proto::internal::BatchAuthorizationRequest,
+        req: kubidm_proto::internal::BatchAuthorizationRequest,
         eventid: Uuid,
-    ) -> Result<kanidm_proto::internal::BatchAuthorizationResponse, OperationError> {
+    ) -> Result<kubidm_proto::internal::BatchAuthorizationResponse, OperationError> {
         let mut responses = Vec::with_capacity(req.requests.len());
 
         for auth_req in req.requests {
@@ -1686,7 +1686,7 @@ impl QueryServerReadV1 {
             responses.push(response);
         }
 
-        Ok(kanidm_proto::internal::BatchAuthorizationResponse { responses })
+        Ok(kubidm_proto::internal::BatchAuthorizationResponse { responses })
     }
 
     #[instrument(
@@ -1699,7 +1699,7 @@ impl QueryServerReadV1 {
         &self,
         client_auth_info: ClientAuthInfo,
         eventid: Uuid,
-    ) -> Result<Vec<kanidm_proto::v1::ApprovalPolicy>, OperationError> {
+    ) -> Result<Vec<kubidm_proto::v1::ApprovalPolicy>, OperationError> {
         let ct = duration_from_epoch_now();
         let mut idms_prox_read = self.idms.proxy_read().await?;
         let ident = idms_prox_read
@@ -1723,7 +1723,7 @@ impl QueryServerReadV1 {
         client_auth_info: ClientAuthInfo,
         name: String,
         eventid: Uuid,
-    ) -> Result<kanidm_proto::v1::ApprovalPolicy, OperationError> {
+    ) -> Result<kubidm_proto::v1::ApprovalPolicy, OperationError> {
         let ct = duration_from_epoch_now();
         let mut idms_prox_read = self.idms.proxy_read().await?;
         let ident = idms_prox_read
@@ -1745,9 +1745,9 @@ impl QueryServerReadV1 {
     pub async fn handle_approval_request_list(
         &self,
         client_auth_info: ClientAuthInfo,
-        state: Option<kanidm_proto::v1::ApprovalRequestState>,
+        state: Option<kubidm_proto::v1::ApprovalRequestState>,
         eventid: Uuid,
-    ) -> Result<Vec<kanidm_proto::v1::ApprovalRequest>, OperationError> {
+    ) -> Result<Vec<kubidm_proto::v1::ApprovalRequest>, OperationError> {
         let ct = duration_from_epoch_now();
         let mut idms_prox_read = self.idms.proxy_read().await?;
         let ident = idms_prox_read
@@ -1771,7 +1771,7 @@ impl QueryServerReadV1 {
         client_auth_info: ClientAuthInfo,
         uuid: String,
         eventid: Uuid,
-    ) -> Result<kanidm_proto::v1::ApprovalRequest, OperationError> {
+    ) -> Result<kubidm_proto::v1::ApprovalRequest, OperationError> {
         let ct = duration_from_epoch_now();
         let mut idms_prox_read = self.idms.proxy_read().await?;
         let ident = idms_prox_read

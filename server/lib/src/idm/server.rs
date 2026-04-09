@@ -35,12 +35,12 @@ use compact_jwt::{Jwk, JwsCompact};
 use concread::bptree::{BptreeMap, BptreeMapReadTxn, BptreeMapWriteTxn};
 use concread::cowcell::CowCellReadTxn;
 use concread::hashmap::{HashMap, HashMapReadTxn, HashMapWriteTxn};
-use kanidm_lib_crypto::CryptoPolicy;
-use kanidm_proto::internal::{
+use kubidm_lib_crypto::CryptoPolicy;
+use kubidm_proto::internal::{
     ApiToken, CredentialStatus, PasswordFeedback, RadiusAuthToken, ScimSyncToken, UatPurpose,
     UserAuthToken,
 };
-use kanidm_proto::v1::{UnixGroupToken, UnixUserToken};
+use kubidm_proto::v1::{UnixGroupToken, UnixUserToken};
 use rand::prelude::*;
 use std::convert::TryFrom;
 use std::sync::Arc;
@@ -192,7 +192,7 @@ impl IdmServer {
                 origin,
                 rp_id
             );
-            admin_error!("To change the origin or domain name see: https://kanidm.github.io/kanidm/master/server_configuration.html");
+            admin_error!("To change the origin or domain name see: https://kubidm.github.io/kubidm/master/server_configuration.html");
             return Err(OperationError::InvalidState);
         };
 
@@ -606,7 +606,7 @@ pub trait IdmServerTransaction<'a> {
                 OperationError::NotAuthenticated
             })?;
 
-            let apit = kanidm_proto::internal::ApiToken {
+            let apit = kubidm_proto::internal::ApiToken {
                 account_id: entry.get_uuid(),
                 token_id: session_id,
                 label: api_token_internal.label.clone(),
@@ -2425,8 +2425,8 @@ mod tests {
     use crate::server::keys::KeyProvidersTransaction;
     use crate::value::{AuthType, SessionState};
     use compact_jwt::{traits::JwsVerifiable, JwsCompact, JwsEs256Verifier, JwsVerifier};
-    use kanidm_lib_crypto::CryptoPolicy;
-    use kanidm_proto::v1::{AuthAllowed, AuthIssueSession, AuthMech};
+    use kubidm_lib_crypto::CryptoPolicy;
+    use kubidm_proto::v1::{AuthAllowed, AuthIssueSession, AuthMech};
     use time::OffsetDateTime;
     use uuid::Uuid;
 
@@ -3843,7 +3843,7 @@ mod tests {
         idms: &IdmServer,
         idms_delayed: &mut IdmServerDelayed,
     ) {
-        use kanidm_proto::internal::UserAuthToken;
+        use kubidm_proto::internal::UserAuthToken;
 
         let ct = duration_from_epoch_now();
 

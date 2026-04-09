@@ -7,8 +7,8 @@ use super::ServerState;
 use crate::https::extractors::VerifiedClientInformation;
 use axum::extract::{Path, State};
 use axum::{Extension, Json};
-use kanidm_proto::v1::Entry as ProtoEntry;
-use kanidmd_lib::prelude::*;
+use kubidm_proto::v1::Entry as ProtoEntry;
+use kubidmd_lib::prelude::*;
 
 #[utoipa::path(
     get,

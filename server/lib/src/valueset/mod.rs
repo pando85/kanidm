@@ -11,11 +11,11 @@ use compact_jwt::{crypto::JwsRs256Signer, JwsEs256Signer};
 use crypto_glue::{s256::Sha256Output, x509::Certificate};
 use dyn_clone::DynClone;
 use hashbrown::HashSet;
-use kanidm_proto::internal::ImageValue;
-use kanidm_proto::internal::{Filter as ProtoFilter, UiHint};
-use kanidm_proto::scim_v1::JsonValue;
-use kanidm_proto::scim_v1::ScimOauth2ClaimMapJoinChar;
-use kanidm_proto::v1::OutboundMessage;
+use kubidm_proto::internal::ImageValue;
+use kubidm_proto::internal::{Filter as ProtoFilter, UiHint};
+use kubidm_proto::scim_v1::JsonValue;
+use kubidm_proto::scim_v1::ScimOauth2ClaimMapJoinChar;
+use kubidm_proto::v1::OutboundMessage;
 use smolset::SmolSet;
 use sshkey_attest::proto::PublicKey as SshPublicKey;
 use std::cmp::Ordering;
@@ -760,13 +760,13 @@ pub enum ScimValueIntermediate {
 }
 
 pub enum ScimResolveStatus {
-    Resolved(ScimValueKanidm),
+    Resolved(ScimValueKubidm),
     NeedsResolution(ScimValueIntermediate),
 }
 
 impl<T> From<T> for ScimResolveStatus
 where
-    T: Into<ScimValueKanidm>,
+    T: Into<ScimValueKubidm>,
 {
     fn from(v: T) -> Self {
         Self::Resolved(v.into())
@@ -775,7 +775,7 @@ where
 
 #[cfg(test)]
 impl ScimResolveStatus {
-    pub fn assume_resolved(self) -> ScimValueKanidm {
+    pub fn assume_resolved(self) -> ScimValueKubidm {
         match self {
             ScimResolveStatus::Resolved(v) => v,
             ScimResolveStatus::NeedsResolution(_) => {

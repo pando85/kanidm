@@ -1,5 +1,5 @@
 use crypto_glue::x509::{x509b64, Certificate};
-use kanidm_proto::constants::{
+use kubidm_proto::constants::{
     AUTH_TOKEN_GRACE_WINDOW, DEFAULT_REPLICATION_ADDRESS, DEFAULT_REPLICATION_ORIGIN,
     DEFAULT_REPL_TASK_POLL_INTERVAL,
 };
@@ -41,13 +41,13 @@ pub enum RepNodeConfig {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct ReplicationConfiguration {
-    /// Defaults to [kanidm_proto::constants::DEFAULT_REPLICATION_ORIGIN]
+    /// Defaults to [kubidm_proto::constants::DEFAULT_REPLICATION_ORIGIN]
     pub origin: Url,
-    /// Defaults to [kanidm_proto::constants::DEFAULT_REPLICATION_ADDRESS]
+    /// Defaults to [kubidm_proto::constants::DEFAULT_REPLICATION_ADDRESS]
     pub bindaddress: SocketAddr,
     /// Number of seconds between running a replication event. Defaults to
-    /// [kanidm_proto::constants::DEFAULT_REPL_TASK_POLL_INTERVAL] but may
-    /// not exceed [kanidm_proto::constants::AUTH_TOKEN_GRACE_WINDOW].
+    /// [kubidm_proto::constants::DEFAULT_REPL_TASK_POLL_INTERVAL] but may
+    /// not exceed [kubidm_proto::constants::AUTH_TOKEN_GRACE_WINDOW].
     pub task_poll_interval: Option<u64>,
 
     #[serde(flatten)]

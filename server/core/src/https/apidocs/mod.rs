@@ -1,5 +1,5 @@
 use axum::{middleware::from_fn, response::Redirect, routing::get, Router};
-use kanidm_proto::{attribute, internal, scim_v1, v1};
+use kubidm_proto::{attribute, internal, scim_v1, v1};
 use utoipa::{
     openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
     Modify, OpenApi,
@@ -43,7 +43,7 @@ impl Modify for SecurityAddon {
             )
         )
     ),
-    external_docs(url = "https://kanidm.com/docs", description = "Kanidm documentation page"),
+    external_docs(url = "https://kubidm.com/docs", description = "Kubidm documentation page"),
 
     paths(
         super::generic::status,
@@ -348,14 +348,14 @@ impl Modify for SecurityAddon {
     ),
     modifiers(&SecurityAddon),
     tags(
-        (name = "kanidm", description = "Kanidm API")
+        (name = "kubidm", description = "Kubidm API")
     ),
     info(
-        title = "Kanidm",
-        description = "API for interacting with the Kanidm system. This is a work in progress.",
+        title = "Kubidm",
+        description = "API for interacting with the Kubidm system. This is a work in progress.",
         contact( // <https://docs.rs/utoipa-gen/3.5.0/utoipa_gen/derive.OpenApi.html#info-attribute-syntax>
-            name="Kanidm Github",
-            url="https://github.com/kanidm/kanidm",
+            name="Kubidm Github",
+            url="https://github.com/kubidm/kubidm",
         )
     )
 )]

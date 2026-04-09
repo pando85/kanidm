@@ -45,7 +45,7 @@ enum DomainSettingsCmds {
     Change,
     /// Perform a pre-upgrade-check of this domains content. This will report possible
     /// incompatibilities that can block a successful upgrade to the next version of
-    /// Kanidm. This is a safe read only operation.
+    /// Kubidm. This is a safe read only operation.
     #[clap(name = "upgrade-check")]
     UpgradeCheck,
     /// Do not use this command unless directed by a project member.
@@ -141,16 +141,16 @@ enum DbScanOpt {
 }
 
 #[derive(Debug, Parser)]
-#[command(name = "kanidmd")]
-struct KanidmdParser {
+#[command(name = "kubidmd")]
+struct KubidmdParser {
     #[command(subcommand)]
-    commands: KanidmdOpt,
+    commands: KubidmdOpt,
 
     #[clap(short, long, env = "KANIDM_CONFIG", global = true)]
     config_path: Option<PathBuf>,
 
     #[clap(flatten)]
-    kanidmd_options: kanidm_proto::cli::KanidmdCli,
+    kubidmd_options: kubidm_proto::cli::KubidmdCli,
 }
 
 #[derive(Debug, Subcommand)]
@@ -181,7 +181,7 @@ enum ScriptingCommand {
 }
 
 #[derive(Debug, Subcommand)]
-enum KanidmdOpt {
+enum KubidmdOpt {
     #[clap(name = "server")]
     /// Start the IDM Server
     Server,

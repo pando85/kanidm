@@ -25,7 +25,7 @@
 #[macro_use]
 extern crate tracing;
 #[macro_use]
-extern crate kanidmd_lib;
+extern crate kubidmd_lib;
 
 mod actors;
 pub mod admin;
@@ -50,23 +50,23 @@ use crypto_glue::{
     s256::{Sha256, Sha256Output},
     traits::Digest,
 };
-use kanidm_proto::backup::{
+use kubidm_proto::backup::{
     BackupCompression, PitrManifest, RecoveryTarget, ReplicationHealthCheck, ReplicationLagMetrics,
     S3Config,
 };
-use kanidm_proto::config::ServerRole;
-use kanidm_proto::internal::OperationError;
-use kanidm_proto::scim_v1::client::ScimAssertGeneric;
-use kanidmd_lib::be::{Backend, BackendConfig, BackendTransaction};
-use kanidmd_lib::idm::ldap::LdapServer;
-use kanidmd_lib::prelude::*;
-use kanidmd_lib::repl::wal::{
+use kubidm_proto::config::ServerRole;
+use kubidm_proto::internal::OperationError;
+use kubidm_proto::scim_v1::client::ScimAssertGeneric;
+use kubidmd_lib::be::{Backend, BackendConfig, BackendTransaction};
+use kubidmd_lib::idm::ldap::LdapServer;
+use kubidmd_lib::prelude::*;
+use kubidmd_lib::repl::wal::{
     parse_recovery_target_cid, parse_recovery_target_time, RecoveryState, WalEntryRecord,
     WalOperationRecord, WalReplayer,
 };
-use kanidmd_lib::schema::Schema;
-use kanidmd_lib::status::StatusActor;
-use kanidmd_lib::value::CredentialType;
+use kubidmd_lib::schema::Schema;
+use kubidmd_lib::status::StatusActor;
+use kubidmd_lib::value::CredentialType;
 use regex::Regex;
 use std::collections::BTreeSet;
 use std::fmt::{Display, Formatter};
@@ -740,16 +740,16 @@ pub async fn pitr_recover_core(
 
     let segments = recovery_state.get_segments_for_recovery();
     let target_ts = match &target.target_type {
-        kanidm_proto::backup::RecoveryTargetType::Time { timestamp } => Some(
+        kubidm_proto::backup::RecoveryTargetType::Time { timestamp } => Some(
             parse_recovery_target_time(timestamp)
                 .map_err(|e| format!("Failed to parse target time: {}", e))?,
         ),
-        kanidm_proto::backup::RecoveryTargetType::Transaction { cid: _ } => None,
-        kanidm_proto::backup::RecoveryTargetType::Latest => None,
+        kubidm_proto::backup::RecoveryTargetType::Transaction { cid: _ } => None,
+        kubidm_proto::backup::RecoveryTargetType::Latest => None,
     };
 
     let target_cid = match &target.target_type {
-        kanidm_proto::backup::RecoveryTargetType::Transaction { cid } => Some(
+        kubidm_proto::backup::RecoveryTargetType::Transaction { cid } => Some(
             parse_recovery_target_cid(cid)
                 .map_err(|e| format!("Failed to parse target CID: {}", e))?,
         ),
@@ -1127,7 +1127,7 @@ async fn migration_apply(
         Ok(dir_ents) => dir_ents,
         Err(err) => {
             error!(?err, "Unable to read migration directory.");
-            let diag = kanidm_lib_file_permissions::diagnose_path(migration_path);
+            let diag = kubidm_lib_file_permissions::diagnose_path(migration_path);
             info!(%diag);
             return;
         }
@@ -1183,7 +1183,7 @@ async fn migration_apply(
             Ok(bytes) => bytes,
             Err(err) => {
                 error!(?err, "Unable to read migration - it will be ignored.");
-                let diag = kanidm_lib_file_permissions::diagnose_path(&migration_path);
+                let diag = kubidm_lib_file_permissions::diagnose_path(&migration_path);
                 info!(%diag);
                 continue;
             }
@@ -1339,7 +1339,7 @@ pub async fn create_server_core(
     }
 
     info!(
-        "Starting kanidm with {}configuration: {}",
+        "Starting kubidm with {}configuration: {}",
         if config_test { "TEST " } else { "" },
         config
     );

@@ -11,10 +11,10 @@ use super::ServerState;
 use crate::https::extractors::VerifiedClientInformation;
 use axum::extract::{Path, State};
 use axum::{Extension, Json};
-use kanidm_proto::internal::{ImageType, ImageValue, Oauth2ClaimMapJoin};
-use kanidm_proto::v1::Entry as ProtoEntry;
-use kanidmd_lib::prelude::*;
-use kanidmd_lib::valueset::image::ImageValueThings;
+use kubidm_proto::internal::{ImageType, ImageValue, Oauth2ClaimMapJoin};
+use kubidm_proto::v1::Entry as ProtoEntry;
+use kubidmd_lib::prelude::*;
+use kubidmd_lib::valueset::image::ImageValueThings;
 use sketching::admin_error;
 
 #[utoipa::path(

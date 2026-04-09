@@ -5,8 +5,8 @@ use crate::utils::trigraph_iter;
 use crate::valueset::{
     DbValueSetV2, ScimResolveStatus, ValueSet, ValueSetResolveStatus, ValueSetScimPut,
 };
-use kanidm_proto::scim_v1::JsonValue;
-use kanidm_proto::scim_v1::ScimSshPublicKey;
+use kubidm_proto::scim_v1::JsonValue;
+use kubidm_proto::scim_v1::ScimSshPublicKey;
 use sshkey_attest::proto::PublicKey as SshPublicKey;
 use std::collections::btree_map::Entry as BTreeEntry;
 use std::collections::BTreeMap;
@@ -156,7 +156,7 @@ impl ValueSetT for ValueSetSshKey {
     }
 
     fn to_scim_value(&self) -> Option<ScimResolveStatus> {
-        Some(ScimResolveStatus::Resolved(ScimValueKanidm::from(
+        Some(ScimResolveStatus::Resolved(ScimValueKubidm::from(
             self.map
                 .iter()
                 .map(|(label, value)| ScimSshPublicKey {

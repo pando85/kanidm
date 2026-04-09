@@ -14,23 +14,23 @@ use axum::routing::{delete, get, post, put};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::cookie::{Cookie, CookieJar, SameSite};
 use compact_jwt::{Jwk, Jws, JwsSigner};
-use kanidm_proto::constants::uri::V1_AUTH_VALID;
-use kanidm_proto::internal::{
+use kubidm_proto::constants::uri::V1_AUTH_VALID;
+use kubidm_proto::internal::{
     ApiToken, AppLink, CUIntentSend, CUIntentToken, CURequest, CUSessionToken, CUStatus,
     CreateRequest, CredentialStatus, DeleteRequest, IdentifyUserRequest, IdentifyUserResponse,
     ModifyRequest, RadiusAuthToken, SearchRequest, SearchResponse, UserAuthToken,
     COOKIE_AUTH_SESSION_ID, COOKIE_BEARER_TOKEN,
 };
-use kanidm_proto::v1::{
+use kubidm_proto::v1::{
     AccountUnixExtend, ApiTokenGenerate, ApprovalDecisionRequest, ApprovalPolicy,
     ApprovalPolicyCreateRequest, ApprovalRequest, AuthIssueSession, AuthRequest, AuthResponse,
     AuthState as ProtoAuthState, Entry as ProtoEntry, GroupUnixExtend, SingleStringRequest,
     UatStatus, UnixGroupToken, UnixUserToken, WhoamiResponse,
 };
-use kanidmd_lib::idm::authentication::{AuthState, AuthStep};
-use kanidmd_lib::idm::event::AuthResult;
-use kanidmd_lib::prelude::*;
-use kanidmd_lib::value::PartialValue;
+use kubidmd_lib::idm::authentication::{AuthState, AuthStep};
+use kubidmd_lib::idm::event::AuthResult;
+use kubidmd_lib::prelude::*;
+use kubidmd_lib::value::PartialValue;
 use std::net::IpAddr;
 use uuid::Uuid;
 
@@ -3492,7 +3492,7 @@ pub async fn approval_policy_list(
     State(state): State<ServerState>,
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
-) -> Result<Json<Vec<kanidm_proto::v1::ApprovalPolicy>>, WebError> {
+) -> Result<Json<Vec<kubidm_proto::v1::ApprovalPolicy>>, WebError> {
     state
         .qe_r_ref
         .handle_approval_policy_list(client_auth_info, kopid.eventid)
@@ -3517,7 +3517,7 @@ pub async fn approval_policy_get(
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
     Path(name): Path<String>,
-) -> Result<Json<kanidm_proto::v1::ApprovalPolicy>, WebError> {
+) -> Result<Json<kubidm_proto::v1::ApprovalPolicy>, WebError> {
     state
         .qe_r_ref
         .handle_approval_policy_get(client_auth_info, name, kopid.eventid)
@@ -3541,7 +3541,7 @@ pub async fn approval_policy_create(
     State(state): State<ServerState>,
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
-    Json(request): Json<kanidm_proto::v1::ApprovalPolicyCreateRequest>,
+    Json(request): Json<kubidm_proto::v1::ApprovalPolicyCreateRequest>,
 ) -> Result<Json<()>, WebError> {
     state
         .qe_w_ref
@@ -3638,7 +3638,7 @@ pub async fn approval_request_list(
     State(state): State<ServerState>,
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
-) -> Result<Json<Vec<kanidm_proto::v1::ApprovalRequest>>, WebError> {
+) -> Result<Json<Vec<kubidm_proto::v1::ApprovalRequest>>, WebError> {
     state
         .qe_r_ref
         .handle_approval_request_list(client_auth_info, None, kopid.eventid)
@@ -3663,7 +3663,7 @@ pub async fn approval_request_get(
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
     Path(uuid): Path<String>,
-) -> Result<Json<kanidm_proto::v1::ApprovalRequest>, WebError> {
+) -> Result<Json<kubidm_proto::v1::ApprovalRequest>, WebError> {
     state
         .qe_r_ref
         .handle_approval_request_get(client_auth_info, uuid, kopid.eventid)
@@ -3688,7 +3688,7 @@ pub async fn approval_request_decision(
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
     Path(uuid): Path<String>,
-    Json(request): Json<kanidm_proto::v1::ApprovalDecisionRequest>,
+    Json(request): Json<kubidm_proto::v1::ApprovalDecisionRequest>,
 ) -> Result<Json<()>, WebError> {
     state
         .qe_w_ref

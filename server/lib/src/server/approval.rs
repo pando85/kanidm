@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use kanidm_proto::v1::{
+use kubidm_proto::v1::{
     ApprovalDecision, ApprovalDecisionAction, ApprovalDecisionRequest, ApprovalOperationType,
     ApprovalPattern, ApprovalPolicy, ApprovalPolicyCreateRequest, ApprovalRequest,
     ApprovalRequestState,

@@ -1,6 +1,6 @@
 //! PIP Configuration module for defining external attribute sources.
 
-use kanidm_proto::internal::{PipAuthConfig, PipSourceType};
+use kubidm_proto::internal::{PipAuthConfig, PipSourceType};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 

@@ -2,7 +2,7 @@ use crate::prelude::*;
 use crate::schema::SchemaAttribute;
 use crate::valueset::ScimResolveStatus;
 use crate::valueset::{DbValueSetV2, ValueSet};
-use kanidm_proto::v1::OutboundMessage;
+use kubidm_proto::v1::OutboundMessage;
 
 #[derive(Debug, Clone)]
 pub struct ValueSetMessage {
@@ -67,7 +67,7 @@ impl ValueSetT for ValueSetMessage {
     }
 
     fn to_scim_value(&self) -> Option<ScimResolveStatus> {
-        Some(ScimResolveStatus::Resolved(ScimValueKanidm::from(
+        Some(ScimResolveStatus::Resolved(ScimValueKubidm::from(
             self.message.clone(),
         )))
     }
@@ -108,7 +108,7 @@ mod tests {
     use super::ValueSetMessage;
     use crate::prelude::ValueSet;
     use crate::valueset::from_db_valueset_v2;
-    use kanidm_proto::v1::OutboundMessage;
+    use kubidm_proto::v1::OutboundMessage;
     use time::OffsetDateTime;
 
     #[test]

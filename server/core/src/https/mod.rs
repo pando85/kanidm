@@ -22,8 +22,8 @@ use crypto_glue::{
 use futures::pin_mut;
 use hyper::body::Incoming;
 use hyper_util::rt::{TokioExecutor, TokioIo, TokioTimer};
-use kanidm_proto::{config::ServerRole, constants::KSESSIONID, internal::COOKIE_AUTH_SESSION_ID};
-use kanidmd_lib::{idm::authentication::ClientCertInfo, status::StatusActor};
+use kubidm_proto::{config::ServerRole, constants::KSESSIONID, internal::COOKIE_AUTH_SESSION_ID};
+use kubidmd_lib::{idm::authentication::ClientCertInfo, status::StatusActor};
 use serde::de::DeserializeOwned;
 use sketching::*;
 use std::fmt::Write;
@@ -120,7 +120,7 @@ impl ServerState {
                         // it can occur if the load balancer isn't sticking sessions to the correct
                         // node. That can cause this error. So we want to specifically call it out
                         // to admins so they can investigate that the fault is occurring *outside*
-                        // of kanidm.
+                        // of kubidm.
                         warn!("Invalid Signature errors can occur if your instance restarted recently, if a load balancer is not configured for sticky sessions, or a session was tampered with.");
                     }
                     None

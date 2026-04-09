@@ -3,10 +3,10 @@ use crate::https::{
     middleware::KOpId,
     ServerState,
 };
-use kanidmd_lib::idm::oauth2::{AuthorisationRequest, AuthoriseResponse, Oauth2Error};
-use kanidmd_lib::prelude::*;
+use kubidmd_lib::idm::oauth2::{AuthorisationRequest, AuthoriseResponse, Oauth2Error};
+use kubidmd_lib::prelude::*;
 
-use kanidm_proto::internal::COOKIE_OAUTH2_REQ;
+use kubidm_proto::internal::COOKIE_OAUTH2_REQ;
 
 use std::collections::BTreeSet;
 

@@ -9,7 +9,7 @@ use axum::{
     response::{IntoResponse, Response},
     RequestExt,
 };
-use kanidm_proto::constants::{KOPID, KVERSION, X_FORWARDED_FOR};
+use kubidm_proto::constants::{KOPID, KVERSION, X_FORWARDED_FOR};
 use std::net::IpAddr;
 use uuid::Uuid;
 
@@ -47,7 +47,7 @@ pub async fn are_we_json_yet(request: Request<Body>, next: Next) -> Response {
         assert!(
             headers.get(axum::http::header::CONTENT_TYPE)
                 == Some(&HeaderValue::from_static(
-                    kanidm_proto::constants::APPLICATION_JSON
+                    kubidm_proto::constants::APPLICATION_JSON
                 ))
         );
     }

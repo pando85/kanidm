@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
-use kanidm_proto::internal::{Group as ProtoGroup, UiHint};
-use kanidm_proto::v1::UnixGroupToken;
+use kubidm_proto::internal::{Group as ProtoGroup, UiHint};
+use kubidm_proto::v1::UnixGroupToken;
 use uuid::Uuid;
 
 use crate::entry::{Committed, Entry, EntryCommitted, EntrySealed, GetUuid};
@@ -333,8 +333,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use kanidm_proto::internal::UiHint;
-    use kanidm_proto::v1::UnixGroupToken;
+    use kubidm_proto::internal::UiHint;
+    use kubidm_proto::v1::UnixGroupToken;
     use std::collections::BTreeSet;
 
     fn make_group() -> Group<()> {
@@ -538,7 +538,7 @@ mod tests {
 
     #[test]
     fn test_proto_group_display() {
-        let proto = kanidm_proto::internal::Group {
+        let proto = kubidm_proto::internal::Group {
             spn: "group@example.com".to_string(),
             uuid: Uuid::new_v4().as_hyphenated().to_string(),
         };
@@ -600,12 +600,12 @@ mod tests {
 
     #[test]
     fn test_proto_group_serde_roundtrip() {
-        let proto = kanidm_proto::internal::Group {
+        let proto = kubidm_proto::internal::Group {
             spn: "group@example.com".to_string(),
             uuid: Uuid::new_v4().as_hyphenated().to_string(),
         };
         let json = serde_json::to_string(&proto).unwrap();
-        let parsed: kanidm_proto::internal::Group = serde_json::from_str(&json).unwrap();
+        let parsed: kubidm_proto::internal::Group = serde_json::from_str(&json).unwrap();
         assert_eq!(parsed.spn, proto.spn);
         assert_eq!(parsed.uuid, proto.uuid);
     }

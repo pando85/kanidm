@@ -5,10 +5,10 @@
 //! or domain entries that are able to be replicated.
 
 use cidr::IpCidr;
-use kanidm_proto::backup::{BackupCompression, BackupEncryptionConfig, S3Config, WalArchiveConfig};
-use kanidm_proto::config::ServerRole;
-use kanidm_proto::constants::DEFAULT_SERVER_ADDRESS;
-use kanidm_proto::internal::FsType;
+use kubidm_proto::backup::{BackupCompression, BackupEncryptionConfig, S3Config, WalArchiveConfig};
+use kubidm_proto::config::ServerRole;
+use kubidm_proto::constants::DEFAULT_SERVER_ADDRESS;
+use kubidm_proto::internal::FsType;
 use serde::Deserialize;
 use serde_with::{formats::PreferOne, serde_as, OneOrMany};
 use sketching::LogLevel;
@@ -276,14 +276,14 @@ impl Display for HttpAddressInfo {
 #[derive(Debug, Deserialize, Default)]
 #[serde(deny_unknown_fields)]
 pub struct ServerConfig {
-    /// *REQUIRED* - Kanidm Domain, eg `kanidm.example.com`.
+    /// *REQUIRED* - Kubidm Domain, eg `kubidm.example.com`.
     domain: Option<String>,
     /// *REQUIRED* - The user-facing HTTPS URL for this server, eg <https://idm.example.com>
     origin: Option<Url>,
     /// File path of the database file
     db_path: Option<PathBuf>,
     /// The filesystem type, either "zfs" or "generic". Defaults to "generic" if unset. I you change this, run a database vacuum.
-    db_fs_type: Option<kanidm_proto::internal::FsType>,
+    db_fs_type: Option<kubidm_proto::internal::FsType>,
 
     ///  *REQUIRED* - The file path to the TLS Certificate Chain
     tls_chain: Option<PathBuf>,
@@ -295,7 +295,7 @@ pub struct ServerConfig {
 
     /// The listener address for the HTTPS server.
     ///
-    /// eg. `[::]:8443` or `127.0.0.1:8443`. Defaults to [kanidm_proto::constants::DEFAULT_SERVER_ADDRESS]
+    /// eg. `[::]:8443` or `127.0.0.1:8443`. Defaults to [kubidm_proto::constants::DEFAULT_SERVER_ADDRESS]
     bindaddress: Option<String>,
     /// The listener address for the LDAP server.
     ///
@@ -334,9 +334,9 @@ pub struct ServerConfig {
     /// An optional OpenTelemetry collector (GRPC) url to send trace and log data to, eg `http://localhost:4317`. If not set, disables the feature.
     otel_grpc_url: Option<String>,
     /// Policy Information Point (PIP) configuration for external attribute retrieval.
-    /// See [kanidmd_lib::idm::pip::config::PipConfig] for details.
+    /// See [kubidmd_lib::idm::pip::config::PipConfig] for details.
     #[serde(default)]
-    pip_config: Option<kanidmd_lib::idm::pip::config::PipConfig>,
+    pip_config: Option<kubidmd_lib::idm::pip::config::PipConfig>,
 }
 
 impl ServerConfigUntagged {
@@ -345,7 +345,7 @@ impl ServerConfigUntagged {
         // see if we can load it from the config file you asked for
         let mut f: File = File::open(config_path.as_ref()).inspect_err(|e| {
             eprintln!("Unable to open config file [{e:?}] 🥺");
-            let diag = kanidm_lib_file_permissions::diagnose_path(config_path.as_ref());
+            let diag = kubidm_lib_file_permissions::diagnose_path(config_path.as_ref());
             eprintln!("{diag}");
         })?;
 
@@ -353,7 +353,7 @@ impl ServerConfigUntagged {
 
         f.read_to_string(&mut contents).inspect_err(|e| {
             eprintln!("unable to read contents {e:?}");
-            let diag = kanidm_lib_file_permissions::diagnose_path(config_path.as_ref());
+            let diag = kubidm_lib_file_permissions::diagnose_path(config_path.as_ref());
             eprintln!("{diag}");
         })?;
 
@@ -396,7 +396,7 @@ pub struct ServerConfigV2 {
     domain: Option<String>,
     origin: Option<Url>,
     db_path: Option<PathBuf>,
-    db_fs_type: Option<kanidm_proto::internal::FsType>,
+    db_fs_type: Option<kubidm_proto::internal::FsType>,
     tls_chain: Option<PathBuf>,
     tls_key: Option<PathBuf>,
     tls_client_ca: Option<PathBuf>,
@@ -426,7 +426,7 @@ pub struct ServerConfigV2 {
     otel_grpc_url: Option<String>,
     /// Policy Information Point (PIP) configuration for external attribute retrieval.
     #[serde(default)]
-    pip_config: Option<kanidmd_lib::idm::pip::config::PipConfig>,
+    pip_config: Option<kubidmd_lib::idm::pip::config::PipConfig>,
 }
 
 #[derive(Debug, Clone)]
@@ -477,7 +477,7 @@ pub struct Configuration {
     pub integration_repl_config: Option<Box<IntegrationReplConfig>>,
     pub otel_grpc_url: Option<String>,
     /// Policy Information Point (PIP) configuration for external attribute retrieval.
-    pub pip_config: Option<kanidmd_lib::idm::pip::config::PipConfig>,
+    pub pip_config: Option<kubidmd_lib::idm::pip::config::PipConfig>,
 }
 
 impl Configuration {
@@ -656,12 +656,12 @@ pub struct ConfigurationBuilder {
     log_level: Option<LogLevel>,
     repl_config: Option<ReplicationConfiguration>,
     otel_grpc_url: Option<String>,
-    pip_config: Option<kanidmd_lib::idm::pip::config::PipConfig>,
+    pip_config: Option<kubidmd_lib::idm::pip::config::PipConfig>,
 }
 
 impl ConfigurationBuilder {
     #![allow(clippy::needless_pass_by_value)]
-    pub fn add_cli_config(mut self, cli_config: &kanidm_proto::cli::KanidmdCli) -> Self {
+    pub fn add_cli_config(mut self, cli_config: &kubidm_proto::cli::KubidmdCli) -> Self {
         // logging
         if let Some(log_level) = &cli_config.log_level {
             self.log_level = Some(*log_level);

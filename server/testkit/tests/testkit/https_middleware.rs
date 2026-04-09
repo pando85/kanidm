@@ -1,8 +1,8 @@
-use kanidm_client::http::header;
-use kanidm_client::KanidmClient;
+use kubidm_client::http::header;
+use kubidm_client::KubidmClient;
 
-#[kanidmd_testkit::test]
-async fn test_https_middleware_headers(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_https_middleware_headers(rsclient: &KubidmClient) {
     // We need to do manual reqwests here.
     let client = rsclient.client();
 

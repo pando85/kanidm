@@ -4,7 +4,7 @@ use crate::server::access::{
     DeleteResult, ModifyResult, SearchResult,
 };
 use crate::server::QueryServerReadTransaction;
-use kanidm_proto::internal::{
+use kubidm_proto::internal::{
     AuthorizationAction, AuthorizationDecision, AuthorizationExplanation, AuthorizationRequest,
     AuthorizationResponse,
 };
@@ -195,7 +195,7 @@ pub fn make_authorization_decision(
 
 #[cfg(test)]
 mod tests {
-    use kanidm_proto::internal::{
+    use kubidm_proto::internal::{
         AuthorizationAction, AuthorizationDecision, AuthorizationExplanation, AuthorizationRequest,
         AuthorizationResponse,
     };

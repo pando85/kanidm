@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 use crate::migration_data;
-use kanidm_proto::internal::{
+use kubidm_proto::internal::{
     DomainUpgradeCheckItem as ProtoDomainUpgradeCheckItem,
     DomainUpgradeCheckReport as ProtoDomainUpgradeCheckReport,
     DomainUpgradeCheckStatus as ProtoDomainUpgradeCheckStatus,
@@ -145,7 +145,7 @@ impl QueryServer {
                     "UNABLE TO PROCEED. You are attempting a skip update which is NOT SUPPORTED."
                 );
                 error!(
-                    "For more see: https://kanidm.github.io/kanidm/stable/support.html#upgrade-policy and https://kanidm.github.io/kanidm/stable/server_updates.html"
+                    "For more see: https://kubidm.github.io/kubidm/stable/support.html#upgrade-policy and https://kubidm.github.io/kubidm/stable/server_updates.html"
                 );
                 error!(domain_previous_version = ?domain_info_version, domain_target_version = ?domain_target_level, domain_migration_minimum_limit = ?DOMAIN_MIGRATION_FROM_MIN);
                 return Err(OperationError::MG0008SkipUpgradeAttempted);
@@ -179,7 +179,7 @@ impl QueryServer {
             // This is a DOWNGRADE which may not proceed.
             error!("UNABLE TO PROCEED. You are attempting a downgrade which is NOT SUPPORTED.");
             error!(
-                "For more see: https://kanidm.github.io/kanidm/stable/support.html#upgrade-policy and https://kanidm.github.io/kanidm/stable/server_updates.html"
+                "For more see: https://kubidm.github.io/kubidm/stable/support.html#upgrade-policy and https://kubidm.github.io/kubidm/stable/server_updates.html"
             );
             error!(domain_previous_version = ?domain_info_version, domain_target_version = ?domain_target_level);
             return Err(OperationError::MG0010DowngradeNotAllowed);

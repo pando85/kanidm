@@ -17,18 +17,18 @@ use axum::{
 };
 use axum_extra::extract::cookie::{CookieJar, SameSite};
 use hyper::Uri;
-use kanidm_proto::internal::{
+use kubidm_proto::internal::{
     UserAuthToken, COOKIE_AUTH_SESSION_ID, COOKIE_BEARER_TOKEN, COOKIE_CU_SESSION_TOKEN,
     COOKIE_OAUTH2_REQ, COOKIE_USERNAME,
 };
-use kanidm_proto::{
+use kubidm_proto::{
     oauth2::{AccessTokenRequest, AccessTokenResponse},
     v1::{AuthAllowed, AuthIssueSession, AuthMech},
 };
-use kanidmd_lib::idm::authentication::{AuthCredential, AuthExternal, AuthState, AuthStep};
-use kanidmd_lib::idm::event::AuthResult;
-use kanidmd_lib::prelude::OperationError;
-use kanidmd_lib::prelude::*;
+use kubidmd_lib::idm::authentication::{AuthCredential, AuthExternal, AuthState, AuthStep};
+use kubidmd_lib::idm::event::AuthResult;
+use kubidmd_lib::prelude::OperationError;
+use kubidmd_lib::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;

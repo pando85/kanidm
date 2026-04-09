@@ -10,7 +10,7 @@ use aws_sdk_s3::types::{
 };
 use aws_sdk_s3::Client as S3Client;
 use hex::encode as hex_encode;
-use kanidm_proto::backup::{
+use kubidm_proto::backup::{
     BackupCompression, ReplicationConfig, ReplicationHealthCheck, ReplicationLagMetrics,
     ReplicationRegionConfig, ReplicationRegionStatus, ReplicationStatus, S3BackupMetadata,
     S3Config, S3EncryptionAlgorithm,
@@ -89,7 +89,7 @@ impl S3ClientWrapper {
                 credentials.secret_access_key.clone(),
                 credentials.session_token.clone(),
                 None,
-                "kanidm-backup",
+                "kubidm-backup",
             );
             config_builder = config_builder.credentials_provider(creds);
         }
@@ -493,7 +493,7 @@ impl S3ClientWrapper {
         let sdk_config = Self::build_region_sdk_config(region_config).await?;
         let client = S3Client::new(&sdk_config);
 
-        let s3_config = kanidm_proto::backup::S3Config {
+        let s3_config = kubidm_proto::backup::S3Config {
             bucket: region_config.bucket.clone(),
             region: Some(region_config.region.clone()),
             endpoint: region_config.endpoint.clone(),
@@ -527,7 +527,7 @@ impl S3ClientWrapper {
                 credentials.secret_access_key.clone(),
                 credentials.session_token.clone(),
                 None,
-                "kanidm-backup-replication",
+                "kubidm-backup-replication",
             );
             config_builder = config_builder.credentials_provider(creds);
         }
@@ -760,7 +760,7 @@ fn parse_storage_class(s: &str) -> StorageClass {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use kanidm_proto::backup::{S3Credentials, S3ServerSideEncryption};
+    use kubidm_proto::backup::{S3Credentials, S3ServerSideEncryption};
     use std::io::Cursor;
 
     #[test]
@@ -961,16 +961,16 @@ mod tests {
     #[test]
     fn test_build_object_key_with_prefix() {
         assert_eq!(
-            build_test_object_key(Some("kanidm/backups"), "backup.tar.gz"),
-            "kanidm/backups/backup.tar.gz"
+            build_test_object_key(Some("kubidm/backups"), "backup.tar.gz"),
+            "kubidm/backups/backup.tar.gz"
         );
     }
 
     #[test]
     fn test_build_object_key_with_trailing_slash_prefix() {
         assert_eq!(
-            build_test_object_key(Some("kanidm/backups/"), "backup.tar.gz"),
-            "kanidm/backups/backup.tar.gz"
+            build_test_object_key(Some("kubidm/backups/"), "backup.tar.gz"),
+            "kubidm/backups/backup.tar.gz"
         );
     }
 
@@ -1055,7 +1055,7 @@ mod tests {
             bucket: "my-backup-bucket".to_string(),
             region: Some("us-west-2".to_string()),
             endpoint: Some("https://s3.us-west-2.amazonaws.com".to_string()),
-            path_prefix: Some("kanidm".to_string()),
+            path_prefix: Some("kubidm".to_string()),
             credentials: None,
             server_side_encryption: None,
             storage_class: "STANDARD".to_string(),
@@ -1201,7 +1201,7 @@ mod tests {
             region: "eu-west-1".to_string(),
             bucket: "eu-backup".to_string(),
             endpoint: None,
-            path_prefix: Some("replica/kanidm".to_string()),
+            path_prefix: Some("replica/kubidm".to_string()),
             credentials: None,
             server_side_encryption: None,
             storage_class: "STANDARD".to_string(),
@@ -1209,7 +1209,7 @@ mod tests {
         };
 
         let key = S3ClientWrapper::build_region_object_key(&region_config, "backup.tar.gz");
-        assert_eq!(key, "replica/kanidm/backup.tar.gz");
+        assert_eq!(key, "replica/kubidm/backup.tar.gz");
     }
 
     #[test]
@@ -1337,7 +1337,7 @@ mod tests {
             bucket: "test-bucket".to_string(),
             region: Some("us-east-1".to_string()),
             endpoint: Some("https://s3.example.com".to_string()),
-            path_prefix: Some("kanidm/backups".to_string()),
+            path_prefix: Some("kubidm/backups".to_string()),
             credentials: Some(S3Credentials {
                 access_key_id: "key-id".to_string(),
                 secret_access_key: "secret".to_string(),
@@ -1428,7 +1428,7 @@ mod tests {
 
     #[test]
     fn test_unicode_in_backup_key() {
-        let key = build_test_object_key(Some("kanidm"), "backup-日本語-2024.tar.gz");
+        let key = build_test_object_key(Some("kubidm"), "backup-日本語-2024.tar.gz");
         assert!(key.contains("backup-日本語-2024.tar.gz"));
     }
 

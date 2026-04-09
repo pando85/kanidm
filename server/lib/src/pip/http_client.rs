@@ -1,7 +1,7 @@
 //! HTTP PIP client for retrieving attributes from REST API endpoints.
 
 use crate::prelude::*;
-use kanidm_proto::internal::{PipRequest, PipSourceStatus, PipSourceType};
+use kubidm_proto::internal::{PipRequest, PipSourceStatus, PipSourceType};
 use std::collections::BTreeMap;
 use std::pin::Pin;
 

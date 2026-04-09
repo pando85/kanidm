@@ -2,14 +2,14 @@
 //!
 //! This module provides a framework for querying external systems (HTTP REST APIs,
 //! LDAP servers) for attribute values during authorization decisions. This enables
-//! Kanidm to incorporate external context into policy decisions.
+//! Kubidm to incorporate external context into policy decisions.
 
 pub mod config;
 pub mod http_client;
 pub mod ldap_client;
 
 use crate::prelude::*;
-use kanidm_proto::internal::{
+use kubidm_proto::internal::{
     PipAttributeValue, PipCacheEntry, PipCacheKey, PipHealthCheckResponse, PipOverallHealth,
     PipRequest, PipResponse, PipSourceHealth, PipSourceStatus, PipSourceType,
 };
@@ -330,7 +330,7 @@ impl std::fmt::Debug for PipCoordinator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use kanidm_proto::internal::{PipSourceStatus, PipSourceType};
+    use kubidm_proto::internal::{PipSourceStatus, PipSourceType};
     use uuid::Uuid;
 
     #[test]

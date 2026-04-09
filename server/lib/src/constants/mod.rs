@@ -21,7 +21,7 @@ pub const SYSTEM_INDEX_VERSION: i64 = 32;
  * domain functional levels
  *
  * The idea here is to allow topology wide upgrades to be performed. We have to
- * assume that across multiple kanidm instances there may be cases where we have version
+ * assume that across multiple kubidm instances there may be cases where we have version
  * N and version N minus 1 as upgrades are rolled out.
  *
  * Imagine we set up a new cluster. Machine A and B both have level 1 support.

@@ -21,8 +21,8 @@ use concread::cowcell::*;
 use hashbrown::{HashMap as Map, HashSet};
 use idlset::v2::IDLBitRange;
 use idlset::AndNot;
-use kanidm_proto::backup::BackupCompression;
-use kanidm_proto::internal::{ConsistencyError, OperationError};
+use kubidm_proto::backup::BackupCompression;
+use kubidm_proto::internal::{ConsistencyError, OperationError};
 use std::collections::BTreeMap;
 use std::io::prelude::*;
 use std::ops::DerefMut;
@@ -49,7 +49,7 @@ use crate::be::idl_arc_sqlite::{
     IdlArcSqlite, IdlArcSqliteReadTransaction, IdlArcSqliteTransaction,
     IdlArcSqliteWriteTransaction,
 };
-use kanidm_proto::internal::FsType;
+use kubidm_proto::internal::FsType;
 
 // Currently disabled due to improvements in idlset for intersection handling.
 const FILTER_SEARCH_TEST_THRESHOLD: usize = 0;
@@ -2286,7 +2286,7 @@ mod tests {
     use crate::repl::cid::Cid;
     use crate::value::{IndexType, PartialValue, Value};
     use idlset::v2::IDLBitRange;
-    use kanidm_proto::backup::BackupCompression;
+    use kubidm_proto::backup::BackupCompression;
     use std::iter::FromIterator;
     use std::sync::{Arc, LazyLock};
     use std::time::Duration;

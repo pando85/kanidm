@@ -1,8 +1,8 @@
-use kanidm_proto::backup::{
+use kubidm_proto::backup::{
     BackupCompression, ReplicationConfig, ReplicationRegionConfig, ReplicationStatus,
     S3BackupMetadata, S3Config, S3Credentials, S3EncryptionAlgorithm, S3ServerSideEncryption,
 };
-use kanidmd_core::backup::{
+use kubidmd_core::backup::{
     create_empty_backup_data, create_large_backup_data, create_medium_backup_data,
     create_small_backup_data, create_test_backup_data, MockS3Error, MockS3TestBuilder,
     MockS3TestContext,
@@ -10,23 +10,23 @@ use kanidmd_core::backup::{
 
 fn create_test_context() -> MockS3TestContext {
     MockS3TestBuilder::new()
-        .with_bucket("kanidm-backups")
+        .with_bucket("kubidm-backups")
         .build()
 }
 
 fn create_test_context_with_prefix(prefix: &str) -> MockS3TestContext {
     MockS3TestBuilder::new()
-        .with_bucket("kanidm-backups")
+        .with_bucket("kubidm-backups")
         .with_prefix(prefix)
         .build()
 }
 
 fn create_test_s3_config() -> S3Config {
     S3Config {
-        bucket: "kanidm-backups".to_string(),
+        bucket: "kubidm-backups".to_string(),
         region: Some("us-east-1".to_string()),
         endpoint: Some("https://s3.us-east-1.amazonaws.com".to_string()),
-        path_prefix: Some("kanidm/backups".to_string()),
+        path_prefix: Some("kubidm/backups".to_string()),
         credentials: Some(S3Credentials {
             access_key_id: "test-access-key".to_string(),
             secret_access_key: "test-secret-key".to_string(),
@@ -40,7 +40,7 @@ fn create_test_s3_config() -> S3Config {
 
 fn create_test_s3_config_with_encryption() -> S3Config {
     S3Config {
-        bucket: "kanidm-backups".to_string(),
+        bucket: "kubidm-backups".to_string(),
         region: Some("us-east-1".to_string()),
         endpoint: None,
         path_prefix: None,
@@ -60,9 +60,9 @@ fn create_test_replication_config() -> ReplicationConfig {
         regions: vec![
             ReplicationRegionConfig {
                 region: "eu-west-1".to_string(),
-                bucket: "kanidm-backups-eu".to_string(),
+                bucket: "kubidm-backups-eu".to_string(),
                 endpoint: Some("https://s3.eu-west-1.amazonaws.com".to_string()),
-                path_prefix: Some("kanidm/backups".to_string()),
+                path_prefix: Some("kubidm/backups".to_string()),
                 credentials: None,
                 server_side_encryption: None,
                 storage_class: "STANDARD".to_string(),
@@ -70,7 +70,7 @@ fn create_test_replication_config() -> ReplicationConfig {
             },
             ReplicationRegionConfig {
                 region: "ap-southeast-1".to_string(),
-                bucket: "kanidm-backups-ap".to_string(),
+                bucket: "kubidm-backups-ap".to_string(),
                 endpoint: None,
                 path_prefix: None,
                 credentials: None,
@@ -252,7 +252,7 @@ fn test_s3_backup_empty() {
 
 #[test]
 fn test_s3_backup_with_prefix() {
-    let ctx = create_test_context_with_prefix("kanidm/backups/2024");
+    let ctx = create_test_context_with_prefix("kubidm/backups/2024");
     let data = create_small_backup_data();
 
     ctx.upload_backup(
@@ -367,7 +367,7 @@ fn test_s3_backup_nonexistent() {
 #[test]
 fn test_s3_backup_error_simulation() {
     let ctx = MockS3TestBuilder::new()
-        .with_bucket("kanidm-backups")
+        .with_bucket("kubidm-backups")
         .simulate_errors(true)
         .build();
     let data = create_small_backup_data();
@@ -477,11 +477,11 @@ fn test_replication_config_regions() {
 
     let eu_region = &config.regions[0];
     assert_eq!(eu_region.region, "eu-west-1");
-    assert_eq!(eu_region.bucket, "kanidm-backups-eu");
+    assert_eq!(eu_region.bucket, "kubidm-backups-eu");
 
     let ap_region = &config.regions[1];
     assert_eq!(ap_region.region, "ap-southeast-1");
-    assert_eq!(ap_region.bucket, "kanidm-backups-ap");
+    assert_eq!(ap_region.bucket, "kubidm-backups-ap");
 }
 
 #[test]
