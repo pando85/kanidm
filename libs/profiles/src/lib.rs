@@ -91,18 +91,18 @@ pub fn apply_profile() {
     println!("cargo:rerun-if-env-changed=CARGO_PKG_VERSION");
     println!("cargo:rerun-if-env-changed=KANIDM_PKG_COMMIT_REV");
 
-    let kanidm_pkg_version = match option_env!("KANIDM_PKG_COMMIT_REV") {
+    let kubidm_pkg_version = match option_env!("KANIDM_PKG_COMMIT_REV") {
         Some(commit_rev) => format!("{} {}", env!("CARGO_PKG_VERSION"), commit_rev),
         None => env!("CARGO_PKG_VERSION").to_string(),
     };
 
-    println!("cargo:rustc-env=KANIDM_PKG_VERSION={kanidm_pkg_version}");
+    println!("cargo:rustc-env=KANIDM_PKG_VERSION={kubidm_pkg_version}");
 
     // KANIDM_PKG_VERSION_HASH is used for cache busting in the web UI
-    let mut kanidm_pkg_version_hash = sha2::Sha256::new();
-    kanidm_pkg_version_hash.update(kanidm_pkg_version.as_bytes());
-    let kanidm_pkg_version_hash = &BASE64_STANDARD.encode(kanidm_pkg_version_hash.finalize())[..8];
-    println!("cargo:rustc-env=KANIDM_PKG_VERSION_HASH={kanidm_pkg_version_hash}");
+    let mut kubidm_pkg_version_hash = sha2::Sha256::new();
+    kubidm_pkg_version_hash.update(kubidm_pkg_version.as_bytes());
+    let kubidm_pkg_version_hash = &BASE64_STANDARD.encode(kubidm_pkg_version_hash.finalize())[..8];
+    println!("cargo:rustc-env=KANIDM_PKG_VERSION_HASH={kubidm_pkg_version_hash}");
 
     let version_pre = env!("CARGO_PKG_VERSION_PRE");
     if version_pre == "dev" {
