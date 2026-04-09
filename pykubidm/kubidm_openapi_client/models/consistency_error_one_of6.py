@@ -83,5 +83,3 @@ class ConsistencyErrorOneOf6(BaseModel):
             "refintnotupheld": obj.get("refintnotupheld")
         })
         return _obj
-
-

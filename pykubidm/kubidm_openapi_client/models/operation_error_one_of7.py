@@ -82,5 +82,3 @@ class OperationErrorOneOf7(BaseModel):
             "invalidacpstate": obj.get("invalidacpstate")
         })
         return _obj
-
-

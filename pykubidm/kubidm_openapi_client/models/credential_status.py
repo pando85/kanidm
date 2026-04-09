@@ -90,5 +90,3 @@ class CredentialStatus(BaseModel):
             "creds": [CredentialDetail.from_dict(_item) for _item in obj["creds"]] if obj.get("creds") is not None else None
         })
         return _obj
-
-

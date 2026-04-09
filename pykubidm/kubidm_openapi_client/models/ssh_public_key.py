@@ -91,5 +91,3 @@ class SshPublicKey(BaseModel):
             "comment": obj.get("comment")
         })
         return _obj
-
-

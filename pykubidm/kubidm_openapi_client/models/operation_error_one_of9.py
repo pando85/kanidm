@@ -82,5 +82,3 @@ class OperationErrorOneOf9(BaseModel):
             "invalidaccountstate": obj.get("invalidaccountstate")
         })
         return _obj
-
-

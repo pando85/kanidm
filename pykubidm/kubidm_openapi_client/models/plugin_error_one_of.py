@@ -82,5 +82,3 @@ class PluginErrorOneOf(BaseModel):
             "base": obj.get("base")
         })
         return _obj
-
-

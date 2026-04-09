@@ -107,5 +107,3 @@ class ScimSyncRequest(BaseModel):
             "retain": ScimSyncRetentionMode.from_dict(obj["retain"]) if obj.get("retain") is not None else None
         })
         return _obj
-
-

@@ -86,5 +86,3 @@ class IdentifyUserResponseOneOf(BaseModel):
             "ProvideCode": IdentifyUserResponseOneOfProvideCode.from_dict(obj["ProvideCode"]) if obj.get("ProvideCode") is not None else None
         })
         return _obj
-
-

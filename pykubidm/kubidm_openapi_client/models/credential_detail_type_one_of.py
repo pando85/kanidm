@@ -82,5 +82,3 @@ class CredentialDetailTypeOneOf(BaseModel):
             "Passkey": obj.get("Passkey")
         })
         return _obj
-
-

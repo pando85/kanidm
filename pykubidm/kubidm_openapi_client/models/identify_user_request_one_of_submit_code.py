@@ -83,5 +83,3 @@ class IdentifyUserRequestOneOfSubmitCode(BaseModel):
             "other_totp": obj.get("other_totp")
         })
         return _obj
-
-

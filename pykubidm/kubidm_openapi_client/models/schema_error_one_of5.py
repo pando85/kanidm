@@ -82,5 +82,3 @@ class SchemaErrorOneOf5(BaseModel):
             "excludesnotsatisfied": obj.get("excludesnotsatisfied")
         })
         return _obj
-
-

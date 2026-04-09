@@ -92,5 +92,3 @@ class KeyType(BaseModel):
             "plain": obj.get("plain")
         })
         return _obj
-
-

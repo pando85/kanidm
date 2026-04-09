@@ -82,5 +82,3 @@ class AuthStateOneOf2(BaseModel):
             "denied": obj.get("denied")
         })
         return _obj
-
-

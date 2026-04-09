@@ -82,5 +82,3 @@ class PluginErrorOneOf2(BaseModel):
             "credimport": obj.get("credimport")
         })
         return _obj
-
-

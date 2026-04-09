@@ -86,5 +86,3 @@ class AppLink(BaseModel):
             "Oauth2": AppLinkOauth2.from_dict(obj["Oauth2"]) if obj.get("Oauth2") is not None else None
         })
         return _obj
-
-

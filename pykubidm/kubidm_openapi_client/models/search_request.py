@@ -86,5 +86,3 @@ class SearchRequest(BaseModel):
             "filter": Filter.from_dict(obj["filter"]) if obj.get("filter") is not None else None
         })
         return _obj
-
-

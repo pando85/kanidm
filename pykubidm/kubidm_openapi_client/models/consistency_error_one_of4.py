@@ -82,5 +82,3 @@ class ConsistencyErrorOneOf4(BaseModel):
             "uuidindexcorrupt": obj.get("uuidindexcorrupt")
         })
         return _obj
-
-

@@ -83,5 +83,3 @@ class ConsistencyErrorOneOf13(BaseModel):
             "deniedname": obj.get("deniedname")
         })
         return _obj
-
-

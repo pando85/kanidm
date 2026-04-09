@@ -82,5 +82,3 @@ class ConsistencyErrorOneOf5(BaseModel):
             "uuidnotunique": obj.get("uuidnotunique")
         })
         return _obj
-
-

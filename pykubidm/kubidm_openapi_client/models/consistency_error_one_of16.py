@@ -86,5 +86,3 @@ class ConsistencyErrorOneOf16(BaseModel):
             "keyprovidernotfound": ConsistencyErrorOneOf16Keyprovidernotfound.from_dict(obj["keyprovidernotfound"]) if obj.get("keyprovidernotfound") is not None else None
         })
         return _obj
-
-

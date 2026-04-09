@@ -97,5 +97,3 @@ class UatStatus(BaseModel):
             "purpose": obj.get("purpose")
         })
         return _obj
-
-

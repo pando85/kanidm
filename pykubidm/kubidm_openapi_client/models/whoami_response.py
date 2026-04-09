@@ -86,5 +86,3 @@ class WhoamiResponse(BaseModel):
             "youare": Entry.from_dict(obj["youare"]) if obj.get("youare") is not None else None
         })
         return _obj
-
-

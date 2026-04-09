@@ -437,4 +437,3 @@ from kubidm_openapi_client.models.web_error_one_of import WebErrorOneOf as WebEr
 from kubidm_openapi_client.models.web_error_one_of1 import WebErrorOneOf1 as WebErrorOneOf1
 from kubidm_openapi_client.models.web_error_one_of2 import WebErrorOneOf2 as WebErrorOneOf2
 from kubidm_openapi_client.models.whoami_response import WhoamiResponse as WhoamiResponse
-

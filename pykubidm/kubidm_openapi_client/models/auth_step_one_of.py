@@ -82,5 +82,3 @@ class AuthStepOneOf(BaseModel):
             "init": obj.get("init")
         })
         return _obj
-
-

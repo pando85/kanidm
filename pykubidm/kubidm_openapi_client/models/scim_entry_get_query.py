@@ -127,5 +127,3 @@ class ScimEntryGetQuery(BaseModel):
             "filter": obj.get("filter")
         })
         return _obj
-
-

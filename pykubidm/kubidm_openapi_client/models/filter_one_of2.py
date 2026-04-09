@@ -82,5 +82,3 @@ class FilterOneOf2(BaseModel):
             "pres": obj.get("pres")
         })
         return _obj
-
-

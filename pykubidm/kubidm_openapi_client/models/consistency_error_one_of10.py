@@ -83,5 +83,3 @@ class ConsistencyErrorOneOf10(BaseModel):
             "changelogdesynchronised": obj.get("changelogdesynchronised")
         })
         return _obj
-
-

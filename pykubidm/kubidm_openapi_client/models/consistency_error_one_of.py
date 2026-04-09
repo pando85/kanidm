@@ -83,5 +83,3 @@ class ConsistencyErrorOneOf(BaseModel):
             "schemaclassmissingattribute": obj.get("schemaclassmissingattribute")
         })
         return _obj
-
-

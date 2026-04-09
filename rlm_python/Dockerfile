@@ -39,11 +39,11 @@ RUN chown -R $RADIUS_USER:$RADIUS_USER /etc/freeradius/ && \
     chmod 775 /etc/freeradius/certs && \
     if [ -f /etc/freeradius/clients.conf ]; then chmod 640 /etc/freeradius/clients.conf; fi
 
-RUN mkdir -p /pkg/pykanidm/
-COPY pykanidm/ /pkg/pykanidm/
+RUN mkdir -p /pkg/pykubidm/
+COPY pykubidm/ /pkg/pykubidm/
 
 RUN apt-get update && apt-get install -y --no-install-recommends gcc libssl-dev && \
-    python3 -m pip install --break-system-packages --no-cache-dir /pkg/pykanidm && \
+    python3 -m pip install --break-system-packages --no-cache-dir /pkg/pykubidm && \
     apt-get purge -y gcc libssl-dev && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*

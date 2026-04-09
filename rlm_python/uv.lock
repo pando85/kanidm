@@ -421,9 +421,9 @@ wheels = [
 ]
 
 [[package]]
-name = "kanidm"
+name = "kubidm"
 version = "1.2.0"
-source = { directory = "../pykanidm" }
+source = { directory = "../pykubidm" }
 dependencies = [
     { name = "aiohttp" },
     { name = "authlib" },
@@ -887,7 +887,7 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "kanidm", directory = "../pykanidm" }]
+requires-dist = [{ name = "kubidm", directory = "../pykubidm" }]
 
 [package.metadata.requires-dev]
 dev = [

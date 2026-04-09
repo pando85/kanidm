@@ -82,5 +82,3 @@ class BackupCodesView(BaseModel):
             "backup_codes": obj.get("backup_codes")
         })
         return _obj
-
-

@@ -86,5 +86,3 @@ class AuthStepOneOf3(BaseModel):
             "cred": AuthCredential.from_dict(obj["cred"]) if obj.get("cred") is not None else None
         })
         return _obj
-
-

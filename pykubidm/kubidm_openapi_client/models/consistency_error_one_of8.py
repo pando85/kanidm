@@ -82,5 +82,3 @@ class ConsistencyErrorOneOf8(BaseModel):
             "invalidattributetype": obj.get("invalidattributetype")
         })
         return _obj
-
-

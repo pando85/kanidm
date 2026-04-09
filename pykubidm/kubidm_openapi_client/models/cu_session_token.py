@@ -82,5 +82,3 @@ class CUSessionToken(BaseModel):
             "token": obj.get("token")
         })
         return _obj
-
-

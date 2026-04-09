@@ -95,5 +95,3 @@ class AccountUnixExtend(BaseModel):
             "shell": obj.get("shell")
         })
         return _obj
-
-

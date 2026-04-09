@@ -84,5 +84,3 @@ class Group(BaseModel):
             "uuid": obj.get("uuid")
         })
         return _obj
-
-

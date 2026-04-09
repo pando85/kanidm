@@ -82,5 +82,3 @@ class CUExtPortalOneOf(BaseModel):
             "Some": obj.get("Some")
         })
         return _obj
-
-

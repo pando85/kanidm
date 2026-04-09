@@ -88,5 +88,3 @@ class AppLinkOauth2(BaseModel):
             "has_image": obj.get("has_image")
         })
         return _obj
-
-

@@ -156,5 +156,3 @@ class CUStatus(BaseModel):
             "sshkeys_state": obj.get("sshkeys_state")
         })
         return _obj
-
-

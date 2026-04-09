@@ -82,5 +82,3 @@ class CURegStateOneOf2(BaseModel):
             "BackupCodes": obj.get("BackupCodes")
         })
         return _obj
-
-

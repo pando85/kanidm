@@ -94,5 +94,3 @@ class ApiTokenGenerate(BaseModel):
             "compact": obj.get("compact")
         })
         return _obj
-
-

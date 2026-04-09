@@ -82,5 +82,3 @@ class OperationErrorOneOf13(BaseModel):
             "invalidauthstate": obj.get("invalidauthstate")
         })
         return _obj
-
-

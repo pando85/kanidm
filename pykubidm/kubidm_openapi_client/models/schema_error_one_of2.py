@@ -82,5 +82,3 @@ class SchemaErrorOneOf2(BaseModel):
             "invalidattributesyntax": obj.get("invalidattributesyntax")
         })
         return _obj
-
-

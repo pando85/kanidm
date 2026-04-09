@@ -85,5 +85,3 @@ class ScimApplicationPasswordCreate(BaseModel):
             "label": obj.get("label")
         })
         return _obj
-
-

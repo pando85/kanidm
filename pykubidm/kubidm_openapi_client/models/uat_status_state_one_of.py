@@ -83,5 +83,3 @@ class UatStatusStateOneOf(BaseModel):
             "expiresat": obj.get("expiresat")
         })
         return _obj
-
-

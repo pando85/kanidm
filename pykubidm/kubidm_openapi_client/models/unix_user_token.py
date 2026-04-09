@@ -113,5 +113,3 @@ class UnixUserToken(BaseModel):
             "valid": obj.get("valid")
         })
         return _obj
-
-

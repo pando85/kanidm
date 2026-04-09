@@ -89,4 +89,3 @@ class FilterOneOf5(BaseModel):
 from kubidm_openapi_client.models.filter import Filter
 # TODO: Rewrite to not use raise_errors
 FilterOneOf5.model_rebuild(raise_errors=False)
-

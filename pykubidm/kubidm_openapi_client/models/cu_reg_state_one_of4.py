@@ -82,5 +82,3 @@ class CURegStateOneOf4(BaseModel):
             "AttestedPasskey": obj.get("AttestedPasskey")
         })
         return _obj
-
-

@@ -130,5 +130,3 @@ class UserAuthToken(BaseModel):
             "limit_search_max_filter_test": obj.get("limit_search_max_filter_test")
         })
         return _obj
-
-

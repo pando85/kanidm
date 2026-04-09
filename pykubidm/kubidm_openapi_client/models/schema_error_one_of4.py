@@ -82,5 +82,3 @@ class SchemaErrorOneOf4(BaseModel):
             "supplementsnotsatisfied": obj.get("supplementsnotsatisfied")
         })
         return _obj
-
-

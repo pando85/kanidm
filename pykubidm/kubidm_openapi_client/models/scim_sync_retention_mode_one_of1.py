@@ -83,5 +83,3 @@ class ScimSyncRetentionModeOneOf1(BaseModel):
             "Delete": obj.get("Delete")
         })
         return _obj
-
-

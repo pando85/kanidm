@@ -86,5 +86,3 @@ class OperationErrorOneOf4(BaseModel):
             "plugin": PluginError.from_dict(obj["plugin"]) if obj.get("plugin") is not None else None
         })
         return _obj
-
-

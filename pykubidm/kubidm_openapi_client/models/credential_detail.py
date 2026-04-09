@@ -89,5 +89,3 @@ class CredentialDetail(BaseModel):
             "type_": CredentialDetailType.from_dict(obj["type_"]) if obj.get("type_") is not None else None
         })
         return _obj
-
-

@@ -82,5 +82,3 @@ class CURegStateOneOf1(BaseModel):
             "TotpNameTryAgain": obj.get("TotpNameTryAgain")
         })
         return _obj
-
-

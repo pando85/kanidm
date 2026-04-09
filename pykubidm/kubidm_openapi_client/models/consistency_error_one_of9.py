@@ -83,5 +83,3 @@ class ConsistencyErrorOneOf9(BaseModel):
             "invalidspn": obj.get("invalidspn")
         })
         return _obj
-
-

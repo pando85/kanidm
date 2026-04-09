@@ -83,5 +83,3 @@ class AuthStateOneOf(BaseModel):
             "choose": obj.get("choose")
         })
         return _obj
-
-

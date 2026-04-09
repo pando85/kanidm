@@ -82,5 +82,3 @@ class ModifyOneOf2(BaseModel):
             "purged": obj.get("purged")
         })
         return _obj
-
-

@@ -83,5 +83,3 @@ class AuthStepOneOf2(BaseModel):
             "begin": obj.get("begin")
         })
         return _obj
-
-

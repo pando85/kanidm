@@ -87,5 +87,3 @@ class AuthStepOneOf1Init2(BaseModel):
             "privileged": obj.get("privileged")
         })
         return _obj
-
-

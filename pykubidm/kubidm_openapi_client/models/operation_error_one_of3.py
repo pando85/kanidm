@@ -86,5 +86,3 @@ class OperationErrorOneOf3(BaseModel):
             "schemaviolation": SchemaError.from_dict(obj["schemaviolation"]) if obj.get("schemaviolation") is not None else None
         })
         return _obj
-
-

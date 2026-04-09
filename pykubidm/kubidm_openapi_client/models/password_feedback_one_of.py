@@ -83,5 +83,3 @@ class PasswordFeedbackOneOf(BaseModel):
             "tooshort": obj.get("tooshort")
         })
         return _obj
-
-

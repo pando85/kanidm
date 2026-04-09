@@ -92,5 +92,3 @@ class ModifyRequest(BaseModel):
             "modlist": ModifyList.from_dict(obj["modlist"]) if obj.get("modlist") is not None else None
         })
         return _obj
-
-

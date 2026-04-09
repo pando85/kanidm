@@ -83,5 +83,3 @@ class ScimSyncStateOneOfActive(BaseModel):
             "cookie": obj.get("cookie")
         })
         return _obj
-
-

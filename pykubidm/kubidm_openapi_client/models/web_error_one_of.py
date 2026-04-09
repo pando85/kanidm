@@ -86,5 +86,3 @@ class WebErrorOneOf(BaseModel):
             "OperationError": OperationError.from_dict(obj["OperationError"]) if obj.get("OperationError") is not None else None
         })
         return _obj
-
-

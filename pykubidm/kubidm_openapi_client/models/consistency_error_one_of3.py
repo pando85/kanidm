@@ -83,5 +83,3 @@ class ConsistencyErrorOneOf3(BaseModel):
             "entryuuidcorrupt": obj.get("entryuuidcorrupt")
         })
         return _obj
-
-

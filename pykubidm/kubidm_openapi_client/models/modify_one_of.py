@@ -83,5 +83,3 @@ class ModifyOneOf(BaseModel):
             "present": obj.get("present")
         })
         return _obj
-
-

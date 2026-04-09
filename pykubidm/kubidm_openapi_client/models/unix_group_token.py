@@ -90,5 +90,3 @@ class UnixGroupToken(BaseModel):
             "gidnumber": obj.get("gidnumber")
         })
         return _obj
-
-

@@ -90,5 +90,3 @@ class AuthStateOneOf1(BaseModel):
             "continue": [AuthAllowed.from_dict(_item) for _item in obj["continue"]] if obj.get("continue") is not None else None
         })
         return _obj
-
-

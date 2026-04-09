@@ -82,5 +82,3 @@ class OperationErrorOneOf8(BaseModel):
             "invalidschemastate": obj.get("invalidschemastate")
         })
         return _obj
-
-

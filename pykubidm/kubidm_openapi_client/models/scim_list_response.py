@@ -99,5 +99,3 @@ class ScimListResponse(BaseModel):
             "resources": [ScimEntry.from_dict(_item) for _item in obj["resources"]] if obj.get("resources") is not None else None
         })
         return _obj
-
-

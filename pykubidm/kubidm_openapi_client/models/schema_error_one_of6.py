@@ -82,5 +82,3 @@ class SchemaErrorOneOf6(BaseModel):
             "phantomattribute": obj.get("phantomattribute")
         })
         return _obj
-
-

@@ -90,5 +90,3 @@ class OperationErrorOneOf2(BaseModel):
             "consistencyerror": [ConsistencyError.from_dict(_item) for _item in obj["consistencyerror"]] if obj.get("consistencyerror") is not None else None
         })
         return _obj
-
-

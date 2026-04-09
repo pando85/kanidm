@@ -86,5 +86,3 @@ class CURegStateOneOf(BaseModel):
             "TotpCheck": TotpSecret.from_dict(obj["TotpCheck"]) if obj.get("TotpCheck") is not None else None
         })
         return _obj
-
-

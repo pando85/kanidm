@@ -82,5 +82,3 @@ class PluginErrorOneOf1(BaseModel):
             "referentialintegrity": obj.get("referentialintegrity")
         })
         return _obj
-
-

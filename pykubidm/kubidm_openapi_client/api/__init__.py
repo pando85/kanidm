@@ -27,4 +27,3 @@ from kubidm_openapi_client.api.service_account_api import ServiceAccountApi
 from kubidm_openapi_client.api.sync_account_api import SyncAccountApi
 from kubidm_openapi_client.api.system_api import SystemApi
 from kubidm_openapi_client.api.ui_api import UiApi
-

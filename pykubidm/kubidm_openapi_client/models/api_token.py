@@ -100,5 +100,3 @@ class ApiToken(BaseModel):
             "purpose": obj.get("purpose")
         })
         return _obj
-
-

@@ -82,5 +82,3 @@ class OperationErrorOneOf10(BaseModel):
             "missingclass": obj.get("missingclass")
         })
         return _obj
-
-

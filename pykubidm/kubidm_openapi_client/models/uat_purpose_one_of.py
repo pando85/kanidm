@@ -86,5 +86,3 @@ class UatPurposeOneOf(BaseModel):
             "readwrite": UatPurposeOneOfReadwrite.from_dict(obj["readwrite"]) if obj.get("readwrite") is not None else None
         })
         return _obj
-
-

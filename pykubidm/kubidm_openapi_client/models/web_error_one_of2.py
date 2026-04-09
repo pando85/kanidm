@@ -82,5 +82,3 @@ class WebErrorOneOf2(BaseModel):
             "OAuth2": obj.get("OAuth2")
         })
         return _obj
-
-

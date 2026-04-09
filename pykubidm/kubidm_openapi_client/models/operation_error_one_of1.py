@@ -82,5 +82,3 @@ class OperationErrorOneOf1(BaseModel):
             "corruptedindex": obj.get("corruptedindex")
         })
         return _obj
-
-

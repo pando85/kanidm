@@ -83,5 +83,3 @@ class FilterOneOf(BaseModel):
             "eq": obj.get("eq")
         })
         return _obj
-
-

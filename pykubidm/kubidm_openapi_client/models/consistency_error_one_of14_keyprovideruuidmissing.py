@@ -83,5 +83,3 @@ class ConsistencyErrorOneOf14Keyprovideruuidmissing(BaseModel):
             "key_object": obj.get("key_object")
         })
         return _obj
-
-

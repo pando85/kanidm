@@ -82,5 +82,3 @@ class AuthCredentialOneOf3(BaseModel):
             "passkey": obj.get("passkey")
         })
         return _obj
-
-

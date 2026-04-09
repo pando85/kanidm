@@ -86,5 +86,3 @@ class IdentifyUserRequestOneOf(BaseModel):
             "SubmitCode": IdentifyUserRequestOneOfSubmitCode.from_dict(obj["SubmitCode"]) if obj.get("SubmitCode") is not None else None
         })
         return _obj
-
-

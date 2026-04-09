@@ -87,5 +87,3 @@ class ScimApplicationPassword(BaseModel):
             "secret": obj.get("secret")
         })
         return _obj
-
-

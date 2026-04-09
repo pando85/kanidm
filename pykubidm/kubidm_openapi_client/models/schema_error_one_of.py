@@ -82,5 +82,3 @@ class SchemaErrorOneOf(BaseModel):
             "invalidclass": obj.get("invalidclass")
         })
         return _obj
-
-

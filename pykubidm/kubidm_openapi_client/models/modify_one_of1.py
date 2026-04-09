@@ -83,5 +83,3 @@ class ModifyOneOf1(BaseModel):
             "removed": obj.get("removed")
         })
         return _obj
-
-

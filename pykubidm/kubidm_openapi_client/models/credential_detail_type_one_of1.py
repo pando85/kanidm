@@ -83,5 +83,3 @@ class CredentialDetailTypeOneOf1(BaseModel):
             "PasswordMfa": obj.get("PasswordMfa")
         })
         return _obj
-
-

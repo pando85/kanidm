@@ -83,5 +83,3 @@ class ScimSyncRetentionModeOneOf(BaseModel):
             "Retain": obj.get("Retain")
         })
         return _obj
-
-

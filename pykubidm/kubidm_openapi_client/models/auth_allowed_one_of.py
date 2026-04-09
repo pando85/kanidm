@@ -82,5 +82,3 @@ class AuthAllowedOneOf(BaseModel):
             "securitykey": obj.get("securitykey")
         })
         return _obj
-
-

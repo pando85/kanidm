@@ -90,5 +90,3 @@ class SchemaErrorOneOf1(BaseModel):
             "missingmustattribute": [Attribute.from_dict(_item) for _item in obj["missingmustattribute"]] if obj.get("missingmustattribute") is not None else None
         })
         return _obj
-
-

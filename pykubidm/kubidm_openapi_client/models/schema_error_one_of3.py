@@ -82,5 +82,3 @@ class SchemaErrorOneOf3(BaseModel):
             "attributenotvalidforclass": obj.get("attributenotvalidforclass")
         })
         return _obj
-
-

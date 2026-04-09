@@ -88,5 +88,3 @@ class UatPurposeOneOfReadwrite(BaseModel):
             "expiry": obj.get("expiry")
         })
         return _obj
-
-

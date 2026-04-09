@@ -86,5 +86,3 @@ class AuthRequest(BaseModel):
             "step": AuthStep.from_dict(obj["step"]) if obj.get("step") is not None else None
         })
         return _obj
-
-

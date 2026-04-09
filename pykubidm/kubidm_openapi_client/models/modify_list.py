@@ -90,5 +90,3 @@ class ModifyList(BaseModel):
             "mods": [Modify.from_dict(_item) for _item in obj["mods"]] if obj.get("mods") is not None else None
         })
         return _obj
-
-

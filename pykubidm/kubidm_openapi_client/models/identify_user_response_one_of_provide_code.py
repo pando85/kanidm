@@ -85,5 +85,3 @@ class IdentifyUserResponseOneOfProvideCode(BaseModel):
             "totp": obj.get("totp")
         })
         return _obj
-
-

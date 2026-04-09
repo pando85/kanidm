@@ -89,5 +89,3 @@ class AuthResponse(BaseModel):
             "state": AuthState.from_dict(obj["state"]) if obj.get("state") is not None else None
         })
         return _obj
-
-

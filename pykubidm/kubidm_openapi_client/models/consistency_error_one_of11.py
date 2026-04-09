@@ -83,5 +83,3 @@ class ConsistencyErrorOneOf11(BaseModel):
             "changestatedesynchronised": obj.get("changestatedesynchronised")
         })
         return _obj
-
-

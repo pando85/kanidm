@@ -80,5 +80,3 @@ class ScimEntryPostGeneric(BaseModel):
         _obj = cls.model_validate({
         })
         return _obj
-
-

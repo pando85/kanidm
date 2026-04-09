@@ -83,5 +83,3 @@ class ConsistencyErrorOneOf1(BaseModel):
             "schemaclassphantomattribute": obj.get("schemaclassphantomattribute")
         })
         return _obj
-
-

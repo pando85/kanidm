@@ -85,5 +85,3 @@ class CUIntentToken(BaseModel):
             "expiry_time": obj.get("expiry_time")
         })
         return _obj
-
-

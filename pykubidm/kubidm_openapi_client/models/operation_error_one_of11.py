@@ -86,5 +86,3 @@ class OperationErrorOneOf11(BaseModel):
             "missingattribute": Attribute.from_dict(obj["missingattribute"]) if obj.get("missingattribute") is not None else None
         })
         return _obj
-
-

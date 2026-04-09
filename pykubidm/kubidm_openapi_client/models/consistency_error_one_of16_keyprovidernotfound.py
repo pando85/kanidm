@@ -85,5 +85,3 @@ class ConsistencyErrorOneOf16Keyprovidernotfound(BaseModel):
             "provider": obj.get("provider")
         })
         return _obj
-
-

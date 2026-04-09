@@ -83,5 +83,3 @@ class ConsistencyErrorOneOf7(BaseModel):
             "memberofinvalid": obj.get("memberofinvalid")
         })
         return _obj
-
-

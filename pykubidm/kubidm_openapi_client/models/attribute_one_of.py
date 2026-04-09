@@ -82,5 +82,3 @@ class AttributeOneOf(BaseModel):
             "custom": obj.get("custom")
         })
         return _obj
-
-

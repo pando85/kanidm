@@ -86,5 +86,3 @@ class ScimSyncStateOneOf(BaseModel):
             "Active": ScimSyncStateOneOfActive.from_dict(obj["Active"]) if obj.get("Active") is not None else None
         })
         return _obj
-
-

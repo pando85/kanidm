@@ -98,5 +98,3 @@ class RadiusAuthToken(BaseModel):
             "groups": [Group.from_dict(_item) for _item in obj["groups"]] if obj.get("groups") is not None else None
         })
         return _obj
-
-

@@ -130,5 +130,3 @@ class ScimEntryPutGeneric(BaseModel):
             "id": obj.get("id")
         })
         return _obj
-
-

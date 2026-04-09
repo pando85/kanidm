@@ -90,5 +90,3 @@ class OperationErrorOneOf14(BaseModel):
             "passwordquality": [PasswordFeedback.from_dict(_item) for _item in obj["passwordquality"]] if obj.get("passwordquality") is not None else None
         })
         return _obj
-
-

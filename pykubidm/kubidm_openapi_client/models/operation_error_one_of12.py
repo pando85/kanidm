@@ -90,5 +90,3 @@ class OperationErrorOneOf12(BaseModel):
             "attributeuniqueness": [Attribute.from_dict(_item) for _item in obj["attributeuniqueness"]] if obj.get("attributeuniqueness") is not None else None
         })
         return _obj
-
-

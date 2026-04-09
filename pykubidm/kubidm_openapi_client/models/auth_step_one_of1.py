@@ -86,5 +86,3 @@ class AuthStepOneOf1(BaseModel):
             "init2": AuthStepOneOf1Init2.from_dict(obj["init2"]) if obj.get("init2") is not None else None
         })
         return _obj
-
-

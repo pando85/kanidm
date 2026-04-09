@@ -82,5 +82,3 @@ class Entry(BaseModel):
             "attrs": obj.get("attrs")
         })
         return _obj
-
-

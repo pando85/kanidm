@@ -94,5 +94,3 @@ class TotpSecret(BaseModel):
             "digits": obj.get("digits")
         })
         return _obj
-
-

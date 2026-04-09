@@ -83,5 +83,3 @@ class OperationErrorOneOf15(BaseModel):
             "wait": obj.get("wait")
         })
         return _obj
-
-

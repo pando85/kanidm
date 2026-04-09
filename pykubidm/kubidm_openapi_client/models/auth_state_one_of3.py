@@ -82,5 +82,3 @@ class AuthStateOneOf3(BaseModel):
             "success": obj.get("success")
         })
         return _obj
-
-

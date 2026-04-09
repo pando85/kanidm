@@ -82,5 +82,3 @@ class WebErrorOneOf1(BaseModel):
             "InternalServerError": obj.get("InternalServerError")
         })
         return _obj
-
-

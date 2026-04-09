@@ -83,5 +83,3 @@ class OperationErrorOneOf(BaseModel):
             "corruptedentry": obj.get("corruptedentry")
         })
         return _obj
-
-

@@ -85,5 +85,3 @@ class PasskeyDetail(BaseModel):
             "tag": obj.get("tag")
         })
         return _obj
-
-

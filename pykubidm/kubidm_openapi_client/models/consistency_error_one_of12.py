@@ -82,5 +82,3 @@ class ConsistencyErrorOneOf12(BaseModel):
             "ruvinconsistent": obj.get("ruvinconsistent")
         })
         return _obj
-
-

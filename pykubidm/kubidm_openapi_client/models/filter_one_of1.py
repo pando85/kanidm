@@ -83,5 +83,3 @@ class FilterOneOf1(BaseModel):
             "cnt": obj.get("cnt")
         })
         return _obj
-
-

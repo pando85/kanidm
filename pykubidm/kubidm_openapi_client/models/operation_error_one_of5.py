@@ -82,5 +82,3 @@ class OperationErrorOneOf5(BaseModel):
             "invalidattributename": obj.get("invalidattributename")
         })
         return _obj
-
-

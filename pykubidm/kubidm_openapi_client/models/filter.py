@@ -209,4 +209,3 @@ from kubidm_openapi_client.models.filter_one_of4 import FilterOneOf4
 from kubidm_openapi_client.models.filter_one_of5 import FilterOneOf5
 # TODO: Rewrite to not use raise_errors
 Filter.model_rebuild(raise_errors=False)
-
