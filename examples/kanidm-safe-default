@@ -1,7 +1,7 @@
-# Kanidm minimal Service Configuration - /etc/kanidm/config
-# For a full example and documentation, see /usr/share/kanidm/config
-# or `example/kanidm` in the source repository.
+# Kubidm minimal Service Configuration - /etc/kubidm/config
+# For a full example and documentation, see /usr/share/kubidm/config
+# or `example/kubidm` in the source repository.
 
-# Replace this with your kanidmd URI and uncomment the line
+# Replace this with your kubidmd URI and uncomment the line
 # uri = "https://idm.example.com"
 verify_ca = true
