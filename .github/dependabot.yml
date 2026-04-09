@@ -13,7 +13,7 @@ updates:
         patterns:
           - "*"
   - package-ecosystem: pip
-    directory: "/pykanidm"
+    directory: "/pykubidm"
     schedule:
       interval: weekly
       time: "06:00"

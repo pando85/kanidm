@@ -11,10 +11,10 @@ repos:
         exclude: \.(rs|in)$
       - id: end-of-file-fixer
         exclude_types: [binary]
-        exclude: (^pykanidm/|^book/src/|^server/core/static/|^server/core/templates/|^server/lib/src/|^server/testkit/|^examples/|^tools/|^unix_integration/|^scripts/|^rlm_python/|^platform/|^proto/|^artwork/|\.yamllint$|\.codespell_ignore$|\.txt$|\.nix$|\.(rst|map|min\.js|min\.css|json|svg|pem|toml|rs|sh|service|conf|cfg|ini|md|js|yml|yaml|lock|drawio\.svg)$|Makefile$|Dockerfile$|\.gitignore$|\.editorconfig$|\.rustfmt\.toml$|deno\.json$|Cargo\.toml$|rust-toolchain\.toml$|prettier-ignore|eslint\.config\.mjs)
+        exclude: (^pykubidm/|^book/src/|^server/core/static/|^server/core/templates/|^server/lib/src/|^server/testkit/|^examples/|^tools/|^unix_integration/|^scripts/|^rlm_python/|^platform/|^proto/|^artwork/|\.yamllint$|\.codespell_ignore$|\.txt$|\.nix$|\.(rst|map|min\.js|min\.css|json|svg|pem|toml|rs|sh|service|conf|cfg|ini|md|js|yml|yaml|lock|drawio\.svg)$|Makefile$|Dockerfile$|\.gitignore$|\.editorconfig$|\.rustfmt\.toml$|deno\.json$|Cargo\.toml$|rust-toolchain\.toml$|prettier-ignore|eslint\.config\.mjs)
       - id: mixed-line-ending
       - id: trailing-whitespace
-        exclude: (^pykanidm/|^book/src/|^server/core/static/|^server/core/templates/|^examples/|^tools/|^unix_integration/|^rlm_python/|^platform/|\.nix$|\.service$|\.(rst|map|min\.js|min\.css|json|svg|md|rs|lock|drawio\.svg)$)
+        exclude: (^pykubidm/|^book/src/|^server/core/static/|^server/core/templates/|^examples/|^tools/|^unix_integration/|^rlm_python/|^platform/|\.nix$|\.service$|\.(rst|map|min\.js|min\.css|json|svg|md|rs|lock|drawio\.svg)$)
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.38.0
     hooks:

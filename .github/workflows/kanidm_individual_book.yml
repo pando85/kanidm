@@ -54,13 +54,13 @@ jobs:
           mkdir -p ./docs/${{ inputs.tag }}/rustdoc/
           find ./target/doc/ -name .lock -exec rm "{}" \;
           mv ./target/doc/* ./docs/${{ inputs.tag }}/rustdoc/
-      - name: pykanidm Docs
+      - name: pykubidm Docs
         run: |
           python -m pip install uv
-          cd pykanidm
+          cd pykubidm
           uv run --group docs mkdocs build
           cd ..
-          mv pykanidm/site ./docs/${{ inputs.tag }}/pykanidm
+          mv pykubidm/site ./docs/${{ inputs.tag }}/pykubidm
         continue-on-error: true
       - name: archive things
         run: |
