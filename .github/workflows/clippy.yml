@@ -9,7 +9,7 @@ name: Linting checks
 env:
   SCCACHE_GHA_ENABLED: "true"
   RUSTC_WRAPPER: "sccache"
-  KUBIDM_BUILD_PROFILE: developer
+  KANIDM_BUILD_PROFILE: developer
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

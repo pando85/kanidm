@@ -278,7 +278,7 @@ async fn main() -> ExitCode {
             ExitCode::SUCCESS
         }
         KubidmUnixOpt::Version { debug: _ } => {
-            println!("kubidm-unix {}", env!("KUBIDM_PKG_VERSION"));
+            println!("kubidm-unix {}", env!("KANIDM_PKG_VERSION"));
             ExitCode::SUCCESS
         }
     }

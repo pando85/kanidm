@@ -31,7 +31,7 @@ async fn main() -> ExitCode {
         ::std::env::set_var("RUST_LOG", "kubidm=debug,kubidm_client=debug");
     }
     if opt.version {
-        println!("ssh_authorizedkeys {}", env!("KUBIDM_PKG_VERSION"));
+        println!("ssh_authorizedkeys {}", env!("KANIDM_PKG_VERSION"));
         return ExitCode::SUCCESS;
     }
 

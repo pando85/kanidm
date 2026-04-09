@@ -11,7 +11,7 @@ env:
   RUSTC_WRAPPER: "sccache"
   CARGO_INCREMENTAL: 0
   CARGO_TERM_COLOR: always
-  KUBIDM_BUILD_PROFILE: developer
+  KANIDM_BUILD_PROFILE: developer
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
