@@ -1,7 +1,7 @@
 [package]
-name = "kanidmd_core"
-description = "Kanidm Server Core and Library"
-documentation = "https://docs.rs/kanidm/latest/kanidm/"
+name = "kubidmd_core"
+description = "Kubidm Server Core and Library"
+documentation = "https://docs.rs/kubidm/latest/kubidm/"
 
 version = { workspace = true }
 authors = { workspace = true }
@@ -46,11 +46,11 @@ futures-util = { workspace = true }
 haproxy-protocol = { workspace = true, features = ["tokio"] }
 hyper = { workspace = true }
 hyper-util = { workspace = true }
-kanidm_proto = { workspace = true }
-kanidm_utils_users = { workspace = true }
-kanidmd_lib = { workspace = true }
-kanidm_lib_crypto = { workspace = true }
-kanidm_lib_file_permissions = { workspace = true }
+kubidm_proto = { workspace = true }
+kubidm_utils_users = { workspace = true }
+kubidmd_lib = { workspace = true }
+kubidm_lib_crypto = { workspace = true }
+kubidm_lib_file_permissions = { workspace = true }
 ldap3_proto = { workspace = true }
 libc = { workspace = true }
 opentelemetry = { workspace = true, features = ["logs"] }
@@ -104,14 +104,14 @@ webauthn-rs = { workspace = true, features = [
 [dev-dependencies]
 walkdir = { workspace = true }
 tempfile = { workspace = true }
-kanidmd_lib = { workspace = true, features = ["test"] }
+kubidmd_lib = { workspace = true, features = ["test"] }
 
 [build-dependencies]
-kanidm_build_profiles = { workspace = true }
+kubidm_build_profiles = { workspace = true }
 
 
 [package.metadata.cargo-machete]
 ignored = [
     "opentelemetry",
-    "kanidm_build_profiles",
+    "kubidm_build_profiles",
 ]

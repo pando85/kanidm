@@ -1,6 +1,6 @@
 [package]
-name = "pam_kanidm"
-description = "Kanidm PAM module"
+name = "pam_kubidm"
+description = "Kubidm PAM module"
 links = "pam"
 
 version = { workspace = true }
@@ -12,12 +12,12 @@ homepage = { workspace = true }
 repository = { workspace = true }
 
 [lib]
-name = "pam_kanidm"
+name = "pam_kubidm"
 crate-type = ["cdylib"]
 path = "src/lib.rs"
 
 [dependencies]
-kanidm_unix_common = { workspace = true }
+kubidm_unix_common = { workspace = true }
 libc = { workspace = true }
 tracing-subscriber = { workspace = true }
 tracing = { workspace = true }
@@ -28,7 +28,7 @@ pkg-config = { workspace = true }
 
 ## Debian packaging
 [package.metadata.deb]
-name = "libpam-kanidm"
+name = "libpam-kubidm"
 maintainer = "James Hodgkinson <james@terminaloutcomes.com>"
 depends = ["libc6", "libpam0g"]
 section = "network"
@@ -36,14 +36,14 @@ priority = "optional"
 maintainer-scripts = "debian/"
 assets = [
     [
-        "target/release/libpam_kanidm.so",
+        "target/release/libpam_kubidm.so",
         # This is not the final path as cargo-deb needs to be run with --multiarch=foreign
-        "usr/lib/security/pam_kanidm.so",
+        "usr/lib/security/pam_kubidm.so",
         "644",
     ],
     [
-        "debian/kanidm.pam",
-        "usr/share/pam-configs/kanidm",
+        "debian/kubidm.pam",
+        "usr/share/pam-configs/kubidm",
         "644",
     ],
 ]
