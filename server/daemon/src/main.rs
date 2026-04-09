@@ -527,59 +527,74 @@ async fn start_daemon(opt: KubidmdParser, config: Configuration) -> ExitCode {
         return err;
     };
 
-    if let Some(db_path) = config.db_path.as_ref() {
-        let db_pathbuf = db_path.to_path_buf();
-        // We can't check the db_path permissions because it may not exist yet!
-        if let Some(db_parent_path) = db_pathbuf.parent() {
-            if !db_parent_path.exists() {
-                warn!(
-                    "DB folder {} may not exist, server startup may FAIL!",
-                    db_parent_path.to_str().unwrap_or("invalid file path")
-                );
-                let diag = kubidm_lib_file_permissions::diagnose_path(&db_pathbuf);
-                info!(%diag);
-            }
+    let needs_db_check = !matches!(
+        &opt.commands,
+        KubidmdOpt::CertGenerate
+            | KubidmdOpt::ShowReplicationCertificate
+            | KubidmdOpt::RenewReplicationCertificate
+            | KubidmdOpt::RefreshReplicationConsumer { .. }
+            | KubidmdOpt::RecoverAccount { .. }
+            | KubidmdOpt::DisableAccount { .. }
+            | KubidmdOpt::Version
+    );
 
-            let db_par_path_buf = db_parent_path.to_path_buf();
-            let i_meta = match metadata(&db_par_path_buf) {
-                Ok(m) => m,
-                Err(e) => {
+    if needs_db_check {
+        if let Some(db_path) = config.db_path.as_ref() {
+            let db_pathbuf = db_path.to_path_buf();
+            // We can't check the db_path permissions because it may not exist yet!
+            if let Some(db_parent_path) = db_pathbuf.parent() {
+                if !db_parent_path.exists() {
+                    warn!(
+                        "DB folder {} may not exist, server startup may FAIL!",
+                        db_parent_path.to_str().unwrap_or("invalid file path")
+                    );
+                    let diag = kubidm_lib_file_permissions::diagnose_path(&db_pathbuf);
+                    info!(%diag);
+                }
+
+                let db_par_path_buf = db_parent_path.to_path_buf();
+                let i_meta = match metadata(&db_par_path_buf) {
+                    Ok(m) => m,
+                    Err(e) => {
+                        error!(
+                            "Unable to read metadata for database folder '{}' - {:?}",
+                            &db_par_path_buf.to_str().unwrap_or("invalid file path"),
+                            e
+                        );
+                        return ExitCode::FAILURE;
+                    }
+                };
+                if !i_meta.is_dir() {
                     error!(
-                        "Unable to read metadata for database folder '{}' - {:?}",
-                        &db_par_path_buf.to_str().unwrap_or("invalid file path"),
-                        e
+                        "ERROR: Refusing to run - DB folder {} may not be a directory",
+                        db_par_path_buf.to_str().unwrap_or("invalid file path")
                     );
                     return ExitCode::FAILURE;
                 }
-            };
-            if !i_meta.is_dir() {
-                error!(
-                    "ERROR: Refusing to run - DB folder {} may not be a directory",
-                    db_par_path_buf.to_str().unwrap_or("invalid file path")
-                );
-                return ExitCode::FAILURE;
-            }
 
-            if kubidm_lib_file_permissions::readonly(&i_meta) {
-                warn!("WARNING: DB folder permissions on {} indicate it may not be RW. This could cause the server start up to fail!", db_par_path_buf.to_str().unwrap_or("invalid file path"));
+                if kubidm_lib_file_permissions::readonly(&i_meta) {
+                    warn!("WARNING: DB folder permissions on {} indicate it may not be RW. This could cause the server start up to fail!", db_par_path_buf.to_str().unwrap_or("invalid file path"));
+                }
+                #[cfg(not(target_os = "windows"))]
+                if i_meta.mode() & 0o007 != 0 {
+                    warn!("WARNING: DB folder {} has 'everyone' permission bits in the mode. This could be a security risk ...", db_par_path_buf.to_str().unwrap_or("invalid file path"));
+                }
             }
-            #[cfg(not(target_os = "windows"))]
-            if i_meta.mode() & 0o007 != 0 {
-                warn!("WARNING: DB folder {} has 'everyone' permission bits in the mode. This could be a security risk ...", db_par_path_buf.to_str().unwrap_or("invalid file path"));
-            }
+        } else {
+            error!("No db_path set in configuration, server startup will FAIL!");
+            return ExitCode::FAILURE;
         }
-    } else {
-        error!("No db_path set in configuration, server startup will FAIL!");
-        return ExitCode::FAILURE;
     }
 
     let lock_was_setup = match &opt.commands {
         // we aren't going to touch the DB so we can carry on
-        KubidmdOpt::ShowReplicationCertificate
+        KubidmdOpt::CertGenerate
+        | KubidmdOpt::ShowReplicationCertificate
         | KubidmdOpt::RenewReplicationCertificate
         | KubidmdOpt::RefreshReplicationConsumer { .. }
         | KubidmdOpt::RecoverAccount { .. }
-        | KubidmdOpt::DisableAccount { .. } => None,
+        | KubidmdOpt::DisableAccount { .. }
+        | KubidmdOpt::Version => None,
         _ => {
             // Okay - Lets now create our lock and go.
             #[allow(clippy::expect_used)]
