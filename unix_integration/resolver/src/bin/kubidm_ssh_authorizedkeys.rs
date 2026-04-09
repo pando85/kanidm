@@ -17,10 +17,10 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::Parser;
-use kanidm_unix_common::client::DaemonClient;
-use kanidm_unix_common::constants::DEFAULT_CONFIG_PATH;
-use kanidm_unix_common::unix_config::PamNssConfig;
-use kanidm_unix_common::unix_proto::{ClientRequest, ClientResponse};
+use kubidm_unix_common::client::DaemonClient;
+use kubidm_unix_common::constants::DEFAULT_CONFIG_PATH;
+use kubidm_unix_common::unix_config::PamNssConfig;
+use kubidm_unix_common::unix_proto::{ClientRequest, ClientResponse};
 
 include!("../opt/ssh_authorizedkeys.rs");
 
@@ -28,10 +28,10 @@ include!("../opt/ssh_authorizedkeys.rs");
 async fn main() -> ExitCode {
     let opt = SshAuthorizedOpt::parse();
     if opt.debug {
-        ::std::env::set_var("RUST_LOG", "kanidm=debug,kanidm_client=debug");
+        ::std::env::set_var("RUST_LOG", "kubidm=debug,kubidm_client=debug");
     }
     if opt.version {
-        println!("ssh_authorizedkeys {}", env!("KANIDM_PKG_VERSION"));
+        println!("ssh_authorizedkeys {}", env!("KUBIDM_PKG_VERSION"));
         return ExitCode::SUCCESS;
     }
 
@@ -53,11 +53,11 @@ async fn main() -> ExitCode {
     };
 
     debug!(
-        "Using kanidm_unixd socket path: {:?}",
+        "Using kubidm_unixd socket path: {:?}",
         cfg.sock_path.as_str()
     );
 
-    // see if the kanidm_unixd socket exists and quit if not
+    // see if the kubidm_unixd socket exists and quit if not
     if !PathBuf::from(&cfg.sock_path).exists() {
         error!(
             "Failed to find unix socket at {}, quitting!",
@@ -90,11 +90,11 @@ async fn main() -> ExitCode {
             ExitCode::SUCCESS
         }
         Ok(r) => {
-            error!("Error calling kanidm_unixd: unexpected response -> {:?}", r);
+            error!("Error calling kubidm_unixd: unexpected response -> {:?}", r);
             ExitCode::FAILURE
         }
         Err(e) => {
-            error!("Error calling kanidm_unixd -> {:?}", e);
+            error!("Error calling kubidm_unixd -> {:?}", e);
             ExitCode::FAILURE
         }
     }
