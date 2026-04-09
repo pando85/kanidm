@@ -9,23 +9,23 @@ use super::interface::{
 use crate::db::KeyStoreTxn;
 use async_trait::async_trait;
 use hashbrown::HashMap;
-use kanidm_client::{ClientError, KanidmClient, StatusCode};
-use kanidm_lib_crypto::CryptoPolicy;
-use kanidm_lib_crypto::DbPasswordV1;
-use kanidm_lib_crypto::Password;
-use kanidm_proto::internal::OperationError;
-use kanidm_proto::v1::{UnixGroupToken, UnixUserToken};
-use kanidm_unix_common::constants::{
+use kubidm_client::{ClientError, KubidmClient, StatusCode};
+use kubidm_lib_crypto::CryptoPolicy;
+use kubidm_lib_crypto::DbPasswordV1;
+use kubidm_lib_crypto::Password;
+use kubidm_proto::internal::OperationError;
+use kubidm_proto::v1::{UnixGroupToken, UnixUserToken};
+use kubidm_unix_common::constants::{
     DEFAULT_CACHE_TIMEOUT_JITTER_MS, DEFAULT_OFFLINE_PROVIDER_CHECK_TIME,
 };
-use kanidm_unix_common::unix_config::{GroupMap, KanidmConfig};
-use kanidm_unix_common::unix_proto::PamAuthRequest;
+use kubidm_unix_common::unix_config::{GroupMap, KubidmConfig};
+use kubidm_unix_common::unix_proto::PamAuthRequest;
 use std::collections::BTreeSet;
 use std::time::{Duration, SystemTime};
 use tokio::sync::{broadcast, Mutex};
 
-const KANIDM_HMAC_KEY: &str = "kanidm-hmac-key-v2";
-const KANIDM_PWV1_KEY: &str = "kanidm-pw-v1";
+const KUBIDM_HMAC_KEY: &str = "kubidm-hmac-key-v2";
+const KUBIDM_PWV1_KEY: &str = "kubidm-pw-v1";
 
 fn next_offline_check(now: SystemTime) -> SystemTime {
     let jitter = rand::random_range(0..DEFAULT_CACHE_TIMEOUT_JITTER_MS);
@@ -39,26 +39,24 @@ enum CacheState {
     OfflineNextCheck(SystemTime),
 }
 
-struct KanidmProviderInternal {
+struct KubidmProviderInternal {
     state: CacheState,
-    client: KanidmClient,
+    client: KubidmClient,
     hmac_key: HmacS256Key,
     crypto_policy: CryptoPolicy,
     pam_allow_groups: BTreeSet<String>,
     bearer_token_set: bool,
 }
 
-pub struct KanidmProvider {
-    inner: Mutex<KanidmProviderInternal>,
-    // Because this value doesn't change, to support fast
-    // lookup we store the extension map here.
+pub struct KubidmProvider {
+    inner: Mutex<KubidmProviderInternal>,
     map_group: HashMap<String, Id>,
 }
 
-impl KanidmProvider {
+impl KubidmProvider {
     pub async fn new<'a, 'b>(
-        client: KanidmClient,
-        config: &KanidmConfig,
+        client: KubidmClient,
+        config: &KubidmConfig,
         now: SystemTime,
         keystore: &mut KeyStoreTxn<'a, 'b>,
         tpm: &mut BoxedDynTpm,
@@ -68,7 +66,7 @@ impl KanidmProvider {
 
         // Initially retrieve our HMAC key.
         let loadable_hmac_key: Option<LoadableHmacS256Key> = keystore
-            .get_tagged_hsm_key(KANIDM_HMAC_KEY)
+            .get_tagged_hsm_key(KUBIDM_HMAC_KEY)
             .map_err(|ks_err| {
                 error!(?ks_err);
                 IdpError::KeyStore
@@ -83,7 +81,7 @@ impl KanidmProvider {
             })?;
 
             keystore
-                .insert_tagged_hsm_key(KANIDM_HMAC_KEY, &loadable_hmac_key)
+                .insert_tagged_hsm_key(KUBIDM_HMAC_KEY, &loadable_hmac_key)
                 .map_err(|ks_err| {
                     error!(?ks_err);
                     IdpError::KeyStore
@@ -116,8 +114,8 @@ impl KanidmProvider {
         };
         let bearer_token_set = config.service_account_token.is_some();
 
-        Ok(KanidmProvider {
-            inner: Mutex::new(KanidmProviderInternal {
+        Ok(KubidmProvider {
+            inner: Mutex::new(KubidmProviderInternal {
                 state: CacheState::OfflineNextCheck(now),
                 client,
                 hmac_key,
@@ -149,7 +147,7 @@ impl From<UnixUserToken> for UserToken {
         let groups = groups.into_iter().map(GroupToken::from).collect();
 
         UserToken {
-            provider: ProviderOrigin::Kanidm,
+            provider: ProviderOrigin::Kubidm,
             name,
             spn,
             uuid,
@@ -174,7 +172,7 @@ impl From<UnixGroupToken> for GroupToken {
         } = value;
 
         GroupToken {
-            provider: ProviderOrigin::Kanidm,
+            provider: ProviderOrigin::Kubidm,
             name,
             spn,
             uuid,
@@ -185,7 +183,7 @@ impl From<UnixGroupToken> for GroupToken {
 }
 
 impl UserToken {
-    pub fn kanidm_update_cached_password(
+    pub fn kubidm_update_cached_password(
         &mut self,
         crypto_policy: &CryptoPolicy,
         cred: &str,
@@ -198,7 +196,7 @@ impl UserToken {
             Ok(pw) => pw,
             Err(reason) => {
                 // Clear cached pw.
-                self.extra_keys.remove(KANIDM_PWV1_KEY);
+                self.extra_keys.remove(KUBIDM_PWV1_KEY);
                 warn!(
                     ?reason,
                     "unable to apply kdf to password, clearing cached password."
@@ -211,7 +209,7 @@ impl UserToken {
             Ok(pw) => pw,
             Err(reason) => {
                 // Clear cached pw.
-                self.extra_keys.remove(KANIDM_PWV1_KEY);
+                self.extra_keys.remove(KUBIDM_PWV1_KEY);
                 warn!(
                     ?reason,
                     "unable to serialise credential, clearing cached password."
@@ -220,21 +218,21 @@ impl UserToken {
             }
         };
 
-        self.extra_keys.insert(KANIDM_PWV1_KEY.into(), pw_value);
+        self.extra_keys.insert(KUBIDM_PWV1_KEY.into(), pw_value);
         debug!(spn = %self.spn, "Updated cached pw");
     }
 
-    pub fn kanidm_has_offline_credentials(&self) -> bool {
-        self.extra_keys.contains_key(KANIDM_PWV1_KEY)
+    pub fn kubidm_has_offline_credentials(&self) -> bool {
+        self.extra_keys.contains_key(KUBIDM_PWV1_KEY)
     }
 
-    pub fn kanidm_check_cached_password(
+    pub fn kubidm_check_cached_password(
         &self,
         cred: &str,
         tpm: &mut BoxedDynTpm,
         hmac_key: &HmacS256Key,
     ) -> bool {
-        let pw_value = match self.extra_keys.get(KANIDM_PWV1_KEY) {
+        let pw_value = match self.extra_keys.get(KUBIDM_PWV1_KEY) {
             Some(pw_value) => pw_value,
             None => {
                 debug!(spn = %self.spn, "no cached pw available");
@@ -265,7 +263,7 @@ impl UserToken {
     }
 }
 
-impl KanidmProviderInternal {
+impl KubidmProviderInternal {
     #[instrument(level = "debug", skip_all)]
     async fn check_online(&mut self, tpm: &mut BoxedDynTpm, now: SystemTime) -> bool {
         match self.state {
@@ -334,9 +332,9 @@ impl KanidmProviderInternal {
 }
 
 #[async_trait]
-impl IdProvider for KanidmProvider {
+impl IdProvider for KubidmProvider {
     fn origin(&self) -> ProviderOrigin {
-        ProviderOrigin::Kanidm
+        ProviderOrigin::Kubidm
     }
 
     async fn attempt_online(&self, tpm: &mut BoxedDynTpm, now: SystemTime) -> bool {
@@ -513,7 +511,7 @@ impl IdProvider for KanidmProvider {
                         }
 
                         // Set any new keys that are relevant from this authentication
-                        new_token.kanidm_update_cached_password(
+                        new_token.kubidm_update_cached_password(
                             &inner.crypto_policy,
                             cred.as_str(),
                             tpm,
@@ -607,14 +605,14 @@ impl IdProvider for KanidmProvider {
     }
 
     async fn unix_user_can_offline_auth(&self, token: &UserToken) -> bool {
-        token.kanidm_has_offline_credentials()
+        token.kubidm_has_offline_credentials()
     }
 
     async fn unix_user_offline_auth_init(
         &self,
         token: &UserToken,
     ) -> Result<(AuthRequest, AuthCredHandler), IdpError> {
-        if token.kanidm_has_offline_credentials() {
+        if token.kubidm_has_offline_credentials() {
             Ok((AuthRequest::Password, AuthCredHandler::Password))
         } else {
             Err(IdpError::NoOfflineCredentials)
@@ -633,7 +631,7 @@ impl IdProvider for KanidmProvider {
             (AuthCredHandler::Password, PamAuthRequest::Password { cred }) => {
                 let inner = self.inner.lock().await;
 
-                if session_token.kanidm_check_cached_password(cred.as_str(), tpm, &inner.hmac_key) {
+                if session_token.kubidm_check_cached_password(cred.as_str(), tpm, &inner.hmac_key) {
                     // Ensure we have either the latest token, or if none, at least the session token.
                     let new_token = current_token.unwrap_or(session_token).clone();
 
