@@ -1,8 +1,8 @@
 ---
-name: Container - Kanidm
+name: Container - Kubidm
 
 # This is always built and uploads an OCI image as a build artifact, but only
-# pushes to "ghcr.io/kanidm/kanidm:devel" when on "kanidm/kanidm@master".
+# pushes to "ghcr.io/kubidm/kubidm:devel" when on "kubidm/kubidm@master".
 "on":
   pull_request:
   push:
@@ -29,8 +29,8 @@ jobs:
     outputs:
       owner_lc: ${{ steps.step1.outputs.OWNER_LC }}
       ref_name: ${{ steps.step2.outputs.REF_NAME }}
-  kanidm_build:
-    name: Build kanidm Docker image
+  kubidm_build:
+    name: Build kubidm Docker image
     runs-on: ubuntu-latest
     needs:
       - set_tag_values
@@ -44,33 +44,33 @@ jobs:
       - name: Docker metadata
         id: meta
         uses: docker/metadata-action@v6
-      - name: Build kanidm
+      - name: Build kubidm
         uses: docker/build-push-action@v7
         with:
           platforms: "linux/amd64"
-          tags: ghcr.io/${{ needs.set_tag_values.outputs.owner_lc }}/kanidm:devel,ghcr.io/${{ needs.set_tag_values.outputs.owner_lc }}/kanidm:${{ needs.set_tag_values.outputs.ref_name}}
+          tags: ghcr.io/${{ needs.set_tag_values.outputs.owner_lc }}/kubidm:devel,ghcr.io/${{ needs.set_tag_values.outputs.owner_lc }}/kubidm:${{ needs.set_tag_values.outputs.ref_name}}
 
           build-args: |
-            "KANIDM_FEATURES="
+            "KUBIDM_FEATURES="
           file: tools/Dockerfile
           context: .
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
           # Must use OCI exporter for multi-arch: https://github.com/docker/buildx/pull/1813
-          outputs: type=oci,dest=/tmp/kanidm-docker.tar
+          outputs: type=oci,dest=/tmp/kubidm-docker.tar
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: kanidm-docker
-          path: /tmp/kanidm-docker.tar
+          name: kubidm-docker
+          path: /tmp/kubidm-docker.tar
 
-  kanidm_push:
-    name: Push kanidm Docker image
+  kubidm_push:
+    name: Push kubidm Docker image
     # This step is split so that we don't apply "packages: write" permission
     # except when uploading the final Docker image to GHCR.
     runs-on: ubuntu-latest
     if: ( github.ref_type == 'tag' || github.ref == 'refs/heads/master' )
-    needs: [kanidm_build, set_tag_values]
+    needs: [kubidm_build, set_tag_values]
     permissions:
       packages: write
 
@@ -78,7 +78,7 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v8
         with:
-          name: kanidm-docker
+          name: kubidm-docker
           path: /tmp
       - name: Set up ORAS
         uses: oras-project/setup-oras@v2
@@ -86,9 +86,9 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | \
             oras login -u "${{ github.actor }}" --password-stdin ghcr.io
-          oras copy --from-oci-layout "/tmp/kanidm-docker.tar:devel" \
-            "ghcr.io/${{ needs.set_tag_values.outputs.owner_lc }}/kanidm:devel"
+          oras copy --from-oci-layout "/tmp/kubidm-docker.tar:devel" \
+            "ghcr.io/${{ needs.set_tag_values.outputs.owner_lc }}/kubidm:devel"
           if [ "${{ github.ref_type }}" = "tag" ]; then
-            oras copy --from-oci-layout "/tmp/kanidm-docker.tar:${{ needs.set_tag_values.outputs.ref_name }}" \
-              "ghcr.io/${{ needs.set_tag_values.outputs.owner_lc }}/kanidm:${{ needs.set_tag_values.outputs.ref_name }}"
+            oras copy --from-oci-layout "/tmp/kubidm-docker.tar:${{ needs.set_tag_values.outputs.ref_name }}" \
+              "ghcr.io/${{ needs.set_tag_values.outputs.owner_lc }}/kubidm:${{ needs.set_tag_values.outputs.ref_name }}"
           fi

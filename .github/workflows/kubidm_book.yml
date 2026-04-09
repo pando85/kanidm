@@ -58,7 +58,7 @@ jobs:
           path: docs/index.html
 
   fanout:
-    uses: './.github/workflows/kanidm_individual_book.yml'
+    uses: './.github/workflows/kubidm_individual_book.yml'
     needs: pre_deploy
     # yamllint disable-line rule:line-length
     strategy:
@@ -70,7 +70,7 @@ jobs:
       tag: ${{ matrix.tag }}
       parent_id: ${{ github.ref }}
   docs_master:
-    uses: './.github/workflows/kanidm_individual_book.yml'
+    uses: './.github/workflows/kubidm_individual_book.yml'
     with:
       tag: "master"
       parent_id: ${{ github.ref }}
@@ -85,7 +85,7 @@ jobs:
       - docs_master
     runs-on: ubuntu-latest
     # yamllint disable-line rule:line-length
-    if: ${{ github.ref == 'refs/heads/master' && github.repository == 'kanidm/kanidm' }}
+    if: ${{ github.ref == 'refs/heads/master' && github.repository == 'kubidm/kubidm' }}
     steps:
       - uses: actions/checkout@v6
         with:
