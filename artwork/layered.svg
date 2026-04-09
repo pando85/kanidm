@@ -12,13 +12,13 @@
       <stop offset="100%" style="stop-color:#2d5a8a;stop-opacity:1" />
     </linearGradient>
   </defs>
-  <g id="layer1" inkscape:label="shield">
+  <g id="layer1">
     <path
        id="shield"
        d="M 75,12 C 34,28 12,50 12,75 c 0,37 63,63 63,63 c 0,0 63,-26 63,-63 C 138,50 116,28 75,12 z"
        style="fill:url(#shieldGradient);stroke:#1a3a5c;stroke-width:2;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
   </g>
-  <g id="layer2" inkscape:label="key">
+  <g id="layer2">
     <path
        id="key"
        d="M 75,33 c -9,0 -18,9 -18,18 c 0,7 5,14 12,16 l 0,43 l 6,6 l 6,-6 l 0,-43 c 7,-2 12,-9 12,-16 c 0,-9 -9,-18 -18,-18 z M 75,42 a 9,9 0 1 1 0,18 a 9,9 0 1 1 0,-18 z"
