@@ -1,7 +1,7 @@
 use clap::{builder::PossibleValue, Args, Subcommand, ValueEnum};
-use kanidm_proto::constants::CLIENT_TOKEN_CACHE;
-use kanidm_proto::internal::ImageType;
-use kanidm_proto::scim_v1::ScimFilter;
+use kubidm_proto::constants::CLIENT_TOKEN_CACHE;
+use kubidm_proto::internal::ImageType;
+use kubidm_proto::scim_v1::ScimFilter;
 use std::fmt;
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
@@ -23,7 +23,7 @@ pub struct Named {
 
 #[derive(Debug, Args, Clone)]
 pub struct DebugOpt {
-    /// Enable debugging of the kanidm tool
+    /// Enable debugging of the kubidm tool
     #[clap(short, long, env = "KANIDM_DEBUG")]
     pub debug: bool,
 }
@@ -331,7 +331,7 @@ pub struct AccountNamedExpireDateTimeOpt {
     /// - An RFC3339 time of the format "YYYY-MM-DDTHH:MM:SS+TZ", "2020-09-25T11:22:02+10:00"
     /// - One of "any", "clear" or "never" to remove account expiry.
     /// - "epoch" to set the expiry to the UNIX epoch
-    /// - "now" to expire immediately (this will affect authentication with Kanidm, but external systems may not be aware of the change until next time it's validated, typically ~15 minutes)
+    /// - "now" to expire immediately (this will affect authentication with Kubidm, but external systems may not be aware of the change until next time it's validated, typically ~15 minutes)
     datetime: String,
 }
 
@@ -976,7 +976,7 @@ pub enum Oauth2Opt {
     },
 
     /// The landing URL is the default origin of the OAuth2 client. Additionally, this landing
-    /// URL is the target when Kanidm redirects the user from the apps listing page.
+    /// URL is the target when Kubidm redirects the user from the apps listing page.
     #[clap(name = "set-landing-url")]
     SetLandingUrl {
         #[clap(flatten)]
@@ -984,7 +984,7 @@ pub enum Oauth2Opt {
         #[clap(name = "landing-url")]
         url: Url,
     },
-    /// The image presented on the Kanidm Apps Listing page for an OAuth2 resource server.
+    /// The image presented on the Kubidm Apps Listing page for an OAuth2 resource server.
     #[clap(name = "set-image")]
     SetImage {
         #[clap(flatten)]
@@ -1158,7 +1158,7 @@ pub enum DomainOpt {
         #[clap(name = "allow", action = clap::ArgAction::Set)]
         enable: bool,
     },
-    /// Enable or disable easter eggs in the server. This includes seasonal icons, kanidm
+    /// Enable or disable easter eggs in the server. This includes seasonal icons, kubidm
     /// birthday surprises and other fun components. Defaults to false for production releases
     /// and true in development builds.
     SetAllowEasterEggs {
@@ -1250,7 +1250,7 @@ pub enum SynchOpt {
         account_id: String,
     },
     /// Set the list of attributes that have their authority yielded from the sync account
-    /// and are allowed to be modified by kanidm and users. Any attributes not listed in
+    /// and are allowed to be modified by kubidm and users. Any attributes not listed in
     /// in this command will have their authority returned to the sync account.
     #[clap(name = "set-yield-attributes")]
     SetYieldAttributes {
@@ -1261,7 +1261,7 @@ pub enum SynchOpt {
         attrs: Vec<String>,
     },
     /// Reset the sync cookie of this connector, so that on the next operation of the sync tool
-    /// a full refresh of the provider is requested. Kanidm attributes that have been granted
+    /// a full refresh of the provider is requested. Kubidm attributes that have been granted
     /// authority will *not* be lost or deleted.
     #[clap(name = "force-refresh")]
     ForceRefresh {
@@ -1269,10 +1269,10 @@ pub enum SynchOpt {
         account_id: String,
     },
     /// Finalise and remove this sync account. This will transfer all synchronised entries into
-    /// the authority of Kanidm. This signals the end of a migration from an external IDM into
-    /// Kanidm. ⚠️  This action can NOT be undone. Once complete, it is most likely
+    /// the authority of Kubidm. This signals the end of a migration from an external IDM into
+    /// Kubidm. ⚠️  This action can NOT be undone. Once complete, it is most likely
     /// that attempting to recreate a sync account from the same IDM will fail due to conflicting
-    /// entries that Kanidm now owns.
+    /// entries that Kubidm now owns.
     #[clap(name = "finalise")]
     Finalise {
         #[clap()]
@@ -1318,8 +1318,8 @@ pub enum PrivilegedSessionExpiryOpt {
 
 #[derive(Args, Debug, Clone)]
 pub struct ApiSchemaDownloadOpt {
-    /// Where to put the file, defaults to ./kanidm-openapi.json
-    #[clap(name = "filename", env, default_value = "./kanidm-openapi.json")]
+    /// Where to put the file, defaults to ./kubidm-openapi.json
+    #[clap(name = "filename", env, default_value = "./kubidm-openapi.json")]
     filename: PathBuf,
     /// Force overwriting the file if it exists
     #[clap(short, long, env)]
@@ -1507,8 +1507,8 @@ pub enum ApprovalOpt {
 }
 
 #[derive(Debug, Subcommand, Clone)]
-#[clap(about = "Kanidm Client Utility")]
-pub enum KanidmClientOpt {
+#[clap(about = "Kubidm Client Utility")]
+pub enum KubidmClientOpt {
     /// Login to an account to use with future cli operations
     Login(LoginOpt),
     /// Reauthenticate to access privileged functions of this account for a short period.
@@ -1575,19 +1575,19 @@ pub enum KanidmClientOpt {
 }
 
 #[derive(Debug, clap::Parser, Clone)]
-#[clap(about = "Kanidm Client Utility")]
-pub struct KanidmClientParser {
+#[clap(about = "Kubidm Client Utility")]
+pub struct KubidmClientParser {
     #[clap(subcommand)]
-    pub commands: KanidmClientOpt,
+    pub commands: KubidmClientOpt,
 
-    /// Enable debugging of the kanidm tool
+    /// Enable debugging of the kubidm tool
     #[clap(short, long, env = "KANIDM_DEBUG", global = true)]
     pub debug: bool,
     /// Select the instance name you wish to connect to
     #[clap(short = 'I', long = "instance", env = "KANIDM_INSTANCE", global = true,
     value_parser = clap::builder::NonEmptyStringValueParser::new())]
     pub instance: Option<String>,
-    /// The URL of the kanidm instance
+    /// The URL of the kubidm instance
     #[clap(short = 'H', long = "url", env = "KANIDM_URL", global = true,
     value_parser = clap::builder::NonEmptyStringValueParser::new())]
     pub addr: Option<String>,
@@ -1627,7 +1627,7 @@ pub struct KanidmClientParser {
         global = true
     )]
     accept_invalid_certs: bool,
-    /// Path to a file to cache tokens in, defaults to ~/.cache/kanidm_tokens
+    /// Path to a file to cache tokens in, defaults to ~/.cache/kubidm_tokens
     #[clap(
         long,
         env = "KANIDM_TOKEN_CACHE_PATH",
@@ -1648,7 +1648,7 @@ pub struct KanidmClientParser {
     password: Option<String>,
 }
 
-impl KanidmClientParser {
+impl KubidmClientParser {
     fn get_token_cache_path(&self) -> String {
         match self.token_cache_path.clone() {
             None => CLIENT_TOKEN_CACHE.to_string(),

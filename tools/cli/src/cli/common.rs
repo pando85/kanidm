@@ -1,20 +1,20 @@
 use compact_jwt::{traits::JwsVerifiable, JwsCompact, JwsEs256Verifier, JwsVerifier, JwtError};
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::{Confirm, Select};
-use kanidm_client::{KanidmClient, KanidmClientBuilder};
-use kanidm_proto::constants::{DEFAULT_CLIENT_CONFIG_PATH, DEFAULT_CLIENT_CONFIG_PATH_HOME};
-use kanidm_proto::internal::{PrivilegesActive, UserAuthToken};
+use kubidm_client::{KubidmClient, KubidmClientBuilder};
+use kubidm_proto::constants::{DEFAULT_CLIENT_CONFIG_PATH, DEFAULT_CLIENT_CONFIG_PATH_HOME};
+use kubidm_proto::internal::{PrivilegesActive, UserAuthToken};
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
 
 use crate::session::{process_auth_state, read_tokens};
-use crate::{KanidmClientParser, LoginOpt};
+use crate::{KubidmClientParser, LoginOpt};
 
 #[derive(Debug)]
 #[allow(clippy::large_enum_variant)]
 pub enum ToClientError {
     NeedLogin(String),
-    NeedReauth(String, KanidmClient),
+    NeedReauth(String, KubidmClient),
     ReadOnly,
     Other,
 }
@@ -27,13 +27,13 @@ pub(crate) enum OpType {
     Write,
 }
 
-impl KanidmClientParser {
-    pub fn to_unauth_client(&self) -> KanidmClient {
+impl KubidmClientParser {
+    pub fn to_unauth_client(&self) -> KubidmClient {
         let config_path: String = shellexpand::tilde(DEFAULT_CLIENT_CONFIG_PATH_HOME).into_owned();
 
         let instance_name: Option<&str> = self.instance.as_deref();
 
-        let client_builder = KanidmClientBuilder::new()
+        let client_builder = KubidmClientBuilder::new()
             .read_options_from_optional_instance_config(DEFAULT_CLIENT_CONFIG_PATH, instance_name)
             .map_err(|e| {
                 error!(
@@ -114,7 +114,7 @@ impl KanidmClientParser {
     pub(crate) async fn try_to_client(
         &self,
         optype: OpType,
-    ) -> Result<KanidmClient, ToClientError> {
+    ) -> Result<KubidmClient, ToClientError> {
         let client = self.to_unauth_client();
 
         // Read the token file.
@@ -300,7 +300,7 @@ impl KanidmClientParser {
         Ok(client)
     }
 
-    pub(crate) async fn to_client(&self, optype: OpType) -> KanidmClient {
+    pub(crate) async fn to_client(&self, optype: OpType) -> KubidmClient {
         loop {
             match self.try_to_client(optype).await {
                 Ok(c) => break c,

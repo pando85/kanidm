@@ -1,9 +1,9 @@
-use crate::{handle_client_error, KanidmClientParser, OpType, OutputMode, SchemaAttrOpt};
-use kanidm_proto::scim_v1::{ScimEntryGetQuery, ScimFilter};
+use crate::{handle_client_error, KubidmClientParser, OpType, OutputMode, SchemaAttrOpt};
+use kubidm_proto::scim_v1::{ScimEntryGetQuery, ScimFilter};
 use std::str::FromStr;
 
 impl SchemaAttrOpt {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: KubidmClientParser) {
         match self {
             Self::List => {
                 let client = opt.to_client(OpType::Read).await;
