@@ -9,7 +9,6 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from authlib.jose import JsonWebSignature  # type: ignore
 from pydantic import ConfigDict, BaseModel, Field
 
 from . import TOKEN_PATH
@@ -150,8 +149,7 @@ class TokenStore(BaseModel):
         for instance_name, instance in self.instances.items():
             for username, token in instance.tokens.items():
                 logging.debug("Parsing instance=%s username=%s", instance_name, username)
-                # TODO: Work out how to get the validation working. We probably shouldn't be worried about this since we're using it for auth...
-                logging.debug(JsonWebSignature().deserialize_compact(s=token, key=None))
+                JWS(token)
 
     def token_info(self, username: str, instance: Optional[str] = None) -> Optional[JWSPayload]:
         """grabs a token and returns a complex object object"""
@@ -170,6 +168,6 @@ class TokenStore(BaseModel):
         if token is None:
             logging.debug("No token found for %s", username)
             return None
-        parsed_object = JsonWebSignature().deserialize_compact(s=token, key=None)
-        logging.debug(parsed_object)
-        return JWSPayload.model_validate_json(parsed_object.payload)
+        parsed_token = JWS(token)
+        logging.debug(parsed_token)
+        return parsed_token.payload
