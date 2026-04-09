@@ -1,0 +1,30 @@
+# flake8: noqa
+
+# import apis into api package
+from kubidm_openapi_client.api.account_api import AccountApi
+from kubidm_openapi_client.api.auth_api import AuthApi
+from kubidm_openapi_client.api.credential_api import CredentialApi
+from kubidm_openapi_client.api.debug_api import DebugApi
+from kubidm_openapi_client.api.domain_api import DomainApi
+from kubidm_openapi_client.api.group_api import GroupApi
+from kubidm_openapi_client.api.group_attr_api import GroupAttrApi
+from kubidm_openapi_client.api.group_unix_api import GroupUnixApi
+from kubidm_openapi_client.api.jwk_api import JwkApi
+from kubidm_openapi_client.api.oauth2_api import Oauth2Api
+from kubidm_openapi_client.api.person_api import PersonApi
+from kubidm_openapi_client.api.person_attr_api import PersonAttrApi
+from kubidm_openapi_client.api.person_certificate_api import PersonCertificateApi
+from kubidm_openapi_client.api.person_credential_api import PersonCredentialApi
+from kubidm_openapi_client.api.person_radius_api import PersonRadiusApi
+from kubidm_openapi_client.api.person_ssh_pubkeys_api import PersonSshPubkeysApi
+from kubidm_openapi_client.api.person_unix_api import PersonUnixApi
+from kubidm_openapi_client.api.raw_api import RawApi
+from kubidm_openapi_client.api.recycle_bin_api import RecycleBinApi
+from kubidm_openapi_client.api.schema_api import SchemaApi
+from kubidm_openapi_client.api.scim_api import ScimApi
+from kubidm_openapi_client.api.self_api import SelfApi
+from kubidm_openapi_client.api.service_account_api import ServiceAccountApi
+from kubidm_openapi_client.api.sync_account_api import SyncAccountApi
+from kubidm_openapi_client.api.system_api import SystemApi
+from kubidm_openapi_client.api.ui_api import UiApi
+
