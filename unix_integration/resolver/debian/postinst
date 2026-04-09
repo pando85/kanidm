@@ -1,5 +1,5 @@
 #!/bin/sh
-# postinst script for kanidm-unixd
+# postinst script for kubidm-unixd
 #
 # see: dh_installdeb(1)
 
@@ -9,11 +9,11 @@ set -e
 case "$1" in
     configure)
         echo "============================="
-        echo "Thanks for installing Kanidm!"
+        echo "Thanks for installing Kubidm!"
         echo "============================="
-        echo "Please ensure you modify the configuration files at /etc/kanidm/unixd and /etc/kanidm/config"
-        echo "Full examples are in /usr/share/kanidm-unixd/"
-        echo "PAM has already been autoconfigured by the libpam-kanidm package. To configure nsswitch, please follow instructions in https://kanidm.github.io/kanidm/master/integrations/pam_and_nsswitch.html"
+        echo "Please ensure you modify the configuration files at /etc/kubidm/unixd and /etc/kubidm/config"
+        echo "Full examples are in /usr/share/kubidm-unixd/"
+        echo "PAM has already been autoconfigured by the libpam-kubidm package. To configure nsswitch, please follow instructions in https://kubidm.github.io/kubidm/master/integrations/pam_and_nsswitch.html"
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
