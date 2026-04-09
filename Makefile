@@ -69,9 +69,9 @@ buildx/kanidmd:
 		--label "com.kanidm.version=$(CONTAINER_IMAGE_EXT_VERSION)" \
 		$(CONTAINER_BUILD_ARGS) .
 
-.PHONY: buildx/kanidm_tools
-buildx/kanidm_tools: ## Build multiarch kanidm tool images and push to docker hub
-buildx/kanidm_tools:
+.PHONY: buildx/kubidm_tools
+buildx/kubidm_tools: ## Build multiarch kubidm tool images and push to docker hub
+buildx/kubidm_tools:
 	@$(CONTAINER_TOOL) buildx build $(CONTAINER_TOOL_ARGS) \
 		--pull $(CONTAINER_BUILDX_ACTION) --platform $(CONTAINER_IMAGE_ARCH) \
 		-f tools/Dockerfile \
@@ -97,7 +97,7 @@ buildx/radiusd:
 		-t $(CONTAINER_IMAGE_BASE)/radius:$(CONTAINER_IMAGE_EXT_VERSION) .
 
 .PHONY: buildx
-buildx: buildx/kanidmd buildx/kanidm_tools buildx/radiusd
+buildx: buildx/kanidmd buildx/kubidm_tools buildx/radiusd
 
 .PHONY: build/kanidmd
 build/kanidmd:	## Build the kanidmd docker image locally
@@ -169,7 +169,7 @@ vendor-prep: vendor
 	tar -cJf vendor.tar.xz vendor
 
 .PHONY: install-tools
-install-tools: ## install kanidm_tools in your local environment
+install-tools: ## install kubidm_tools in your local environment
 install-tools:
 	cargo install --path tools/cli --force
 
@@ -292,8 +292,8 @@ prep:
 	cargo audit
 
 .PHONY: release/kanidm
-release/kanidm: ## Build the Kanidm CLI - ensure you include the environment variable KANIDM_BUILD_PROFILE
-	cargo build -p kanidm_tools --bin kanidm --release
+release/kanidm: ## Build the Kubidm CLI - ensure you include the environment variable KANIDM_BUILD_PROFILE
+	cargo build -p kubidm_tools --bin kubidm --release
 
 .PHONY: release/kanidmd
 release/kanidmd: ## Build the Kanidm daemon - ensure you include the environment variable KANIDM_BUILD_PROFILE
@@ -373,13 +373,13 @@ publish: ## Publish to crates.io
 publish:
 	cargo publish -p sketching
 	cargo publish -p scim_proto
-	cargo publish -p kanidm_build_profiles
-	cargo publish -p kanidm_proto
-	cargo publish -p kanidm_utils_users
-	cargo publish -p kanidm_lib_file_permissions
-	cargo publish -p kanidm_lib_crypto
-	cargo publish -p kanidm_client
-	cargo publish -p kanidm_tools
+	cargo publish -p kubidm_build_profiles
+	cargo publish -p kubidm_proto
+	cargo publish -p kubidm_utils_users
+	cargo publish -p kubidm_lib_file_permissions
+	cargo publish -p kubidm_lib_crypto
+	cargo publish -p kubidm_client
+	cargo publish -p kubidm_tools
 
 .PHONY: rust_container
 rust_container: # Build and run a container based on the Linux rust base container, with our requirements included
