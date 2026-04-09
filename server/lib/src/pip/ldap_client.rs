@@ -5,7 +5,7 @@
 //! of the main server library. The health check will return Unavailable.
 
 use crate::prelude::*;
-use kanidm_proto::internal::{PipRequest, PipSourceStatus, PipSourceType};
+use kubidm_proto::internal::{PipRequest, PipSourceStatus, PipSourceType};
 use std::collections::BTreeMap;
 use std::pin::Pin;
 

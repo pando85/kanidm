@@ -1,14 +1,14 @@
 use compact_jwt::{traits::JwsVerifiable, JwsCompact, JwsEs256Verifier, JwsVerifier};
-use kanidm_client::KanidmClient;
-use kanidm_proto::internal::{CURegState, UatPurpose, UserAuthToken};
-use kanidmd_testkit::{ADMIN_TEST_PASSWORD, ADMIN_TEST_USER};
+use kubidm_client::KubidmClient;
+use kubidm_proto::internal::{CURegState, UatPurpose, UserAuthToken};
+use kubidmd_testkit::{ADMIN_TEST_PASSWORD, ADMIN_TEST_USER};
 use std::str::FromStr;
 use std::time::SystemTime;
 use webauthn_authenticator_rs::softpasskey::SoftPasskey;
 use webauthn_authenticator_rs::WebauthnAuthenticator;
 
 async fn setup_passkey_account(
-    rsclient: &KanidmClient,
+    rsclient: &KubidmClient,
     account_name: &str,
 ) -> WebauthnAuthenticator<SoftPasskey> {
     let res = rsclient
@@ -67,7 +67,7 @@ async fn setup_passkey_account(
     wa
 }
 
-async fn get_current_uat(rsclient: &KanidmClient) -> UserAuthToken {
+async fn get_current_uat(rsclient: &KubidmClient) -> UserAuthToken {
     let token = rsclient.get_token().await.expect("No bearer token present");
     let jwt = JwsCompact::from_str(&token).expect("Failed to parse jwt");
     let key_id = jwt.kid().expect("token does not have a key id");
@@ -81,8 +81,8 @@ async fn get_current_uat(rsclient: &KanidmClient) -> UserAuthToken {
     released.from_json::<UserAuthToken>().expect("Invalid json")
 }
 
-#[kanidmd_testkit::test]
-async fn test_stepup_auth_passkey_reauth(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_stepup_auth_passkey_reauth(rsclient: &KubidmClient) {
     let account_name = "stepup_passkey_user";
     let mut wa = setup_passkey_account(rsclient, account_name).await;
 
@@ -115,8 +115,8 @@ async fn test_stepup_auth_passkey_reauth(rsclient: &KanidmClient) {
     assert!(matches!(uat.purpose, UatPurpose::ReadWrite { .. }));
 }
 
-#[kanidmd_testkit::test]
-async fn test_stepup_auth_session_scope_readonly(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_stepup_auth_session_scope_readonly(rsclient: &KubidmClient) {
     let account_name = "stepup_readonly_user";
     let mut wa = setup_passkey_account(rsclient, account_name).await;
 
@@ -135,8 +135,8 @@ async fn test_stepup_auth_session_scope_readonly(rsclient: &KanidmClient) {
     assert!(matches!(uat.purpose, UatPurpose::ReadWrite { .. }));
 }
 
-#[kanidmd_testkit::test]
-async fn test_stepup_auth_multiple_reauth_sessions(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_stepup_auth_multiple_reauth_sessions(rsclient: &KubidmClient) {
     let account_name = "stepup_multi_reauth_user";
     let mut wa = setup_passkey_account(rsclient, account_name).await;
 
@@ -168,7 +168,7 @@ async fn test_stepup_auth_multiple_reauth_sessions(rsclient: &KanidmClient) {
     assert!(matches!(uat.purpose, UatPurpose::ReadWrite { .. }));
 }
 
-async fn setup_password_account(rsclient: &KanidmClient, account_name: &str, password: &str) {
+async fn setup_password_account(rsclient: &KubidmClient, account_name: &str, password: &str) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -204,8 +204,8 @@ async fn setup_password_account(rsclient: &KanidmClient, account_name: &str, pas
     let _ = rsclient.logout().await;
 }
 
-#[kanidmd_testkit::test]
-async fn test_stepup_auth_password_reauth(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_stepup_auth_password_reauth(rsclient: &KubidmClient) {
     let account_name = "stepup_password_user";
     let password = "test_password_123";
     setup_password_account(rsclient, account_name, password).await;
@@ -226,8 +226,8 @@ async fn test_stepup_auth_password_reauth(rsclient: &KanidmClient) {
     assert!(matches!(uat.purpose, UatPurpose::ReadWrite { .. }));
 }
 
-#[kanidmd_testkit::test]
-async fn test_stepup_auth_invalid_password_rejected(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_stepup_auth_invalid_password_rejected(rsclient: &KubidmClient) {
     let account_name = "stepup_invalid_pw_user";
     let password = "correct_password_123";
     setup_password_account(rsclient, account_name, password).await;
@@ -239,9 +239,9 @@ async fn test_stepup_auth_invalid_password_rejected(rsclient: &KanidmClient) {
     assert!(res.is_err());
 }
 
-#[kanidmd_testkit::test]
-async fn test_stepup_auth_totp_reauth(rsclient: &KanidmClient) {
-    use kanidmd_lib::credential::totp::Totp;
+#[kubidmd_testkit::test]
+async fn test_stepup_auth_totp_reauth(rsclient: &KubidmClient) {
+    use kubidmd_lib::credential::totp::Totp;
 
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
@@ -330,14 +330,14 @@ async fn test_stepup_auth_totp_reauth(rsclient: &KanidmClient) {
     assert!(res.is_ok());
 }
 
-#[kanidmd_testkit::test]
-async fn test_stepup_auth_requires_valid_session(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_stepup_auth_requires_valid_session(rsclient: &KubidmClient) {
     let res = rsclient.reauth_passkey_begin().await;
     assert!(res.is_err());
 }
 
-#[kanidmd_testkit::test]
-async fn test_stepup_auth_logout_clears_session(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_stepup_auth_logout_clears_session(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -355,8 +355,8 @@ async fn test_stepup_auth_logout_clears_session(rsclient: &KanidmClient) {
 mod security_tests {
     use super::*;
 
-    #[kanidmd_testkit::test]
-    async fn test_stepup_auth_wrong_passkey_rejected(rsclient: &KanidmClient) {
+    #[kubidmd_testkit::test]
+    async fn test_stepup_auth_wrong_passkey_rejected(rsclient: &KubidmClient) {
         let account_name = "stepup_wrong_passkey_user";
         let mut wa = setup_passkey_account(rsclient, account_name).await;
 
@@ -386,8 +386,8 @@ mod security_tests {
         }
     }
 
-    #[kanidmd_testkit::test]
-    async fn test_stepup_auth_rate_limiting(rsclient: &KanidmClient) {
+    #[kubidmd_testkit::test]
+    async fn test_stepup_auth_rate_limiting(rsclient: &KubidmClient) {
         let account_name = "stepup_ratelimit_user";
         let password = "correct_password_123";
         setup_password_account(rsclient, account_name, password).await;
@@ -407,10 +407,10 @@ mod security_tests {
 
 mod integration_tests {
     use super::*;
-    use kanidm_proto::constants::ATTR_MAIL;
+    use kubidm_proto::constants::ATTR_MAIL;
 
-    #[kanidmd_testkit::test]
-    async fn test_stepup_with_acp_require_reauth(rsclient: &KanidmClient) {
+    #[kubidmd_testkit::test]
+    async fn test_stepup_with_acp_require_reauth(rsclient: &KubidmClient) {
         let res = rsclient
             .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
             .await;
@@ -420,8 +420,8 @@ mod integration_tests {
         assert!(matches!(uat.purpose, UatPurpose::ReadWrite { .. }));
     }
 
-    #[kanidmd_testkit::test]
-    async fn test_stepup_for_sensitive_operations(rsclient: &KanidmClient) {
+    #[kubidmd_testkit::test]
+    async fn test_stepup_for_sensitive_operations(rsclient: &KubidmClient) {
         let res = rsclient
             .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
             .await;
@@ -444,8 +444,8 @@ mod integration_tests {
         assert!(result.is_ok());
     }
 
-    #[kanidmd_testkit::test]
-    async fn test_stepup_oauth2_token_operations(rsclient: &KanidmClient) {
+    #[kubidmd_testkit::test]
+    async fn test_stepup_oauth2_token_operations(rsclient: &KubidmClient) {
         let res = rsclient
             .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
             .await;

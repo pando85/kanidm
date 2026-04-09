@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::sync::{Arc, RwLock};
 
-use kanidm_proto::backup::{BackupCompression, S3BackupMetadata};
+use kubidm_proto::backup::{BackupCompression, S3BackupMetadata};
 
 pub struct MockS3Storage {
     objects: Arc<RwLock<BTreeMap<String, Vec<u8>>>>,
@@ -442,7 +442,7 @@ mod tests {
     #[test]
     fn test_mock_s3_with_prefix() {
         let ctx = MockS3TestBuilder::new()
-            .with_prefix("kanidm/backups")
+            .with_prefix("kubidm/backups")
             .build();
         let data = create_small_backup_data();
 

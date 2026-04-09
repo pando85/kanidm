@@ -1,7 +1,7 @@
-use crate::{ClientError, KanidmClient};
-use kanidm_proto::v1::Entry;
+use crate::{ClientError, KubidmClient};
+use kubidm_proto::v1::Entry;
 
-impl KanidmClient {
+impl KubidmClient {
     pub async fn idm_group_search(&self, id: &str) -> Result<Vec<Entry>, ClientError> {
         self.perform_get_request(&format!("/v1/group/_search/{id}"))
             .await

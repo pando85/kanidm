@@ -1,0 +1,52 @@
+[package]
+name = "pam_kubidm"
+description = "Kubidm PAM module"
+links = "pam"
+
+version = { workspace = true }
+authors = { workspace = true }
+rust-version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+
+[lib]
+name = "pam_kubidm"
+crate-type = ["cdylib"]
+path = "src/lib.rs"
+
+[dependencies]
+kubidm_unix_common = { workspace = true }
+libc = { workspace = true }
+tracing-subscriber = { workspace = true }
+tracing = { workspace = true }
+time = { workspace = true }
+
+[build-dependencies]
+pkg-config = { workspace = true }
+
+## Debian packaging
+[package.metadata.deb]
+name = "libpam-kubidm"
+maintainer = "James Hodgkinson <james@terminaloutcomes.com>"
+depends = ["libc6", "libpam0g"]
+section = "network"
+priority = "optional"
+maintainer-scripts = "debian/"
+assets = [
+    [
+        "target/release/libpam_kubidm.so",
+        # This is not the final path as cargo-deb needs to be run with --multiarch=foreign
+        "usr/lib/security/pam_kubidm.so",
+        "644",
+    ],
+    [
+        "debian/kubidm.pam",
+        "usr/share/pam-configs/kubidm",
+        "644",
+    ],
+]
+
+[package.metadata.cargo-machete]
+ignored = ["pkg-config"]

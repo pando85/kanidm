@@ -1,6 +1,6 @@
 use crate::idm::server::IdmServerProxyWriteTransaction;
 use crate::prelude::*;
-use kanidm_proto::oauth2::OidcDiscoveryResponse;
+use kubidm_proto::oauth2::OidcDiscoveryResponse;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::sync::Arc;

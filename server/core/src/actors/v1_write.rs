@@ -1,18 +1,18 @@
 use std::iter;
 
 use compact_jwt::JweCompact;
-use kanidm_proto::internal::{
+use kubidm_proto::internal::{
     CUIntentToken, CUSessionToken, CUStatus, CreateRequest, DeleteRequest, ImageValue,
     Modify as ProtoModify, ModifyList as ProtoModifyList, ModifyRequest,
     Oauth2ClaimMapJoin as ProtoOauth2ClaimMapJoin, OperationError,
 };
-use kanidm_proto::v1::{AccountUnixExtend, Entry as ProtoEntry, GroupUnixExtend};
+use kubidm_proto::v1::{AccountUnixExtend, Entry as ProtoEntry, GroupUnixExtend};
 use std::str::FromStr;
 use time::OffsetDateTime;
 use tracing::{info, instrument, trace};
 use uuid::Uuid;
 
-use kanidmd_lib::{
+use kubidmd_lib::{
     event::{CreateEvent, DeleteEvent, ModifyEvent, ReviveRecycledEvent},
     filter::{Filter, FilterInvalid},
     idm::account::DestroySessionTokenEvent,
@@ -32,7 +32,7 @@ use kanidmd_lib::{
     value::{OauthClaimMapJoin, PartialValue, Value},
 };
 
-use kanidmd_lib::prelude::*;
+use kubidmd_lib::prelude::*;
 
 #[cfg(feature = "dev-oauth2-device-flow")]
 use std::collections::BTreeSet;
@@ -1780,7 +1780,7 @@ impl QueryServerWriteV1 {
         client_id: &str,
         scope: &Option<BTreeSet<String>>,
         eventid: Uuid,
-    ) -> Result<kanidm_proto::oauth2::DeviceAuthorizationResponse, Oauth2Error> {
+    ) -> Result<kubidm_proto::oauth2::DeviceAuthorizationResponse, Oauth2Error> {
         let ct = duration_from_epoch_now();
         let mut idms_prox_write = self
             .idms
@@ -1804,7 +1804,7 @@ impl QueryServerWriteV1 {
     pub async fn handle_approval_policy_create(
         &self,
         client_auth_info: ClientAuthInfo,
-        request: kanidm_proto::v1::ApprovalPolicyCreateRequest,
+        request: kubidm_proto::v1::ApprovalPolicyCreateRequest,
         eventid: Uuid,
     ) -> Result<(), OperationError> {
         let ct = duration_from_epoch_now();
@@ -1887,7 +1887,7 @@ impl QueryServerWriteV1 {
         &self,
         client_auth_info: ClientAuthInfo,
         uuid: String,
-        request: kanidm_proto::v1::ApprovalDecisionRequest,
+        request: kubidm_proto::v1::ApprovalDecisionRequest,
         eventid: Uuid,
     ) -> Result<(), OperationError> {
         let ct = duration_from_epoch_now();

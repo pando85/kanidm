@@ -1,4 +1,4 @@
-use kanidm_proto::backup::{
+use kubidm_proto::backup::{
     BackupCompression, PitrManifest, RecoveryTarget, RecoveryTargetType, WalArchiveConfig,
     WalEntry, WalOperation, WalSegment,
 };

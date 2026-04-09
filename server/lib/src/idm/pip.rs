@@ -3,7 +3,7 @@
 //! This module provides a framework for retrieving external attributes from various
 //! sources (HTTP REST APIs, LDAP servers, etc.) during authorization decisions.
 //!
-//! The PIP framework allows Kanidm to incorporate attributes from external systems
+//! The PIP framework allows Kubidm to incorporate attributes from external systems
 //! like HR databases, CRM systems, asset management tools, and risk signals from
 //! SIEM/UEBA systems into access control decisions.
 //!
@@ -61,7 +61,7 @@ impl From<&str> for PipId {
 }
 
 /// External attribute name with namespace prefix to prevent collisions
-/// with internal Kanidm attributes.
+/// with internal Kubidm attributes.
 ///
 /// Format: `pip:<source_id>:<attribute_name>`
 /// Example: `pip:hr_system:department`

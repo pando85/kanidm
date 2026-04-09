@@ -26,10 +26,10 @@ pub fn start_logging_pipeline(
 ) -> Result<(Option<SdkTracerProvider>, Box<dyn Subscriber + Send + Sync>), String> {
     // Always force the event span to be generated at the correct level, regardless
     // of what the user set.
-    let kanidmd_core_directives = [
-        Directive::from_str("kanidmd_core::https::trace=info")
+    let kubidmd_core_directives = [
+        Directive::from_str("kubidmd_core::https::trace=info")
             .map_err(|err| format!("Invalid directive during log setup: {}", err))?,
-        Directive::from_str("kanidmd_core::https::middleware=info")
+        Directive::from_str("kubidmd_core::https::middleware=info")
             .map_err(|err| format!("Invalid directive during log setup: {}", err))?,
     ];
 
@@ -37,7 +37,7 @@ pub fn start_logging_pipeline(
         .with_default_directive(log_filter.into())
         .parse("")
         .map_err(|err| format!("Failed to create OTEL logging filter: {}", err))?;
-    for directive in kanidmd_core_directives.iter() {
+    for directive in kubidmd_core_directives.iter() {
         logging_filter = logging_filter.add_directive(directive.clone());
     }
     logging_filter = logging_filter
@@ -122,7 +122,7 @@ pub fn start_logging_pipeline(
 
         // only set the service name if it's not already set in the environment because the SDK defaults to "unknown_service"
         if std::env::var("OTEL_SERVICE_NAME").is_err() {
-            resource = resource.with_service_name("kanidmd");
+            resource = resource.with_service_name("kubidmd");
         }
         let resource = resource.build();
 

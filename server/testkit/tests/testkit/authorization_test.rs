@@ -1,32 +1,32 @@
 #![deny(warnings)]
-use kanidm_client::KanidmClient;
-use kanidm_proto::internal::{
+use kubidm_client::KubidmClient;
+use kubidm_proto::internal::{
     AuthorizationAction, AuthorizationDecision, AuthorizationRequest, AuthorizationResponse,
     BatchAuthorizationRequest, BatchAuthorizationResponse,
 };
-use kanidmd_testkit::{ADMIN_TEST_PASSWORD, ADMIN_TEST_USER};
+use kubidmd_testkit::{ADMIN_TEST_PASSWORD, ADMIN_TEST_USER};
 use std::collections::BTreeSet;
 use uuid::Uuid;
 
-#[kanidmd_testkit::test]
-async fn test_authorization_endpoint_unauthorized(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_authorization_endpoint_unauthorized(rsclient: &KubidmClient) {
     let resource_uuid = Uuid::new_v4();
     let request = AuthorizationRequest::new(None, resource_uuid, AuthorizationAction::Search);
 
-    let result: Result<AuthorizationResponse, kanidm_client::ClientError> = rsclient
+    let result: Result<AuthorizationResponse, kubidm_client::ClientError> = rsclient
         .perform_post_request("/v1/authorize", request)
         .await;
 
     assert!(result.is_err());
     match result.unwrap_err() {
-        kanidm_client::ClientError::Unauthorized => (),
-        kanidm_client::ClientError::Http(kanidm_client::StatusCode::UNAUTHORIZED, _, _) => (),
+        kubidm_client::ClientError::Unauthorized => (),
+        kubidm_client::ClientError::Http(kubidm_client::StatusCode::UNAUTHORIZED, _, _) => (),
         other => panic!("Expected Unauthorized error, got {:?}", other),
     }
 }
 
-#[kanidmd_testkit::test]
-async fn test_authorization_endpoint_authenticated_admin(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_authorization_endpoint_authenticated_admin(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -55,8 +55,8 @@ async fn test_authorization_endpoint_authenticated_admin(rsclient: &KanidmClient
     assert_eq!(response.action, AuthorizationAction::Search);
 }
 
-#[kanidmd_testkit::test]
-async fn test_authorization_decision_deny(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_authorization_decision_deny(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -85,8 +85,8 @@ async fn test_authorization_decision_deny(rsclient: &KanidmClient) {
     assert_eq!(response.action, AuthorizationAction::Delete);
 }
 
-#[kanidmd_testkit::test]
-async fn test_authorization_decision_types(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_authorization_decision_types(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -120,8 +120,8 @@ async fn test_authorization_decision_types(rsclient: &KanidmClient) {
     }
 }
 
-#[kanidmd_testkit::test]
-async fn test_authorization_with_explanation(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_authorization_with_explanation(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -151,28 +151,28 @@ async fn test_authorization_with_explanation(rsclient: &KanidmClient) {
     }
 }
 
-#[kanidmd_testkit::test]
-async fn test_batch_authorization_endpoint_unauthorized(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_batch_authorization_endpoint_unauthorized(rsclient: &KubidmClient) {
     let requests = vec![
         AuthorizationRequest::new(None, Uuid::new_v4(), AuthorizationAction::Search),
         AuthorizationRequest::new(None, Uuid::new_v4(), AuthorizationAction::Modify),
     ];
     let batch_request = BatchAuthorizationRequest { requests };
 
-    let result: Result<BatchAuthorizationResponse, kanidm_client::ClientError> = rsclient
+    let result: Result<BatchAuthorizationResponse, kubidm_client::ClientError> = rsclient
         .perform_post_request("/v1/authorize/batch", batch_request)
         .await;
 
     assert!(result.is_err());
     match result.unwrap_err() {
-        kanidm_client::ClientError::Unauthorized => (),
-        kanidm_client::ClientError::Http(kanidm_client::StatusCode::UNAUTHORIZED, _, _) => (),
+        kubidm_client::ClientError::Unauthorized => (),
+        kubidm_client::ClientError::Http(kubidm_client::StatusCode::UNAUTHORIZED, _, _) => (),
         other => panic!("Expected Unauthorized error, got {:?}", other),
     }
 }
 
-#[kanidmd_testkit::test]
-async fn test_batch_authorization_endpoint_authenticated(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_batch_authorization_endpoint_authenticated(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -205,8 +205,8 @@ async fn test_batch_authorization_endpoint_authenticated(rsclient: &KanidmClient
     assert_eq!(response.responses[1].resource, admin_uuid);
 }
 
-#[kanidmd_testkit::test]
-async fn test_batch_authorization_empty_requests(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_batch_authorization_empty_requests(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -222,8 +222,8 @@ async fn test_batch_authorization_empty_requests(rsclient: &KanidmClient) {
     assert!(response.responses.is_empty());
 }
 
-#[kanidmd_testkit::test]
-async fn test_batch_authorization_large_batch(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_batch_authorization_large_batch(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -254,8 +254,8 @@ async fn test_batch_authorization_large_batch(rsclient: &KanidmClient) {
     assert_eq!(response.responses.len(), num_requests);
 }
 
-#[kanidmd_testkit::test]
-async fn test_authorization_nonexistent_resource_uuid(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_authorization_nonexistent_resource_uuid(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -264,15 +264,15 @@ async fn test_authorization_nonexistent_resource_uuid(rsclient: &KanidmClient) {
     let non_existent_uuid = Uuid::new_v4();
     let request = AuthorizationRequest::new(None, non_existent_uuid, AuthorizationAction::Search);
 
-    let result: Result<AuthorizationResponse, kanidm_client::ClientError> = rsclient
+    let result: Result<AuthorizationResponse, kubidm_client::ClientError> = rsclient
         .perform_post_request("/v1/authorize", request)
         .await;
 
     assert!(result.is_err());
 }
 
-#[kanidmd_testkit::test]
-async fn test_authorization_with_attributes_filtering(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_authorization_with_attributes_filtering(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -308,8 +308,8 @@ async fn test_authorization_with_attributes_filtering(rsclient: &KanidmClient) {
     }
 }
 
-#[kanidmd_testkit::test]
-async fn test_authorization_session_expiry_handling(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_authorization_session_expiry_handling(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -337,8 +337,8 @@ async fn test_authorization_session_expiry_handling(rsclient: &KanidmClient) {
     assert_eq!(response.action, request.action);
 }
 
-#[kanidmd_testkit::test]
-async fn test_authorization_concurrent_requests(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_authorization_concurrent_requests(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -376,8 +376,8 @@ async fn test_authorization_concurrent_requests(rsclient: &KanidmClient) {
     }
 }
 
-#[kanidmd_testkit::test]
-async fn test_authorization_create_action_unsupported(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_authorization_create_action_unsupported(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;

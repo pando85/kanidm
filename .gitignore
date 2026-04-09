@@ -32,8 +32,8 @@ kanidm-client-tools.tar.gz
 **/__pycache__/**
 **/.venv/**
 .coverage
-pykanidm/dist/
-pykanidm/site/
+pykubidm/dist/
+pykubidm/site/
 
 # oauth2 integration test things
 scripts/oauth_proxy/client.secret

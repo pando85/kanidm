@@ -175,7 +175,7 @@ impl ValueSetT for ValueSetTimeBoundedMember {
     }
 
     fn to_scim_value(&self) -> Option<ScimResolveStatus> {
-        Some(ScimResolveStatus::Resolved(ScimValueKanidm::ArrayString(
+        Some(ScimResolveStatus::Resolved(ScimValueKubidm::ArrayString(
             self.to_proto_string_clone_iter().collect(),
         )))
     }

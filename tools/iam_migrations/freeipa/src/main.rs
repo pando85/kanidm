@@ -19,17 +19,17 @@ use crate::error::SyncError;
 use chrono::Utc;
 use clap::Parser;
 use cron::Schedule;
-use kanidm_client::KanidmClientBuilder;
-use kanidm_lib_crypto::{Password, PasswordError};
-use kanidm_lib_file_permissions::readonly as file_permissions_readonly;
-use kanidm_proto::constants::{
+use kubidm_client::KubidmClientBuilder;
+use kubidm_lib_crypto::{Password, PasswordError};
+use kubidm_lib_file_permissions::readonly as file_permissions_readonly;
+use kubidm_proto::constants::{
     ATTR_UID, LDAP_ATTR_CN, LDAP_ATTR_OBJECTCLASS, LDAP_CLASS_GROUPOFNAMES,
 };
-use kanidm_proto::scim_v1::{
+use kubidm_proto::scim_v1::{
     MultiValueAttr, ScimEntry, ScimSshPubKey, ScimSyncGroup, ScimSyncPerson, ScimSyncRequest,
     ScimSyncRetentionMode, ScimSyncState, ScimTotp,
 };
-use kanidmd_lib::prelude::{Attribute, EntryClass, ENTRYCLASS_PERSON};
+use kubidmd_lib::prelude::{Attribute, EntryClass, ENTRYCLASS_PERSON};
 use ldap3_client::{
     proto, proto::LdapFilter, LdapClient, LdapClientBuilder, LdapSyncRepl, LdapSyncReplEntry,
     LdapSyncStateValue,
@@ -57,7 +57,7 @@ use tracing_subscriber::{fmt, EnvFilter};
 use uuid::Uuid;
 
 #[cfg(target_family = "unix")]
-use kanidm_utils_users::{get_current_gid, get_current_uid, get_effective_gid, get_effective_uid};
+use kubidm_utils_users::{get_current_gid, get_current_uid, get_effective_gid, get_effective_uid};
 
 #[cfg(target_family = "unix")]
 use std::os::unix::fs::MetadataExt;
@@ -65,14 +65,14 @@ use std::os::unix::fs::MetadataExt;
 include!("./opt.rs");
 
 async fn driver_main(opt: Opt) {
-    debug!("Starting Kanidm FreeIPA sync driver.");
+    debug!("Starting Kubidm FreeIPA sync driver.");
     // Parse the configs.
 
     let mut f = match File::open(&opt.ipa_sync_config) {
         Ok(f) => f,
         Err(e) => {
             error!("Unable to open profile file [{:?}] 🥺", e);
-            let diag = kanidm_lib_file_permissions::diagnose_path(&opt.ipa_sync_config);
+            let diag = kubidm_lib_file_permissions::diagnose_path(&opt.ipa_sync_config);
             info!(%diag);
             return;
         }
@@ -94,7 +94,7 @@ async fn driver_main(opt: Opt) {
 
     debug!(?sync_config);
 
-    let cb = match KanidmClientBuilder::new().read_options_from_optional_config(&opt.client_config)
+    let cb = match KubidmClientBuilder::new().read_options_from_optional_config(&opt.client_config)
     {
         Ok(v) => v,
         Err(_) => {
@@ -285,14 +285,14 @@ async fn status_task(
 }
 
 async fn run_sync(
-    cb: KanidmClientBuilder,
+    cb: KubidmClientBuilder,
     sync_config: &Config,
     opt: &Opt,
 ) -> Result<(), SyncError> {
     let rsclient = match cb.build() {
         Ok(rsc) => rsc,
         Err(_e) => {
-            error!("Failed to build Kanidm client");
+            error!("Failed to build Kubidm client");
             return Err(SyncError::ClientConfig);
         }
     };
@@ -357,8 +357,8 @@ async fn run_sync(
         }
     };
 
-    // 1. can we connect to Kanidm?
-    // 2. get the current sync cookie from Kanidm.
+    // 1. can we connect to Kubidm?
+    // 2. get the current sync cookie from Kubidm.
     let scim_sync_status = match rsclient.scim_v1_sync_status().await {
         Ok(s) => s,
         Err(e) => {
@@ -534,7 +534,7 @@ async fn run_sync(
     } else if let Err(e) = rsclient.scim_v1_sync_update(&scim_sync_request).await {
         error!(
             error=?e,
-            "Failed to submit SCIM sync update - see the kanidmd server log for more details."
+            "Failed to submit SCIM sync update - see the kubidmd server log for more details."
         );
         Err(SyncError::SyncUpdate)
     } else {
@@ -556,7 +556,7 @@ async fn process_ipa_sync_result(
     // Because of how TOTP works with FreeIPA, it's a soft referral from
     // the TOTP toward the user. This means if a TOTP is added or removed
     // we see those as unique entries in the syncrepl but we are missing
-    // the user entry that actually needs the update since Kanidm makes TOTP
+    // the user entry that actually needs the update since Kubidm makes TOTP
     // part of the entry itself.
     //
     // This *also* means that when a user is updated that we also need to
@@ -863,7 +863,7 @@ fn ipa_to_scim_entry(
         if ["admin", "idm_admin"].contains(&user_name.as_str()) {
             info!(
                 dn = dn,
-                "Kanidm sync excludes built-in admin account accounts, skipping"
+                "Kubidm sync excludes built-in admin account accounts, skipping"
             );
             return Ok(None);
         }
@@ -1014,7 +1014,7 @@ fn ipa_to_scim_entry(
 
         // ⚠️  hardcoded skip on trust admins / editors / ipausers here!!!
         if name == "trust admins" || name == "editors" || name == "ipausers" || name == "admins" {
-            info!(dn, "Kanidm sync excludes this dn, skipping");
+            info!(dn, "Kubidm sync excludes this dn, skipping");
             return Ok(None);
         }
 
@@ -1171,7 +1171,7 @@ fn main() {
     let fmt_layer = fmt::layer().with_writer(std::io::stderr);
 
     let filter_layer = if opt.debug {
-        match EnvFilter::try_new("kanidm_client=debug,kanidm_ipa_sync=debug,ldap3_client=debug") {
+        match EnvFilter::try_new("kubidm_client=debug,kubidm_ipa_sync=debug,ldap3_client=debug") {
             Ok(f) => f,
             Err(e) => {
                 eprintln!("ERROR! Unable to start tracing {e:?}");
@@ -1181,7 +1181,7 @@ fn main() {
     } else {
         match EnvFilter::try_from_default_env() {
             Ok(f) => f,
-            Err(_) => EnvFilter::new("kanidm_client=warn,kanidm_ipa_sync=info,ldap3_client=warn"),
+            Err(_) => EnvFilter::new("kubidm_client=warn,kubidm_ipa_sync=info,ldap3_client=warn"),
         }
     };
 

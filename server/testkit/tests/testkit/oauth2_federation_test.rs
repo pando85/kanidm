@@ -1,7 +1,7 @@
 #![deny(warnings)]
-use kanidm_client::{ClientError, KanidmClient, StatusCode};
-use kanidm_proto::internal::Filter;
-use kanidmd_testkit::{ADMIN_TEST_PASSWORD, ADMIN_TEST_USER, NOT_ADMIN_TEST_PASSWORD};
+use kubidm_client::{ClientError, KubidmClient, StatusCode};
+use kubidm_proto::internal::Filter;
+use kubidmd_testkit::{ADMIN_TEST_PASSWORD, ADMIN_TEST_USER, NOT_ADMIN_TEST_PASSWORD};
 use std::collections::BTreeMap;
 use url::Url;
 
@@ -18,13 +18,13 @@ fn get_federation_test_issuer() -> Url {
 }
 
 async fn create_federation_idp(
-    rsclient: &KanidmClient,
+    rsclient: &KubidmClient,
     idp_name: &str,
     client_id: &str,
     client_secret: &str,
     issuer: &Url,
 ) -> Result<(), ClientError> {
-    let entry = kanidm_proto::v1::Entry {
+    let entry = kubidm_proto::v1::Entry {
         attrs: BTreeMap::from([
             (
                 "class".to_string(),
@@ -45,13 +45,13 @@ async fn create_federation_idp(
         .await
 }
 
-async fn delete_federation_idp(rsclient: &KanidmClient, idp_name: &str) -> Result<(), ClientError> {
+async fn delete_federation_idp(rsclient: &KubidmClient, idp_name: &str) -> Result<(), ClientError> {
     let filter = Filter::Eq("name".to_string(), idp_name.to_string());
     rsclient.delete(filter).await
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_federation_create(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_oauth2_federation_create(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -69,8 +69,8 @@ async fn test_oauth2_federation_create(rsclient: &KanidmClient) {
     let _ = delete_federation_idp(rsclient, &idp_name).await;
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_federation_create_with_all_attributes(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_oauth2_federation_create_with_all_attributes(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -87,7 +87,7 @@ async fn test_oauth2_federation_create_with_all_attributes(rsclient: &KanidmClie
     let userinfo_endpoint =
         Url::parse("https://idp.example.com/oauth2/userinfo").expect("Invalid URL");
 
-    let entry = kanidm_proto::v1::Entry {
+    let entry = kubidm_proto::v1::Entry {
         attrs: BTreeMap::from([
             (
                 "class".to_string(),
@@ -153,8 +153,8 @@ async fn test_oauth2_federation_create_with_all_attributes(rsclient: &KanidmClie
     let _ = delete_federation_idp(rsclient, &idp_name).await;
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_federation_get_list(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_oauth2_federation_get_list(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -168,7 +168,7 @@ async fn test_oauth2_federation_get_list(rsclient: &KanidmClient) {
         create_federation_idp(rsclient, &idp_name, &client_id, "test_secret", &issuer).await;
     assert!(result.is_ok());
 
-    let result: Result<Vec<kanidm_proto::v1::Entry>, ClientError> =
+    let result: Result<Vec<kubidm_proto::v1::Entry>, ClientError> =
         rsclient.perform_get_request("/v1/oauth2/federation").await;
 
     match result {
@@ -189,8 +189,8 @@ async fn test_oauth2_federation_get_list(rsclient: &KanidmClient) {
     let _ = delete_federation_idp(rsclient, &idp_name).await;
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_federation_get_by_name(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_oauth2_federation_get_by_name(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -204,7 +204,7 @@ async fn test_oauth2_federation_get_by_name(rsclient: &KanidmClient) {
         create_federation_idp(rsclient, &idp_name, &client_id, "test_secret", &issuer).await;
     assert!(result.is_ok());
 
-    let result: Result<kanidm_proto::v1::Entry, ClientError> = rsclient
+    let result: Result<kubidm_proto::v1::Entry, ClientError> = rsclient
         .perform_get_request(&format!("/v1/oauth2/federation/{idp_name}"))
         .await;
 
@@ -220,8 +220,8 @@ async fn test_oauth2_federation_get_by_name(rsclient: &KanidmClient) {
     let _ = delete_federation_idp(rsclient, &idp_name).await;
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_federation_delete(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_oauth2_federation_delete(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -238,7 +238,7 @@ async fn test_oauth2_federation_delete(rsclient: &KanidmClient) {
     let result = delete_federation_idp(rsclient, &idp_name).await;
     assert!(result.is_ok(), "Federation IdP deletion should succeed");
 
-    let get_result: Result<kanidm_proto::v1::Entry, ClientError> = rsclient
+    let get_result: Result<kubidm_proto::v1::Entry, ClientError> = rsclient
         .perform_get_request(&format!("/v1/oauth2/federation/{idp_name}"))
         .await;
 
@@ -251,14 +251,14 @@ async fn test_oauth2_federation_delete(rsclient: &KanidmClient) {
     );
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_federation_missing_required_fields(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_oauth2_federation_missing_required_fields(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
     assert!(res.is_ok());
 
-    let entry_missing_client_id = kanidm_proto::v1::Entry {
+    let entry_missing_client_id = kubidm_proto::v1::Entry {
         attrs: BTreeMap::from([
             (
                 "class".to_string(),
@@ -282,7 +282,7 @@ async fn test_oauth2_federation_missing_required_fields(rsclient: &KanidmClient)
 
     assert!(result.is_err(), "Missing client_id should fail");
 
-    let entry_missing_secret = kanidm_proto::v1::Entry {
+    let entry_missing_secret = kubidm_proto::v1::Entry {
         attrs: BTreeMap::from([
             (
                 "class".to_string(),
@@ -306,7 +306,7 @@ async fn test_oauth2_federation_missing_required_fields(rsclient: &KanidmClient)
 
     assert!(result.is_err(), "Missing client_secret should fail");
 
-    let entry_missing_issuer = kanidm_proto::v1::Entry {
+    let entry_missing_issuer = kubidm_proto::v1::Entry {
         attrs: BTreeMap::from([
             (
                 "class".to_string(),
@@ -331,14 +331,14 @@ async fn test_oauth2_federation_missing_required_fields(rsclient: &KanidmClient)
     assert!(result.is_err(), "Missing issuer should fail");
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_federation_empty_client_id(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_oauth2_federation_empty_client_id(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
     assert!(res.is_ok());
 
-    let entry = kanidm_proto::v1::Entry {
+    let entry = kubidm_proto::v1::Entry {
         attrs: BTreeMap::from([
             (
                 "class".to_string(),
@@ -364,14 +364,14 @@ async fn test_oauth2_federation_empty_client_id(rsclient: &KanidmClient) {
     assert!(result.is_err(), "Empty client_id should fail");
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_federation_empty_client_secret(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_oauth2_federation_empty_client_secret(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
     assert!(res.is_ok());
 
-    let entry = kanidm_proto::v1::Entry {
+    let entry = kubidm_proto::v1::Entry {
         attrs: BTreeMap::from([
             (
                 "class".to_string(),
@@ -397,14 +397,14 @@ async fn test_oauth2_federation_empty_client_secret(rsclient: &KanidmClient) {
     assert!(result.is_err(), "Empty client_secret should fail");
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_federation_invalid_issuer_url(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_oauth2_federation_invalid_issuer_url(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
     assert!(res.is_ok());
 
-    let entry = kanidm_proto::v1::Entry {
+    let entry = kubidm_proto::v1::Entry {
         attrs: BTreeMap::from([
             (
                 "class".to_string(),
@@ -433,8 +433,8 @@ async fn test_oauth2_federation_invalid_issuer_url(rsclient: &KanidmClient) {
     assert!(result.is_err(), "Invalid issuer URL should fail");
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_federation_link_policy_values(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_oauth2_federation_link_policy_values(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -443,7 +443,7 @@ async fn test_oauth2_federation_link_policy_values(rsclient: &KanidmClient) {
     for policy in ["auto", "manual", "admin_approval"] {
         let idp_name = format!("{}_{}", get_federation_test_idp_name(), policy);
 
-        let entry = kanidm_proto::v1::Entry {
+        let entry = kubidm_proto::v1::Entry {
             attrs: BTreeMap::from([
                 (
                     "class".to_string(),
@@ -476,8 +476,8 @@ async fn test_oauth2_federation_link_policy_values(rsclient: &KanidmClient) {
     }
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_federation_invalid_link_policy(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_oauth2_federation_invalid_link_policy(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -485,7 +485,7 @@ async fn test_oauth2_federation_invalid_link_policy(rsclient: &KanidmClient) {
 
     let idp_name = "invalid_policy_idp";
 
-    let entry = kanidm_proto::v1::Entry {
+    let entry = kubidm_proto::v1::Entry {
         attrs: BTreeMap::from([
             (
                 "class".to_string(),
@@ -523,8 +523,8 @@ async fn test_oauth2_federation_invalid_link_policy(rsclient: &KanidmClient) {
     let _ = delete_federation_idp(rsclient, idp_name).await;
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_federation_multiple_email_domains(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_oauth2_federation_multiple_email_domains(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -532,7 +532,7 @@ async fn test_oauth2_federation_multiple_email_domains(rsclient: &KanidmClient) 
 
     let idp_name = format!("{}_multidomain", get_federation_test_idp_name());
 
-    let entry = kanidm_proto::v1::Entry {
+    let entry = kubidm_proto::v1::Entry {
         attrs: BTreeMap::from([
             (
                 "class".to_string(),
@@ -571,8 +571,8 @@ async fn test_oauth2_federation_multiple_email_domains(rsclient: &KanidmClient) 
     let _ = delete_federation_idp(rsclient, &idp_name).await;
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_federation_multiple_request_scopes(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_oauth2_federation_multiple_request_scopes(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -580,7 +580,7 @@ async fn test_oauth2_federation_multiple_request_scopes(rsclient: &KanidmClient)
 
     let idp_name = format!("{}_scopes", get_federation_test_idp_name());
 
-    let entry = kanidm_proto::v1::Entry {
+    let entry = kubidm_proto::v1::Entry {
         attrs: BTreeMap::from([
             (
                 "class".to_string(),
@@ -620,8 +620,8 @@ async fn test_oauth2_federation_multiple_request_scopes(rsclient: &KanidmClient)
     let _ = delete_federation_idp(rsclient, &idp_name).await;
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_federation_duplicate_name(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_oauth2_federation_duplicate_name(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -635,7 +635,7 @@ async fn test_oauth2_federation_duplicate_name(rsclient: &KanidmClient) {
         create_federation_idp(rsclient, &idp_name, &client_id, "test_secret", &issuer).await;
     assert!(result.is_ok());
 
-    let entry = kanidm_proto::v1::Entry {
+    let entry = kubidm_proto::v1::Entry {
         attrs: BTreeMap::from([
             (
                 "class".to_string(),
@@ -666,8 +666,8 @@ async fn test_oauth2_federation_duplicate_name(rsclient: &KanidmClient) {
     let _ = delete_federation_idp(rsclient, &idp_name).await;
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_federation_idp_initiated_enabled(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_oauth2_federation_idp_initiated_enabled(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -676,7 +676,7 @@ async fn test_oauth2_federation_idp_initiated_enabled(rsclient: &KanidmClient) {
     for enabled in [true, false] {
         let idp_name = format!("{}_idp_init_{}", get_federation_test_idp_name(), enabled);
 
-        let entry = kanidm_proto::v1::Entry {
+        let entry = kubidm_proto::v1::Entry {
             attrs: BTreeMap::from([
                 (
                     "class".to_string(),
@@ -716,8 +716,8 @@ async fn test_oauth2_federation_idp_initiated_enabled(rsclient: &KanidmClient) {
     }
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_federation_auto_discovery(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_oauth2_federation_auto_discovery(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -726,7 +726,7 @@ async fn test_oauth2_federation_auto_discovery(rsclient: &KanidmClient) {
     for enabled in [true, false] {
         let idp_name = format!("{}_auto_disc_{}", get_federation_test_idp_name(), enabled);
 
-        let entry = kanidm_proto::v1::Entry {
+        let entry = kubidm_proto::v1::Entry {
             attrs: BTreeMap::from([
                 (
                     "class".to_string(),
@@ -766,8 +766,8 @@ async fn test_oauth2_federation_auto_discovery(rsclient: &KanidmClient) {
     }
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_federation_unauthorized_access(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_oauth2_federation_unauthorized_access(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -791,7 +791,7 @@ async fn test_oauth2_federation_unauthorized_access(rsclient: &KanidmClient) {
         .await;
     assert!(res.is_ok());
 
-    let entry = kanidm_proto::v1::Entry {
+    let entry = kubidm_proto::v1::Entry {
         attrs: BTreeMap::from([
             (
                 "class".to_string(),
@@ -833,8 +833,8 @@ async fn test_oauth2_federation_unauthorized_access(rsclient: &KanidmClient) {
         .expect("Failed to cleanup test user");
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_federation_federation_id_unique(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_oauth2_federation_federation_id_unique(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -843,7 +843,7 @@ async fn test_oauth2_federation_federation_id_unique(rsclient: &KanidmClient) {
     let federation_id = "unique_federation_id_12345";
     let idp_name1 = format!("{}_fed1", get_federation_test_idp_name());
 
-    let entry1 = kanidm_proto::v1::Entry {
+    let entry1 = kubidm_proto::v1::Entry {
         attrs: BTreeMap::from([
             (
                 "class".to_string(),
@@ -880,7 +880,7 @@ async fn test_oauth2_federation_federation_id_unique(rsclient: &KanidmClient) {
 
     let idp_name2 = format!("{}_fed2", get_federation_test_idp_name());
 
-    let entry2 = kanidm_proto::v1::Entry {
+    let entry2 = kubidm_proto::v1::Entry {
         attrs: BTreeMap::from([
             (
                 "class".to_string(),
@@ -915,8 +915,8 @@ async fn test_oauth2_federation_federation_id_unique(rsclient: &KanidmClient) {
     let _ = delete_federation_idp(rsclient, &idp_name1).await;
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_federation_custom_endpoints(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_oauth2_federation_custom_endpoints(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -929,7 +929,7 @@ async fn test_oauth2_federation_custom_endpoints(rsclient: &KanidmClient) {
     let custom_jwks = Url::parse("https://custom.idp.example.com/oauth2/jwks").unwrap();
     let custom_userinfo = Url::parse("https://custom.idp.example.com/oauth2/userinfo").unwrap();
 
-    let entry = kanidm_proto::v1::Entry {
+    let entry = kubidm_proto::v1::Entry {
         attrs: BTreeMap::from([
             (
                 "class".to_string(),
@@ -973,8 +973,8 @@ async fn test_oauth2_federation_custom_endpoints(rsclient: &KanidmClient) {
     let _ = delete_federation_idp(rsclient, &idp_name).await;
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_federation_concurrent_idps(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_oauth2_federation_concurrent_idps(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -1003,7 +1003,7 @@ async fn test_oauth2_federation_concurrent_idps(rsclient: &KanidmClient) {
         idp_names.push(idp_name);
     }
 
-    let result: Result<Vec<kanidm_proto::v1::Entry>, ClientError> =
+    let result: Result<Vec<kubidm_proto::v1::Entry>, ClientError> =
         rsclient.perform_get_request("/v1/oauth2/federation").await;
 
     match result {
@@ -1022,14 +1022,14 @@ async fn test_oauth2_federation_concurrent_idps(rsclient: &KanidmClient) {
     }
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_federation_get_nonexistent(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_oauth2_federation_get_nonexistent(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
     assert!(res.is_ok());
 
-    let result: Result<kanidm_proto::v1::Entry, ClientError> = rsclient
+    let result: Result<kubidm_proto::v1::Entry, ClientError> = rsclient
         .perform_get_request("/v1/oauth2/federation/nonexistent_idp")
         .await;
 
@@ -1039,8 +1039,8 @@ async fn test_oauth2_federation_get_nonexistent(rsclient: &KanidmClient) {
     );
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_federation_with_display_name(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_oauth2_federation_with_display_name(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -1048,7 +1048,7 @@ async fn test_oauth2_federation_with_display_name(rsclient: &KanidmClient) {
 
     let idp_name = format!("{}_display", get_federation_test_idp_name());
 
-    let entry = kanidm_proto::v1::Entry {
+    let entry = kubidm_proto::v1::Entry {
         attrs: BTreeMap::from([
             (
                 "class".to_string(),
@@ -1083,8 +1083,8 @@ async fn test_oauth2_federation_with_display_name(rsclient: &KanidmClient) {
     let _ = delete_federation_idp(rsclient, &idp_name).await;
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_federation_with_description(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_oauth2_federation_with_description(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -1092,7 +1092,7 @@ async fn test_oauth2_federation_with_description(rsclient: &KanidmClient) {
 
     let idp_name = format!("{}_desc", get_federation_test_idp_name());
 
-    let entry = kanidm_proto::v1::Entry {
+    let entry = kubidm_proto::v1::Entry {
         attrs: BTreeMap::from([
             (
                 "class".to_string(),
@@ -1127,11 +1127,11 @@ async fn test_oauth2_federation_with_description(rsclient: &KanidmClient) {
     let _ = delete_federation_idp(rsclient, &idp_name).await;
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_federation_invalid_auth_method(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_oauth2_federation_invalid_auth_method(rsclient: &KubidmClient) {
     let _ = rsclient.logout().await;
 
-    let entry = kanidm_proto::v1::Entry {
+    let entry = kubidm_proto::v1::Entry {
         attrs: BTreeMap::from([
             (
                 "class".to_string(),

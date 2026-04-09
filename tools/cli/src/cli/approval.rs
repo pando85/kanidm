@@ -1,11 +1,11 @@
-use crate::{ApprovalOpt, ApprovalPolicyOpt, ApprovalRequestOpt, KanidmClientParser};
-use kanidm_client::KanidmClient;
-use kanidm_proto::v1::{
+use crate::{ApprovalOpt, ApprovalPolicyOpt, ApprovalRequestOpt, KubidmClientParser};
+use kubidm_client::KubidmClient;
+use kubidm_proto::v1::{
     ApprovalOperationType, ApprovalPattern, ApprovalPolicyCreateRequest, ApprovalRequestState,
 };
 
 impl ApprovalOpt {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: KubidmClientParser) {
         let client = opt.to_client(crate::common::OpType::Write).await;
         match self {
             ApprovalOpt::Policy { commands } => commands.exec(&opt, &client).await,
@@ -15,7 +15,7 @@ impl ApprovalOpt {
 }
 
 impl ApprovalPolicyOpt {
-    pub async fn exec(&self, _opt: &KanidmClientParser, client: &KanidmClient) {
+    pub async fn exec(&self, _opt: &KubidmClientParser, client: &KubidmClient) {
         match self {
             ApprovalPolicyOpt::List => {
                 let policies = match client.approval_policy_list().await {
@@ -152,7 +152,7 @@ impl ApprovalPolicyOpt {
 }
 
 impl ApprovalRequestOpt {
-    pub async fn exec(&self, _opt: &KanidmClientParser, client: &KanidmClient) {
+    pub async fn exec(&self, _opt: &KubidmClientParser, client: &KubidmClient) {
         match self {
             ApprovalRequestOpt::List { state } => {
                 let filter_state = match state {
@@ -196,12 +196,12 @@ impl ApprovalRequestOpt {
                     let approve_count = req
                         .decisions
                         .iter()
-                        .filter(|d| d.action == kanidm_proto::v1::ApprovalDecisionAction::Approve)
+                        .filter(|d| d.action == kubidm_proto::v1::ApprovalDecisionAction::Approve)
                         .count();
                     let reject_count = req
                         .decisions
                         .iter()
-                        .filter(|d| d.action == kanidm_proto::v1::ApprovalDecisionAction::Reject)
+                        .filter(|d| d.action == kubidm_proto::v1::ApprovalDecisionAction::Reject)
                         .count();
                     println!(
                         "  Decisions: {} approve, {} reject",

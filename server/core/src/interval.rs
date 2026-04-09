@@ -16,9 +16,9 @@ use crate::config::OnlineBackup;
 use crate::CoreAction;
 
 use crate::actors::{QueryServerReadV1, QueryServerWriteV1};
-use kanidm_proto::backup::PitrManifest;
-use kanidmd_lib::constants::PURGE_FREQUENCY;
-use kanidmd_lib::event::{
+use kubidm_proto::backup::PitrManifest;
+use kubidmd_lib::constants::PURGE_FREQUENCY;
+use kubidmd_lib::event::{
     OnlineBackupEvent, PurgeDeleteAfterEvent, PurgeRecycledEvent, PurgeTombstoneEvent,
 };
 
@@ -264,7 +264,7 @@ async fn update_pitr_manifest(
             manifest_json.into_bytes(),
             manifest_key,
             backup_timestamp,
-            kanidm_proto::backup::BackupCompression::NoCompression,
+            kubidm_proto::backup::BackupCompression::NoCompression,
         )
         .await
         .map_err(|e| format!("Failed to upload PITR manifest: {}", e))?;

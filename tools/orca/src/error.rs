@@ -2,7 +2,7 @@ pub enum Error {
     Io,
     SerdeToml,
     SerdeJson,
-    KanidmClient,
+    KubidmClient,
     ProfileBuilder,
     Tokio,
     Interrupt,

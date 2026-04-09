@@ -393,7 +393,7 @@ impl SchemaAttribute {
 
 /// An item representing a class and the rules for that class. These rules enforce that an
 /// [`Entry`]'s avas conform to a set of requirements, giving structure to an entry about
-/// what avas must or may exist. The kanidm project provides attributes in `systemmust` and
+/// what avas must or may exist. The kubidm project provides attributes in `systemmust` and
 /// `systemmay`, which can not be altered. An administrator may extend these in the `must`
 /// and `may` attributes.
 ///

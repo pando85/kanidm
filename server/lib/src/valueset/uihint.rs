@@ -3,8 +3,8 @@ use crate::schema::SchemaAttribute;
 use crate::valueset::{
     DbValueSetV2, ScimResolveStatus, ValueSet, ValueSetResolveStatus, ValueSetScimPut,
 };
-use kanidm_proto::internal::UiHint;
-use kanidm_proto::scim_v1::JsonValue;
+use kubidm_proto::internal::UiHint;
+use kubidm_proto::scim_v1::JsonValue;
 use std::collections::BTreeSet;
 
 #[derive(Debug, Clone)]
@@ -111,7 +111,7 @@ impl ValueSetT for ValueSetUiHint {
     }
 
     fn to_scim_value(&self) -> Option<ScimResolveStatus> {
-        Some(ScimResolveStatus::Resolved(ScimValueKanidm::from(
+        Some(ScimResolveStatus::Resolved(ScimValueKubidm::from(
             self.set.iter().copied().collect::<Vec<_>>(),
         )))
     }

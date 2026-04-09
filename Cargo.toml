@@ -7,8 +7,8 @@ authors = [
 rust-version = "1.93"
 edition = "2021"
 license = "MPL-2.0"
-homepage = "https://github.com/kanidm/kanidm/"
-repository = "https://github.com/kanidm/kanidm/"
+homepage = "https://github.com/kubidm/kubidm/"
+repository = "https://github.com/kubidm/kubidm/"
 
 [workspace]
 resolver = "2"
@@ -20,8 +20,8 @@ members = [
     "tools/iam_migrations/ldap",
     "tools/orca",
     "unix_integration/common",
-    "unix_integration/nss_kanidm",
-    "unix_integration/pam_kanidm",
+    "unix_integration/nss_kubidm",
+    "unix_integration/pam_kubidm",
     "unix_integration/resolver",
     "server/daemon",
     "server/lib",
@@ -70,17 +70,17 @@ codegen-units = 256
 [patch.crates-io]
 
 [workspace.dependencies]
-kanidmd_core = { path = "./server/core", version = "=1.10.0-alpha.3" }
-kanidmd_lib = { path = "./server/lib", version = "=1.10.0-alpha.3" }
-kanidmd_lib_macros = { path = "./server/lib-macros", version = "=1.10.0-alpha.3" }
-kanidmd_testkit = { path = "./server/testkit", version = "=1.10.0-alpha.3" }
-kanidm_build_profiles = { path = "./libs/profiles", version = "=1.10.0-alpha.3" }
-kanidm_client = { path = "./libs/client", version = "=1.10.0-alpha.3" }
-kanidm_lib_crypto = { path = "./libs/crypto", version = "=1.10.0-alpha.3" }
-kanidm_lib_file_permissions = { path = "./libs/file_permissions", version = "=1.10.0-alpha.3" }
-kanidm_proto = { path = "./proto", version = "=1.10.0-alpha.3" }
-kanidm_unix_common = { path = "./unix_integration/common", version = "=1.10.0-alpha.3" }
-kanidm_utils_users = { path = "./libs/users", version = "=1.10.0-alpha.3" }
+kubidmd_core = { path = "./server/core", version = "=1.10.0-alpha.3" }
+kubidmd_lib = { path = "./server/lib", version = "=1.10.0-alpha.3" }
+kubidmd_lib_macros = { path = "./server/lib-macros", version = "=1.10.0-alpha.3" }
+kubidmd_testkit = { path = "./server/testkit", version = "=1.10.0-alpha.3" }
+kubidm_build_profiles = { path = "./libs/profiles", version = "=1.10.0-alpha.3" }
+kubidm_client = { path = "./libs/client", version = "=1.10.0-alpha.3" }
+kubidm_lib_crypto = { path = "./libs/crypto", version = "=1.10.0-alpha.3" }
+kubidm_lib_file_permissions = { path = "./libs/file_permissions", version = "=1.10.0-alpha.3" }
+kubidm_proto = { path = "./proto", version = "=1.10.0-alpha.3" }
+kubidm_unix_common = { path = "./unix_integration/common", version = "=1.10.0-alpha.3" }
+kubidm_utils_users = { path = "./libs/users", version = "=1.10.0-alpha.3" }
 scim_proto = { path = "./libs/scim_proto", version = "=1.10.0-alpha.3" }
 sketching = { path = "./libs/sketching", version = "=1.10.0-alpha.3" }
 

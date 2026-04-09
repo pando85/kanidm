@@ -1,4 +1,4 @@
-# Kanidm - Simple and Secure Identity Management
+# Kubidm - Simple and Secure Identity Management
 
 > **This repository is an independent fork of [Kanidm](https://github.com/kanidm/kanidm).**
 > 
@@ -16,26 +16,26 @@
 > 
 > **Special thanks to** [@firstyear](https://github.com/firstyear) and [@yaleman](https://github.com/yaleman) for creating and maintaining Kanidm.
 
-![Kanidm Logo](artwork/logo-small.png)
+![Kubidm Logo](artwork/logo-small.png)
 
 ## About
 
-Kanidm is a simple and secure identity management platform, allowing other applications and services to offload the
-challenge of authenticating and storing identities to Kanidm.
+Kubidm is a simple and secure identity management platform, allowing other applications and services to offload the
+challenge of authenticating and storing identities to Kubidm.
 
 The goal of this project is to be a complete identity provider, covering the broadest possible set of requirements and
-integrations. You should not need any other components (like Keycloak) when you use Kanidm - we already have everything
+integrations. You should not need any other components (like Keycloak) when you use Kubidm - we already have everything
 you need!
 
 To achieve this we rely heavily on strict defaults, simple configuration, and self-healing components. This allows
-Kanidm to support small home labs, families, small businesses, and all the way to the largest enterprise needs.
+Kubidm to support small home labs, families, small businesses, and all the way to the largest enterprise needs.
 
-If you want to host your own authentication service, then Kanidm is for you!
+If you want to host your own authentication service, then Kubidm is for you!
 
 <details>
   <summary>Supported Features</summary>
 
-Kanidm supports:
+Kubidm supports:
 
 - Passkeys (WebAuthn) for secure cryptographic authentication
   - Attested passkeys for high security environments
@@ -55,11 +55,11 @@ Kanidm supports:
 
 ## Documentation / Getting Started / Install
 
-If you want to read more about what Kanidm can do, you should read our documentation.
+If you want to read more about what Kubidm can do, you should read our documentation.
 
-- [Kanidm book (latest stable)](https://kanidm.github.io/kanidm/stable/)
+- [Kubidm book (latest stable)](https://kubidm.github.io/kubidm/stable/)
 
-We also have a set of [support guidelines](https://github.com/kanidm/kanidm/blob/master/book/src/support.md) for what
+We also have a set of [support guidelines](https://github.com/kubidm/kubidm/blob/master/book/src/support.md) for what
 the project team will support.
 
 ## Code of Conduct / Ethics
@@ -68,48 +68,49 @@ All interactions with the project are covered by our [code of conduct].
 
 When we develop features, we follow our project's guidelines on [rights and ethics].
 
-[code of conduct]: https://github.com/kanidm/kanidm/blob/master/CODE_OF_CONDUCT.md
-[rights and ethics]: https://github.com/kanidm/kanidm/blob/master/book/src/developers/developer_ethics.md
+[code of conduct]: https://github.com/kubidm/kubidm/blob/master/CODE_OF_CONDUCT.md
+[rights and ethics]: https://github.com/kubidm/kubidm/blob/master/book/src/developers/developer_ethics.md
 
 ## Getting in Contact / Questions
 
 We have a Matrix-powered [gitter community channel] where project members are always happy to chat and answer questions.
 Alternately you can open a new [GitHub discussion].
 
-[gitter community channel]: https://app.gitter.im/#/room/#kanidm_community:gitter.im
-[github discussion]: https://github.com/kanidm/kanidm/discussions
+[gitter community channel]: https://app.gitter.im/#/room/#kubidm_community:gitter.im
+[github discussion]: https://github.com/kubidm/kubidm/discussions
 
-## What does Kanidm mean?
+## What does Kubidm mean?
 
-Kanidm is a portmanteau of 'kani' and 'idm'. Kani is Japanese for crab, related to Rust's mascot Ferris the crab.
-Identity management is often abbreviated to 'idm', and is a common industry term for authentication providers.
+Kubidm is a portmanteau of 'Kubi' and 'idm'. Kubi refers to Kubernetes, reflecting this fork's focus on cloud-native
+and Kubernetes-friendly operations. Identity management is often abbreviated to 'idm', and is a common industry term
+for authentication providers.
 
-Kanidm is pronounced as "kar - nee - dee - em".
+Kubidm is pronounced as "koo - bee - dee - em".
 
-## Kanidm Anthem
+## Kubidm Anthem
 
 > An anthem is a popular song, especially a rock song felt to sum up the attitudes or feelings associated with a period
 > or social group.
 
-The Kanidm anthem is [Crab Rave - Noisestorm](https://www.youtube.com/watch?v=LDU_Txk06tM)
+The Kubidm anthem is [Crab Rave - Noisestorm](https://www.youtube.com/watch?v=LDU_Txk06tM)
 
 ## Comparison with other services
 
 <details> <summary>LLDAP</summary>
 
 [LLDAP](https://github.com/nitnelave/lldap) is a similar project focused on providing a small, easy-to-administer LDAP
-server with a web administration portal. Both LLDAP and Kanidm use the
+server with a web administration portal. Both LLDAP and Kubidm use the
 [Kanidm LDAP bindings](https://github.com/kanidm/ldap3) and share many common design ideas.
 
-The primary advantage of Kanidm over LLDAP is its broader built-in feature set, including native support for OAuth2 and
+The primary advantage of Kubidm over LLDAP is its broader built-in feature set, including native support for OAuth2 and
 OIDC. In contrast, LLDAP requires integration with an external portal like Keycloak to provide these features. However,
-LLDAP’s simplicity — offering fewer features — can make it easier to deploy and manage for certain use cases.
+LLDAP's simplicity — offering fewer features — can make it easier to deploy and manage for certain use cases.
 
-While LLDAP provides a simple Web UI as the main user management interface, Kanidm currently offers administrative
+While LLDAP provides a simple Web UI as the main user management interface, Kubidm currently offers administrative
 functionality primarily via its CLI, with its Web UI designed more for user interactions than for administration.
 
-If Kanidm feels too complex for your needs, LLDAP is a smaller and simpler alternative. But if you want a more
-feature-rich solution out of the box, Kanidm will likely be a better fit.
+If Kubidm feels too complex for your needs, LLDAP is a smaller and simpler alternative. But if you want a more
+feature-rich solution out of the box, Kubidm will likely be a better fit.
 
 </details>
 
@@ -120,9 +121,9 @@ so you must supply your own Identity Management (IDM) components—such as an OI
 command-line tools for administration, and more.
 
 If you require maximum customization of your LDAP deployment, 389-ds or OpenLDAP may be better choices. However, if you
-prefer an easy-to-set-up service focused specifically on IDM, Kanidm is a superior option.
+prefer an easy-to-set-up service focused specifically on IDM, Kubidm is a superior option.
 
-Kanidm draws inspiration from both 389-ds and OpenLDAP and already matches or exceeds 389-ds in directory service
+Kubidm draws inspiration from both 389-ds and OpenLDAP and already matches or exceeds 389-ds in directory service
 performance and scalability, while offering a richer feature set.
 
 </details>
@@ -135,11 +136,11 @@ DNS, and a Certificate Authority.
 However, FreeIPA is complex, consisting of numerous components and configurations, which leads to higher resource usage
 and administrative overhead during setup and upgrades.
 
-Kanidm aims to offer the feature richness of FreeIPA but with a lighter resource footprint and simpler management. In
-benchmarks with 3,000 users and 1,500 groups, Kanidm demonstrated approximately three times faster search operations and
-five times faster modifications and additions (results may vary, but Kanidm generally outperforms FreeIPA in speed).
+Kubidm aims to offer the feature richness of FreeIPA but with a lighter resource footprint and simpler management. In
+benchmarks with 3,000 users and 1,500 groups, Kubidm demonstrated approximately three times faster search operations and
+five times faster modifications and additions (results may vary, but Kubidm generally outperforms FreeIPA in speed).
 
-If you want a full IDM solution that’s easier to manage and more efficient, Kanidm is worth considering.
+If you want a full IDM solution that's easier to manage and more efficient, Kubidm is worth considering.
 
 </details>
 
@@ -152,19 +153,19 @@ LDAP server or similar backend.
 Deploying Keycloak requires significant configuration and expertise. Its extensive customization options for
 authentication workflows can make initial setup challenging.
 
-Kanidm does not require Keycloak to provide OAuth2 and other services. It integrates many of these capabilities in a
+Kubidm does not require Keycloak to provide OAuth2 and other services. It integrates many of these capabilities in a
 simpler, more streamlined way right out of the box.
 
 </details> <details> <summary>Rauthy</summary>
 
 [Rauthy](https://github.com/sebadob/rauthy) is a minimal OIDC provider supporting WebAuthn—using some of the same
-libraries as Kanidm.
+libraries as Kubidm.
 
 However, Rauthy focuses exclusively on OIDC and does not support additional use cases such as RADIUS or Unix
 authentication.
 
 If you need a minimal OIDC-only provider, Rauthy is an excellent choice. But if you require a broader feature set,
-Kanidm is the better option.
+Kubidm is the better option.
 
 </details>
 
@@ -172,22 +173,22 @@ Kanidm is the better option.
 
 [Authentik](https://github.com/goauthentik/authentik) (written in Python),
 [Authelia](https://github.com/authelia/authelia), and [Zitadel](https://github.com/zitadel/zitadel) (both written in Go)
-are IDM providers similar to Kanidm in many respects. However, all three have weaker support for Unix authentication and
-do not provide the advanced authentication policies or WebAuthn Attestation capabilities that Kanidm offers.
+are IDM providers similar to Kubidm in many respects. However, all three have weaker support for Unix authentication and
+do not provide the advanced authentication policies or WebAuthn Attestation capabilities that Kubidm offers.
 
 Additionally, these projects rely on external SQL databases such as PostgreSQL, which can introduce potential single
-points of failure and performance bottlenecks. In contrast, Kanidm uses its own high-performance database and
+points of failure and performance bottlenecks. In contrast, Kubidm uses its own high-performance database and
 replication system, developed based on enterprise LDAP server experience.
 
 </details>
 
 ## Developer Getting Started
 
-If you want to contribute to Kanidm there is a getting started [guide for developers]. IDM is a diverse topic and we
+If you want to contribute to Kubidm there is a getting started [guide for developers]. IDM is a diverse topic and we
 encourage contributions of many kinds in the project, from people of all backgrounds.
 
 When developing the server you should refer to the latest commit documentation instead.
 
-- [Kanidm book (latest commit)](https://kanidm.github.io/kanidm/master/)
+- [Kubidm book (latest commit)](https://kubidm.github.io/kubidm/master/)
 
-[guide for developers]: https://kanidm.github.io/kanidm/master/developers/index.html
+[guide for developers]: https://kubidm.github.io/kubidm/master/developers/index.html

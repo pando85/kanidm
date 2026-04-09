@@ -1,10 +1,10 @@
-use crate::{ClientError, KanidmClient};
-use kanidm_proto::v1::{
+use crate::{ClientError, KubidmClient};
+use kubidm_proto::v1::{
     ApprovalDecisionAction, ApprovalDecisionRequest, ApprovalPolicy, ApprovalPolicyCreateRequest,
     ApprovalRequest, ApprovalRequestState,
 };
 
-impl KanidmClient {
+impl KubidmClient {
     pub async fn approval_policy_list(&self) -> Result<Vec<ApprovalPolicy>, ClientError> {
         self.perform_get_request("/v1/approval/policy").await
     }

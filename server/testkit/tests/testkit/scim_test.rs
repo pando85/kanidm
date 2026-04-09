@@ -1,15 +1,15 @@
 use compact_jwt::{traits::JwsVerifiable, JwsCompact, JwsEs256Verifier, JwsVerifier};
-use kanidm_client::KanidmClient;
-use kanidm_proto::internal::ScimSyncToken;
-use kanidm_proto::scim_v1::ScimEntryGetQuery;
-use kanidmd_lib::constants::NAME_IDM_ADMINS;
-use kanidmd_lib::prelude::Attribute;
-use kanidmd_testkit::{ADMIN_TEST_PASSWORD, ADMIN_TEST_USER};
+use kubidm_client::KubidmClient;
+use kubidm_proto::internal::ScimSyncToken;
+use kubidm_proto::scim_v1::ScimEntryGetQuery;
+use kubidmd_lib::constants::NAME_IDM_ADMINS;
+use kubidmd_lib::prelude::Attribute;
+use kubidmd_testkit::{ADMIN_TEST_PASSWORD, ADMIN_TEST_USER};
 use std::str::FromStr;
 use url::Url;
 
-#[kanidmd_testkit::test]
-async fn test_sync_account_lifecycle(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_sync_account_lifecycle(rsclient: &KubidmClient) {
     let a_res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -103,8 +103,8 @@ async fn test_sync_account_lifecycle(rsclient: &KanidmClient) {
         .expect("Failed to destroy token");
 }
 
-#[kanidmd_testkit::test]
-async fn test_scim_sync_entry_get(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_scim_sync_entry_get(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password("admin", ADMIN_TEST_PASSWORD)
         .await;

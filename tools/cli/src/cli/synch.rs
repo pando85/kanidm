@@ -1,9 +1,9 @@
 use crate::OpType;
-use crate::{handle_client_error, KanidmClientParser, SynchOpt};
+use crate::{handle_client_error, KubidmClientParser, SynchOpt};
 use dialoguer::Confirm;
 
 impl SynchOpt {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: KubidmClientParser) {
         match self {
             SynchOpt::List => {
                 let client = opt.to_client(OpType::Read).await;

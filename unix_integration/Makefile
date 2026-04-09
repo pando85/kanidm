@@ -1,4 +1,3 @@
-
 current_dir = $(shell pwd)
 
 dev_install:
@@ -7,13 +6,11 @@ dev_install:
 	@ read
 	@ echo "LAST CHANCE"
 	@ sleep 5
-	ln -s -f $(current_dir)/../platform/opensuse/kanidm-unixd.service /etc/systemd/system/kanidm-unixd.service
-	ln -s -f $(current_dir)/../platform/opensuse/kanidm-unixd-tasks.service /etc/systemd/system/kanidm-unixd-tasks.service
-	ln -s -f $(current_dir)/../target/debug/kanidm-unix /usr/sbin/kanidm-unix
-	ln -s -f $(current_dir)/../target/debug/kanidm_ssh_authorizedkeys /usr/sbin/kanidm_ssh_authorizedkeys
-	ln -s -f $(current_dir)/../target/debug/kanidm_unixd_tasks /usr/sbin/kanidm_unixd_tasks
-	ln -s -f $(current_dir)/../target/debug/kanidm_unixd /usr/sbin/kanidm_unixd
-	ln -s -f $(current_dir)/../target/debug/libpam_kanidm.so /lib64/security/pam_kanidm.so
-	ln -s -f $(current_dir)/../target/debug/libnss_kanidm.so /usr/lib64/libnss_kanidm.so.2
-
-
+	ln -s -f $(current_dir)/../platform/opensuse/kubidm-unixd.service /etc/systemd/system/kubidm-unixd.service
+	ln -s -f $(current_dir)/../platform/opensuse/kubidm-unixd-tasks.service /etc/systemd/system/kubidm-unixd-tasks.service
+	ln -s -f $(current_dir)/../target/debug/kubidm-unix /usr/sbin/kubidm-unix
+	ln -s -f $(current_dir)/../target/debug/kubidm_ssh_authorizedkeys /usr/sbin/kubidm_ssh_authorizedkeys
+	ln -s -f $(current_dir)/../target/debug/kubidm_unixd_tasks /usr/sbin/kubidm_unixd_tasks
+	ln -s -f $(current_dir)/../target/debug/kubidm_unixd /usr/sbin/kubidm_unixd
+	ln -s -f $(current_dir)/../target/debug/libpam_kubidm.so /lib64/security/pam_kubidm.so
+	ln -s -f $(current_dir)/../target/debug/libnss_kubidm.so /usr/lib64/libnss_kubidm.so.2

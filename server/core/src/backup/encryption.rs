@@ -1,7 +1,7 @@
 use argon2::{Algorithm, Argon2, Params, Version};
 use crypto_glue::aes256::key_from_slice;
 use crypto_glue::aes256gcm::{Aead, Aes256Gcm, Aes256GcmNonce, KeyInit};
-use kanidm_proto::backup::{
+use kubidm_proto::backup::{
     BackupEncryptionConfig, BackupEncryptionHeader, EncryptionKeySource, KeyDerivationParams,
     BACKUP_ENCRYPTION_KEY_LEN, BACKUP_ENCRYPTION_MAGIC, BACKUP_ENCRYPTION_NONCE_LEN,
     BACKUP_ENCRYPTION_SALT_LEN,
@@ -396,7 +396,7 @@ impl<R: Read> EncryptedReader<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use kanidm_proto::backup::BackupEncryptionConfig;
+    use kubidm_proto::backup::BackupEncryptionConfig;
     use std::time::Instant;
 
     fn create_test_config() -> BackupEncryptionConfig {

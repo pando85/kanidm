@@ -1,0 +1,32 @@
+---
+name: PyKubidm tests
+
+"on":
+  push:
+    branches:
+      - "master"
+  pull_request:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  python_tests:
+    runs-on: ubuntu-latest
+    env:
+      UV_LINK_MODE: "copy"
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - name: Install uv
+        run: pip install --root-user-action=ignore  uv
+      - name: Running mypy
+        run: make test/pykubidm/mypy
+      - name: Running Linting
+        run: make test/pykubidm/lint
+      - name: Running pytest
+        run: |
+          cd pykubidm
+          uv run pytest -v -m 'not network and not openapi'

@@ -1,13 +1,13 @@
-//! I'm working towards making this a proper enumeration/discovery toolkit for access things in Kanidm.
+//! I'm working towards making this a proper enumeration/discovery toolkit for access things in Kubidm.
 //!
 //! - @yaleman
 //!
 
-use kanidmd_lib::constants::entries::Attribute;
-use kanidmd_lib::migration_data::current::{
+use kubidmd_lib::constants::entries::Attribute;
+use kubidmd_lib::migration_data::current::{
     phase_5_builtin_admin_entries, phase_6_builtin_non_admin_entries,
 };
-use kanidmd_lib::prelude::{builtin_accounts, EntryInitNew};
+use kubidmd_lib::prelude::{builtin_accounts, EntryInitNew};
 use petgraph::graphmap::{AllEdges, GraphMap, NodeTrait};
 use petgraph::Directed;
 use serde::{Deserialize, Serialize};
@@ -97,7 +97,7 @@ where
     }
 }
 
-async fn enumerate_default_groups(/*_client: KanidmClient*/) {
+async fn enumerate_default_groups(/*_client: KubidmClient*/) {
     let mut uuidmap: BTreeMap<Uuid, EntryInitNew> = BTreeMap::new();
 
     let mut graph = Graph::new();

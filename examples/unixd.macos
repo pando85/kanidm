@@ -1,8 +1,8 @@
-# this  example configures kanidm-unixd for testing on macos
-db_path = "/tmp/kanidm-unixd"
-sock_path = "/tmp/kanidm_unixd.sock"
-task_sock_path = "/tmp/kanidm_unixd_task.sock"
-# some documentation is here: https://github.com/kanidm/kanidm/blob/master/book/src/pam_and_nsswitch.md
+# this  example configures kubidm-unixd for testing on macos
+db_path = "/tmp/kubidm-unixd"
+sock_path = "/tmp/kubidm_unixd.sock"
+task_sock_path = "/tmp/kubidm_unixd_task.sock"
+# some documentation is here: https://github.com/kubidm/kubidm/blob/master/book/src/pam_and_nsswitch.md
 pam_allowed_login_groups = ["posix_group"]
 # default_shell = "/bin/sh"
 # home_prefix = "/home/"

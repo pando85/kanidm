@@ -131,7 +131,7 @@ struct ConfigV2 {
     hsm_type: Option<String>,
     tpm_tcti_name: Option<String>,
 
-    kanidm: Option<KanidmConfigV2>,
+    kubidm: Option<KubidmConfigV2>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -141,7 +141,7 @@ pub struct GroupMap {
 }
 
 #[derive(Debug, Deserialize)]
-struct KanidmConfigV2 {
+struct KubidmConfigV2 {
     conn_timeout: Option<u64>,
     request_timeout: Option<u64>,
     pam_allowed_login_groups: Option<Vec<String>>,
@@ -181,15 +181,15 @@ struct ConfigInt {
     #[serde(default)]
     cache_db_path: Option<toml::value::Value>,
     #[serde(default)]
-    kanidm: Option<toml::value::Value>,
+    kubidm: Option<toml::value::Value>,
 }
 
 // ========================================================================
 
 #[derive(Debug)]
-/// This is the parsed Kanidm provider configuration that the Unixd resolver
-/// will use to connect to Kanidm.
-pub struct KanidmConfig {
+/// This is the parsed Kubidm provider configuration that the Unixd resolver
+/// will use to connect to Kubidm.
+pub struct KubidmConfig {
     pub conn_timeout: u64,
     pub request_timeout: u64,
     pub pam_allowed_login_groups: Vec<String>,
@@ -226,7 +226,7 @@ pub struct UnixdConfig {
     pub hsm_type: HsmType,
     pub hsm_pin_path: String,
     pub tpm_tcti_name: String,
-    pub kanidm_config: Option<KanidmConfig>,
+    pub kubidm_config: Option<KubidmConfig>,
 }
 
 impl Default for UnixdConfig {
@@ -263,17 +263,17 @@ impl Display for UnixdConfig {
 
         writeln!(f, "selinux: {}", self.selinux)?;
 
-        if let Some(kconfig) = &self.kanidm_config {
-            writeln!(f, "kanidm: enabled")?;
+        if let Some(kconfig) = &self.kubidm_config {
+            writeln!(f, "kubidm: enabled")?;
             writeln!(
                 f,
-                "kanidm pam_allowed_login_groups: {:#?}",
+                "kubidm pam_allowed_login_groups: {:#?}",
                 kconfig.pam_allowed_login_groups
             )?;
-            writeln!(f, "kanidm conn_timeout: {}", kconfig.conn_timeout)?;
-            writeln!(f, "kanidm request_timeout: {}", kconfig.request_timeout)?;
+            writeln!(f, "kubidm conn_timeout: {}", kconfig.conn_timeout)?;
+            writeln!(f, "kubidm request_timeout: {}", kconfig.request_timeout)?;
         } else {
-            writeln!(f, "kanidm: disabled")?;
+            writeln!(f, "kubidm: disabled")?;
         };
 
         Ok(())
@@ -311,7 +311,7 @@ impl UnixdConfig {
             hsm_type: HsmType::default(),
             tpm_tcti_name: DEFAULT_TPM_TCTI_NAME.to_string(),
 
-            kanidm_config: None,
+            kubidm_config: None,
         }
     }
 
@@ -370,7 +370,7 @@ impl UnixdConfig {
     }
 
     fn apply_from_config_legacy(self, config: ConfigInt) -> Result<Self, UnixIntegrationError> {
-        if config.kanidm.is_some() || config.cache_db_path.is_some() {
+        if config.kubidm.is_some() || config.cache_db_path.is_some() {
             error!("You are using version=\"2\" options in a legacy config. THESE WILL NOT WORK.");
             return Err(UnixIntegrationError);
         }
@@ -384,7 +384,7 @@ impl UnixdConfig {
             })
             .collect();
 
-        let kanidm_config = Some(KanidmConfig {
+        let kubidm_config = Some(KubidmConfig {
             conn_timeout: config.conn_timeout.unwrap_or(DEFAULT_CONN_TIMEOUT),
             request_timeout: config.request_timeout.unwrap_or(DEFAULT_CONN_TIMEOUT * 2),
             pam_allowed_login_groups: config.pam_allowed_login_groups.unwrap_or_default(),
@@ -475,12 +475,12 @@ impl UnixdConfig {
             tpm_tcti_name: config
                 .tpm_tcti_name
                 .unwrap_or(DEFAULT_TPM_TCTI_NAME.to_string()),
-            kanidm_config,
+            kubidm_config,
         })
     }
 
     fn apply_from_config_v2(self, config: ConfigV2) -> Result<Self, UnixIntegrationError> {
-        let kanidm_config = if let Some(kconfig) = config.kanidm {
+        let kubidm_config = if let Some(kconfig) = config.kubidm {
             let service_account_token_path_env = match env::var("KANIDM_SERVICE_ACCOUNT_TOKEN_PATH")
             {
                 Ok(val) => val.into(),
@@ -520,7 +520,7 @@ impl UnixdConfig {
                 None
             };
 
-            Some(KanidmConfig {
+            Some(KubidmConfig {
                 conn_timeout: kconfig.conn_timeout.unwrap_or(DEFAULT_CONN_TIMEOUT),
                 request_timeout: kconfig.request_timeout.unwrap_or(DEFAULT_CONN_TIMEOUT * 2),
                 pam_allowed_login_groups: kconfig.pam_allowed_login_groups.unwrap_or_default(),
@@ -529,7 +529,7 @@ impl UnixdConfig {
             })
         } else {
             error!(
-                "You are using a version 2 config without a 'kanidm' section. USERS CANNOT AUTH."
+                "You are using a version 2 config without a 'kubidm' section. USERS CANNOT AUTH."
             );
             None
         };
@@ -626,7 +626,7 @@ impl UnixdConfig {
             tpm_tcti_name: config
                 .tpm_tcti_name
                 .unwrap_or(DEFAULT_TPM_TCTI_NAME.to_string()),
-            kanidm_config,
+            kubidm_config,
         })
     }
 }
@@ -729,8 +729,8 @@ impl PamNssConfig {
     }
 
     fn apply_from_config_v2(self, config: ConfigV2) -> Result<Self, UnixIntegrationError> {
-        let kanidm_conn_timeout = config
-            .kanidm
+        let kubidm_conn_timeout = config
+            .kubidm
             .as_ref()
             .and_then(|k_config| k_config.conn_timeout)
             .map(|timeout| timeout * 2);
@@ -738,7 +738,7 @@ impl PamNssConfig {
         // Now map the values into our config.
         Ok(PamNssConfig {
             sock_path: config.sock_path.unwrap_or(self.sock_path),
-            unix_sock_timeout: kanidm_conn_timeout.unwrap_or(self.unix_sock_timeout),
+            unix_sock_timeout: kubidm_conn_timeout.unwrap_or(self.unix_sock_timeout),
         })
     }
 }

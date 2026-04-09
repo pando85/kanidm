@@ -135,7 +135,7 @@ version = "1.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "40c48f72fd53cd289104fc64099abca73db4166ad86ea0b4341abe65af83dadc"
 dependencies = [
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -146,7 +146,7 @@ checksum = "291e6a250ff86cd4a820112fb8898808a366d8f9f58ce16d1f538353ad55747d"
 dependencies = [
  "anstyle",
  "once_cell_polyfill",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -166,9 +166,9 @@ dependencies = [
 
 [[package]]
 name = "arc-swap"
-version = "1.9.0"
+version = "1.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a07d1f37ff60921c83bdfc7407723bdefe89b44b98a9b772f225c8f9d67141a6"
+checksum = "6a3a1fd6f75306b68087b831f025c712524bcb19aad54e557b1129cfa0a2b207"
 dependencies = [
  "rustversion",
 ]
@@ -1378,9 +1378,9 @@ dependencies = [
 
 [[package]]
 name = "cmov"
-version = "0.5.2"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de0758edba32d61d1fd9f4d69491b47604b91ee2f7e6b33de7e54ca4ebe55dc3"
+checksum = "3f88a43d011fc4a6876cb7344703e297c71dda42494fee094d5f7c76bf13f746"
 
 [[package]]
 name = "color_quant"
@@ -1788,9 +1788,9 @@ dependencies = [
 
 [[package]]
 name = "ctutils"
-version = "0.4.0"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1005a6d4446f5120ef475ad3d2af2b30c49c2c9c6904258e3bb30219bebed5e4"
+checksum = "7d5515a3834141de9eafb9717ad39eea8247b5674e6066c404e8c4b365d2a29e"
 dependencies = [
  "cmov",
 ]
@@ -1804,11 +1804,11 @@ dependencies = [
  "dhat",
  "fs4",
  "futures",
- "kanidm_build_profiles",
- "kanidm_lib_file_permissions",
- "kanidm_proto",
- "kanidm_utils_users",
- "kanidmd_core",
+ "kubidm_build_profiles",
+ "kubidm_lib_file_permissions",
+ "kubidm_proto",
+ "kubidm_utils_users",
+ "kubidmd_core",
  "mimalloc",
  "prctl",
  "reqwest 0.13.2",
@@ -2091,7 +2091,7 @@ dependencies = [
  "libc",
  "option-ext",
  "redox_users",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2286,7 +2286,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2346,9 +2346,9 @@ dependencies = [
 
 [[package]]
 name = "fastrand"
-version = "2.3.0"
+version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37909eebbb50d72f9059c3b6d82c0463f2ff062c9e95845c43a6c9c0355411be"
+checksum = "9f1f227452a390804cdb637b74a86990f2a7d7ba4b7d5693aac9b4dd6defd8d6"
 
 [[package]]
 name = "ff"
@@ -3558,7 +3558,7 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "http 1.4.0",
- "indexmap 2.13.0",
+ "indexmap 2.13.1",
  "slab",
  "tokio",
  "tokio-util",
@@ -4094,9 +4094,9 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "2.13.0"
+version = "2.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7714e70437a7dc3ac8eb7e6f8df75fd8eb422675fc7678aff7364301092b1017"
+checksum = "45a8a2b9cb3e0b0c1803dbb0758ffac5de2f425b23c28f518faabd9d805342ff"
 dependencies = [
  "equivalent",
  "hashbrown 0.16.1",
@@ -4211,7 +4211,7 @@ dependencies = [
  "portable-atomic",
  "portable-atomic-util",
  "serde_core",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -4349,19 +4349,57 @@ dependencies = [
 ]
 
 [[package]]
-name = "kanidm-ipa-sync"
+name = "kbkdf"
+version = "0.1.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "90ac93c9768b8d587407881c98b0c3a5d3e3049daa73408ebe5bfb1ab1cb9c84"
+dependencies = [
+ "digest 0.11.0-rc.12",
+]
+
+[[package]]
+name = "kqueue"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eac30106d7dce88daf4a3fcb4879ea939476d5074a9b7ddd0fb97fa4bed5596a"
+dependencies = [
+ "kqueue-sys",
+ "libc",
+]
+
+[[package]]
+name = "kqueue-sys"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed9625ffda8729b85e45cf04090035ac368927b8cebc34898e7c120f52e4838b"
+dependencies = [
+ "bitflags 1.3.2",
+ "libc",
+]
+
+[[package]]
+name = "kstring"
+version = "2.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "558bf9508a558512042d3095138b1f7b8fe90c5467d94f9f1da28b3731c5dbd1"
+dependencies = [
+ "static_assertions",
+]
+
+[[package]]
+name = "kubidm-ipa-sync"
 version = "1.10.0-alpha.3"
 dependencies = [
  "chrono",
  "clap",
  "clap_complete",
  "cron",
- "kanidm_client",
- "kanidm_lib_crypto",
- "kanidm_lib_file_permissions",
- "kanidm_proto",
- "kanidm_utils_users",
- "kanidmd_lib",
+ "kubidm_client",
+ "kubidm_lib_crypto",
+ "kubidm_lib_file_permissions",
+ "kubidm_proto",
+ "kubidm_utils_users",
+ "kubidmd_lib",
  "ldap3_client",
  "rustls",
  "serde",
@@ -4375,18 +4413,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "kanidm-ldap-sync"
+name = "kubidm-ldap-sync"
 version = "1.10.0-alpha.3"
 dependencies = [
  "chrono",
  "clap",
  "clap_complete",
  "cron",
- "kanidm_client",
- "kanidm_lib_file_permissions",
- "kanidm_proto",
- "kanidm_utils_users",
- "kanidmd_lib",
+ "kubidm_client",
+ "kubidm_lib_file_permissions",
+ "kubidm_proto",
+ "kubidm_utils_users",
+ "kubidmd_lib",
  "ldap3_client",
  "ldap3_proto",
  "rustls",
@@ -4402,7 +4440,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "kanidm-mail-sender"
+name = "kubidm-mail-sender"
 version = "1.10.0-alpha.3"
 dependencies = [
  "chrono",
@@ -4410,10 +4448,10 @@ dependencies = [
  "clap_complete",
  "cron",
  "hashbrown 0.16.1",
- "kanidm_client",
- "kanidm_lib_file_permissions",
- "kanidm_proto",
- "kanidm_utils_users",
+ "kubidm_client",
+ "kubidm_lib_file_permissions",
+ "kubidm_proto",
+ "kubidm_utils_users",
  "lettre",
  "serde",
  "time",
@@ -4426,7 +4464,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "kanidm_build_profiles"
+name = "kubidm_build_profiles"
 version = "1.10.0-alpha.3"
 dependencies = [
  "base64 0.22.1",
@@ -4437,14 +4475,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "kanidm_client"
+name = "kubidm_client"
 version = "1.10.0-alpha.3"
 dependencies = [
  "compact_jwt",
  "http 1.4.0",
  "hyper",
- "kanidm_lib_file_permissions",
- "kanidm_proto",
+ "kubidm_lib_file_permissions",
+ "kubidm_proto",
  "reqwest 0.13.2",
  "serde",
  "serde_json",
@@ -4459,11 +4497,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "kanidm_device_flow"
+name = "kubidm_device_flow"
 version = "1.10.0-alpha.3"
 dependencies = [
  "anyhow",
- "kanidm_proto",
+ "kubidm_proto",
  "oauth2",
  "reqwest 0.13.2",
  "sketching",
@@ -4472,7 +4510,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "kanidm_lib_crypto"
+name = "kubidm_lib_crypto"
 version = "1.10.0-alpha.3"
 dependencies = [
  "base64 0.22.1",
@@ -4494,15 +4532,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "kanidm_lib_file_permissions"
+name = "kubidm_lib_file_permissions"
 version = "1.10.0-alpha.3"
 dependencies = [
- "kanidm_utils_users",
+ "kubidm_utils_users",
  "tempfile",
 ]
 
 [[package]]
-name = "kanidm_proto"
+name = "kubidm_proto"
 version = "1.10.0-alpha.3"
 dependencies = [
  "base32",
@@ -4511,7 +4549,7 @@ dependencies = [
  "clap",
  "crypto-glue",
  "enum-iterator",
- "kanidm_build_profiles",
+ "kubidm_build_profiles",
  "num_enum",
  "peg",
  "scim_proto",
@@ -4532,7 +4570,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "kanidm_tools"
+name = "kubidm_tools"
 version = "1.10.0-alpha.3"
 dependencies = [
  "anyhow",
@@ -4540,10 +4578,10 @@ dependencies = [
  "clap_complete",
  "compact_jwt",
  "dialoguer",
- "kanidm_build_profiles",
- "kanidm_client",
- "kanidm_lib_file_permissions",
- "kanidm_proto",
+ "kubidm_build_profiles",
+ "kubidm_client",
+ "kubidm_lib_file_permissions",
+ "kubidm_proto",
  "libc",
  "qrcode",
  "regex",
@@ -4562,15 +4600,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "kanidm_unix_common"
+name = "kubidm_unix_common"
 version = "1.10.0-alpha.3"
 dependencies = [
  "bytes",
  "csv",
  "futures",
- "kanidm_build_profiles",
- "kanidm_proto",
- "kanidm_utils_users",
+ "kubidm_build_profiles",
+ "kubidm_proto",
+ "kubidm_utils_users",
  "selinux",
  "serde",
  "serde_json",
@@ -4586,7 +4624,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "kanidm_unix_int"
+name = "kubidm_unix_int"
 version = "1.10.0-alpha.3"
 dependencies = [
  "async-trait",
@@ -4597,15 +4635,15 @@ dependencies = [
  "futures",
  "hashbrown 0.16.1",
  "kanidm-hsm-crypto",
- "kanidm_build_profiles",
- "kanidm_client",
- "kanidm_lib_crypto",
- "kanidm_lib_file_permissions",
- "kanidm_proto",
- "kanidm_unix_common",
- "kanidm_utils_users",
- "kanidmd_core",
- "kanidmd_testkit",
+ "kubidm_build_profiles",
+ "kubidm_client",
+ "kubidm_lib_crypto",
+ "kubidm_lib_file_permissions",
+ "kubidm_proto",
+ "kubidm_unix_common",
+ "kubidm_utils_users",
+ "kubidmd_core",
+ "kubidmd_testkit",
  "libc",
  "lru",
  "nix",
@@ -4628,14 +4666,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "kanidm_utils_users"
+name = "kubidm_utils_users"
 version = "1.10.0-alpha.3"
 dependencies = [
  "libc",
 ]
 
 [[package]]
-name = "kanidmd_core"
+name = "kubidmd_core"
 version = "1.10.0-alpha.3"
 dependencies = [
  "argon2",
@@ -4662,12 +4700,12 @@ dependencies = [
  "hex",
  "hyper",
  "hyper-util",
- "kanidm_build_profiles",
- "kanidm_lib_crypto",
- "kanidm_lib_file_permissions",
- "kanidm_proto",
- "kanidm_utils_users",
- "kanidmd_lib",
+ "kubidm_build_profiles",
+ "kubidm_lib_crypto",
+ "kubidm_lib_file_permissions",
+ "kubidm_proto",
+ "kubidm_utils_users",
+ "kubidmd_lib",
  "ldap3_proto",
  "libc",
  "opentelemetry",
@@ -4704,7 +4742,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "kanidmd_lib"
+name = "kubidmd_lib"
 version = "1.10.0-alpha.3"
 dependencies = [
  "async-trait",
@@ -4724,10 +4762,10 @@ dependencies = [
  "idlset",
  "image",
  "itertools 0.14.0",
- "kanidm_build_profiles",
- "kanidm_lib_crypto",
- "kanidm_proto",
- "kanidmd_lib_macros",
+ "kubidm_build_profiles",
+ "kubidm_lib_crypto",
+ "kubidm_proto",
+ "kubidmd_lib_macros",
  "ldap3_client",
  "ldap3_proto",
  "lodepng",
@@ -4763,7 +4801,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "kanidmd_lib_macros"
+name = "kubidmd_lib_macros"
 version = "1.10.0-alpha.3"
 dependencies = [
  "proc-macro2",
@@ -4772,7 +4810,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "kanidmd_testkit"
+name = "kubidmd_testkit"
 version = "1.10.0-alpha.3"
 dependencies = [
  "cidr",
@@ -4784,12 +4822,12 @@ dependencies = [
  "hyper",
  "hyper-util",
  "jsonschema",
- "kanidm_build_profiles",
- "kanidm_client",
- "kanidm_lib_crypto",
- "kanidm_proto",
- "kanidmd_core",
- "kanidmd_lib",
+ "kubidm_build_profiles",
+ "kubidm_client",
+ "kubidm_lib_crypto",
+ "kubidm_proto",
+ "kubidmd_core",
+ "kubidmd_lib",
  "ldap3_client",
  "oauth2",
  "reqwest 0.13.2",
@@ -4803,44 +4841,6 @@ dependencies = [
  "url",
  "uuid",
  "webauthn-authenticator-rs",
-]
-
-[[package]]
-name = "kbkdf"
-version = "0.1.0-rc.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90ac93c9768b8d587407881c98b0c3a5d3e3049daa73408ebe5bfb1ab1cb9c84"
-dependencies = [
- "digest 0.11.0-rc.12",
-]
-
-[[package]]
-name = "kqueue"
-version = "1.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eac30106d7dce88daf4a3fcb4879ea939476d5074a9b7ddd0fb97fa4bed5596a"
-dependencies = [
- "kqueue-sys",
- "libc",
-]
-
-[[package]]
-name = "kqueue-sys"
-version = "1.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed9625ffda8729b85e45cf04090035ac368927b8cebc34898e7c120f52e4838b"
-dependencies = [
- "bitflags 1.3.2",
- "libc",
-]
-
-[[package]]
-name = "kstring"
-version = "2.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "558bf9508a558512042d3095138b1f7b8fe90c5467d94f9f1da28b3731c5dbd1"
-dependencies = [
- "static_assertions",
 ]
 
 [[package]]
@@ -5388,11 +5388,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "nss_kanidm"
+name = "nss_kubidm"
 version = "1.10.0-alpha.3"
 dependencies = [
  "cc",
- "kanidm_unix_common",
+ "kubidm_unix_common",
  "libc",
  "libnss",
 ]
@@ -5403,7 +5403,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -5577,7 +5577,7 @@ version = "5.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51e219e79014df21a225b1860a479e2dcd7cbd9130f4defd4bd0e191ea31d67d"
 dependencies = [
- "base64 0.21.7",
+ "base64 0.22.1",
  "chrono",
  "getrandom 0.2.17",
  "http 1.4.0",
@@ -5757,8 +5757,8 @@ dependencies = [
  "csv",
  "hashbrown 0.16.1",
  "idlset",
- "kanidm_build_profiles",
- "kanidm_client",
+ "kubidm_build_profiles",
+ "kubidm_client",
  "mathru",
  "mimalloc",
  "rand 0.10.0",
@@ -5827,10 +5827,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "pam_kanidm"
+name = "pam_kubidm"
 version = "1.10.0-alpha.3"
 dependencies = [
- "kanidm_unix_common",
+ "kubidm_unix_common",
  "libc",
  "pkg-config",
  "time",
@@ -5874,9 +5874,9 @@ dependencies = [
 
 [[package]]
 name = "password-hash"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ccbd25f71dd5249dba9ed843d52500c8757a25511560d01a94f4abf56b52a1d5"
+checksum = "aab41826031698d6ffcd9cff78ef56ef998e39dc7e5067cdfebe373842d4723b"
 dependencies = [
  "getrandom 0.4.2",
  "phc",
@@ -6882,7 +6882,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.12.1",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -6940,7 +6940,7 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "webpki-root-certs",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -7157,9 +7157,9 @@ dependencies = [
 
 [[package]]
 name = "semver"
-version = "1.0.27"
+version = "1.0.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d767eb0aabc880b29956c35734170f26ed551a859dbd361d140cdbeca61ab1e2"
+checksum = "8a7852d02fc848982e0c167ef163aaff9cd91dc640ba85e263cb1ce46fae51cd"
 
 [[package]]
 name = "serde"
@@ -7241,7 +7241,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b2f2d7ff8a2140333718bb329f5c40fc5f0865b84c426183ce14c97d2ab8154f"
 dependencies = [
  "form_urlencoded",
- "indexmap 2.13.0",
+ "indexmap 2.13.1",
  "itoa",
  "ryu",
  "serde_core",
@@ -7302,7 +7302,7 @@ dependencies = [
  "chrono",
  "hex",
  "indexmap 1.9.3",
- "indexmap 2.13.0",
+ "indexmap 2.13.1",
  "schemars 0.9.0",
  "schemars 1.2.1",
  "serde_core",
@@ -7512,7 +7512,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3a766e1110788c36f4fa1c2b71b387a7815aa65f88ce0229841826633d93723e"
 dependencies = [
  "libc",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -7683,7 +7683,7 @@ dependencies = [
  "getrandom 0.4.2",
  "once_cell",
  "rustix 1.1.4",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -7906,7 +7906,7 @@ version = "1.1.2+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "81f3d15e84cbcd896376e6730314d59fb5a87f31e4b038454184435cd57defee"
 dependencies = [
- "indexmap 2.13.0",
+ "indexmap 2.13.1",
  "serde_core",
  "serde_spanned",
  "toml_datetime",
@@ -7926,11 +7926,11 @@ dependencies = [
 
 [[package]]
 name = "toml_edit"
-version = "0.25.10+spec-1.1.0"
+version = "0.25.11+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a82418ca169e235e6c399a84e395ab6debeb3bc90edc959bf0f48647c6a32d1b"
+checksum = "0b59c4d22ed448339746c59b905d24568fcbb3ab65a500494f7b8c3e97739f2b"
 dependencies = [
- "indexmap 2.13.0",
+ "indexmap 2.13.1",
  "toml_datetime",
  "toml_parser",
  "winnow 1.0.1",
@@ -7996,7 +7996,7 @@ checksum = "ebe5ef63511595f1344e2d5cfa636d973292adc0eec1f0ad45fae9f0851ab1d4"
 dependencies = [
  "futures-core",
  "futures-util",
- "indexmap 2.13.0",
+ "indexmap 2.13.1",
  "pin-project-lite",
  "slab",
  "sync_wrapper",
@@ -8287,7 +8287,7 @@ version = "5.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2fcc29c80c21c31608227e0912b2d7fddba57ad76b606890627ba8ee7964e993"
 dependencies = [
- "indexmap 2.13.0",
+ "indexmap 2.13.1",
  "serde",
  "serde_json",
  "utoipa-gen",
@@ -8510,7 +8510,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bb0e353e6a2fbdc176932bbaab493762eb1255a7900fe0fea1a2f96c296cc909"
 dependencies = [
  "anyhow",
- "indexmap 2.13.0",
+ "indexmap 2.13.1",
  "wasm-encoder",
  "wasmparser",
 ]
@@ -8523,7 +8523,7 @@ checksum = "47b807c72e1bac69382b3a6fb3dbe8ea4c0ed87ff5629b8685ae6b9a611028fe"
 dependencies = [
  "bitflags 2.11.0",
  "hashbrown 0.15.5",
- "indexmap 2.13.0",
+ "indexmap 2.13.1",
  "semver",
 ]
 
@@ -8711,7 +8711,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -9113,7 +9113,7 @@ checksum = "b7c566e0f4b284dd6561c786d9cb0142da491f46a9fbed79ea69cdad5db17f21"
 dependencies = [
  "anyhow",
  "heck",
- "indexmap 2.13.0",
+ "indexmap 2.13.1",
  "prettyplease",
  "syn 2.0.117",
  "wasm-metadata",
@@ -9144,7 +9144,7 @@ checksum = "9d66ea20e9553b30172b5e831994e35fbde2d165325bec84fc43dbf6f4eb9cb2"
 dependencies = [
  "anyhow",
  "bitflags 2.11.0",
- "indexmap 2.13.0",
+ "indexmap 2.13.1",
  "log",
  "serde",
  "serde_derive",
@@ -9163,7 +9163,7 @@ checksum = "ecc8ac4bc1dc3381b7f59c34f00b67e18f910c2c0f50015669dde7def656a736"
 dependencies = [
  "anyhow",
  "id-arena",
- "indexmap 2.13.0",
+ "indexmap 2.13.1",
  "log",
  "semver",
  "serde",
@@ -9175,9 +9175,9 @@ dependencies = [
 
 [[package]]
 name = "writeable"
-version = "0.6.2"
+version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9edde0db4769d2dc68579893f2306b26c6ecfbe0ef499b013d731b7b9247e0b9"
+checksum = "1ffae5123b2d3fc086436f8834ae3ab053a283cfac8fe0a0b8eaae044768a4c4"
 
 [[package]]
 name = "x509-cert"
@@ -9224,7 +9224,7 @@ checksum = "6ca0dab8c05f373dd32654b714999ccaea9ed936d5281e6820f07b146176f648"
 dependencies = [
  "hmac 0.13.0-rc.5",
  "mcf",
- "password-hash 0.6.0",
+ "password-hash 0.6.1",
  "pbkdf2 0.13.0-rc.9",
  "salsa20 0.11.0",
  "sha2 0.11.0-rc.5",
@@ -9358,7 +9358,7 @@ dependencies = [
  "arbitrary",
  "crc32fast",
  "flate2",
- "indexmap 2.13.0",
+ "indexmap 2.13.1",
  "memchr",
  "zopfli",
 ]

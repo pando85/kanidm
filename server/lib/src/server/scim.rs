@@ -5,10 +5,10 @@ use crate::server::batch_modify::{BatchModifyEvent, ModSetValid};
 use crate::server::ValueSetResolveStatus;
 use crate::valueset::*;
 use crypto_glue::s256::Sha256Output;
-use kanidm_proto::scim_v1::client::{
+use kubidm_proto::scim_v1::client::{
     ScimEntryAssertion, ScimEntryPostGeneric, ScimEntryPutGeneric,
 };
-use kanidm_proto::scim_v1::JsonValue;
+use kubidm_proto::scim_v1::JsonValue;
 use std::collections::{
     // BTreeSet,
     BTreeMap,
@@ -153,7 +153,7 @@ impl QueryServerWriteTransaction<'_> {
     pub fn scim_put(
         &mut self,
         scim_entry_put: ScimEntryPutEvent,
-    ) -> Result<ScimEntryKanidm, OperationError> {
+    ) -> Result<ScimEntryKubidm, OperationError> {
         let ScimEntryPutEvent {
             ident,
             target,
@@ -201,7 +201,7 @@ impl QueryServerWriteTransaction<'_> {
 
         let mut vs = self.search_ext(&se)?;
         match vs.pop() {
-            Some(entry) if vs.is_empty() => entry.to_scim_kanidm(self),
+            Some(entry) if vs.is_empty() => entry.to_scim_kubidm(self),
             _ => {
                 if vs.is_empty() {
                     Err(OperationError::NoMatchingEntries)
@@ -216,7 +216,7 @@ impl QueryServerWriteTransaction<'_> {
     pub fn scim_create(
         &mut self,
         scim_create: ScimCreateEvent,
-    ) -> Result<ScimEntryKanidm, OperationError> {
+    ) -> Result<ScimEntryKubidm, OperationError> {
         let ScimCreateEvent { ident, entry } = scim_create;
 
         let create_event = CreateEvent {
@@ -262,7 +262,7 @@ impl QueryServerWriteTransaction<'_> {
 
         let mut vs = self.search_ext(&se)?;
         match vs.pop() {
-            Some(entry) if vs.is_empty() => entry.to_scim_kanidm(self),
+            Some(entry) if vs.is_empty() => entry.to_scim_kubidm(self),
             _ => {
                 if vs.is_empty() {
                     Err(OperationError::NoMatchingEntries)
@@ -334,7 +334,7 @@ impl QueryServerWriteTransaction<'_> {
             },
         ));
 
-        // Transform from SCIM to Kanidm Internal representations.
+        // Transform from SCIM to Kubidm Internal representations.
         let asserts = asserts
             .into_iter()
             .map(|scim_assert| match scim_assert {
@@ -535,11 +535,11 @@ impl QueryServerWriteTransaction<'_> {
 mod tests {
     use super::{ScimAssertEvent, ScimEntryPutEvent};
     use crate::prelude::*;
-    use kanidm_proto::scim_v1::client::{
-        ScimEntryAssertion, ScimEntryPutKanidm, ScimReference as ScimClientReference,
+    use kubidm_proto::scim_v1::client::{
+        ScimEntryAssertion, ScimEntryPutKubidm, ScimReference as ScimClientReference,
     };
-    use kanidm_proto::scim_v1::server::ScimReference;
-    use kanidm_proto::scim_v1::ScimMail;
+    use kubidm_proto::scim_v1::server::ScimReference;
+    use kubidm_proto::scim_v1::ScimMail;
     use std::collections::BTreeMap;
 
     #[qs_test]
@@ -599,13 +599,13 @@ mod tests {
                 value: "test2@test.test".to_string(),
             },
         ];
-        let put = ScimEntryPutKanidm {
+        let put = ScimEntryPutKubidm {
             id: group_uuid,
             attrs: [
                 (Attribute::Description, Some("Group Description".into())),
                 (
                     Attribute::Mail,
-                    Some(ScimValueKanidm::Mail(test_mails.clone())),
+                    Some(ScimValueKubidm::Mail(test_mails.clone())),
                 ),
             ]
             .into(),
@@ -621,11 +621,11 @@ mod tests {
         let mails = updated_entry.attrs.get(&Attribute::Mail).unwrap();
 
         match desc {
-            ScimValueKanidm::String(gdesc) if gdesc == "Group Description" => {}
+            ScimValueKubidm::String(gdesc) if gdesc == "Group Description" => {}
             _ => unreachable!("Expected a string"),
         };
 
-        let ScimValueKanidm::Mail(mails) = mails else {
+        let ScimValueKubidm::Mail(mails) = mails else {
             unreachable!("Expected an email")
         };
 
@@ -633,7 +633,7 @@ mod tests {
         assert!(mails.iter().all(|mail| test_mails.contains(mail)));
 
         // null removes attr
-        let put = ScimEntryPutKanidm {
+        let put = ScimEntryPutKubidm {
             id: group_uuid,
             attrs: [(Attribute::Description, None)].into(),
         };
@@ -647,11 +647,11 @@ mod tests {
         assert!(!updated_entry.attrs.contains_key(&Attribute::Description));
 
         // set one
-        let put = ScimEntryPutKanidm {
+        let put = ScimEntryPutKubidm {
             id: group_uuid,
             attrs: [(
                 Attribute::Member,
-                Some(ScimValueKanidm::EntryReferences(vec![ScimReference {
+                Some(ScimValueKubidm::EntryReferences(vec![ScimReference {
                     uuid: extra1_uuid,
                     // Doesn't matter what this is, because there is a UUID, it's ignored
                     value: String::default(),
@@ -671,7 +671,7 @@ mod tests {
         trace!(?members);
 
         match members {
-            ScimValueKanidm::EntryReferences(member_set) if member_set.len() == 1 => {
+            ScimValueKubidm::EntryReferences(member_set) if member_set.len() == 1 => {
                 assert!(member_set.contains(&ScimReference {
                     uuid: extra1_uuid,
                     value: "extra_1@example.com".to_string(),
@@ -681,11 +681,11 @@ mod tests {
         };
 
         // set many
-        let put = ScimEntryPutKanidm {
+        let put = ScimEntryPutKubidm {
             id: group_uuid,
             attrs: [(
                 Attribute::Member,
-                Some(ScimValueKanidm::EntryReferences(vec![
+                Some(ScimValueKubidm::EntryReferences(vec![
                     ScimReference {
                         uuid: extra1_uuid,
                         value: String::default(),
@@ -714,7 +714,7 @@ mod tests {
         trace!(?members);
 
         match members {
-            ScimValueKanidm::EntryReferences(member_set) if member_set.len() == 3 => {
+            ScimValueKubidm::EntryReferences(member_set) if member_set.len() == 3 => {
                 assert!(member_set.contains(&ScimReference {
                     uuid: extra1_uuid,
                     value: "extra_1@example.com".to_string(),
@@ -732,11 +732,11 @@ mod tests {
         };
 
         // set many with a removal
-        let put = ScimEntryPutKanidm {
+        let put = ScimEntryPutKubidm {
             id: group_uuid,
             attrs: [(
                 Attribute::Member,
-                Some(ScimValueKanidm::EntryReferences(vec![
+                Some(ScimValueKubidm::EntryReferences(vec![
                     ScimReference {
                         uuid: extra1_uuid,
                         value: String::default(),
@@ -761,7 +761,7 @@ mod tests {
         trace!(?members);
 
         match members {
-            ScimValueKanidm::EntryReferences(member_set) if member_set.len() == 2 => {
+            ScimValueKubidm::EntryReferences(member_set) if member_set.len() == 2 => {
                 assert!(member_set.contains(&ScimReference {
                     uuid: extra1_uuid,
                     value: "extra_1@example.com".to_string(),
@@ -780,7 +780,7 @@ mod tests {
         };
 
         // empty set removes attr
-        let put = ScimEntryPutKanidm {
+        let put = ScimEntryPutKubidm {
             id: group_uuid,
             attrs: [(Attribute::Member, None)].into(),
         };

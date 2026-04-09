@@ -2,7 +2,7 @@ use crate::internal::FsType;
 use clap::Parser;
 
 #[derive(Debug, Parser, Clone)]
-pub struct KanidmdCli {
+pub struct KubidmdCli {
     #[clap(
         env = "KANIDM_LOG_LEVEL",
         global = true,
@@ -150,8 +150,8 @@ mod tests {
     use crate::config::ServerRole;
     use std::str::FromStr;
 
-    fn empty_cli() -> KanidmdCli {
-        KanidmdCli {
+    fn empty_cli() -> KubidmdCli {
+        KubidmdCli {
             log_level: None,
             otel_grpc_url: None,
             domain: None,
@@ -177,7 +177,7 @@ mod tests {
     }
 
     #[test]
-    fn test_kanidmd_cli_default_fields() {
+    fn test_kubidmd_cli_default_fields() {
         let cli = empty_cli();
         assert!(cli.log_level.is_none());
         assert!(cli.otel_grpc_url.is_none());
@@ -203,10 +203,10 @@ mod tests {
     }
 
     #[test]
-    fn test_kanidmd_cli_debug() {
+    fn test_kubidmd_cli_debug() {
         let cli = empty_cli();
         let debug = format!("{:?}", cli);
-        assert!(debug.contains("KanidmdCli"));
+        assert!(debug.contains("KubidmdCli"));
         assert!(debug.contains("log_level"));
         assert!(debug.contains("domain"));
         assert!(debug.contains("role"));
@@ -214,7 +214,7 @@ mod tests {
     }
 
     #[test]
-    fn test_kanidmd_cli_clone() {
+    fn test_kubidmd_cli_clone() {
         let cli = empty_cli();
         let cloned = cli.clone();
         assert!(cloned.log_level.is_none());
@@ -223,8 +223,8 @@ mod tests {
     }
 
     #[test]
-    fn test_kanidmd_cli_with_fields() {
-        let cli = KanidmdCli {
+    fn test_kubidmd_cli_with_fields() {
+        let cli = KubidmdCli {
             domain: Some("example.com".to_string()),
             role: Some(ServerRole::WriteReplicaNoUI),
             bindaddress: Some("127.0.0.1:8443".to_string()),
@@ -240,7 +240,7 @@ mod tests {
     }
 
     #[test]
-    fn test_kanidmd_cli_field_types_serde() {
+    fn test_kubidmd_cli_field_types_serde() {
         let role: ServerRole = serde_json::from_str("\"WriteReplicaNoUI\"").unwrap();
         assert_eq!(role, ServerRole::WriteReplicaNoUI);
         let serialized = serde_json::to_string(&role).unwrap();
@@ -254,7 +254,7 @@ mod tests {
     }
 
     #[test]
-    fn test_kanidmd_cli_role_field_from_str() {
+    fn test_kubidmd_cli_role_field_from_str() {
         assert_eq!(
             ServerRole::from_str("write_replica").unwrap(),
             ServerRole::WriteReplica

@@ -4,21 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Kanidm is a simple, secure, and fast identity management platform. It provides an LDAP-compatible directory service, OAuth2/OIDC authentication, RADIUS integration, and Unix integration for PAM/NSS.
+Kubidm is a simple, secure, and fast identity management platform. It provides an LDAP-compatible directory service, OAuth2/OIDC authentication, RADIUS integration, and Unix integration for PAM/NSS.
 
-**Tech Stack**: Rust (stable channel), Cargo workspace, Python (pykanidm), JavaScript (Web UI), Docker multi-arch builds, mdBook documentation.
+**Tech Stack**: Rust (stable channel), Cargo workspace, Python (pykubidm), JavaScript (Web UI), Docker multi-arch builds, mdBook documentation.
 
 **Components**:
-- `server/daemon` - Main Kanidm server (kanidmd)
+- `server/daemon` - Main Kubidm server (kubidmd)
 - `server/core` - Web UI and HTTP API
 - `server/lib` - Core library
 - `server/testkit` - Integration testing framework
-- `libs/client` - Kanidm client SDK
+- `libs/client` - Kubidm client SDK
 - `libs/crypto` - Cryptographic utilities
 - `libs/proto` - Protocol definitions
-- `tools/cli` - Kanidm CLI tools
+- `tools/cli` - Kubidm CLI tools
 - `unix_integration/` - PAM/NSS modules
-- `pykanidm/` - Python SDK
+- `pykubidm/` - Python SDK
 - `rlm_python/` - RADIUS module
 
 ## Essential Commands
@@ -36,10 +36,10 @@ make test
 make run
 
 # Build Docker images locally
-make build/kanidmd
+make build/kubidmd
 
 # Build multi-arch Docker images and push
-make buildx/kanidmd
+make buildx/kubidmd
 
 # Spell check
 make codespell
@@ -51,49 +51,49 @@ make doc/format
 make doc/format/fix
 ```
 
-### Python (pykanidm)
+### Python (pykubidm)
 
 ```bash
 # Run all Python tests (pytest + mypy + ruff)
-make test/pykanidm
+make test/pykubidm
 
 # Run pytest only
-make test/pykanidm/pytest
+make test/pykubidm/pytest
 
 # Run mypy type check
-make test/pykanidm/mypy
+make test/pykubidm/mypy
 
 # Run ruff lint
-make test/pykanidm/lint
+make test/pykubidm/lint
 
 # Run with coverage
-make test/pykanidm/coverage
+make test/pykubidm/coverage
 ```
 
 ### Documentation
 
 ```bash
-# Build the Kanidm book
+# Build the Kubidm book
 make book
 
 # Build Rust docs
 make doc
 
-# Build pykanidm docs (mkdocs)
-make docs/pykanidm/build
+# Build pykubidm docs (mkdocs)
+make docs/pykubidm/build
 
-# Serve pykanidm docs locally
-make docs/pykanidm/serve
+# Serve pykubidm docs locally
+make docs/pykubidm/serve
 ```
 
 ### Release
 
 ```bash
-# Build CLI release binary (set KANIDM_BUILD_PROFILE)
-make release/kanidm
+# Build CLI release binary (set KUBIDM_BUILD_PROFILE)
+make release/kubidm
 
 # Build daemon release binary
-make release/kanidmd
+make release/kubidmd
 
 # Check outdated dependencies
 make prep
@@ -104,7 +104,7 @@ make prep
 ### Workspace Structure
 
 **Libraries** (`libs/`):
-- `client` - Kanidm client SDK for connecting to servers
+- `client` - Kubidm client SDK for connecting to servers
 - `crypto` - Cryptographic operations (password hashing, encryption)
 - `proto` - SCIM and internal protocol definitions
 - `scim_proto` - SCIM protocol types
@@ -114,7 +114,7 @@ make prep
 - `profiles` - Build profile configuration
 
 **Server** (`server/`):
-- `daemon` - Main server binary (kanidmd)
+- `daemon` - Main server binary (kubidmd)
 - `core` - HTTP API, Web UI, OAuth2 endpoints
 - `lib` - Core server logic (authentication, identity management)
 - `lib-macros` - Proc macros for server
@@ -122,7 +122,7 @@ make prep
 - `testkit-macros` - Test macros
 
 **Tools** (`tools/`):
-- `cli` - Kanidm CLI (kanidm command)
+- `cli` - Kubidm CLI (kubidm command)
 - `orca` - Load testing tool
 - `iam_migrations/ldap` - LDAP migration tool
 - `iam_migrations/freeipa` - FreeIPA migration tool
@@ -131,12 +131,12 @@ make prep
 
 **Unix Integration** (`unix_integration/`):
 - `resolver` - Unix resolver daemon
-- `pam_kanidm` - PAM module
-- `nss_kanidm` - NSS module
+- `pam_kubidm` - PAM module
+- `nss_kubidm` - NSS module
 - `common` - Shared Unix integration code
 
-**Python** (`pykanidm/`):
-- Kanidm Python SDK with async support
+**Python** (`pykubidm/`):
+- Kubidm Python SDK with async support
 - Uses uv for dependency management
 - Strict mypy type checking
 
@@ -144,7 +144,7 @@ make prep
 
 ### Code Style
 
-- **Imports**: At top-level, grouped: std → external crates → internal crates
+- **Imports**: At top-level, grouped: std -> external crates -> internal crates
 - **Rust formatting**: Use `cargo fmt`, configured in `.rustfmt.toml`
 - **Clippy**: Zero warnings required, configured in `clippy.toml`
 - **Disallowed types**: HashMap/HashSet (use BTreeMap/BTreeSet for determinism)
@@ -161,7 +161,7 @@ make prep
 ### Docker Builds
 
 - Multi-arch: amd64, arm64
-- Registry: ghcr.io/kanidm/*
+- Registry: ghcr.io/pando85/kubidm/*
 - Build profile: `container_generic`
 - Use `CONTAINER_IMAGE_ARCH` for cross-compilation
 
@@ -190,12 +190,12 @@ make prep
 
 ## Environment Variables
 
-- `KANIDM_BUILD_PROFILE`: Build profile (developer, container_generic, release)
-- `KANIDM_FEATURES`: Additional Cargo features
+- `KUBIDM_BUILD_PROFILE`: Build profile (developer, container_generic, release)
+- `KUBIDM_FEATURES`: Additional Cargo features
 - `CONTAINER_IMAGE_ARCH`: Docker build architectures
 - `BOOK_VERSION`: Documentation version for book builds
 
 ## Container Registry
 
-- Images: `ghcr.io/kanidm/server`, `ghcr.io/kanidm/tools`, `ghcr.io/kanidm/radius`
+- Images: `ghcr.io/pando85/kubidm/server`, `ghcr.io/pando85/kubidm/tools`, `ghcr.io/pando85/kubidm/radius`
 - Tags: `devel` (latest development), version-specific for releases

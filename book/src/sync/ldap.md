@@ -1,9 +1,9 @@
 # LDAP
 
 If you have an LDAP server that supports sync repl (RFC4533 content synchronisation) then you are able to synchronise
-from it to Kanidm for the purposes of coexistence or migration.
+from it to Kubidm for the purposes of coexistence or migration.
 
-If there is a specific Kanidm sync tool for your LDAP server, you should use that instead of the generic LDAP server
+If there is a specific Kubidm sync tool for your LDAP server, you should use that instead of the generic LDAP server
 sync.
 
 ## Installing the LDAP Sync Tool
@@ -12,20 +12,20 @@ See [installing the client tools](../installing_client_tools.md).
 
 ## Configure the LDAP Sync Tool
 
-The sync tool is a bridge between LDAP and Kanidm, meaning that the tool must be configured to communicate to both
+The sync tool is a bridge between LDAP and Kubidm, meaning that the tool must be configured to communicate to both
 sides.
 
-Like other components of Kanidm, the LDAP sync tool will read your /etc/kanidm/config if present to understand how to
-connect to Kanidm.
+Like other components of Kubidm, the LDAP sync tool will read your /etc/kubidm/config if present to understand how to
+connect to Kubidm.
 
 The sync tool specific components are configured in its own configuration file.
 
 ```toml
-{{#rustdoc_include ../../../examples/kanidm-ldap-sync}}
+{{#rustdoc_include ../../../examples/kubidm-ldap-sync}}
 ```
 
 This example is located in
-[examples/kanidm-ldap-sync](https://github.com/kanidm/kanidm/blob/master/examples/kanidm-ldap-sync).
+[examples/kubidm-ldap-sync](https://github.com/kubidm/kubidm/blob/master/examples/kubidm-ldap-sync).
 
 In addition to this, you may be required to make some configuration changes to your LDAP server to enable
 synchronisation.
@@ -89,7 +89,7 @@ You need to change the `nsslapd-include-suffix` to match your LDAP baseDN here. 
 
 ```bash
 ldapsearch -H ldaps://<SERVER HOSTNAME/IP> -x -b '' -s base namingContexts
-# namingContexts: dc=ldap,dc=dev,dc=kanidm,dc=com
+# namingContexts: dc=ldap,dc=dev,dc=kubidm,dc=com
 ```
 
 You should ignore `cn=changelog` as this is a system internal namingContext. You can then create an ldapmodify like the
@@ -109,13 +109,13 @@ ldapmodify -f change.ldif -H ldaps://<SERVER HOSTNAME/IP> -x -D 'cn=Directory Ma
 Create a service account that will be used for content synchronisation.
 
 ```bash
-dsidm -b dc=ldap,dc=dev,dc=kanidm,dc=com localhost service create --cn kanidm-sync --description sync
+dsidm -b dc=ldap,dc=dev,dc=kubidm,dc=com localhost service create --cn kubidm-sync --description sync
 ```
 
 Generate a password for the account and reset it with.
 
 ```bash
-dsidm -b dc=ldap,dc=dev,dc=kanidm,dc=com localhost account reset_password cn=kanidm-sync,ou=Services,dc=ldap,dc=dev,dc=kanidm,dc=com
+dsidm -b dc=ldap,dc=dev,dc=kubidm,dc=com localhost account reset_password cn=kubidm-sync,ou=Services,dc=ldap,dc=dev,dc=kubidm,dc=com
 ```
 
 Allow the account to access the content sync control:
@@ -124,7 +124,7 @@ Allow the account to access the content sync control:
 dn: oid=1.3.6.1.4.1.4203.1.9.1.1,cn=features,cn=config
 changetype: modify
 add: aci
-aci: (targetattr != "aci")(version 3.0; acl "Sync Request Control"; allow( read, search ) userdn = "ldap:///cn=kanidm-sync,ou=Services,dc=ldap,dc=dev,dc=kanidm,dc=com";)
+aci: (targetattr != "aci")(version 3.0; acl "Sync Request Control"; allow( read, search ) userdn = "ldap:///cn=kubidm-sync,ou=Services,dc=ldap,dc=dev,dc=kubidm,dc=com";)
 ```
 
 Additionally, you must update ACI's in your directory to allow this user to read the relevant attributes of directory
@@ -134,12 +134,12 @@ entries you want to sync. For example.
 dn: ou=people,dc=example,dc=com
 changetype: modify
 add: aci
-aci: (targetattr = "objectClass || description || nsUniqueId || uid || displayName || loginShell || uidNumber || gidNumber || gecos || homeDirectory || cn || memberOf || mail || nsSshPublicKey || nsAccountLock || userCertificate || userPassword" )(version 3.0; acl "Sync Request Read"; allow( read, search ) userdn = "ldap:///cn=kanidm-sync,ou=Services,dc=ldap,dc=dev,dc=kanidm,dc=com";)
+aci: (targetattr = "objectClass || description || nsUniqueId || uid || displayName || loginShell || uidNumber || gidNumber || gecos || homeDirectory || cn || memberOf || mail || nsSshPublicKey || nsAccountLock || userCertificate || userPassword" )(version 3.0; acl "Sync Request Read"; allow( read, search ) userdn = "ldap:///cn=kubidm-sync,ou=Services,dc=ldap,dc=dev,dc=kubidm,dc=com";)
 
 dn: ou=groups,dc=example,dc=com
 changetype: modify
 add: aci
-aci: (targetattr = "cn || member || memberUid || gidNumber || nsUniqueId || description || objectClass")(version 3.0; acl "Sync Request Read"; allow( read, search ) userdn = "ldap:///cn=kanidm-sync,ou=Services,dc=ldap,dc=dev,dc=kanidm,dc=com";)
+aci: (targetattr = "cn || member || memberUid || gidNumber || nsUniqueId || description || objectClass")(version 3.0; acl "Sync Request Read"; allow( read, search ) userdn = "ldap:///cn=kubidm-sync,ou=Services,dc=ldap,dc=dev,dc=kubidm,dc=com";)
 ```
 
 You must then restart your 389 Directory Server for these changes to take effect.
@@ -147,7 +147,7 @@ You must then restart your 389 Directory Server for these changes to take effect
 The control can be tested with:
 
 ```bash
-ldapsearch -H ldaps://<SERVER HOSTNAME/IP> -x -E \!sync=ro -D cn=kanidm-sync,ou=Services,dc=ldap,dc=dev,dc=kanidm,dc=com -w password -b dc=ldap,dc=dev,dc=kanidm,dc=com
+ldapsearch -H ldaps://<SERVER HOSTNAME/IP> -x -E \!sync=ro -D cn=kubidm-sync,ou=Services,dc=ldap,dc=dev,dc=kubidm,dc=com -w password -b dc=ldap,dc=dev,dc=kubidm,dc=com
 ```
 
 ## Running the Sync Tool Manually
@@ -156,8 +156,8 @@ You can perform a dry run with the sync tool manually to check your configuratio
 synchronise from LDAP.
 
 ```bash
-kanidm-ldap-sync [-c /path/to/kanidm/config] -l /path/to/kanidm-ldap-sync -n
-kanidm-ldap-sync -l /etc/kanidm/ldap-sync -n
+kubidm-ldap-sync [-c /path/to/kubidm/config] -l /path/to/kubidm-ldap-sync -n
+kubidm-ldap-sync -l /etc/kubidm/ldap-sync -n
 ```
 
 ## Running the Sync Tool Automatically
@@ -166,19 +166,19 @@ The sync tool can be run on a schedule if you configure the `schedule` parameter
 the cli
 
 ```bash
-kanidm-ldap-sync [-c /path/to/kanidm/config] -l /path/to/kanidm-ldap-sync --schedule
-kanidm-ldap-sync -l /etc/kanidm/ldap-sync --schedule
+kubidm-ldap-sync [-c /path/to/kubidm/config] -l /path/to/kubidm-ldap-sync --schedule
+kubidm-ldap-sync -l /etc/kubidm/ldap-sync --schedule
 ```
 
 As the sync tool is part of the tools container, you can run this with:
 
 ```bash
-docker create --name kanidm-ldap-sync \
+docker create --name kubidm-ldap-sync \
   --user uid:gid \
   -p 12345:12345 \
-  -v /etc/kanidm/config:/etc/kanidm/config:ro \
-  -v /path/to/ldap-sync:/etc/kanidm/ldap-sync:ro \
-  kanidm-ldap-sync -l /etc/kanidm/ldap-sync --schedule
+  -v /etc/kubidm/config:/etc/kubidm/config:ro \
+  -v /path/to/ldap-sync:/etc/kubidm/ldap-sync:ro \
+  kubidm-ldap-sync -l /etc/kubidm/ldap-sync --schedule
 ```
 
 ## Monitoring the Sync Tool

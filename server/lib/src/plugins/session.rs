@@ -194,13 +194,13 @@ mod tests {
 
     use crate::event::CreateEvent;
     use crate::value::{AuthType, Oauth2Session, Session, SessionState};
-    use kanidm_proto::constants::OAUTH2_SCOPE_OPENID;
+    use kubidm_proto::constants::OAUTH2_SCOPE_OPENID;
     use std::time::Duration;
     use time::OffsetDateTime;
     use uuid::uuid;
 
     use crate::credential::Credential;
-    use kanidm_lib_crypto::CryptoPolicy;
+    use kubidm_lib_crypto::CryptoPolicy;
 
     // Test expiry of old sessions
 

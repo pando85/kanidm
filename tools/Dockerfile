@@ -1,4 +1,4 @@
-# This builds the kanidm CLI tools
+# This builds the Kubidm CLI tools
 ARG BASE_IMAGE=debian:trixie-slim
 
 FROM rust:1 AS builder
@@ -36,19 +36,19 @@ RUN \
     export SCCACHE_DIR=/sccache; \
     export RUSTC_WRAPPER=/usr/bin/sccache; \
     export CC="/usr/bin/clang"; \
-    cargo auditable build --locked -p kanidm_tools ${KANIDM_BUILD_OPTIONS} \
+    cargo auditable build --locked -p kubidm_tools ${KANIDM_BUILD_OPTIONS} \
         --target-dir="/usr/src/kanidm/target/" \
         --features="${KANIDM_FEATURES}" \
         --release && \
-    cargo auditable build --locked -p kanidm-ipa-sync ${KANIDM_BUILD_OPTIONS} \
+    cargo auditable build --locked -p kubidm-ipa-sync ${KANIDM_BUILD_OPTIONS} \
         --target-dir="/usr/src/kanidm/target/" \
         --features="${KANIDM_FEATURES}" \
         --release && \
-    cargo auditable build --locked -p kanidm-ldap-sync ${KANIDM_BUILD_OPTIONS} \
+    cargo auditable build --locked -p kubidm-ldap-sync ${KANIDM_BUILD_OPTIONS} \
         --target-dir="/usr/src/kanidm/target/" \
         --features="${KANIDM_FEATURES}" \
         --release && \
-    cargo auditable build --locked -p kanidm-mail-sender ${KANIDM_BUILD_OPTIONS} \
+    cargo auditable build --locked -p kubidm-mail-sender ${KANIDM_BUILD_OPTIONS} \
         --target-dir="/usr/src/kanidm/target/" \
         --features="${KANIDM_FEATURES}" \
         --release && \
@@ -69,12 +69,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tzdata \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder --chmod=0755 /usr/src/kanidm/target/release/kanidm /sbin/
-COPY --from=builder --chmod=0755 /usr/src/kanidm/target/release/kanidm-ipa-sync /sbin/
-COPY --from=builder --chmod=0755 /usr/src/kanidm/target/release/kanidm-ldap-sync /sbin/
+COPY --from=builder --chmod=0755 /usr/src/kanidm/target/release/kubidm /sbin/
+COPY --from=builder --chmod=0755 /usr/src/kanidm/target/release/kubidm-ipa-sync /sbin/
+COPY --from=builder --chmod=0755 /usr/src/kanidm/target/release/kubidm-ldap-sync /sbin/
 COPY --from=builder --chmod=0755 /usr/src/kanidm/target/release/fido-mds-tool /sbin/
 
-RUN mkdir /etc/kanidm && \
-    touch /etc/kanidm/config
+RUN mkdir /etc/kubidm && \
+    touch /etc/kubidm/config
 
-CMD [ "/sbin/kanidm", "-h" ]
+CMD [ "/sbin/kubidm", "-h" ]

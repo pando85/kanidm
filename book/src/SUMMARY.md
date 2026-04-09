@@ -1,8 +1,8 @@
 <!-- markdownlint-disable MD025 MD042 -->
 
-# Kanidm
+# Kubidm
 
-- [Introduction to Kanidm](introduction_to_kanidm.md)
+- [Introduction to Kubidm](introduction_to_kubidm.md)
 
 - [Evaluation Quickstart](evaluation_quickstart.md)
 

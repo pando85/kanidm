@@ -6,7 +6,7 @@ use crate::idm::oauth2_client::OAuth2ClientProvider;
 use crate::prelude::*;
 use crate::utils;
 use crate::value::{AuthType, SessionExtMetadata};
-use kanidm_proto::oauth2::{
+use kubidm_proto::oauth2::{
     AccessTokenRequest, AccessTokenResponse, AuthorisationRequest, AuthorisationRequestOidc,
     GrantTypeReq, ResponseType,
 };

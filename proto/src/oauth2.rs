@@ -303,7 +303,7 @@ impl TryFrom<&str> for AccessTokenType {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TokenRevokeRequest {
     pub token: String,
-    /// Not required for Kanidm.
+    /// Not required for Kubidm.
     /// <https://datatracker.ietf.org/doc/html/rfc7009#section-4.1.2>
     pub token_type_hint: Option<String>,
 
@@ -359,7 +359,7 @@ impl From<(&str, Option<&str>)> for ClientAuth {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AccessTokenIntrospectRequest {
     pub token: String,
-    /// Not required for Kanidm.
+    /// Not required for Kubidm.
     /// <https://datatracker.ietf.org/doc/html/rfc7009#section-4.1.2>
     pub token_type_hint: Option<String>,
 
@@ -605,7 +605,7 @@ pub struct OidcDiscoveryResponse {
     // "content type that contains a set of Claims as its members that are a subset of the Metadata
     //  values defined in Section 3. Other Claims MAY also be returned. "
     //
-    // In addition, we also return the following claims in kanidm
+    // In addition, we also return the following claims in kubidm
 
     // rfc7009
     pub revocation_endpoint: Option<Url>,
