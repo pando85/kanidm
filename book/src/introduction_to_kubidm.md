@@ -1,15 +1,15 @@
-# Introduction to Kanidm
+# Introduction to Kubidm
 
-Kanidm is an identity management server, acting as an authority on account information, authentication and authorisation
+Kubidm is an identity management server, acting as an authority on account information, authentication and authorisation
 within a technical environment.
 
-The intent of the Kanidm project is to:
+The intent of the Kubidm project is to:
 
 - Provide a single source of truth for authorisation and authentication.
 - Make system, network, application and web authentication easy and accessible.
 - Secure and reliable by default, aiming for the highest levels of quality and stability.
 
-## Why do I want Kanidm?
+## Why do I want Kubidm?
 
 Whether you work in a business, a volunteer organisation, or are an enthusiast who manages their personal services, you
 need methods of authenticating and identifying to your systems. These systems also need to determine what authorisation
@@ -21,7 +21,7 @@ people to manage all these different credentials and what they have access to, b
 credentials have more access or privilege than they require. In the worst case this can lead to weak credentials
 (`corpname123` is a common example) or credentials that are disclosed via git repos.
 
-Kanidm solves this problem by acting as a central authority of accounts in your organisation. This allows each account
+Kubidm solves this problem by acting as a central authority of accounts in your organisation. This allows each account
 to associate many devices and strong credentials with different privileges. An example of how this looks:
 
 ```mermaid
@@ -33,18 +33,18 @@ graph LR;
 	wifi@{ shape: processes, label: "Wifi / VPN" };
 	radius@{ shape: div-rect, label: "RADIUS Server" };
 
-	kanidm@{ shape: lin-cyl, label: "Kanidm" };
+	kubidm@{ shape: lin-cyl, label: "Kubidm" };
 
 	device-- Trusts OAuth -->website;
-	website-- Reads User Data -->kanidm;
-	device-- OAuth -->kanidm;
+	website-- Reads User Data -->kubidm;
+	device-- OAuth -->kubidm;
 
 	device-- SSH -->ssh;
-	ssh-- Retrieve SSH Keys -->kanidm;
+	ssh-- Retrieve SSH Keys -->kubidm;
 
 	device-- Login to -->wifi;
 	wifi-- RADIUS Credentials -->radius;
-	radius-- Verifies Credentials -->kanidm;
+	radius-- Verifies Credentials -->kubidm;
 ```
 
 A key design goal is that you authenticate with your device in some manner, and then your device will continue to
@@ -57,9 +57,9 @@ to your account and all its privileges. As the credentials are specific to a dev
 revoke its associated credentials. If a specific service is compromised, only the credentials for that service need to
 be revoked.
 
-Due to this model, and the design of Kanidm to centre the device and to have more per-service credentials, workflows and
+Due to this model, and the design of Kubidm to centre the device and to have more per-service credentials, workflows and
 automation are added or designed to reduce human handling.
 
 ## For Developers
 
-Looking for the `rustdoc` documentation for the libraries themselves? [Click here!](https://kanidm.com/documentation/)
+Looking for the `rustdoc` documentation for the libraries themselves? [Click here!](https://kubidm.com/documentation/)

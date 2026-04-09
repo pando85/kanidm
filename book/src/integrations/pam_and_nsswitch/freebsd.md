@@ -5,8 +5,8 @@
 Unlike Linux, FreeBSD requires you to change `compat` to `files` in `/etc/nsswitch.conf`.
 
 ```text
-group: kanidm files
-passwd: kanidm files
+group: kubidm files
+passwd: kubidm files
 ```
 
 ## PAM
@@ -20,19 +20,19 @@ cp -a /etc/pam.d /root/pam.d.backup
 ```text
 # /etc/pam.d/common
 # auth
-auth            required        /usr/local/lib/libpam_kanidm.so try_first_pass
+auth            required        /usr/local/lib/libpam_kubidm.so try_first_pass
 
 # account
 account         required        pam_login_access.so
-account         required        /usr/local/lib/libpam_kanidm.so
+account         required        /usr/local/lib/libpam_kubidm.so
 
 # session
-session         required        /usr/local/lib/libpam_kanidm.so
+session         required        /usr/local/lib/libpam_kubidm.so
 
 # password
 password        required        pam_unix.so             no_warn try_first_pass
-# Password changes via pam_kanidm.so are not yet supported.
-# password        required        /usr/local/lib/libpam_kanidm.so             no_warn try_first_pass
+# Password changes via pam_kubidm.so are not yet supported.
+# password        required        /usr/local/lib/libpam_kubidm.so             no_warn try_first_pass
 ```
 
 ```text

@@ -1,32 +1,32 @@
 # Backup and Restore
 
 With any Identity Management (IDM) software, it's important you have the capability to restore in case of a disaster -
-be that physical damage or a mistake. Kanidm supports backup and restore of the database with multiple methods.
+be that physical damage or a mistake. Kubidm supports backup and restore of the database with multiple methods.
 
 It is important that you only attempt to restore data with the same version of the server that the backup originated
 from.
 
 ## Method 1 - Automatic Backup
 
-Automatic backups can be generated online by a `kanidmd server` instance by including the `[online_backup]` section in
+Automatic backups can be generated online by a `kubidmd server` instance by including the `[online_backup]` section in
 the `server.toml`. This allows you to run regular backups, defined by a cron schedule, and maintain the number of backup
 versions to keep. An example is located in
-[examples/server.toml](https://github.com/kanidm/kanidm/blob/master/examples/server.toml).
+[examples/server.toml](https://github.com/kubidm/kubidm/blob/master/examples/server.toml).
 
 ### S3-Compatible Storage Backup
 
-Kanidm supports backing up to S3-compatible object storage services (AWS S3, MinIO, Ceph, GCS, Azure Blob via S3 API).
+Kubidm supports backing up to S3-compatible object storage services (AWS S3, MinIO, Ceph, GCS, Azure Blob via S3 API).
 To enable S3 backup, add the `[online_backup.s3]` section to your `server.toml`:
 
 ```toml
 [online_backup]
-path = "/var/lib/kanidm/backups/"
+path = "/var/lib/kubidm/backups/"
 schedule = "00 22 * * *"
 versions = 7
 compression = "gzip"
 
 [online_backup.s3]
-bucket = "kanidm-backups"
+bucket = "kubidm-backups"
 region = "us-east-1"
 # Optional: Custom endpoint for MinIO or other S3-compatible services
 # endpoint = "https://minio.example.com"
@@ -56,7 +56,7 @@ secret_access_key = "your-secret-key"
 
 ### Cross-Region Backup Replication
 
-For enterprise disaster recovery, Kanidm supports automatic cross-region backup replication to ensure backups are
+For enterprise disaster recovery, Kubidm supports automatic cross-region backup replication to ensure backups are
 available in multiple geographic regions. This provides:
 
 - Geographic backup redundancy
@@ -81,7 +81,7 @@ retry_delay_seconds = 30
 # Configure secondary regions (multiple regions supported)
 [[online_backup.s3.replication.regions]]
 region = "eu-west-1"
-bucket = "kanidm-backups-eu"
+bucket = "kubidm-backups-eu"
 # Optional: Custom endpoint for non-AWS S3
 # endpoint = "https://s3.eu-west-1.amazonaws.com"
 # Optional: Path prefix
@@ -100,7 +100,7 @@ bucket = "kanidm-backups-eu"
 # Add additional regions as needed
 [[online_backup.s3.replication.regions]]
 region = "ap-southeast-1"
-bucket = "kanidm-backups-ap"
+bucket = "kubidm-backups-ap"
 ```
 
 #### Region-Specific Encryption Keys
@@ -110,7 +110,7 @@ For compliance requirements, you can configure region-specific KMS keys:
 ```toml
 [[online_backup.s3.replication.regions]]
 region = "eu-west-1"
-bucket = "kanidm-backups-eu"
+bucket = "kubidm-backups-eu"
 kms_key_id = "arn:aws:kms:eu-west-1:123456789:key/eu-key-id"
 
 [online_backup.s3.replication.regions.server_side_encryption]
@@ -123,13 +123,13 @@ kms_key_id = "arn:aws:kms:eu-west-1:123456789:key/eu-key-id"
 Use the `replicate-status` command to check the health of cross-region replication:
 
 ```bash
-kanidmd database replicate-status -c /data/server.toml
+kubidmd database replicate-status -c /data/server.toml
 ```
 
 For detailed output including lag metrics per region:
 
 ```bash
-kanidmd database replicate-status -c /data/server.toml --detailed
+kubidmd database replicate-status -c /data/server.toml --detailed
 ```
 
 The output shows:
@@ -147,15 +147,15 @@ To recover from a backup stored in a secondary region:
 1. **Identify the backup in the secondary region**:
    ```bash
    # Use AWS CLI or S3 tools to list backups in the secondary region bucket
-   aws s3 ls s3://kanidm-backups-eu/
+   aws s3 ls s3://kubidm-backups-eu/
    ```
 
 2. **Restore using the S3 backup key**:
    ```bash
    docker stop <container name>
-   docker run --rm -i -t -v kanidmd:/data \
-       kanidm/server:latest /sbin/kanidmd database restore-s3 -c /data/server.toml \
-       --bucket kanidm-backups-eu --key backup-2024-01-01T22:00:00Z.json.gz
+   docker run --rm -i -t -v kubidmd:/data \
+       kubidm/server:latest /sbin/kubidmd database restore-s3 -c /data/server.toml \
+       --bucket kubidm-backups-eu --key backup-2024-01-01T22:00:00Z.json.gz
    docker start <container name>
    ```
 
@@ -180,17 +180,17 @@ Set up alerts for:
 1. Verify secondary region backups are available:
    ```bash
    # Check backup availability in secondary region (using S3 tools)
-   aws s3 ls s3://kanidm-backups-eu/ --region eu-west-1
+   aws s3 ls s3://kubidm-backups-eu/ --region eu-west-1
    ```
 
-2. Deploy Kanidm instance in secondary region:
+2. Deploy Kubidm instance in secondary region:
    - Configure `server.toml` to use secondary region S3 bucket
    - Use region-specific encryption keys if configured
 
 3. Restore from secondary region backup:
    ```bash
-   kanidmd database restore-s3 -c /data/server.toml \
-       --bucket kanidm-backups-eu --key backup-2024-01-01T22:00:00Z.json.gz
+   kubidmd database restore-s3 -c /data/server.toml \
+       --bucket kubidm-backups-eu --key backup-2024-01-01T22:00:00Z.json.gz
    ```
 
 4. Verify restoration success and start server
@@ -211,7 +211,7 @@ Each S3 backup includes a SHA-256 checksum that is verified automatically on res
 without restoring using:
 
 ```bash
-kanidmd database verify-s3 -c /data/server.toml backup-2024-01-01T22:00:00Z.json.gz
+kubidmd database verify-s3 -c /data/server.toml backup-2024-01-01T22:00:00Z.json.gz
 ```
 
 ## Method 2 - Manual Backup
@@ -223,9 +223,9 @@ To take the backup (assuming our docker environment) you first need to stop the 
 
 ```bash
 docker stop <container name>
-docker run --rm -i -t -v kanidmd:/data -v kanidmd_backups:/backup \
-    kanidm/server:latest /sbin/kanidmd database backup -c /data/server.toml \
-    /backup/kanidm.backup.json
+docker run --rm -i -t -v kubidmd:/data -v kubidmd_backups:/backup \
+    kubidm/server:latest /sbin/kubidmd database backup -c /data/server.toml \
+    /backup/kubidm.backup.json
 docker start <container name>
 ```
 
@@ -235,9 +235,9 @@ To restore from the backup:
 
 ```bash
 docker stop <container name>
-docker run --rm -i -t -v kanidmd:/data -v kanidmd_backups:/backup \
-    kanidm/server:latest /sbin/kanidmd database restore -c /data/server.toml \
-    /backup/kanidm.backup.json
+docker run --rm -i -t -v kubidmd:/data -v kubidmd_backups:/backup \
+    kubidm/server:latest /sbin/kubidmd database restore -c /data/server.toml \
+    /backup/kubidm.backup.json
 docker start <container name>
 ```
 
@@ -247,9 +247,9 @@ To restore from an S3 backup:
 
 ```bash
 docker stop <container name>
-docker run --rm -i -t -v kanidmd:/data \
-    kanidm/server:latest /sbin/kanidmd database restore-s3 -c /data/server.toml \
-    --bucket kanidm-backups --key backup-2024-01-01T22:00:00Z.json.gz
+docker run --rm -i -t -v kubidmd:/data \
+    kubidm/server:latest /sbin/kubidmd database restore-s3 -c /data/server.toml \
+    --bucket kubidm-backups --key backup-2024-01-01T22:00:00Z.json.gz
 docker start <container name>
 ```
 
