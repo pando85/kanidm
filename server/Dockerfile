@@ -1,4 +1,4 @@
-# Build the main Kanidmd server
+# Build the main Kubidmd server
 ARG BASE_IMAGE=debian:trixie-slim
 
 FROM rust:1 AS builder
@@ -46,8 +46,8 @@ RUN --mount=type=cache,id=cargo,target=/cargo \
 RUN <<EOF
     mkdir -p /out/libs
     mkdir -p /out/libs-root
-    ldd /usr/src/kanidm/target/release/kanidmd
-    ldd /usr/src/kanidm/target/release/kanidmd | grep -v 'linux-vdso.so' | awk '{print $(NF-1) " " $1}' | sort -u -k 1,1 | awk '{print "install", "-D", $1, (($2 ~ /^\//) ? "/out/libs-root" $2 : "/out/libs/" $2)}' | xargs -I {} sh -c {}
+    ldd /usr/src/kanidm/target/release/kubidmd
+    ldd /usr/src/kanidm/target/release/kubidmd | grep -v 'linux-vdso.so' | awk '{print $(NF-1) " " $1}' | sort -u -k 1,1 | awk '{print "install", "-D", $1, (($2 ~ /^\//) ? "/out/libs-root" $2 : "/out/libs/" $2)}' | xargs -I {} sh -c {}
     ls -Rla /out/libs
     ls -Rla /out/libs-root
 EOF
@@ -57,7 +57,7 @@ FROM scratch
 WORKDIR /
 
 COPY --from=builder /etc/ssl/certs /etc/ssl/certs
-COPY --from=builder --chmod=0755 /usr/src/kanidm/target/release/kanidmd /sbin/
+COPY --from=builder --chmod=0755 /usr/src/kanidm/target/release/kubidmd /sbin/
 COPY --from=builder /usr/src/kanidm/server/core/static /hpkg/
 
 COPY --from=builder /out/libs-root/ /
@@ -77,6 +77,6 @@ HEALTHCHECK \
     --start-period=60s \
     --start-interval=5s \
     --retries=3 \
-    CMD [ "/sbin/kanidmd", "scripting", "healthcheck"]
+    CMD [ "/sbin/kubidmd", "scripting", "healthcheck"]
 
-CMD [ "/sbin/kanidmd", "server"]
+CMD [ "/sbin/kubidmd", "server"]

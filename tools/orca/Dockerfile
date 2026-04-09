@@ -1,4 +1,4 @@
-# This builds the kanidm CLI tools
+# This builds the Kubidm CLI tools
 ARG BASE_IMAGE=debian:trixie-slim
 
 FROM ${BASE_IMAGE} AS builder
@@ -50,7 +50,7 @@ FROM ${BASE_IMAGE}
 ENV RUST_BACKTRACE=1
 
 COPY --from=builder /usr/src/kanidm/target/release/orca /sbin/
-COPY ./tools/orca/profile-sample.toml /etc/kanidm/profile-sample.toml
+COPY ./tools/orca/profile-sample.toml /etc/kubidm/profile-sample.toml
 
 RUN chmod +x /sbin/orca
 

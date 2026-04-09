@@ -18,7 +18,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  windows_build_kanidm:
+  windows_build_kubidm:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6
