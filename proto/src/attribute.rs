@@ -191,7 +191,7 @@ pub enum Attribute {
     Replicated,
     Rs256PrivateKeyDer,
     S256,
-    /// A set of scim schemas. This is similar to a kanidm class.
+    /// A set of scim schemas. This is similar to a kubidm class.
     #[serde(rename = "schemas")]
     ScimSchemas,
     Scope,
@@ -201,7 +201,7 @@ pub enum Attribute {
     Spn,
     /// An LDAP-compatible sshpublickey
     LdapSshPublicKey,
-    /// The Kanidm-local ssh_publickey
+    /// The Kubidm-local ssh_publickey
     SshPublicKey,
     SudoHost,
     Supplements,

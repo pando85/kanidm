@@ -4,8 +4,8 @@ pub mod uri;
 
 use std::time::Duration;
 
-/// The default location for the `kanidm` CLI tool's token cache.
-pub const CLIENT_TOKEN_CACHE: &str = "~/.cache/kanidm_tokens";
+/// The default location for the `kubidm` CLI tool's token cache.
+pub const CLIENT_TOKEN_CACHE: &str = "~/.cache/kubidm_tokens";
 
 /// Content type string for jpeg
 pub const CONTENT_TYPE_JPG: &str = "image/jpeg";
@@ -29,15 +29,15 @@ pub const VALID_IMAGE_UPLOAD_CONTENT_TYPES: [&str; 5] = [
 
 pub const APPLICATION_JSON: &str = "application/json";
 
-/// The "system" path for Kanidm client config
+/// The "system" path for Kubidm client config
 pub const DEFAULT_CLIENT_CONFIG_PATH: &str = env!("KANIDM_CLIENT_CONFIG_PATH");
-/// The user-owned path for Kanidm client config
-pub const DEFAULT_CLIENT_CONFIG_PATH_HOME: &str = "~/.config/kanidm";
+/// The user-owned path for Kubidm client config
+pub const DEFAULT_CLIENT_CONFIG_PATH_HOME: &str = "~/.config/kubidm";
 
-/// The default HTTPS bind address for the Kanidm server
+/// The default HTTPS bind address for the Kubidm server
 pub const DEFAULT_SERVER_ADDRESS: &str = "127.0.0.1:8443";
 pub const DEFAULT_SERVER_LOCALHOST: &str = "localhost:8443";
-/// The default LDAP bind address for the Kanidm client
+/// The default LDAP bind address for the Kubidm client
 pub const DEFAULT_LDAP_LOCALHOST: &str = "localhost:636";
 /// The default amount of attributes that can be queried in LDAP
 pub const DEFAULT_LDAP_MAXIMUM_QUERYABLE_ATTRIBUTES: usize = 48;
@@ -341,7 +341,7 @@ pub const TEST_ENTRYCLASS_TEST_CLASS: &str = "testclass";
 pub const KSESSIONID: &str = "X-KANIDM-AUTH-SESSION-ID";
 /// HTTP Header containing the backend operation ID
 pub const KOPID: &str = "X-KANIDM-OPID";
-/// HTTP Header containing the Kanidm server version
+/// HTTP Header containing the Kubidm server version
 pub const KVERSION: &str = "X-KANIDM-VERSION";
 
 /// X-Forwarded-For header
