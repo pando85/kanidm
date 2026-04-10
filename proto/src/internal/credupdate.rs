@@ -201,6 +201,18 @@ pub struct CUStatus {
     #[schema(value_type = BTreeMap<String, Value>)]
     pub sshkeys: BTreeMap<String, SshPublicKey>,
     pub sshkeys_state: CUCredState,
+
+    // Pending changes tracking for UI
+    pub has_pending_changes: bool,
+    pub primary_has_pending_changes: bool,
+    pub passkeys_have_pending_changes: bool,
+    pub attested_passkeys_have_pending_changes: bool,
+    pub unixcred_has_pending_changes: bool,
+    pub sshkeys_have_pending_changes: bool,
+
+    // Auto-commit indicators for first credential and passkey scenarios
+    pub should_auto_commit_first_cred: bool,
+    pub should_auto_commit_passkey: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
