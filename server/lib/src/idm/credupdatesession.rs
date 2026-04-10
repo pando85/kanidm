@@ -162,6 +162,13 @@ pub(crate) struct CredentialUpdateSession {
 
     // Internal reg state of any inprogress totp or webauthn credentials.
     mfaregstate: MfaRegState,
+
+    // Original credentials state for tracking pending changes
+    original_primary: Option<Credential>,
+    original_passkeys: BTreeMap<Uuid, (String, PasskeyV4)>,
+    original_attested_passkeys: BTreeMap<Uuid, (String, AttestedPasskeyV4)>,
+    original_unixcred: Option<Credential>,
+    original_sshkeys: BTreeMap<String, SshPublicKey>,
 }
 
 impl fmt::Debug for CredentialUpdateSession {
@@ -277,6 +284,35 @@ impl CredentialUpdateSession {
 
         (can_commit, warnings)
     }
+
+    fn has_pending_changes(&self) -> (bool, bool, bool, bool, bool, bool) {
+        let primary_changed = self.primary != self.original_primary;
+        let passkeys_changed = self.passkeys != self.original_passkeys;
+        let attested_passkeys_changed = self.attested_passkeys != self.original_attested_passkeys;
+        let unixcred_changed = self.unixcred != self.original_unixcred;
+        let sshkeys_changed = self.sshkeys != self.original_sshkeys;
+
+        let has_any_changes = primary_changed
+            || passkeys_changed
+            || attested_passkeys_changed
+            || unixcred_changed
+            || sshkeys_changed;
+
+        (
+            has_any_changes,
+            primary_changed,
+            passkeys_changed,
+            attested_passkeys_changed,
+            unixcred_changed,
+            sshkeys_changed,
+        )
+    }
+
+    fn had_no_valid_credentials_at_start(&self) -> bool {
+        self.original_attested_passkeys.is_empty()
+            && self.original_passkeys.is_empty()
+            && self.original_primary.is_none()
+    }
 }
 
 pub enum MfaRegStateStatus {
@@ -374,6 +410,18 @@ pub struct CredentialUpdateSessionStatus {
 
     sshkeys: BTreeMap<String, SshPublicKey>,
     sshkeys_state: CredentialState,
+
+    // Pending changes tracking
+    has_pending_changes: bool,
+    primary_has_pending_changes: bool,
+    passkeys_have_pending_changes: bool,
+    attested_passkeys_have_pending_changes: bool,
+    unixcred_has_pending_changes: bool,
+    sshkeys_have_pending_changes: bool,
+
+    // Auto-commit indicators
+    should_auto_commit_first_cred: bool,
+    should_auto_commit_passkey: bool,
 }
 
 impl CredentialUpdateSessionStatus {
@@ -427,6 +475,14 @@ impl Into<CUStatus> for CredentialUpdateSessionStatus {
             unixcred_state: self.unixcred_state.into(),
             sshkeys: self.sshkeys,
             sshkeys_state: self.sshkeys_state.into(),
+            has_pending_changes: self.has_pending_changes,
+            primary_has_pending_changes: self.primary_has_pending_changes,
+            passkeys_have_pending_changes: self.passkeys_have_pending_changes,
+            attested_passkeys_have_pending_changes: self.attested_passkeys_have_pending_changes,
+            unixcred_has_pending_changes: self.unixcred_has_pending_changes,
+            sshkeys_have_pending_changes: self.sshkeys_have_pending_changes,
+            should_auto_commit_first_cred: self.should_auto_commit_first_cred,
+            should_auto_commit_passkey: self.should_auto_commit_passkey,
         }
     }
 }
@@ -434,6 +490,28 @@ impl Into<CUStatus> for CredentialUpdateSessionStatus {
 impl From<&CredentialUpdateSession> for CredentialUpdateSessionStatus {
     fn from(session: &CredentialUpdateSession) -> Self {
         let (can_commit, warnings) = session.can_commit();
+
+        let (
+            has_pending_changes,
+            primary_has_pending_changes,
+            passkeys_have_pending_changes,
+            attested_passkeys_have_pending_changes,
+            unixcred_has_pending_changes,
+            sshkeys_have_pending_changes,
+        ) = session.has_pending_changes();
+
+        // Auto-commit for first credential:
+        // User had no valid credentials at start, now has valid credentials, and can commit
+        let should_auto_commit_first_cred = session.had_no_valid_credentials_at_start()
+            && can_commit
+            && !session.passkeys.is_empty()
+            || !session.attested_passkeys.is_empty()
+            || session.primary.is_some();
+
+        // Auto-commit for passkey:
+        // Passkey was just added (pending changes in passkeys) and can commit
+        let should_auto_commit_passkey =
+            passkeys_have_pending_changes && can_commit && !session.passkeys.is_empty();
 
         let attested_passkeys_allowed_devices: Vec<String> = session
             .resolved_account_policy
@@ -497,6 +575,14 @@ impl From<&CredentialUpdateSession> for CredentialUpdateSessionStatus {
                     MfaRegStateStatus::AttestedPasskey(r.as_ref().clone())
                 }
             },
+            has_pending_changes,
+            primary_has_pending_changes,
+            passkeys_have_pending_changes,
+            attested_passkeys_have_pending_changes,
+            unixcred_has_pending_changes,
+            sshkeys_have_pending_changes,
+            should_auto_commit_first_cred,
+            should_auto_commit_passkey,
         }
     }
 }
@@ -931,17 +1017,23 @@ impl IdmServerProxyWriteTransaction<'_> {
             issuer,
             intent_token_id,
             ext_cred_portal,
-            primary,
+            primary: primary.clone(),
             primary_state,
-            unixcred,
+            unixcred: unixcred.clone(),
             unixcred_state,
-            sshkeys,
+            sshkeys: sshkeys.clone(),
             sshkeys_state,
-            passkeys,
+            passkeys: passkeys.clone(),
             passkeys_state,
-            attested_passkeys,
+            attested_passkeys: attested_passkeys.clone(),
             attested_passkeys_state,
             mfaregstate: MfaRegState::None,
+            // Store original state for pending changes tracking
+            original_primary: primary,
+            original_passkeys: passkeys,
+            original_attested_passkeys: attested_passkeys,
+            original_unixcred: unixcred,
+            original_sshkeys: sshkeys,
         };
 
         let max_ttl = ct + MAXIMUM_CRED_UPDATE_TTL;
