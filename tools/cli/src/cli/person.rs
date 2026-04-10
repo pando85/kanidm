@@ -1336,6 +1336,7 @@ fn display_status(status: CUStatus) {
         unixcred_state,
         sshkeys,
         sshkeys_state,
+        ..
     } = status;
 
     println!("spn: {spn}");
