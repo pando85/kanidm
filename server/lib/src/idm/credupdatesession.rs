@@ -4455,6 +4455,14 @@ mod tests {
             unixcred: _,
             sshkeys: _,
             sshkeys_state,
+            has_pending_changes: _,
+            primary_has_pending_changes: _,
+            passkeys_have_pending_changes: _,
+            attested_passkeys_have_pending_changes: _,
+            unixcred_has_pending_changes: _,
+            sshkeys_have_pending_changes: _,
+            should_auto_commit_first_cred: _,
+            should_auto_commit_passkey: _,
         } = custatus;
 
         assert!(matches!(ext_cred_portal, CUExtPortal::Hidden));
