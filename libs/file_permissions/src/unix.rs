@@ -306,7 +306,6 @@ fn mode_to_string(mode: u32) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs::File;
     use std::io::Write;
     use std::os::unix::fs::PermissionsExt;
     use tempfile::NamedTempFile;
