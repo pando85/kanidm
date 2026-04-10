@@ -504,9 +504,9 @@ impl From<&CredentialUpdateSession> for CredentialUpdateSessionStatus {
         // User had no valid credentials at start, now has valid credentials, and can commit
         let should_auto_commit_first_cred = session.had_no_valid_credentials_at_start()
             && can_commit
-            && !session.passkeys.is_empty()
-            || !session.attested_passkeys.is_empty()
-            || session.primary.is_some();
+            && (!session.passkeys.is_empty()
+                || !session.attested_passkeys.is_empty()
+                || session.primary.is_some());
 
         // Auto-commit for passkey:
         // Passkey was just added (pending changes in passkeys) and can commit
