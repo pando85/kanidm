@@ -146,7 +146,7 @@ image = { version = "0.25.9", default-features = false, features = [
     "webp",
 ] }
 itertools = "0.14.0"
-jsonschema = "0.45.0"
+jsonschema = "0.46.0"
 ldap3_client = "^0.7.0"
 ldap3_proto = { version = "^0.7.0", features = ["serde"] }
 lettre = { version = "0.11.20", default-features = false }
