@@ -3,11 +3,11 @@ name = "rlm-python"
 version = "0.1.0"
 description = "FreeRADIUS Kubidm module"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12,<4.0"
 dependencies = ["kubidm"]
 
 [dependency-groups]
-dev = ["mypy>=1.15.0", "pytest>=8.3.5", "ruff>=0.11.9", "ty>=0.0.0a8"]
+dev = ["mypy>=1.15.0", "pytest>=9.0.2", "ruff>=0.11.9", "ty>=0.0.0a8"]
 
 [tool.uv.sources]
 kubidm = { path = "../pykubidm" }
