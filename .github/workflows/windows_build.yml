@@ -27,7 +27,7 @@ jobs:
         run: |
           $maxAttempts = 3
           $retryDelay = 30
-          
+
           for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
             try {
               Write-Host "Attempt $attempt of $maxAttempts"
