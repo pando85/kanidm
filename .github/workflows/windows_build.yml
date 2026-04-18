@@ -23,9 +23,30 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Install OpenSSL
+        shell: pwsh
         run: |
-          vcpkg integrate install
-          vcpkg install openssl:x64-windows-static-md
+          $maxAttempts = 3
+          $retryDelay = 30
+          
+          for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+            try {
+              Write-Host "Attempt $attempt of $maxAttempts"
+              vcpkg integrate install
+              vcpkg install openssl:x64-windows-static-md
+              Write-Host "vcpkg install succeeded"
+              break
+            }
+            catch {
+              if ($attempt -lt $maxAttempts) {
+                Write-Host "Attempt $attempt failed. Retrying in $retryDelay seconds..."
+                Start-Sleep -Seconds $retryDelay
+              }
+              else {
+                Write-Host "All attempts failed."
+                throw
+              }
+            }
+          }
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
