@@ -4,9 +4,6 @@ use crate::CoreAction;
 use bytes::{BufMut, BytesMut};
 use crypto_glue::x509::x509b64;
 use futures::{SinkExt, StreamExt};
-<<<<<<< HEAD
-pub use kanidm_proto::internal::{
-=======
 use kubidm_utils_users::get_current_uid;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
@@ -20,7 +17,6 @@ use tracing::{span, Instrument, Level};
 use uuid::Uuid;
 
 pub use kubidm_proto::internal::{
->>>>>>> master
     DomainInfo as ProtoDomainInfo, DomainUpgradeCheckReport as ProtoDomainUpgradeCheckReport,
     DomainUpgradeCheckStatus as ProtoDomainUpgradeCheckStatus,
 };

@@ -3,12 +3,8 @@ use crate::schema::SchemaAttribute;
 use crate::valueset::{
     DbValueSetV2, ScimResolveStatus, ValueSet, ValueSetResolveStatus, ValueSetScimPut,
 };
-<<<<<<< HEAD
-use kanidm_proto::scim_v1::client::ScimUrls;
-use kanidm_proto::scim_v1::JsonValue;
-=======
+use kubidm_proto::scim_v1::client::ScimUrls;
 use kubidm_proto::scim_v1::JsonValue;
->>>>>>> master
 use smolset::SmolSet;
 
 #[derive(Debug, Clone)]

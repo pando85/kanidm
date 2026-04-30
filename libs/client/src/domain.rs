@@ -1,12 +1,6 @@
-<<<<<<< HEAD
-use crate::{ClientError, KanidmClient};
-use kanidm_proto::constants::{ATTR_DOMAIN_ALLOW_ACCOUNT_RECOVERY, ATTR_DOMAIN_ALLOW_EASTER_EGGS};
-use kanidm_proto::internal::ImageValue;
-=======
 use crate::{ClientError, KubidmClient};
-use kubidm_proto::constants::ATTR_DOMAIN_ALLOW_EASTER_EGGS;
+use kubidm_proto::constants::{ATTR_DOMAIN_ALLOW_ACCOUNT_RECOVERY, ATTR_DOMAIN_ALLOW_EASTER_EGGS};
 use kubidm_proto::internal::ImageValue;
->>>>>>> master
 use reqwest::multipart;
 
 impl KubidmClient {

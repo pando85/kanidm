@@ -133,10 +133,9 @@ pub fn phase_1_schema_attrs() -> Vec<EntryInitNew> {
         SCHEMA_ATTR_ACCOUNT_SOFTLOCK_EXPIRE.clone().into(),
         // DL14
         SCHEMA_ATTR_PASSWORD_CHANGED_TIME.clone().into(),
-<<<<<<< HEAD
+        // OAuth2
         SCHEMA_ATTR_OAUTH2_REFRESH_TOKEN_EXPIRY.clone().into(),
         SCHEMA_ATTR_DOMAIN_ALLOW_ACCOUNT_RECOVERY.clone().into(),
-=======
         // OAuth2 Federation (DL14+)
         SCHEMA_ATTR_OAUTH2_ISSUER.clone().into(),
         SCHEMA_ATTR_OAUTH2_JWKS_URI.clone().into(),
@@ -153,7 +152,6 @@ pub fn phase_1_schema_attrs() -> Vec<EntryInitNew> {
         SCHEMA_ATTR_MEMBER_VALID_UNTIL.clone().into(),
         SCHEMA_ATTR_MAX_GRANT_DURATION.clone().into(),
         SCHEMA_ATTR_TIME_BOUNDED_MEMBER.clone().into(),
->>>>>>> master
     ]
 }
 

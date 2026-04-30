@@ -138,14 +138,10 @@ pub async fn setup_async_test(mut config: Configuration) -> AsyncTestEnvironment
     }
 }
 
-<<<<<<< HEAD
-pub async fn setup_account_passkey(rsclient: &KanidmClient, account_name: &str) -> SoftPasskey {
-=======
 pub async fn setup_account_passkey(
     rsclient: &KubidmClient,
     account_name: &str,
 ) -> WebauthnAuthenticator<SoftPasskey> {
->>>>>>> master
     // Create an intent token for them
     let intent_token = rsclient
         .idm_person_account_credential_update_intent(account_name, Some(1234))

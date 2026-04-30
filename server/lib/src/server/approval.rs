@@ -206,7 +206,7 @@ impl QueryServerWriteTransaction<'_> {
         }
 
         let decision = ApprovalDecision {
-            approver_uuid: ident.get_uuid().ok_or(OperationError::InvalidState)?,
+            approver_uuid: ident.get_uuid(),
             approver_spn: ident
                 .get_user_entry()
                 .and_then(|e| e.get_ava_single_utf8(Attribute::Spn).map(|s| s.to_string()))

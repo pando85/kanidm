@@ -1167,18 +1167,14 @@ pub enum DomainOpt {
         #[clap(name = "allow", action = clap::ArgAction::Set)]
         enable: bool,
     },
-<<<<<<< HEAD:tools/cli/src/opt/kanidm.rs
-    /// Enable or disable the account recovery feature. If enabled, users who have forgotten
-    /// their credentials can trigger a credential reset link to be sent to them if they are able to prove
-    /// knowledge of one of their own email addresses.
-    SetAllowAccountRecovery {
-        #[clap(name = "allow", action = clap::ArgAction::Set)]
-        enable: bool,
-    },
-    /// Enable or disable easter eggs in the server. This includes seasonal icons, kanidm
-=======
-    /// Enable or disable easter eggs in the server. This includes seasonal icons, kubidm
->>>>>>> master:tools/cli/src/opt/kubidm.rs
+/// Enable or disable the account recovery feature. If enabled, users who have forgotten
+        /// their credentials can trigger a credential reset link to be sent to them if they are able to prove
+        /// knowledge of one of their own email addresses.
+        SetAllowAccountRecovery {
+            #[clap(name = "allow", action = clap::ArgAction::Set)]
+            enable: bool,
+        },
+        /// Enable or disable easter eggs in the server. This includes seasonal icons, kubidm
     /// birthday surprises and other fun components. Defaults to false for production releases
     /// and true in development builds.
     SetAllowEasterEggs {

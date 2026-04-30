@@ -2,7 +2,7 @@ use crate::core::{self, RequestOptions};
 use libnss::group::{Group, GroupHooks};
 use libnss::interop::Response;
 use libnss::passwd::{Passwd, PasswdHooks};
-use sparkle_unix_common::constants::DEFAULT_CONFIG_PATH;
+use kubidm_unix_common::constants::DEFAULT_CONFIG_PATH;
 
 pub struct SparklePasswd;
 

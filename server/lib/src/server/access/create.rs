@@ -339,7 +339,6 @@ fn migration_filter_entry<'a>(ident: &Identity, entry: &Entry<EntryInit, EntryNe
     }
 }
 
-<<<<<<< HEAD
 fn message_queue<'a>(ident: &Identity, entry: &Entry<EntryInit, EntryNew>) -> IResult<'a> {
     match &ident.origin {
         IdentType::Internal(InternalRole::MessageQueue) => {
@@ -369,7 +368,9 @@ fn message_queue<'a>(ident: &Identity, entry: &Entry<EntryInit, EntryNew>) -> IR
             IResult::Deny
         }
         _ => IResult::Ignore,
-=======
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -638,6 +639,5 @@ mod tests {
             }
             _ => panic!("Expected Allow for migration with valid class"),
         }
->>>>>>> master
     }
 }

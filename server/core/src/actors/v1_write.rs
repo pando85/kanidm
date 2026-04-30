@@ -6,12 +6,8 @@ use kubidm_proto::internal::{
     Modify as ProtoModify, ModifyList as ProtoModifyList, ModifyRequest,
     Oauth2ClaimMapJoin as ProtoOauth2ClaimMapJoin, OperationError,
 };
-<<<<<<< HEAD
-use kanidm_proto::v1::{AccountUnixExtend, Entry as ProtoEntry, GroupUnixExtend};
-use kanidmd_lib::valueset::image::ImageValueThings;
-=======
 use kubidm_proto::v1::{AccountUnixExtend, Entry as ProtoEntry, GroupUnixExtend};
->>>>>>> master
+use kubidmd_lib::valueset::image::ImageValueThings;
 use std::str::FromStr;
 use time::OffsetDateTime;
 use tracing::{info, instrument, trace};

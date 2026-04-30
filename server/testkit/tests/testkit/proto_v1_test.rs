@@ -1233,11 +1233,7 @@ async fn test_server_credential_update_session_totp_pw(rsclient: &KubidmClient) 
     assert!(res.is_ok());
 }
 
-<<<<<<< HEAD
-async fn setup_demo_account_passkey(rsclient: &KanidmClient) -> SoftPasskey {
-=======
 async fn setup_demo_account_passkey(rsclient: &KubidmClient) -> WebauthnAuthenticator<SoftPasskey> {
->>>>>>> master
     let res = rsclient
         .auth_simple_password("admin", ADMIN_TEST_PASSWORD)
         .await;

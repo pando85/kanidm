@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use clap::CommandFactory;
 use clap_complete::{generate_to, Shell};
 
-use sparkle_resolver_common::opt::{KanidmUnixParser, SshAuthorisedKeysOpt};
+use sparkle_resolver_common::opt::{KubidmUnixParser, SshAuthorisedKeysOpt};
 
 fn main() {
     profiles::apply_profile();
@@ -30,13 +30,8 @@ fn main() {
     for shell in [Shell::Bash, Shell::Elvish, Shell::Fish, Shell::Zsh] {
         generate_to(
             shell,
-<<<<<<< HEAD:unix_integration/resolver_kanidm/build.rs
             &mut SshAuthorisedKeysOpt::command(),
-            "kanidm_ssh_authorizedkeys",
-=======
-            &mut SshAuthorizedOpt::command(),
             "kubidm_ssh_authorizedkeys",
->>>>>>> master:unix_integration/resolver/build.rs
             comp_dir.clone(),
         )
         .ok();

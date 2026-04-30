@@ -24,23 +24,16 @@ use concread::cowcell::*;
 use crypto_glue::{s256::Sha256, traits::Digest};
 use hashbrown::HashMap;
 use hashbrown::HashSet;
-<<<<<<< HEAD
-use kanidm_proto::constants::*;
-pub use kanidm_proto::oauth2::{
-=======
 use kubidm_proto::constants::*;
-use kubidm_proto::oauth2::IssuedTokenType;
 pub use kubidm_proto::oauth2::{
->>>>>>> master
     AccessTokenIntrospectRequest, AccessTokenIntrospectResponse, AccessTokenRequest,
     AccessTokenResponse, AccessTokenType, AuthorisationRequest, ClaimType, ClientAuth,
     ClientPostAuth, CodeChallengeMethod, DeviceAuthorizationResponse, DisplayValue,
-    EndpointAuthMethod, ErrorResponse, GrantType, GrantTypeReq, IdTokenSignAlg, OAuth2RFC9068Token,
-    OAuth2RFC9068TokenExtensions, Oauth2Rfc8414MetadataResponse, OidcDiscoveryResponse,
-    OidcWebfingerRel, OidcWebfingerResponse, PkceAlg, PkceRequest, ResponseMode, ResponseType,
-    SubjectType, TokenRevokeRequest, OAUTH2_TOKEN_TYPE_ACCESS_TOKEN,
+    EndpointAuthMethod, ErrorResponse, GrantType, GrantTypeReq, IdTokenSignAlg, IssuedTokenType,
+    OAuth2RFC9068Token, OAuth2RFC9068TokenExtensions, Oauth2Rfc8414MetadataResponse,
+    OidcDiscoveryResponse, OidcWebfingerRel, OidcWebfingerResponse, PkceAlg, PkceRequest,
+    Prompt, ResponseMode, ResponseType, SubjectType, TokenRevokeRequest, OAUTH2_TOKEN_TYPE_ACCESS_TOKEN,
 };
-use kanidm_proto::oauth2::{IssuedTokenType, Prompt};
 use serde::{Deserialize, Serialize};
 use serde_with::{formats, serde_as};
 use std::collections::btree_map::Entry as BTreeEntry;

@@ -108,6 +108,7 @@ tempfile = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
 clap_complete = { workspace = true }
 kubidm_build_profiles = { workspace = true }
+sparkle_resolver_common = { workspace = true }
 
 ## Debian packaging
 # We only package unixd itself here as shared libraries must be packaged separarately due to multiarch rules.
