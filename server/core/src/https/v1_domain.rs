@@ -10,15 +10,8 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use axum::{
-    http::header::CONTENT_TYPE,
-    http::StatusCode,
-    response::{IntoResponse, Response},
-};
 use kubidm_proto::internal::{ImageType, ImageValue};
 use kubidmd_lib::prelude::*;
-use kubidmd_lib::valueset::image::ImageValueThings;
-use sketching::admin_error;
 
 pub(crate) async fn image_get(DomainInfo(domain_info): DomainInfo) -> Response {
     match domain_info.image() {

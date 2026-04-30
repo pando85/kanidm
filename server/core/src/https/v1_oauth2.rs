@@ -14,8 +14,6 @@ use axum::{Extension, Json};
 use kubidm_proto::internal::{ImageType, ImageValue, Oauth2ClaimMapJoin};
 use kubidm_proto::v1::Entry as ProtoEntry;
 use kubidmd_lib::prelude::*;
-use kubidmd_lib::valueset::image::ImageValueThings;
-use sketching::admin_error;
 
 #[utoipa::path(
     get,
