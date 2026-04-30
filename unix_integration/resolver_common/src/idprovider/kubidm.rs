@@ -6,7 +6,7 @@ use super::interface::{
     unix_common::constants::{
         DEFAULT_CACHE_TIMEOUT_JITTER_MS, DEFAULT_OFFLINE_PROVIDER_CHECK_TIME,
     },
-    unix_common::unix_config::{GroupMap, KanidmConfig},
+    unix_common::unix_config::{GroupMap, KubidmConfig},
     unix_common::unix_proto::PamAuthRequest,
     AuthCredHandler, AuthRequest, AuthResult, GroupToken, GroupTokenState, Id, IdProvider,
     IdpError, ProviderOrigin, UserToken, UserTokenState,
@@ -14,26 +14,12 @@ use super::interface::{
 use crate::db::KeyStoreTxn;
 use async_trait::async_trait;
 use hashbrown::HashMap;
-<<<<<<<< HEAD:unix_integration/resolver_common/src/idprovider/kanidm.rs
-use kanidm_client::{ClientError, KanidmClient, StatusCode};
-use kanidm_lib_crypto::CryptoPolicy;
-use kanidm_lib_crypto::DbPasswordV1;
-use kanidm_lib_crypto::Password;
-use kanidm_proto::internal::OperationError;
-use kanidm_proto::v1::{UnixGroupToken, UnixUserToken};
-========
 use kubidm_client::{ClientError, KubidmClient, StatusCode};
 use kubidm_lib_crypto::CryptoPolicy;
 use kubidm_lib_crypto::DbPasswordV1;
 use kubidm_lib_crypto::Password;
 use kubidm_proto::internal::OperationError;
 use kubidm_proto::v1::{UnixGroupToken, UnixUserToken};
-use kubidm_unix_common::constants::{
-    DEFAULT_CACHE_TIMEOUT_JITTER_MS, DEFAULT_OFFLINE_PROVIDER_CHECK_TIME,
-};
-use kubidm_unix_common::unix_config::{GroupMap, KubidmConfig};
-use kubidm_unix_common::unix_proto::PamAuthRequest;
->>>>>>>> master:unix_integration/resolver_common/src/idprovider/kubidm.rs
 use std::collections::BTreeSet;
 use std::time::{Duration, SystemTime};
 use tokio::sync::{broadcast, Mutex};

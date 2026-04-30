@@ -1,10 +1,10 @@
 use crate::opt::ssh_authorisedkeys::SshAuthorisedKeysOpt;
 use crate::SparkleFlavour;
 use clap::Parser;
-use sparkle_unix_common::client::DaemonClient;
-use sparkle_unix_common::constants::DEFAULT_CONFIG_PATH;
-use sparkle_unix_common::unix_config::PamNssConfig;
-use sparkle_unix_common::unix_proto::{ClientRequest, ClientResponse};
+use kubidm_unix_common::client::DaemonClient;
+use kubidm_unix_common::constants::DEFAULT_CONFIG_PATH;
+use kubidm_unix_common::unix_config::PamNssConfig;
+use kubidm_unix_common::unix_proto::{ClientRequest, ClientResponse};
 use std::path::PathBuf;
 use std::process::ExitCode;
 

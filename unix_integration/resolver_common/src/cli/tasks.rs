@@ -1,6 +1,6 @@
 use crate::SparkleFlavour;
 use futures::{SinkExt, StreamExt};
-use kanidm_utils_users::{get_effective_gid, get_effective_uid};
+use kubidm_utils_users::{get_effective_gid, get_effective_uid};
 use libc::{lchown, umask};
 use notify_debouncer_full::notify::RecommendedWatcher;
 use notify_debouncer_full::Debouncer;
@@ -9,15 +9,15 @@ use notify_debouncer_full::{new_debouncer, notify::RecursiveMode, DebouncedEvent
 use sketching::tracing_forest::traits::*;
 use sketching::tracing_forest::util::*;
 use sketching::tracing_forest::{self};
-use sparkle_unix_common::constants::{
+use kubidm_unix_common::constants::{
     DEFAULT_CONFIG_PATH, SYSTEM_GROUP_PATH, SYSTEM_PASSWD_PATH, SYSTEM_SHADOW_PATH,
 };
-use sparkle_unix_common::json_codec::JsonCodec;
-use sparkle_unix_common::unix_config::{HomeStrategy, UnixdConfig};
-use sparkle_unix_common::unix_passwd::{
+use kubidm_unix_common::json_codec::JsonCodec;
+use kubidm_unix_common::unix_config::{HomeStrategy, UnixdConfig};
+use kubidm_unix_common::unix_passwd::{
     parse_etc_group, parse_etc_passwd, parse_etc_shadow, EtcDb,
 };
-use sparkle_unix_common::unix_proto::{
+use kubidm_unix_common::unix_proto::{
     HomeDirectoryInfo, TaskRequest, TaskRequestFrame, TaskResponse,
 };
 use std::ffi::CString;
@@ -45,7 +45,7 @@ use procfs::process::Process;
 use std::fs::{create_dir, remove_file};
 
 #[cfg(all(target_family = "unix", feature = "selinux"))]
-use sparkle_unix_common::selinux_util;
+use kubidm_unix_common::selinux_util;
 
 static KANIDM_UNIX_RETRY_SECS: u64 = 5;
 

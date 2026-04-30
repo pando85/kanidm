@@ -1,11 +1,11 @@
-use crate::check::check_nsswitch_has_module;
+use crate::check::check_nsswitch_has_kubidm;
 use crate::opt::tool::{KanidmUnixOpt, KanidmUnixParser};
 use crate::SparkleFlavour;
 use clap::Parser;
-use sparkle_unix_common::client::DaemonClient;
-use sparkle_unix_common::constants::DEFAULT_CONFIG_PATH;
-use sparkle_unix_common::unix_config::PamNssConfig;
-use sparkle_unix_common::unix_proto::{
+use kubidm_unix_common::client::DaemonClient;
+use kubidm_unix_common::constants::DEFAULT_CONFIG_PATH;
+use kubidm_unix_common::unix_config::PamNssConfig;
+use kubidm_unix_common::unix_proto::{
     ClientRequest, ClientResponse, PamAuthRequest, PamAuthResponse, PamServiceInfo,
 };
 use std::path::PathBuf;
@@ -49,7 +49,7 @@ macro_rules! setup_client {
     }};
 }
 
-pub async fn main<F: SparkleFlavour>(flavour: F) -> ExitCode {
+pub async fn main<F: SparkleFlavour>(_flavour: F) -> ExitCode {
     let opt = KanidmUnixParser::parse();
 
     let debug = match opt.commands {
@@ -237,7 +237,7 @@ pub async fn main<F: SparkleFlavour>(flavour: F) -> ExitCode {
             let mut daemon_client = setup_client!();
             let req = ClientRequest::Status;
 
-            check_nsswitch_has_module(None, flavour.nss_module_name());
+            check_nsswitch_has_kubidm(None);
 
             match daemon_client.call(req, None).await {
                 Ok(r) => match r {

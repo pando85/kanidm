@@ -1,33 +1,33 @@
 use crate::idprovider::interface::IdProvider;
-use crate::idprovider::kanidm::KanidmProvider;
+use crate::idprovider::kubidm::KubidmProvider;
 use crate::idprovider::system::SystemProvider;
 use crate::resolver::{AuthSession, Resolver};
 use crate::SparkleFlavour;
+use crate::check::check_nsswitch_has_kubidm;
 use crate::{
-    check::check_nsswitch_has_module,
     db::{Cache, Db},
 };
 use clap::{Arg, ArgAction, Command};
 use futures::{SinkExt, StreamExt};
-use kanidm_client::KanidmClientBuilder;
+use kubidm_client::KubidmClientBuilder;
 use kanidm_hsm_crypto::{
     provider::{BoxedDynTpm, SoftTpm, Tpm},
     AuthValue,
 };
-use kanidm_lib_file_permissions::diagnose_path;
-use kanidm_proto::constants::DEFAULT_CLIENT_CONFIG_PATH;
-use kanidm_proto::internal::OperationError;
-use kanidm_utils_users::{get_current_gid, get_current_uid, get_effective_gid, get_effective_uid};
+use kubidm_lib_file_permissions::diagnose_path;
+use kubidm_proto::constants::DEFAULT_CLIENT_CONFIG_PATH;
+use kubidm_proto::internal::OperationError;
+use kubidm_utils_users::{get_current_gid, get_current_uid, get_effective_gid, get_effective_uid};
 use libc::umask;
 use lru::LruCache;
 use sketching::tracing::span;
 use sketching::tracing_forest::util::*;
 use sketching::tracing_forest::{self, traits::*};
-use sparkle_unix_common::constants::DEFAULT_CONFIG_PATH;
-use sparkle_unix_common::json_codec::JsonCodec;
-use sparkle_unix_common::unix_config::{HsmType, UnixdConfig};
-use sparkle_unix_common::unix_passwd::EtcDb;
-use sparkle_unix_common::unix_proto::{
+use kubidm_unix_common::constants::DEFAULT_CONFIG_PATH;
+use kubidm_unix_common::json_codec::JsonCodec;
+use kubidm_unix_common::unix_config::{HsmType, UnixdConfig};
+use kubidm_unix_common::unix_passwd::EtcDb;
+use kubidm_unix_common::unix_proto::{
     ClientRequest, ClientResponse, TaskRequest, TaskRequestFrame, TaskResponse,
 };
 use std::collections::BTreeMap;
@@ -514,7 +514,7 @@ fn open_tpm_if_possible(_tcti_name: &str) -> BoxedDynTpm {
     BoxedDynTpm::new(SoftTpm::default())
 }
 
-async fn main_inner<F: SparkleFlavour>(clap_args: clap::ArgMatches, flavour: F) -> ExitCode {
+async fn main_inner<F: SparkleFlavour>(clap_args: clap::ArgMatches, _flavour: F) -> ExitCode {
     let cuid = get_current_uid();
     let ceuid = get_effective_uid();
     let cgid = get_current_gid();
@@ -556,7 +556,7 @@ async fn main_inner<F: SparkleFlavour>(clap_args: clap::ArgMatches, flavour: F) 
                 return ExitCode::FAILURE;
             }
         };
-        if !kanidm_lib_file_permissions::readonly(&cfg_meta) {
+        if !kubidm_lib_file_permissions::readonly(&cfg_meta) {
             warn!("permissions on {} may not be secure. Should be readonly to running uid. This could be a security risk ...",
                         cfg_path_str
                         );
@@ -594,7 +594,7 @@ async fn main_inner<F: SparkleFlavour>(clap_args: clap::ArgMatches, flavour: F) 
                 return ExitCode::FAILURE;
             }
         };
-        if !kanidm_lib_file_permissions::readonly(&unixd_meta) {
+        if !kubidm_lib_file_permissions::readonly(&unixd_meta) {
             warn!("permissions on {} may not be secure. Should be readonly to running uid. This could be a security risk ...",
                         unixd_path_str);
         }
@@ -614,13 +614,13 @@ async fn main_inner<F: SparkleFlavour>(clap_args: clap::ArgMatches, flavour: F) 
         }
     };
 
-    let client_builder = if let Some(kconfig) = &cfg.kanidm_config {
+    let client_builder = if let Some(kconfig) = &cfg.kubidm_config {
         if kconfig.pam_allowed_login_groups.is_empty() {
             error!("Kanidm is enabled but no pam_allowed_login_groups are set - KANIDM USERS CANNOT AUTHENTICATE !!!");
         }
 
         // setup
-        let cb = match KanidmClientBuilder::new().read_options_from_optional_config(&cfg_path) {
+        let cb = match KubidmClientBuilder::new().read_options_from_optional_config(&cfg_path) {
             Ok(v) => v,
             Err(_) => {
                 error!("Failed to parse {}", cfg_path_str);
@@ -633,7 +633,7 @@ async fn main_inner<F: SparkleFlavour>(clap_args: clap::ArgMatches, flavour: F) 
         None
     };
 
-    check_nsswitch_has_module(None, flavour.nss_module_name());
+    check_nsswitch_has_kubidm(None);
 
     if clap_args.get_flag("configtest") {
         eprintln!("###################################");
@@ -696,7 +696,7 @@ async fn main_inner<F: SparkleFlavour>(clap_args: clap::ArgMatches, flavour: F) 
                 );
                 return ExitCode::FAILURE;
             }
-            if kanidm_lib_file_permissions::readonly(&i_meta) {
+            if kubidm_lib_file_permissions::readonly(&i_meta) {
                 warn!("WARNING: DB folder permissions on {} indicate it may not be RW. This could cause the server start up to fail!", db_par_path_buf.to_str()
                         .unwrap_or("<db_par_path_buf invalid>")
                         );
@@ -862,7 +862,7 @@ async fn main_inner<F: SparkleFlavour>(clap_args: clap::ArgMatches, flavour: F) 
             }
         };
 
-        let Ok(idprovider) = KanidmProvider::new(
+        let Ok(idprovider) = KubidmProvider::new(
             rsclient,
             kconfig,
             SystemTime::now(),
@@ -872,7 +872,7 @@ async fn main_inner<F: SparkleFlavour>(clap_args: clap::ArgMatches, flavour: F) 
         )
         .await
         else {
-            error!("Failed to configure Kanidm Provider");
+            error!("Failed to configure Kubidm Provider");
             return ExitCode::FAILURE;
         };
 

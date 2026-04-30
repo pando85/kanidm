@@ -18,15 +18,15 @@ use crate::idprovider::system::{
 };
 use hashbrown::HashMap;
 use kanidm_hsm_crypto::provider::BoxedDynTpm;
-use kanidm_lib_file_permissions::diagnose_path;
+use kubidm_lib_file_permissions::diagnose_path;
 use lru::LruCache;
-use sparkle_unix_common::constants::{
+use kubidm_unix_common::constants::{
     DEFAULT_CACHE_TIMEOUT_JITTER_MS, DEFAULT_CACHE_TIMEOUT_MAXIMUM, DEFAULT_CACHE_TIMEOUT_MINIMUM,
     DEFAULT_SHELL_SEARCH_PATHS, SYSTEM_SHADOW_PATH,
 };
-use sparkle_unix_common::unix_config::{HomeAttr, UidAttr};
-use sparkle_unix_common::unix_passwd::{EtcGroup, EtcShadow, EtcUser};
-use sparkle_unix_common::unix_proto::{
+use kubidm_unix_common::unix_config::{HomeAttr, UidAttr};
+use kubidm_unix_common::unix_passwd::{EtcGroup, EtcShadow, EtcUser};
+use kubidm_unix_common::unix_proto::{
     HomeDirectoryInfo, NssGroup, NssUser, PamAuthRequest, PamAuthResponse, PamServiceInfo,
     ProviderStatus,
 };
