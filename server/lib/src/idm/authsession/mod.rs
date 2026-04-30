@@ -1778,7 +1778,6 @@ mod tests {
     use time::OffsetDateTime;
     use tokio::sync::mpsc::unbounded_channel as unbounded;
     use webauthn_authenticator_rs::softpasskey::SoftPasskey;
-    use webauthn_authenticator_rs::WebauthnAuthenticator;
     use webauthn_rs::prelude::{RequestChallengeResponse, Webauthn};
 
     fn create_pw_badlist_cache() -> HashSet<String> {

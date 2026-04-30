@@ -2970,7 +2970,7 @@ mod tests {
     use uuid::uuid;
     use webauthn_authenticator_rs::softpasskey::SoftPasskey;
     use webauthn_authenticator_rs::softtoken::{self, SoftToken};
-    use webauthn_authenticator_rs::WebauthnAuthenticator;
+    use webauthn_authenticator_rs::AuthenticatorBackend;
     use webauthn_rs::prelude::AttestationCaListBuilder;
 
     const TEST_CURRENT_TIME: u64 = 6000;
@@ -3435,7 +3435,7 @@ mod tests {
         }
     }
 
-    async fn check_testperson_passkey<T: WebauthnAuthenticator>(
+    async fn check_testperson_passkey<T: AuthenticatorBackend>(
         idms: &IdmServer,
         idms_delayed: &mut IdmServerDelayed,
         wa: &mut T,
