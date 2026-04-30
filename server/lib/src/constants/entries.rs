@@ -4,10 +4,10 @@ use std::fmt::Display;
 use crate::value::PartialValue;
 use crate::value::Value;
 use crate::valueset::{ValueSet, ValueSetIutf8};
-pub use kanidm_proto::attribute::Attribute;
-use kanidm_proto::constants::*;
-use kanidm_proto::scim_v1::JsonValue;
-use kanidm_proto::scim_v1::ScimFilter;
+pub use kubidm_proto::attribute::Attribute;
+use kubidm_proto::constants::*;
+use kubidm_proto::scim_v1::JsonValue;
+use kubidm_proto::scim_v1::ScimFilter;
 
 //TODO: This would do well in the proto lib
 // together with all the other definitions.
@@ -22,8 +22,11 @@ pub enum EntryClass {
     AccessControlProfile,
     AccessControlReceiverEntryManager,
     AccessControlReceiverGroup,
+    AccessControlReceiverDelegated,
     AccessControlSearch,
     AccessControlTargetScope,
+    AccessControlTargetDelegatedScope,
+    DelegatedRole,
     Account,
     AccountPolicy,
     Application,
@@ -56,6 +59,8 @@ pub enum EntryClass {
     OAuth2ResourceServerBasic,
     OAuth2ResourceServerPublic,
     OAuth2Client,
+    OAuth2Federation,
+    OAuth2LinkedAccount,
     Object,
     OrgPerson,
     OutboundMessage,
@@ -67,7 +72,10 @@ pub enum EntryClass {
     ServiceAccount,
     SyncAccount,
     SyncObject,
+    TimeBoundedGrant,
     Tombstone,
+    ApprovalPolicy,
+    ApprovalRequest,
     User,
     System,
     SystemInfo,
@@ -91,8 +99,11 @@ impl From<EntryClass> for &'static str {
             EntryClass::AccessControlProfile => ACCESS_CONTROL_PROFILE,
             EntryClass::AccessControlReceiverEntryManager => ACCESS_CONTROL_RECEIVER_ENTRY_MANAGER,
             EntryClass::AccessControlReceiverGroup => ACCESS_CONTROL_RECEIVER_GROUP,
+            EntryClass::AccessControlReceiverDelegated => ACCESS_CONTROL_RECEIVER_DELEGATED,
             EntryClass::AccessControlSearch => ACCESS_CONTROL_SEARCH,
             EntryClass::AccessControlTargetScope => ACCESS_CONTROL_TARGET_SCOPE,
+            EntryClass::AccessControlTargetDelegatedScope => ACCESS_CONTROL_TARGET_DELEGATED_SCOPE,
+            EntryClass::DelegatedRole => DELEGATED_ROLE,
             EntryClass::Account => ENTRYCLASS_ACCOUNT,
             EntryClass::AccountPolicy => ENTRYCLASS_ACCOUNT_POLICY,
             EntryClass::Application => ENTRYCLASS_APPLICATION,
@@ -121,6 +132,8 @@ impl From<EntryClass> for &'static str {
             EntryClass::Memorial => ENTRYCLASS_MEMORIAL,
             EntryClass::OAuth2Account => ENTRYCLASS_OAUTH2_ACCOUNT,
             EntryClass::OAuth2Client => ENTRYCLASS_OAUTH2_CLIENT,
+            EntryClass::OAuth2Federation => ENTRYCLASS_OAUTH2_FEDERATION,
+            EntryClass::OAuth2LinkedAccount => ENTRYCLASS_OAUTH2_LINKED_ACCOUNT,
             EntryClass::OAuth2DeviceCodeSession => OAUTH2_DEVICE_CODE_SESSION,
             EntryClass::OAuth2ResourceServer => OAUTH2_RESOURCE_SERVER,
             EntryClass::OAuth2ResourceServerBasic => OAUTH2_RESOURCE_SERVER_BASIC,
@@ -136,6 +149,9 @@ impl From<EntryClass> for &'static str {
             EntryClass::ServiceAccount => ENTRYCLASS_SERVICE_ACCOUNT,
             EntryClass::SyncAccount => ENTRYCLASS_SYNC_ACCOUNT,
             EntryClass::SyncObject => ENTRYCLASS_SYNC_OBJECT,
+            EntryClass::TimeBoundedGrant => ENTRYCLASS_TIME_BOUNDED_GRANT,
+            EntryClass::ApprovalPolicy => ENTRYCLASS_APPROVAL_POLICY,
+            EntryClass::ApprovalRequest => ENTRYCLASS_APPROVAL_REQUEST,
             EntryClass::System => ENTRYCLASS_SYSTEM,
             EntryClass::SystemConfig => ENTRYCLASS_SYSTEM_CONFIG,
             EntryClass::SystemInfo => ENTRYCLASS_SYSTEM_INFO,

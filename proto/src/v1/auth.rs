@@ -7,7 +7,7 @@ use uuid::Uuid;
 use webauthn_rs_proto::PublicKeyCredential;
 use webauthn_rs_proto::RequestChallengeResponse;
 
-/// Authentication to Kanidm is a stepped process.
+/// Authentication to Kubidm is a stepped process.
 ///
 /// The session is first initialised with the requested username.
 ///
@@ -225,4 +225,211 @@ impl fmt::Display for AuthAllowed {
 pub struct AuthResponse {
     pub sessionid: Uuid,
     pub state: AuthState,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_auth_mech_to_value() {
+        assert_eq!(AuthMech::Anonymous.to_value(), "anonymous");
+        assert_eq!(AuthMech::Password.to_value(), "password");
+        assert_eq!(AuthMech::PasswordTotp.to_value(), "passwordmfa");
+        assert_eq!(
+            AuthMech::PasswordBackupCode.to_value(),
+            "passwordbackupcode"
+        );
+        assert_eq!(
+            AuthMech::PasswordSecurityKey.to_value(),
+            "passwordsecuritykey"
+        );
+        assert_eq!(AuthMech::Passkey.to_value(), "passkey");
+        assert_eq!(AuthMech::OAuth2Trust.to_value(), "oauth2trust");
+    }
+
+    #[test]
+    fn test_auth_mech_display() {
+        assert_eq!(
+            AuthMech::Anonymous.to_string(),
+            "Anonymous (no credentials)"
+        );
+        assert_eq!(AuthMech::Password.to_string(), "Password");
+        assert_eq!(AuthMech::PasswordTotp.to_string(), "TOTP and Password");
+        assert_eq!(
+            AuthMech::PasswordBackupCode.to_string(),
+            "Backup Code and Password"
+        );
+        assert_eq!(
+            AuthMech::PasswordSecurityKey.to_string(),
+            "Security Key and Password"
+        );
+        assert_eq!(AuthMech::Passkey.to_string(), "Passkey");
+        assert_eq!(AuthMech::OAuth2Trust.to_string(), "OAuth2 Trust");
+    }
+
+    #[test]
+    fn test_auth_mech_eq() {
+        assert_eq!(AuthMech::Password, AuthMech::Password);
+        assert_ne!(AuthMech::Password, AuthMech::PasswordTotp);
+        assert_ne!(AuthMech::Anonymous, AuthMech::Password);
+    }
+
+    #[test]
+    fn test_auth_mech_serde() {
+        let mech = AuthMech::Password;
+        let json = serde_json::to_string(&mech).expect("Failed to serialize");
+        assert_eq!(json, "\"password\"");
+
+        let deserialized: AuthMech = serde_json::from_str(&json).expect("Failed to deserialize");
+        assert_eq!(deserialized, AuthMech::Password);
+    }
+
+    #[test]
+    fn test_auth_mech_serde_passwordmfa() {
+        // PasswordTotp uses custom serde rename
+        let mech = AuthMech::PasswordTotp;
+        let json = serde_json::to_string(&mech).expect("Failed to serialize");
+        assert_eq!(json, "\"passwordmfa\"");
+
+        let deserialized: AuthMech = serde_json::from_str(&json).expect("Failed to deserialize");
+        assert_eq!(deserialized, AuthMech::PasswordTotp);
+    }
+
+    #[test]
+    fn test_auth_credential_debug_does_not_leak() {
+        let cred = AuthCredential::Password("super-secret".to_string());
+        let debug = format!("{:?}", cred);
+        assert_eq!(debug, "Password(_)");
+        assert!(!debug.contains("super-secret"));
+
+        let cred = AuthCredential::BackupCode("secret-code".to_string());
+        let debug = format!("{:?}", cred);
+        assert_eq!(debug, "BackupCode(_)");
+        assert!(!debug.contains("secret-code"));
+
+        let cred = AuthCredential::Totp(123456);
+        let debug = format!("{:?}", cred);
+        assert_eq!(debug, "TOTP(_)");
+    }
+
+    #[test]
+    fn test_auth_issue_session_serde() {
+        let token = AuthIssueSession::Token;
+        let json = serde_json::to_string(&token).expect("Failed to serialize");
+        assert_eq!(json, "\"token\"");
+        let deserialized: AuthIssueSession =
+            serde_json::from_str(&json).expect("Failed to deserialize");
+        assert!(matches!(deserialized, AuthIssueSession::Token));
+
+        let cookie = AuthIssueSession::Cookie;
+        let json = serde_json::to_string(&cookie).expect("Failed to serialize");
+        assert_eq!(json, "\"cookie\"");
+        let deserialized: AuthIssueSession =
+            serde_json::from_str(&json).expect("Failed to deserialize");
+        assert!(matches!(deserialized, AuthIssueSession::Cookie));
+    }
+
+    #[test]
+    fn test_auth_step_init() {
+        let step = AuthStep::Init("testuser".to_string());
+        let json = serde_json::to_string(&step).expect("Failed to serialize");
+        assert!(json.contains("testuser"));
+    }
+
+    #[test]
+    fn test_auth_step_init2() {
+        let step = AuthStep::Init2 {
+            username: "testuser".to_string(),
+            issue: AuthIssueSession::Token,
+            privileged: true,
+        };
+        let json = serde_json::to_string(&step).expect("Failed to serialize");
+        assert!(json.contains("testuser"));
+        assert!(json.contains("privileged"));
+    }
+
+    #[test]
+    fn test_auth_state_denied() {
+        let state = AuthState::Denied("Invalid credentials".to_string());
+        let json = serde_json::to_string(&state).expect("Failed to serialize");
+        assert!(json.contains("denied"));
+        assert!(json.contains("Invalid credentials"));
+    }
+
+    #[test]
+    fn test_auth_state_success() {
+        let state = AuthState::Success("bearer-token-123".to_string());
+        let json = serde_json::to_string(&state).expect("Failed to serialize");
+        assert!(json.contains("success"));
+        assert!(json.contains("bearer-token-123"));
+    }
+
+    #[test]
+    fn test_auth_allowed_ordering() {
+        // Test that AuthAllowed variants are ordered correctly
+        let mut allowed = vec![
+            AuthAllowed::Totp,
+            AuthAllowed::Anonymous,
+            AuthAllowed::Password,
+            AuthAllowed::BackupCode,
+        ];
+        allowed.sort();
+
+        assert_eq!(allowed[0], AuthAllowed::Anonymous);
+        assert_eq!(allowed[1], AuthAllowed::Password);
+        assert_eq!(allowed[2], AuthAllowed::BackupCode);
+        assert_eq!(allowed[3], AuthAllowed::Totp);
+    }
+
+    #[test]
+    fn test_auth_allowed_display() {
+        assert_eq!(
+            AuthAllowed::Anonymous.to_string(),
+            "Anonymous (no credentials)"
+        );
+        assert_eq!(AuthAllowed::Password.to_string(), "Password");
+        assert_eq!(AuthAllowed::BackupCode.to_string(), "Backup Code");
+        assert_eq!(AuthAllowed::Totp.to_string(), "TOTP");
+    }
+
+    #[test]
+    fn test_auth_allowed_eq() {
+        assert_eq!(AuthAllowed::Password, AuthAllowed::Password);
+        assert_ne!(AuthAllowed::Password, AuthAllowed::Totp);
+    }
+
+    #[test]
+    fn test_auth_allowed_from_u8() {
+        assert_eq!(u8::from(&AuthAllowed::Anonymous), 0);
+        assert_eq!(u8::from(&AuthAllowed::Password), 1);
+        assert_eq!(u8::from(&AuthAllowed::BackupCode), 2);
+        assert_eq!(u8::from(&AuthAllowed::Totp), 3);
+    }
+
+    #[test]
+    fn test_auth_request_serde() {
+        let req = AuthRequest {
+            step: AuthStep::Begin(AuthMech::Password),
+        };
+        let json = serde_json::to_string(&req).expect("Failed to serialize");
+        assert!(json.contains("begin"));
+        assert!(json.contains("password"));
+    }
+
+    #[test]
+    fn test_auth_response_serde() {
+        let resp = AuthResponse {
+            sessionid: Uuid::nil(),
+            state: AuthState::Success("token".to_string()),
+        };
+        let json = serde_json::to_string(&resp).expect("Failed to serialize");
+        assert!(json.contains("sessionid"));
+        assert!(json.contains("state"));
+
+        let deserialized: AuthResponse =
+            serde_json::from_str(&json).expect("Failed to deserialize");
+        assert_eq!(deserialized.sessionid, Uuid::nil());
+        assert!(matches!(deserialized.state, AuthState::Success(_)));
+    }
 }

@@ -22,28 +22,28 @@ ONLY_FOR_ARCHS=	aarch64 amd64
 
 CARGO_ENV=      KANIDM_BUILD_PROFILE=release_freebsd
 
-CARGO_BUILD_ARGS = -p kanidm_tools -p kanidm_unix_int -p nss_kanidm -p pam_kanidm
+CARGO_BUILD_ARGS = -p kubidm_tools -p kubidm_unix_int -p nss_kubidm -p pam_kubidm
 
 CARGO_INSTALL=  no
 
-USE_RC_SUBR=	kanidm_unixd kanidm_unixd_tasks
+USE_RC_SUBR=	kubidm_unixd kubidm_unixd_tasks
 
-USERS=  _kanidm_unixd
-GROUPS= _kanidm_unixd
+USERS=  _kubidm_unixd
+GROUPS= _kubidm_unixd
 
 do-install:
-	${INSTALL_PROGRAM} ${WRKDIR}/target/release/kanidm ${STAGEDIR}${PREFIX}/bin
-	${INSTALL_PROGRAM} ${WRKDIR}/target/release/kanidm-unix ${STAGEDIR}${PREFIX}/bin
-	${INSTALL_PROGRAM} ${WRKDIR}/target/release/kanidm_ssh_authorizedkeys ${STAGEDIR}${PREFIX}/bin
-	${INSTALL_PROGRAM} ${WRKDIR}/target/release/kanidm_ssh_authorizedkeys_direct ${STAGEDIR}${PREFIX}/bin
-	${INSTALL_PROGRAM} ${WRKDIR}/target/release/kanidm_unixd ${STAGEDIR}${PREFIX}/libexec
-	${INSTALL_PROGRAM} ${WRKDIR}/target/release/kanidm_unixd_tasks ${STAGEDIR}${PREFIX}/libexec
-	${INSTALL_LIB} ${WRKDIR}/target/release/libnss_kanidm.so ${STAGEDIR}${PREFIX}/lib/nss_kanidm.so.1
-	${INSTALL_LIB} ${WRKDIR}/target/release/libpam_kanidm.so ${STAGEDIR}${PREFIX}/lib
+	${INSTALL_PROGRAM} ${WRKDIR}/target/release/kubidm ${STAGEDIR}${PREFIX}/bin
+	${INSTALL_PROGRAM} ${WRKDIR}/target/release/kubidm-unix ${STAGEDIR}${PREFIX}/bin
+	${INSTALL_PROGRAM} ${WRKDIR}/target/release/kubidm_ssh_authorizedkeys ${STAGEDIR}${PREFIX}/bin
+	${INSTALL_PROGRAM} ${WRKDIR}/target/release/kubidm_ssh_authorizedkeys_direct ${STAGEDIR}${PREFIX}/bin
+	${INSTALL_PROGRAM} ${WRKDIR}/target/release/kubidm_unixd ${STAGEDIR}${PREFIX}/libexec
+	${INSTALL_PROGRAM} ${WRKDIR}/target/release/kubidm_unixd_tasks ${STAGEDIR}${PREFIX}/libexec
+	${INSTALL_LIB} ${WRKDIR}/target/release/libnss_kubidm.so ${STAGEDIR}${PREFIX}/lib/nss_kubidm.so.1
+	${INSTALL_LIB} ${WRKDIR}/target/release/libpam_kubidm.so ${STAGEDIR}${PREFIX}/lib
 	${MKDIR} ${STAGEDIR}${PREFIX}/etc
-	${MKDIR} ${STAGEDIR}${PREFIX}/etc/kanidm
-	${MKDIR} ${STAGEDIR}/var/run/kanidm-unixd
-	${MKDIR} ${STAGEDIR}/var/lib/kanidm-unixd
-	${MKDIR} ${STAGEDIR}/var/cache/kanidm-unixd
+	${MKDIR} ${STAGEDIR}${PREFIX}/etc/kubidm
+	${MKDIR} ${STAGEDIR}/var/run/kubidm-unixd
+	${MKDIR} ${STAGEDIR}/var/lib/kubidm-unixd
+	${MKDIR} ${STAGEDIR}/var/cache/kubidm-unixd
 
 .include <bsd.port.mk>

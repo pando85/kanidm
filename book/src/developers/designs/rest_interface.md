@@ -11,4 +11,4 @@ visit `https://example.com:8443/docs/swagger-ui`).
 
 The OpenAPI schema is similarly available at `/docs/v1/openapi.json`.
 
-You can download the schema file using `kanidm api download-schema <filename>` - it defaults to `./kanidm-openapi.json`.
+You can download the schema file using `kubidm api download-schema <filename>` - it defaults to `./kubidm-openapi.json`.

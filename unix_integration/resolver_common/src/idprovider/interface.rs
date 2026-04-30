@@ -1,10 +1,10 @@
 use async_trait::async_trait;
 use kanidm_hsm_crypto::provider::BoxedDynTpm;
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use sparkle_unix_common::unix_proto::{
+use kubidm_unix_common::unix_proto::{
     DeviceAuthorizationResponse, PamAuthRequest, PamAuthResponse,
 };
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::time::SystemTime;
@@ -14,7 +14,6 @@ use uuid::Uuid;
 pub type XKeyId = String;
 
 pub use kanidm_hsm_crypto as tpm;
-pub use sparkle_unix_common as unix_common;
 
 /// Errors that the IdProvider may return. These drive the resolver state machine
 /// and should be carefully selected to match your expected errors.
@@ -70,13 +69,10 @@ pub enum Id {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default, Eq, PartialEq, Hash)]
 pub enum ProviderOrigin {
-    // To allow transition, we have an ignored type that effectively
-    // causes these items to be nixed.
     #[default]
     Ignore,
-    /// Provided by local files, commonly /etc/passwd, /etc/group and /etc/shadow
     System,
-    Kanidm,
+    Kubidm,
 }
 
 impl fmt::Display for ProviderOrigin {
@@ -88,8 +84,8 @@ impl fmt::Display for ProviderOrigin {
             ProviderOrigin::System => {
                 write!(f, "System")
             }
-            ProviderOrigin::Kanidm => {
-                write!(f, "Kanidm")
+            ProviderOrigin::Kubidm => {
+                write!(f, "Kubidm")
             }
         }
     }
@@ -229,7 +225,7 @@ pub trait IdProvider {
     fn has_map_group(&self, local: &str) -> Option<&Id>;
 
     // This is similar to a "domain join" process. What do we actually need to pass here
-    // for this to work for kanidm or himmelblau? Should we make it take a generic?
+    // for this to work for kubidm or himmelblau? Should we make it take a generic?
     /*
     async fn configure_machine_identity(
         &self,

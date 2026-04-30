@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 use crate::{ClientError, KanidmClient};
 use kanidm_proto::constants::*;
 use kanidm_proto::internal::{CredentialStatus, IdentifyUserRequest, IdentifyUserResponse};
@@ -6,6 +7,18 @@ use std::collections::BTreeMap;
 use uuid::Uuid;
 
 impl KanidmClient {
+=======
+use std::collections::BTreeMap;
+
+use kubidm_proto::constants::*;
+use kubidm_proto::internal::{CredentialStatus, IdentifyUserRequest, IdentifyUserResponse};
+use kubidm_proto::v1::{AccountUnixExtend, Entry, SingleStringRequest, UatStatus};
+use uuid::Uuid;
+
+use crate::{ClientError, KubidmClient};
+
+impl KubidmClient {
+>>>>>>> master
     pub async fn idm_person_account_list(&self) -> Result<Vec<Entry>, ClientError> {
         self.perform_get_request("/v1/person").await
     }

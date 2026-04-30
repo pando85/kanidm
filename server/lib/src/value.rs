@@ -19,10 +19,10 @@ use crypto_glue::{
     x509::Certificate,
 };
 use hashbrown::HashSet;
-use kanidm_proto::internal::ImageValue;
-use kanidm_proto::internal::{ApiTokenPurpose, Filter as ProtoFilter, UiHint};
-use kanidm_proto::scim_v1::ScimOauth2ClaimMapJoinChar;
-use kanidm_proto::v1::UatPurposeStatus;
+use kubidm_proto::internal::ImageValue;
+use kubidm_proto::internal::{ApiTokenPurpose, Filter as ProtoFilter, UiHint};
+use kubidm_proto::scim_v1::ScimOauth2ClaimMapJoinChar;
+use kubidm_proto::v1::UatPurposeStatus;
 use num_enum::TryFromPrimitive;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -157,6 +157,33 @@ pub enum IntentTokenState {
     },
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TimeBoundedMember {
+    pub uuid: Uuid,
+    pub valid_from: Option<OffsetDateTime>,
+    pub valid_until: OffsetDateTime,
+}
+
+impl TimeBoundedMember {
+    pub fn new(
+        uuid: Uuid,
+        valid_from: Option<OffsetDateTime>,
+        valid_until: OffsetDateTime,
+    ) -> Self {
+        Self {
+            uuid,
+            valid_from,
+            valid_until,
+        }
+    }
+
+    pub fn is_valid_at(&self, when: OffsetDateTime) -> bool {
+        let after_start = self.valid_from.is_none_or(|vf| when >= vf);
+        let before_end = when < self.valid_until;
+        after_start && before_end
+    }
+}
+
 #[allow(non_camel_case_types)]
 #[derive(
     Debug,
@@ -287,6 +314,7 @@ pub enum SyntaxType {
     Sha256 = 44,
     Int64 = 45,
     Uint64 = 46,
+    TimeBoundedMember = 47,
 }
 
 impl TryFrom<&str> for SyntaxType {
@@ -342,6 +370,7 @@ impl TryFrom<&str> for SyntaxType {
             "SHA256" => Ok(SyntaxType::Sha256),
             "INT64" => Ok(SyntaxType::Int64),
             "UINT64" => Ok(SyntaxType::Uint64),
+            "TIME_BOUNDED_MEMBER" => Ok(SyntaxType::TimeBoundedMember),
             _ => Err(()),
         }
     }
@@ -397,6 +426,7 @@ impl fmt::Display for SyntaxType {
             SyntaxType::Sha256 => "SHA256",
             SyntaxType::Int64 => "INT64",
             SyntaxType::Uint64 => "UINT64",
+            SyntaxType::TimeBoundedMember => "TIME_BOUNDED_MEMBER",
         })
     }
 }
@@ -471,6 +501,7 @@ impl SyntaxType {
             SyntaxType::Json => &[],
             SyntaxType::Message => &[],
             SyntaxType::Sha256 => &[IndexType::Equality],
+            SyntaxType::TimeBoundedMember => &[IndexType::Equality, IndexType::Presence],
         }
     }
 }
@@ -616,6 +647,7 @@ pub enum PartialValue {
     Sha256(Sha256Output),
     Int64(i64),
     Uint64(u64),
+    TimeBoundedMember(Uuid),
 }
 
 impl From<SyntaxType> for PartialValue {
@@ -1019,6 +1051,7 @@ impl PartialValue {
             PartialValue::HexString(hexstr) => hexstr.to_string(),
             PartialValue::Json => "_".to_string(),
             PartialValue::Sha256(bytes) => hex::encode(bytes),
+            PartialValue::TimeBoundedMember(u) => u.as_hyphenated().to_string(),
         }
     }
 
@@ -1446,6 +1479,7 @@ pub enum Value {
     ApplicationPassword(ApplicationPassword),
     Json(JsonValue),
     Sha256(Sha256Output),
+    TimeBoundedMember(TimeBoundedMember),
 }
 
 impl PartialEq for Value {
@@ -1492,6 +1526,7 @@ impl PartialEq for Value {
             (Value::Image(image1), Value::Image(image2)) => {
                 image1.hash_imagevalue().eq(&image2.hash_imagevalue())
             }
+            (Value::TimeBoundedMember(a), Value::TimeBoundedMember(b)) => a.eq(b),
             (Value::Address(_), Value::Address(_))
             | (Value::PrivateBinary(_), Value::PrivateBinary(_))
             | (Value::SecretValue(_), Value::SecretValue(_)) => false,
@@ -2323,7 +2358,8 @@ impl Value {
             | Value::CredentialType(_)
             | Value::Json(_)
             | Value::Sha256(_)
-            | Value::WebauthnAttestationCaList(_) => true,
+            | Value::WebauthnAttestationCaList(_)
+            | Value::TimeBoundedMember(_) => true,
         }
     }
 
@@ -2612,7 +2648,7 @@ mod tests {
     fn test_value_url() {
         // https://html.spec.whatwg.org/multipage/forms.html#valid-e-mail-address
         let val1 = Value::new_url_s("https://localhost:8000/search?q=text#hello");
-        let val2 = Value::new_url_s("https://github.com/kanidm/kanidm");
+        let val2 = Value::new_url_s("https://github.com/kubidm/kubidm");
         let val3 = Value::new_url_s("ldap://foo.com");
         let inv1 = Value::new_url_s("127.0.");
         let inv2 = Value::new_url_s("🤔");
@@ -2677,5 +2713,245 @@ mod tests {
         assert_eq!(do_extract("cn=william"), "william");
         assert_eq!(do_extract("cn=william,o=blackhats"), "william");
         assert_eq!(do_extract("cn=william@example.com"), "william@example.com");
+    }
+
+    mod time_bounded_member_tests {
+        use super::super::TimeBoundedMember;
+        use std::time::Duration;
+        use time::OffsetDateTime;
+
+        fn create_test_uuid() -> uuid::Uuid {
+            uuid::Uuid::new_v4()
+        }
+
+        fn baseline_time() -> OffsetDateTime {
+            OffsetDateTime::UNIX_EPOCH + Duration::from_secs(1_000_000_000)
+        }
+
+        #[test]
+        fn test_time_bounded_member_valid_within_window() {
+            let uuid = create_test_uuid();
+            let start = baseline_time();
+            let end = start + Duration::from_secs(3600);
+
+            let member = TimeBoundedMember::new(uuid, Some(start), end);
+
+            let within_window = start + Duration::from_secs(1800);
+            assert!(member.is_valid_at(within_window));
+        }
+
+        #[test]
+        fn test_time_bounded_member_valid_at_start_boundary() {
+            let uuid = create_test_uuid();
+            let start = baseline_time();
+            let end = start + Duration::from_secs(3600);
+
+            let member = TimeBoundedMember::new(uuid, Some(start), end);
+
+            assert!(member.is_valid_at(start));
+        }
+
+        #[test]
+        fn test_time_bounded_member_invalid_before_start() {
+            let uuid = create_test_uuid();
+            let start = baseline_time();
+            let end = start + Duration::from_secs(3600);
+
+            let member = TimeBoundedMember::new(uuid, Some(start), end);
+
+            let before_start = start - Duration::from_secs(1);
+            assert!(!member.is_valid_at(before_start));
+        }
+
+        #[test]
+        fn test_time_bounded_member_invalid_after_end() {
+            let uuid = create_test_uuid();
+            let start = baseline_time();
+            let end = start + Duration::from_secs(3600);
+
+            let member = TimeBoundedMember::new(uuid, Some(start), end);
+
+            let after_end = end;
+            assert!(!member.is_valid_at(after_end));
+
+            let one_sec_after = end + Duration::from_secs(1);
+            assert!(!member.is_valid_at(one_sec_after));
+        }
+
+        #[test]
+        fn test_time_bounded_member_valid_one_sec_before_end() {
+            let uuid = create_test_uuid();
+            let start = baseline_time();
+            let end = start + Duration::from_secs(3600);
+
+            let member = TimeBoundedMember::new(uuid, Some(start), end);
+
+            let one_sec_before = end - Duration::from_secs(1);
+            assert!(member.is_valid_at(one_sec_before));
+        }
+
+        #[test]
+        fn test_time_bounded_member_no_start_time_valid_immediately() {
+            let uuid = create_test_uuid();
+            let end = baseline_time() + Duration::from_secs(3600);
+
+            let member = TimeBoundedMember::new(uuid, None, end);
+
+            let now = baseline_time() - Duration::from_secs(1000);
+            assert!(member.is_valid_at(now));
+        }
+
+        #[test]
+        fn test_time_bounded_member_no_start_time_invalid_after_end() {
+            let uuid = create_test_uuid();
+            let end = baseline_time() + Duration::from_secs(3600);
+
+            let member = TimeBoundedMember::new(uuid, None, end);
+
+            let after_end = end + Duration::from_secs(1);
+            assert!(!member.is_valid_at(after_end));
+        }
+
+        #[test]
+        fn test_time_bounded_member_instant_access() {
+            let uuid = create_test_uuid();
+            let instant = baseline_time();
+
+            let member = TimeBoundedMember::new(uuid, Some(instant), instant);
+
+            assert!(!member.is_valid_at(instant));
+        }
+
+        #[test]
+        fn test_time_bounded_member_very_short_duration() {
+            let uuid = create_test_uuid();
+            let start = baseline_time();
+            let end = start + Duration::from_secs(1);
+
+            let member = TimeBoundedMember::new(uuid, Some(start), end);
+
+            assert!(member.is_valid_at(start));
+            assert!(!member.is_valid_at(start + Duration::from_secs(1)));
+        }
+
+        #[test]
+        fn test_time_bounded_member_extended_duration() {
+            let uuid = create_test_uuid();
+            let start = baseline_time();
+            let end = start + Duration::from_secs(365 * 24 * 3600);
+
+            let member = TimeBoundedMember::new(uuid, Some(start), end);
+
+            let six_months = start + Duration::from_secs(180 * 24 * 3600);
+            assert!(member.is_valid_at(six_months));
+
+            let one_year = start + Duration::from_secs(365 * 24 * 3600);
+            assert!(!member.is_valid_at(one_year));
+        }
+
+        #[test]
+        fn test_time_bounded_member_duration_minutes() {
+            let uuid = create_test_uuid();
+            let start = baseline_time();
+            let end = start + Duration::from_secs(5 * 60);
+
+            let member = TimeBoundedMember::new(uuid, Some(start), end);
+
+            let three_minutes = start + Duration::from_secs(3 * 60);
+            assert!(member.is_valid_at(three_minutes));
+
+            let six_minutes = start + Duration::from_secs(6 * 60);
+            assert!(!member.is_valid_at(six_minutes));
+        }
+
+        #[test]
+        fn test_time_bounded_member_duration_hours() {
+            let uuid = create_test_uuid();
+            let start = baseline_time();
+            let end = start + Duration::from_secs(24 * 3600);
+
+            let member = TimeBoundedMember::new(uuid, Some(start), end);
+
+            let twelve_hours = start + Duration::from_secs(12 * 3600);
+            assert!(member.is_valid_at(twelve_hours));
+
+            let twenty_five_hours = start + Duration::from_secs(25 * 3600);
+            assert!(!member.is_valid_at(twenty_five_hours));
+        }
+
+        #[test]
+        fn test_time_bounded_member_duration_days() {
+            let uuid = create_test_uuid();
+            let start = baseline_time();
+            let end = start + Duration::from_secs(7 * 24 * 3600);
+
+            let member = TimeBoundedMember::new(uuid, Some(start), end);
+
+            let three_days = start + Duration::from_secs(3 * 24 * 3600);
+            assert!(member.is_valid_at(three_days));
+
+            let eight_days = start + Duration::from_secs(8 * 24 * 3600);
+            assert!(!member.is_valid_at(eight_days));
+        }
+
+        #[test]
+        fn test_time_bounded_member_duration_weeks() {
+            let uuid = create_test_uuid();
+            let start = baseline_time();
+            let end = start + Duration::from_secs(4 * 7 * 24 * 3600);
+
+            let member = TimeBoundedMember::new(uuid, Some(start), end);
+
+            let two_weeks = start + Duration::from_secs(2 * 7 * 24 * 3600);
+            assert!(member.is_valid_at(two_weeks));
+
+            let five_weeks = start + Duration::from_secs(5 * 7 * 24 * 3600);
+            assert!(!member.is_valid_at(five_weeks));
+        }
+
+        #[test]
+        fn test_time_bounded_member_fractional_duration() {
+            let uuid = create_test_uuid();
+            let start = baseline_time();
+            let end = start + Duration::from_secs_f64(1.5);
+
+            let member = TimeBoundedMember::new(uuid, Some(start), end);
+
+            let half_sec = start + Duration::from_secs_f64(0.5);
+            assert!(member.is_valid_at(half_sec));
+
+            let one_sec = start + Duration::from_secs(1);
+            assert!(member.is_valid_at(one_sec));
+
+            let two_sec = start + Duration::from_secs(2);
+            assert!(!member.is_valid_at(two_sec));
+        }
+
+        #[test]
+        fn test_time_bounded_member_equality() {
+            let uuid1 = create_test_uuid();
+            let uuid2 = create_test_uuid();
+            let start = baseline_time();
+            let end = start + Duration::from_secs(3600);
+
+            let member1 = TimeBoundedMember::new(uuid1, Some(start), end);
+            let member2 = TimeBoundedMember::new(uuid1, Some(start), end);
+            let member3 = TimeBoundedMember::new(uuid2, Some(start), end);
+
+            assert_eq!(member1, member2);
+            assert_ne!(member1, member3);
+        }
+
+        #[test]
+        fn test_time_bounded_member_clone() {
+            let uuid = create_test_uuid();
+            let start = baseline_time();
+            let end = start + Duration::from_secs(3600);
+
+            let member = TimeBoundedMember::new(uuid, Some(start), end);
+            let cloned = member.clone();
+
+            assert_eq!(member, cloned);
+        }
     }
 }

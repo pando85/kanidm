@@ -1,22 +1,22 @@
 {
-  "name": "kanidm",
+  "name": "kubidm",
   "version": "0.0.1-dev",
-  "description": "Kanidm UI Javascript - not a publishable package, just for development",
+  "description": "Kubidm UI Javascript - not a publishable package, just for development",
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kanidm/kanidm.git"
+    "url": "git+https://github.com/pando85/kubidm.git"
   },
   "author": "",
   "license": "MPL-2.0",
   "bugs": {
-    "url": "https://github.com/kanidm/kanidm/issues"
+    "url": "https://github.com/pando85/kubidm/issues"
   },
-  "homepage": "https://kanidm.com",
+  "homepage": "https://github.com/pando85/kubidm",
   "devDependencies": {
-    "@eslint/js": "^9.17.0",
-    "eslint": "^9.17.0",
-    "globals": "^15.14.0",
+    "@eslint/js": "^10.0.0",
+    "eslint": "^10.0.0",
+    "globals": "^17.0.0",
     "prettier": "^3.4.2"
   },
   "scripts" : {

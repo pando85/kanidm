@@ -152,3 +152,89 @@ impl ValueSetT for ValueSetSha256 {
         Some(&mut self.set)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::ValueSetSha256;
+    use crate::prelude::ValueSet;
+    use crate::value::{PartialValue, Value};
+    use crypto_glue::s256::Sha256Output;
+
+    fn make_hash(val: u8) -> Sha256Output {
+        Sha256Output::from_exact_iter(std::iter::repeat(val).take(32)).expect("exact 32 bytes")
+    }
+
+    #[test]
+    fn test_valueset_sha256_new() {
+        let hash = make_hash(0xAA);
+        let vs: ValueSet = ValueSetSha256::new(hash);
+        assert_eq!(vs.len(), 1);
+    }
+
+    #[test]
+    fn test_valueset_sha256_insert_checked() {
+        let hash1 = make_hash(0x01);
+        let hash2 = make_hash(0x02);
+        let hash1_dup = make_hash(0x01);
+        let mut vs: ValueSet = ValueSetSha256::new(hash1);
+        assert!(vs.insert_checked(Value::Sha256(hash2)).unwrap());
+        assert!(!vs.insert_checked(Value::Sha256(hash1_dup)).unwrap());
+        assert_eq!(vs.len(), 2);
+    }
+
+    #[test]
+    fn test_valueset_sha256_equal() {
+        let hash = make_hash(0xAB);
+        let vs1: ValueSet = ValueSetSha256::new(hash.clone());
+        let vs2: ValueSet = ValueSetSha256::new(hash);
+        assert!(vs1.equal(&vs2));
+    }
+
+    #[test]
+    fn test_valueset_sha256_not_equal() {
+        let vs1: ValueSet = ValueSetSha256::new(make_hash(0x10));
+        let vs2: ValueSet = ValueSetSha256::new(make_hash(0x20));
+        assert!(!vs1.equal(&vs2));
+    }
+
+    #[test]
+    fn test_valueset_sha256_merge() {
+        let mut vs_a: ValueSet = ValueSetSha256::new(make_hash(0x01));
+        let vs_b: ValueSet = ValueSetSha256::new(make_hash(0x02));
+        vs_a.merge(&vs_b).expect("Failed to merge");
+        assert_eq!(vs_a.len(), 2);
+    }
+
+    #[test]
+    fn test_valueset_sha256_clear() {
+        let mut vs: ValueSet = ValueSetSha256::new(make_hash(0xFF));
+        assert_eq!(vs.len(), 1);
+        vs.clear();
+        assert_eq!(vs.len(), 0);
+    }
+
+    #[test]
+    fn test_valueset_sha256_len() {
+        let mut vs: ValueSet = ValueSetSha256::new(make_hash(0x01));
+        assert_eq!(vs.len(), 1);
+        vs.insert_checked(Value::Sha256(make_hash(0x02))).unwrap();
+        assert_eq!(vs.len(), 2);
+    }
+
+    #[test]
+    fn test_valueset_sha256_dbv2_roundtrip() {
+        let mut vs: ValueSet = ValueSetSha256::new(make_hash(0xAA));
+        vs.insert_checked(Value::Sha256(make_hash(0xBB))).unwrap();
+        let dbvs = vs.to_db_valueset_v2();
+        let vs2 = crate::valueset::from_db_valueset_v2(dbvs).expect("Failed to restore");
+        assert!(vs.equal(&vs2));
+    }
+
+    #[test]
+    fn test_valueset_sha256_contains() {
+        let hash = make_hash(0xCC);
+        let vs: ValueSet = ValueSetSha256::new(hash.clone());
+        assert!(vs.contains(&PartialValue::Sha256(hash)));
+        assert!(!vs.contains(&PartialValue::Sha256(make_hash(0xDD))));
+    }
+}

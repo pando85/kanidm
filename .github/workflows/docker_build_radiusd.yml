@@ -2,7 +2,7 @@
 name: Container - Radiusd
 
 # This is always built and uploads an OCI image as a build artifact, but only
-# pushes to "ghcr.io/kanidm/radius:devel" when on "kanidm/kanidm@master".
+# pushes to "ghcr.io/kubidm/radius:devel" when on "kubidm/kubidm@master".
 "on":
   pull_request:
   push:
@@ -89,3 +89,7 @@ jobs:
             oras login -u "${{ github.actor }}" --password-stdin ghcr.io
           oras copy --from-oci-layout "/tmp/radius-docker.tar:devel" \
             "ghcr.io/${{ needs.set_tag_values.outputs.owner_lc }}/radius:devel"
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            oras copy --from-oci-layout "/tmp/radius-docker.tar:${{ needs.set_tag_values.outputs.ref_name }}" \
+              "ghcr.io/${{ needs.set_tag_values.outputs.owner_lc }}/radius:${{ needs.set_tag_values.outputs.ref_name }}"
+          fi

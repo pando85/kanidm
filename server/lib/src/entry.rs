@@ -40,18 +40,18 @@ use crate::schema::{SchemaAttribute, SchemaClass, SchemaTransaction};
 use crate::server::access::AccessEffectivePermission;
 use crate::value::{
     ApiToken, CredentialType, IndexType, IntentTokenState, Oauth2Session, PartialValue, Session,
-    SyntaxType, Value,
+    SyntaxType, TimeBoundedMember, Value,
 };
 use crate::valueset::{self, ScimResolveStatus, ValueSet, ValueSetSpn};
 use compact_jwt::JwsEs256Signer;
 use crypto_glue::s256::Sha256Output;
 use hashbrown::{HashMap, HashSet};
-use kanidm_proto::internal::ImageValue;
-use kanidm_proto::internal::{
+use kubidm_proto::internal::ImageValue;
+use kubidm_proto::internal::{
     ConsistencyError, Filter as ProtoFilter, OperationError, SchemaError, UiHint,
 };
-use kanidm_proto::scim_v1::server::ScimEffectiveAccess;
-use kanidm_proto::v1::Entry as ProtoEntry;
+use kubidm_proto::scim_v1::server::ScimEffectiveAccess;
+use kubidm_proto::v1::Entry as ProtoEntry;
 use ldap3_proto::simple::{LdapPartialAttribute, LdapSearchResultEntry};
 use std::cmp::Ordering;
 pub use std::collections::BTreeSet as Set;
@@ -2412,14 +2412,14 @@ impl Entry<EntryReduced, EntryCommitted> {
         Ok(ProtoEntry { attrs: attrs? })
     }
 
-    pub fn to_scim_kanidm<'a, TXN>(
+    pub fn to_scim_kubidm<'a, TXN>(
         &self,
         read_txn: &mut TXN,
-    ) -> Result<ScimEntryKanidm, OperationError>
+    ) -> Result<ScimEntryKubidm, OperationError>
     where
         TXN: QueryServerTransaction<'a>,
     {
-        let result: Result<BTreeMap<Attribute, ScimValueKanidm>, OperationError> = self
+        let result: Result<BTreeMap<Attribute, ScimValueKubidm>, OperationError> = self
             .attrs
             .iter()
             // We want to skip some attributes as they are already in the header.
@@ -2463,7 +2463,7 @@ impl Entry<EntryReduced, EntryCommitted> {
         // to achieve this.
         let schemas = Vec::with_capacity(0);
 
-        Ok(ScimEntryKanidm {
+        Ok(ScimEntryKubidm {
             header: ScimEntryHeader {
                 schemas,
                 id,
@@ -2749,6 +2749,14 @@ impl<VALID, STATE> Entry<VALID, STATE> {
     ) -> Option<&std::collections::BTreeMap<Uuid, Oauth2Session>> {
         self.get_ava_set(attr)
             .and_then(|vs| vs.as_oauth2session_map())
+    }
+
+    pub fn get_ava_as_time_bounded_member<A: AsRef<Attribute>>(
+        &self,
+        attr: A,
+    ) -> Option<&std::collections::BTreeMap<Uuid, TimeBoundedMember>> {
+        self.get_ava_set(attr)
+            .and_then(|vs| vs.as_time_bounded_member_set())
     }
 
     pub fn get_ava_as_s256_set<A: AsRef<Attribute>>(

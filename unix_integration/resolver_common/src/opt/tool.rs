@@ -1,8 +1,8 @@
-use clap::{Parser, Subcommand};
+use clap::Subcommand;
 
 #[derive(Debug, Subcommand)]
-#[clap(about = "Kanidm Unixd Management Utility")]
-pub enum KanidmUnixOpt {
+#[clap(about = "Kubidm Unixd Management Utility")]
+pub enum KubidmUnixOpt {
     /// Test authentication of a user via the unixd resolver "pam" channel. This does not
     /// test that your pam configuration is correct - only that unixd is correctly processing
     /// and validating authentications.
@@ -28,7 +28,7 @@ pub enum KanidmUnixOpt {
         #[clap(short, long)]
         debug: bool,
     },
-    /// Check that the unixd daemon is online and able to connect correctly to the kanidmd server.
+    /// Check that the unixd daemon is online and able to connect correctly to the kubidmd server.
     Status {
         #[clap(short, long)]
         debug: bool,
@@ -40,10 +40,10 @@ pub enum KanidmUnixOpt {
     },
 }
 
-#[derive(Debug, Parser)]
-#[clap(about = "Kanidm Unixd Management Utility")]
-#[command(name = "kanidm_unixd")]
-pub struct KanidmUnixParser {
+#[derive(Debug, clap::Parser)]
+#[clap(about = "Kubidm Unixd Management Utility")]
+#[command(name = "kubidm_unixd")]
+pub struct KubidmUnixParser {
     #[clap(subcommand)]
-    pub commands: KanidmUnixOpt,
+    pub commands: KubidmUnixOpt,
 }

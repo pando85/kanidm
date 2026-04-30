@@ -2,7 +2,7 @@ use crate::prelude::*;
 use crate::schema::SchemaAttribute;
 use crate::valueset::ScimResolveStatus;
 use crate::valueset::{DbValueSetV2, ValueSet};
-use kanidm_proto::v1::OutboundMessage;
+use kubidm_proto::v1::OutboundMessage;
 
 #[derive(Debug, Clone)]
 pub struct ValueSetMessage {
@@ -67,7 +67,7 @@ impl ValueSetT for ValueSetMessage {
     }
 
     fn to_scim_value(&self) -> Option<ScimResolveStatus> {
-        Some(ScimResolveStatus::Resolved(ScimValueKanidm::from(
+        Some(ScimResolveStatus::Resolved(ScimValueKubidm::from(
             self.message.clone(),
         )))
     }
@@ -100,5 +100,88 @@ impl ValueSetT for ValueSetMessage {
 
     fn as_message(&self) -> Option<&OutboundMessage> {
         Some(&self.message)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ValueSetMessage;
+    use crate::prelude::ValueSet;
+    use crate::valueset::from_db_valueset_v2;
+    use kubidm_proto::v1::OutboundMessage;
+    use time::OffsetDateTime;
+
+    #[test]
+    fn test_valueset_message_new() {
+        let msg = OutboundMessage::TestMessageV1 {
+            display_name: "test_user".to_string(),
+        };
+        let vs: ValueSet = ValueSetMessage::new(msg);
+        assert_eq!(vs.len(), 1);
+    }
+
+    #[test]
+    fn test_valueset_message_as_message() {
+        let msg = OutboundMessage::TestMessageV1 {
+            display_name: "test_user".to_string(),
+        };
+        let vs: ValueSet = ValueSetMessage::new(msg.clone());
+        let retrieved = vs.as_message().expect("Expected message");
+        assert_eq!(*retrieved, msg);
+    }
+
+    #[test]
+    fn test_valueset_message_equal() {
+        let msg = OutboundMessage::TestMessageV1 {
+            display_name: "test_user".to_string(),
+        };
+        let vs1: ValueSet = ValueSetMessage::new(msg.clone());
+        let vs2: ValueSet = ValueSetMessage::new(msg);
+        assert!(vs1.equal(&vs2));
+    }
+
+    #[test]
+    fn test_valueset_message_not_equal() {
+        let msg1 = OutboundMessage::TestMessageV1 {
+            display_name: "user_a".to_string(),
+        };
+        let msg2 = OutboundMessage::TestMessageV1 {
+            display_name: "user_b".to_string(),
+        };
+        let vs1: ValueSet = ValueSetMessage::new(msg1);
+        let vs2: ValueSet = ValueSetMessage::new(msg2);
+        assert!(!vs1.equal(&vs2));
+    }
+
+    #[test]
+    fn test_valueset_message_dbv2_roundtrip() {
+        let msg = OutboundMessage::CredentialResetV1 {
+            display_name: "test_user".to_string(),
+            intent_id: "intent_123".to_string(),
+            expiry_time: OffsetDateTime::UNIX_EPOCH,
+        };
+        let vs: ValueSet = ValueSetMessage::new(msg);
+        let dbvs = vs.to_db_valueset_v2();
+        let vs2 = from_db_valueset_v2(dbvs).expect("Failed to restore from db");
+        assert!(vs.equal(&vs2));
+    }
+
+    #[test]
+    fn test_valueset_message_syntax() {
+        use crate::prelude::SyntaxType;
+        let msg = OutboundMessage::TestMessageV1 {
+            display_name: "test_user".to_string(),
+        };
+        let vs: ValueSet = ValueSetMessage::new(msg);
+        assert_eq!(vs.syntax(), SyntaxType::Message);
+    }
+
+    #[test]
+    fn test_valueset_message_contains_always_false() {
+        let msg = OutboundMessage::TestMessageV1 {
+            display_name: "test_user".to_string(),
+        };
+        let vs: ValueSet = ValueSetMessage::new(msg);
+        assert!(!vs.contains(&crate::prelude::PartialValue::new_utf8s("anything")));
     }
 }

@@ -1,8 +1,8 @@
-use kanidm_client::KanidmClient;
+use kubidm_client::KubidmClient;
 
 /// This literally tests that the thing exists and responds in a way we expect, probably worth testing it better...
-#[kanidmd_testkit::test]
-async fn test_v1_system_post_attr(rsclient: &KanidmClient) {
+#[kubidmd_testkit::test]
+async fn test_v1_system_post_attr(rsclient: &KubidmClient) {
     let client = rsclient.client();
 
     let response = match client

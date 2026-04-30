@@ -2,7 +2,7 @@
 
 FreeIPA is a popular opensource LDAP and Kerberos provider, aiming to be "Active Directory" for Linux.
 
-Kanidm is able to synchronise from FreeIPA for the purposes of coexistence or migration.
+Kubidm is able to synchronise from FreeIPA for the purposes of coexistence or migration.
 
 ## Installing the FreeIPA Sync Tool
 
@@ -11,20 +11,20 @@ See [installing the client tools](../installing_client_tools.md). The ipa sync t
 
 ## Configure the FreeIPA Sync Tool
 
-The sync tool is a bridge between FreeIPA and Kanidm, meaning that the tool must be configured to communicate to both
+The sync tool is a bridge between FreeIPA and Kubidm, meaning that the tool must be configured to communicate to both
 sides.
 
-Like other components of Kanidm, the FreeIPA sync tool will read your /etc/kanidm/config if present to understand how to
-connect to Kanidm.
+Like other components of Kubidm, the FreeIPA sync tool will read your /etc/kubidm/config if present to understand how to
+connect to Kubidm.
 
 The sync tool specific components are configured in its own configuration file.
 
 ```toml
-{{#rustdoc_include ../../../examples/kanidm-ipa-sync}}
+{{#rustdoc_include ../../../examples/kubidm-ipa-sync}}
 ```
 
 This example is located in
-[examples/kanidm-ipa-sync](https://github.com/kanidm/kanidm/blob/master/examples/kanidm-ipa-sync).
+[examples/kubidm-ipa-sync](https://github.com/kubidm/kubidm/blob/master/examples/kubidm-ipa-sync).
 
 In addition to this, you must make some configuration changes to FreeIPA to enable synchronisation.
 
@@ -52,7 +52,7 @@ You need to change the `nsslapd-include-suffix` to match your FreeIPA baseDN her
 
 ```bash
 ldapsearch -H ldaps://<IPA SERVER HOSTNAME/IP> -x -b '' -s base namingContexts
-# namingContexts: dc=ipa,dc=dev,dc=kanidm,dc=com
+# namingContexts: dc=ipa,dc=dev,dc=kubidm,dc=com
 ```
 
 You should ignore `cn=changelog` and `o=ipaca` as these are system internal namingContexts. You can then create an
@@ -77,8 +77,8 @@ You can perform a dry run with the sync tool manually to check your configuratio
 synchronise from FreeIPA.
 
 ```bash
-kanidm-ipa-sync [-c /path/to/kanidm/config] -i /path/to/kanidm-ipa-sync -n
-kanidm-ipa-sync -i /etc/kanidm/ipa-sync -n
+kubidm-ipa-sync [-c /path/to/kubidm/config] -i /path/to/kubidm-ipa-sync -n
+kubidm-ipa-sync -i /etc/kubidm/ipa-sync -n
 ```
 
 As the sync tool is part of the tools container, you can run this with:
@@ -87,12 +87,12 @@ As the sync tool is part of the tools container, you can run this with:
 docker run --rm -i -t \
   --user uid:gid \
   -p 12345:12345 \
-  -v /etc/kanidm/config:/etc/kanidm/config:ro \
-  -v /path/to/kanidm.ca.pem:/path/to/kanidm.ca.pem:ro
-  -v /path/to/ipa-ca.pem:/etc/kanidm/ipa-ca.pem:ro \
-  -v /path/to/ipa-sync:/etc/kanidm/ipa-sync:ro \
-  kanidm/tools:latest \
-  kanidm-ipa-sync -i /etc/kanidm/ipa-sync -
+  -v /etc/kubidm/config:/etc/kubidm/config:ro \
+  -v /path/to/kubidm.ca.pem:/path/to/kubidm.ca.pem:ro
+  -v /path/to/ipa-ca.pem:/etc/kubidm/ipa-ca.pem:ro \
+  -v /path/to/ipa-sync:/etc/kubidm/ipa-sync:ro \
+  kubidm/tools:latest \
+  kubidm-ipa-sync -i /etc/kubidm/ipa-sync -
 ```
 
 ## Running the Sync Tool Automatically
@@ -101,22 +101,22 @@ The sync tool can be run on a schedule if you configure the `schedule` parameter
 the cli
 
 ```bash
-kanidm-ipa-sync [-c /path/to/kanidm/config] -i /path/to/kanidm-ipa-sync --schedule
-kanidm-ipa-sync -i /etc/kanidm/ipa-sync --schedule
+kubidm-ipa-sync [-c /path/to/kubidm/config] -i /path/to/kubidm-ipa-sync --schedule
+kubidm-ipa-sync -i /etc/kubidm/ipa-sync --schedule
 ```
 
 As the sync tool is part of the tools container, you can run this with:
 
 ```bash
-docker run --name kanidm-ipa-sync \
+docker run --name kubidm-ipa-sync \
   --user uid:gid \
   -p 12345:12345 \
-  -v /etc/kanidm/config:/etc/kanidm/config:ro \
-  -v /path/to/kanidm.ca.pem:/path/to/kanidm.ca.pem:ro
-  -v /path/to/ipa-ca.pem:/etc/kanidm/ipa-ca.pem:ro \
-  -v /path/to/ipa-sync:/etc/kanidm/ipa-sync:ro \
-  kanidm/tools:latest \
-  kanidm-ipa-sync -i /etc/kanidm/ipa-sync --schedule
+  -v /etc/kubidm/config:/etc/kubidm/config:ro \
+  -v /path/to/kubidm.ca.pem:/path/to/kubidm.ca.pem:ro
+  -v /path/to/ipa-ca.pem:/etc/kubidm/ipa-ca.pem:ro \
+  -v /path/to/ipa-sync:/etc/kubidm/ipa-sync:ro \
+  kubidm/tools:latest \
+  kubidm-ipa-sync -i /etc/kubidm/ipa-sync --schedule
 ```
 
 ## Monitoring the Sync Tool

@@ -5,8 +5,8 @@ use crate::utils::trigraph_iter;
 use crate::valueset::{
     DbValueSetV2, ScimResolveStatus, ValueSet, ValueSetResolveStatus, ValueSetScimPut,
 };
-use kanidm_proto::scim_v1::JsonValue;
-use kanidm_proto::scim_v1::ScimSshPublicKey;
+use kubidm_proto::scim_v1::JsonValue;
+use kubidm_proto::scim_v1::ScimSshPublicKey;
 use sshkey_attest::proto::PublicKey as SshPublicKey;
 use std::collections::btree_map::Entry as BTreeEntry;
 use std::collections::BTreeMap;
@@ -165,7 +165,7 @@ impl ValueSetT for ValueSetSshKey {
     }
 
     fn to_scim_value(&self) -> Option<ScimResolveStatus> {
-        Some(ScimResolveStatus::Resolved(ScimValueKanidm::from(
+        Some(ScimResolveStatus::Resolved(ScimValueKubidm::from(
             self.map
                 .iter()
                 .map(|(label, value)| ScimSshPublicKey {
@@ -318,5 +318,98 @@ mod tests {
         "zPrVSdrYEDldxH9+a86dBZhdm0e15+ODDts2LHUknsJCRRldO4o9R9VrohlF7cbyBlnhJQrR4S+Oag==  I'm a giraffe! ");
 
         let _ = SshPublicKey::from_string(ecdsa).unwrap();
+    }
+
+    #[test]
+    fn test_valueset_sshkey_new() {
+        let key_str = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl test@host";
+        let vs: ValueSet = ValueSetSshKey::new(
+            "mykey".to_string(),
+            SshPublicKey::from_string(key_str).unwrap(),
+        );
+        assert_eq!(vs.len(), 1);
+    }
+
+    #[test]
+    fn test_valueset_sshkey_insert_checked_duplicate_rejected() {
+        let key_str = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl test@host";
+        let pk = SshPublicKey::from_string(key_str).unwrap();
+        let mut vs: ValueSet = ValueSetSshKey::new("mykey".to_string(), pk.clone());
+        assert!(!vs
+            .insert_checked(crate::prelude::Value::SshKey("mykey".to_string(), pk))
+            .unwrap());
+        assert_eq!(vs.len(), 1);
+    }
+
+    #[test]
+    fn test_valueset_sshkey_contains() {
+        let key_str = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl test@host";
+        let vs: ValueSet = ValueSetSshKey::new(
+            "mykey".to_string(),
+            SshPublicKey::from_string(key_str).unwrap(),
+        );
+        assert!(vs.contains(&crate::prelude::PartialValue::SshKey("mykey".to_string())));
+        assert!(!vs.contains(&crate::prelude::PartialValue::SshKey("other".to_string())));
+    }
+
+    #[test]
+    fn test_valueset_sshkey_get_ssh_tag() {
+        let key_str = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl test@host";
+        let vs: ValueSet = ValueSetSshKey::new(
+            "mykey".to_string(),
+            SshPublicKey::from_string(key_str).unwrap(),
+        );
+        assert!(vs.get_ssh_tag("mykey").is_some());
+        assert!(vs.get_ssh_tag("nonexistent").is_none());
+    }
+
+    #[test]
+    fn test_valueset_sshkey_as_sshkey_map() {
+        let key_str = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl test@host";
+        let vs: ValueSet = ValueSetSshKey::new(
+            "mykey".to_string(),
+            SshPublicKey::from_string(key_str).unwrap(),
+        );
+        let map = vs.as_sshkey_map().expect("Expected map");
+        assert_eq!(map.len(), 1);
+        assert!(map.contains_key("mykey"));
+    }
+
+    #[test]
+    fn test_valueset_sshkey_dbv2_roundtrip() {
+        let key_str = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl test@host";
+        let vs: ValueSet = ValueSetSshKey::new(
+            "mykey".to_string(),
+            SshPublicKey::from_string(key_str).unwrap(),
+        );
+        let dbvs = vs.to_db_valueset_v2();
+        let vs2 = crate::valueset::from_db_valueset_v2(dbvs).expect("Failed to restore");
+        assert!(vs.equal(&vs2));
+    }
+
+    #[test]
+    fn test_valueset_sshkey_push_and_insert() {
+        let key_str = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl test@host";
+        let mut vs: ValueSet = ValueSetSshKey::new(
+            "key1".to_string(),
+            SshPublicKey::from_string(key_str).unwrap(),
+        );
+        let inserted = vs
+            .insert_checked(crate::prelude::Value::SshKey(
+                "key2".to_string(),
+                SshPublicKey::from_string(key_str).unwrap(),
+            ))
+            .unwrap();
+        assert!(inserted);
+        assert_eq!(vs.len(), 2);
+
+        let dup = vs
+            .insert_checked(crate::prelude::Value::SshKey(
+                "key1".to_string(),
+                SshPublicKey::from_string(key_str).unwrap(),
+            ))
+            .unwrap();
+        assert!(!dup);
+        assert_eq!(vs.len(), 2);
     }
 }

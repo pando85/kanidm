@@ -15,10 +15,10 @@ if [ "${SCCACHE_REDIS}" != "" ]; \
         export CC="/usr/bin/clang"; \
 fi; \
 export RUSTC_BOOTSTRAP=1 && \
-echo $RUSTC_BOOTSTRAP && \
-echo $RUSTC_WRAPPER && \
-echo $RUSTFLAGS && \
-echo $CC && \
+echo "$RUSTC_BOOTSTRAP" && \
+echo "$RUSTC_WRAPPER" && \
+echo "$RUSTFLAGS" && \
+echo "$CC" && \
 cargo build \
     --frozen \
     --features=concread/simd_support,libsqlite3-sys/bundled \

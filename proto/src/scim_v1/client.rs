@@ -262,10 +262,10 @@ pub struct ScimListSchemaAttribute {
 }
 
 #[derive(Serialize, Debug, Clone)]
-pub struct ScimEntryPutKanidm {
+pub struct ScimEntryPutKubidm {
     pub id: Uuid,
     #[serde(flatten)]
-    pub attrs: BTreeMap<Attribute, Option<super::server::ScimValueKanidm>>,
+    pub attrs: BTreeMap<Attribute, Option<super::server::ScimValueKubidm>>,
 }
 
 #[serde_as]
@@ -333,11 +333,11 @@ pub struct ScimEntryPutGeneric {
     pub attrs: BTreeMap<Attribute, Option<JsonValue>>,
 }
 
-impl TryFrom<ScimEntryPutKanidm> for ScimEntryPutGeneric {
+impl TryFrom<ScimEntryPutKubidm> for ScimEntryPutGeneric {
     type Error = serde_json::Error;
 
-    fn try_from(value: ScimEntryPutKanidm) -> Result<Self, Self::Error> {
-        let ScimEntryPutKanidm { id, attrs } = value;
+    fn try_from(value: ScimEntryPutKubidm) -> Result<Self, Self::Error> {
+        let ScimEntryPutKubidm { id, attrs } = value;
 
         let attrs = attrs
             .into_iter()
@@ -355,5 +355,262 @@ impl TryFrom<ScimEntryPutKanidm> for ScimEntryPutGeneric {
             attrs,
             query: Default::default(),
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::scim_v1::{ScimEntryGeneric, ScimEntryGetQuery, ScimOauth2ClaimMapJoinChar};
+    use scim_proto::ScimEntryHeader;
+    use sshkey_attest::proto::PublicKey as SshPublicKey;
+
+    const TEST_SSH_ED25519: &str =
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl testuser";
+
+    fn test_datetime() -> OffsetDateTime {
+        OffsetDateTime::from_unix_timestamp(1700000000).unwrap()
+    }
+
+    #[test]
+    fn scim_ssh_public_key_roundtrip() {
+        let key = ScimSshPublicKey {
+            label: "testkey".to_string(),
+            value: SshPublicKey::from_string(TEST_SSH_ED25519).unwrap(),
+        };
+        let json = serde_json::to_string(&key).unwrap();
+        let de: ScimSshPublicKey = serde_json::from_str(&json).unwrap();
+        assert_eq!(de.label, "testkey");
+    }
+
+    #[test]
+    fn scim_reference_roundtrip() {
+        let uuid = Uuid::new_v4();
+        let r = ScimReference {
+            uuid: Some(uuid),
+            value: Some("testgroup".to_string()),
+        };
+        let json = serde_json::to_string(&r).unwrap();
+        let de: ScimReference = serde_json::from_str(&json).unwrap();
+        assert_eq!(de.uuid, Some(uuid));
+        assert_eq!(de.value, Some("testgroup".to_string()));
+    }
+
+    #[test]
+    fn scim_reference_deserialize_from_string() {
+        let de: ScimReference = serde_json::from_str("\"some_value\"").unwrap();
+        assert_eq!(de.uuid, None);
+        assert_eq!(de.value, Some("some_value".to_string()));
+    }
+
+    #[test]
+    fn scim_reference_deserialize_from_uuid_string() {
+        let uuid = Uuid::new_v4();
+        let json = format!("\"{uuid}\"");
+        let de: ScimReference = serde_json::from_str(&json).unwrap();
+        assert_eq!(de.uuid, Some(uuid));
+        assert_eq!(de.value, None);
+    }
+
+    #[test]
+    fn scim_reference_deserialize_from_object_both() {
+        let uuid = Uuid::new_v4();
+        let json = serde_json::json!({"uuid": uuid.to_string(), "value": "mygroup"});
+        let de: ScimReference = serde_json::from_value(json).unwrap();
+        assert_eq!(de.uuid, Some(uuid));
+        assert_eq!(de.value, Some("mygroup".to_string()));
+    }
+
+    #[test]
+    fn scim_reference_deserialize_from_object_uuid_only() {
+        let uuid = Uuid::new_v4();
+        let json = serde_json::json!({"uuid": uuid.to_string()});
+        let de: ScimReference = serde_json::from_value(json).unwrap();
+        assert_eq!(de.uuid, Some(uuid));
+        assert_eq!(de.value, None);
+    }
+
+    #[test]
+    fn scim_reference_skip_serializing_none() {
+        let r = ScimReference {
+            uuid: None,
+            value: Some("only_value".to_string()),
+        };
+        let json = serde_json::to_value(&r).unwrap();
+        assert!(json.get("uuid").is_none());
+        assert_eq!(json["value"], "only_value");
+    }
+
+    #[test]
+    fn scim_datetime_roundtrip() {
+        let dt = ScimDateTime {
+            date_time: test_datetime(),
+        };
+        let json = serde_json::to_string(&dt).unwrap();
+        assert!(json.starts_with('"'));
+        let de: ScimDateTime = serde_json::from_str(&json).unwrap();
+        assert_eq!(de, dt);
+    }
+
+    #[test]
+    fn scim_certificate_roundtrip() {
+        let cert = ScimCertificate {
+            der: vec![0xDE, 0xAD, 0xBE, 0xEF],
+        };
+        let json = serde_json::to_string(&cert).unwrap();
+        let de: ScimCertificate = serde_json::from_str(&json).unwrap();
+        assert_eq!(de, cert);
+    }
+
+    #[test]
+    fn scim_address_roundtrip() {
+        let addr = ScimAddress {
+            street_address: "123 Main St".to_string(),
+            locality: "Springfield".to_string(),
+            region: "IL".to_string(),
+            postal_code: "62701".to_string(),
+            country: "US".to_string(),
+        };
+        let json = serde_json::to_string(&addr).unwrap();
+        let de: ScimAddress = serde_json::from_str(&json).unwrap();
+        assert_eq!(de, addr);
+    }
+
+    #[test]
+    fn scim_oauth2_claim_map_roundtrip() {
+        let claim_map = ScimOAuth2ClaimMap {
+            group: Some("testgroup".to_string()),
+            group_uuid: Some(Uuid::new_v4()),
+            claim: "test_claim".to_string(),
+            join_char: ScimOauth2ClaimMapJoinChar::CommaSeparatedValue,
+            values: BTreeSet::from(["val1".to_string(), "val2".to_string()]),
+        };
+        let json = serde_json::to_string(&claim_map).unwrap();
+        let de: ScimOAuth2ClaimMap = serde_json::from_str(&json).unwrap();
+        assert_eq!(de.claim, "test_claim");
+        assert_eq!(de.values.len(), 2);
+    }
+
+    #[test]
+    fn scim_oauth2_scope_map_roundtrip() {
+        let scope_map = ScimOAuth2ScopeMap {
+            group: Some("testgroup".to_string()),
+            group_uuid: Some(Uuid::new_v4()),
+            scopes: BTreeSet::from(["read".to_string(), "write".to_string()]),
+        };
+        let json = serde_json::to_string(&scope_map).unwrap();
+        let de: ScimOAuth2ScopeMap = serde_json::from_str(&json).unwrap();
+        assert_eq!(de.scopes.len(), 2);
+    }
+
+    #[test]
+    fn scim_list_entry_roundtrip() {
+        let entry = ScimEntryGeneric {
+            header: ScimEntryHeader {
+                schemas: vec!["urn:test:schema".to_string()],
+                id: Uuid::new_v4(),
+                external_id: None,
+                meta: None,
+            },
+            attrs: BTreeMap::new(),
+        };
+        let list = ScimListEntry {
+            schemas: vec!["urn:ietf:params:scim:api:messages:2.0:ListResponse".to_string()],
+            total_results: 1,
+            items_per_page: None,
+            start_index: None,
+            resources: vec![entry],
+        };
+        let json = serde_json::to_string(&list).unwrap();
+        let de: ScimListEntry = serde_json::from_str(&json).unwrap();
+        assert_eq!(de.total_results, 1);
+        assert_eq!(de.resources.len(), 1);
+    }
+
+    #[test]
+    fn scim_entry_application_post_serialize() {
+        let post = ScimEntryApplicationPost {
+            name: "testapp".to_string(),
+            displayname: "Test Application".to_string(),
+            linked_group: ScimReference {
+                uuid: Some(Uuid::new_v4()),
+                value: Some("testgroup".to_string()),
+            },
+        };
+        let json = serde_json::to_value(&post).unwrap();
+        assert_eq!(json["name"], "testapp");
+        assert_eq!(json["displayname"], "Test Application");
+        assert!(json.get("linked_group").is_some());
+    }
+
+    #[test]
+    fn scim_entry_application_deserialize() {
+        let uuid = Uuid::new_v4();
+        let group_uuid = Uuid::new_v4();
+        let json = serde_json::json!({
+            "schemas": ["urn:test:schema"],
+            "id": uuid.to_string(),
+            "name": "testapp",
+            "displayname": "Test App",
+            "linked_group": [{"uuid": group_uuid.to_string(), "value": "group1"}]
+        });
+        let app: ScimEntryApplication = serde_json::from_value(json).unwrap();
+        assert_eq!(app.name, "testapp");
+        assert_eq!(app.displayname, "Test App");
+        assert_eq!(app.linked_group.len(), 1);
+    }
+
+    #[test]
+    fn scim_entry_assertion_present_roundtrip() {
+        let uuid = Uuid::new_v4();
+        let assertion = ScimEntryAssertion::Present {
+            id: uuid,
+            attrs: BTreeMap::from([(Attribute::Name, Some(serde_json::json!("testname")))]),
+        };
+        let json = serde_json::to_string(&assertion).unwrap();
+        let de: ScimEntryAssertion = serde_json::from_str(&json).unwrap();
+        match de {
+            ScimEntryAssertion::Present { id, attrs } => {
+                assert_eq!(id, uuid);
+                assert!(attrs.contains_key(&Attribute::Name));
+            }
+            ScimEntryAssertion::Absent { .. } => panic!("Expected Present variant"),
+        }
+    }
+
+    #[test]
+    fn scim_entry_assertion_absent_roundtrip() {
+        let uuid = Uuid::new_v4();
+        let assertion = ScimEntryAssertion::Absent { id: uuid };
+        let json = serde_json::to_string(&assertion).unwrap();
+        let de: ScimEntryAssertion = serde_json::from_str(&json).unwrap();
+        match de {
+            ScimEntryAssertion::Absent { id } => assert_eq!(id, uuid),
+            ScimEntryAssertion::Present { .. } => panic!("Expected Absent variant"),
+        }
+    }
+
+    #[test]
+    fn scim_entry_put_generic_roundtrip() {
+        let uuid = Uuid::new_v4();
+        let put = ScimEntryPutGeneric {
+            id: uuid,
+            query: ScimEntryGetQuery::default(),
+            attrs: BTreeMap::from([(Attribute::Name, Some(serde_json::json!("testname")))]),
+        };
+        let json = serde_json::to_string(&put).unwrap();
+        let de: ScimEntryPutGeneric = serde_json::from_str(&json).unwrap();
+        assert_eq!(de.id, uuid);
+        assert!(de.attrs.contains_key(&Attribute::Name));
+    }
+
+    #[test]
+    fn scim_entry_post_generic_roundtrip() {
+        let post = ScimEntryPostGeneric {
+            attrs: BTreeMap::from([(Attribute::Name, serde_json::json!("testname"))]),
+        };
+        let json = serde_json::to_string(&post).unwrap();
+        let de: ScimEntryPostGeneric = serde_json::from_str(&json).unwrap();
+        assert!(de.attrs.contains_key(&Attribute::Name));
     }
 }

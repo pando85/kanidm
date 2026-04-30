@@ -1,7 +1,7 @@
 use crate::prelude::JsonValue;
 use hashbrown::HashSet;
-use kanidm_proto::internal::ImageType;
-use kanidm_proto::v1::OutboundMessage;
+use kubidm_proto::internal::ImageType;
+use kubidm_proto::v1::OutboundMessage;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 use std::collections::{BTreeMap, BTreeSet};
@@ -18,7 +18,7 @@ use webauthn_rs_core::proto::{COSEKey, UserVerificationPolicy};
 // Re-export this as though it was here.
 use crate::repl::cid::Cid;
 use crypto_glue::{s256::Sha256Output, traits::Zeroizing};
-pub use kanidm_lib_crypto::DbPasswordV1;
+pub use kubidm_lib_crypto::DbPasswordV1;
 
 fn unix_epoch() -> OffsetDateTime {
     OffsetDateTime::UNIX_EPOCH
@@ -653,6 +653,16 @@ pub enum DbValueSession {
     },
 }
 
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+pub struct DbValueTimeBoundedMemberV1 {
+    #[serde(rename = "u")]
+    pub uuid: Uuid,
+    #[serde(rename = "f")]
+    pub valid_from: Option<String>,
+    #[serde(rename = "t")]
+    pub valid_until: String,
+}
+
 #[derive(Serialize, Deserialize, Debug, Default, PartialEq, Eq)]
 pub enum DbValueApiTokenScopeV1 {
     #[serde(rename = "r")]
@@ -886,6 +896,8 @@ pub enum DbValueSetV2 {
     Message(OutboundMessage),
     #[serde(rename = "S256")]
     Sha256(BTreeSet<Sha256Output>),
+    #[serde(rename = "TB")]
+    TimeBoundedMember(Vec<DbValueTimeBoundedMemberV1>),
 }
 
 impl DbValueSetV2 {
@@ -942,6 +954,7 @@ impl DbValueSetV2 {
             DbValueSetV2::Certificate(set) => set.len(),
             DbValueSetV2::ApplicationPassword(set) => set.len(),
             DbValueSetV2::Sha256(set) => set.len(),
+            DbValueSetV2::TimeBoundedMember(set) => set.len(),
             DbValueSetV2::Json(_) | DbValueSetV2::Message(_) => 1,
         }
     }
@@ -1014,5 +1027,154 @@ mod tests {
         let _e_dbcred: Vec<DbCred> = serde_json::from_str(&json).unwrap();
 
         // assert_eq!(dbcred,e_dbcred);
+    }
+
+    use super::{
+        DbCidV1, DbTotpAlgoV1, DbValueAccessScopeV1, DbValueKeyStatus, DbValueKeyUsage,
+        DbValueSessionStateV1, DbValueSetV2,
+    };
+    use std::time::Duration;
+    use time::OffsetDateTime;
+
+    #[test]
+    fn test_dbtotp_algo_serde_roundtrip() {
+        let algos = vec![DbTotpAlgoV1::S1, DbTotpAlgoV1::S256, DbTotpAlgoV1::S512];
+        for algo in algos {
+            let json = serde_json::to_string(&algo).unwrap();
+            let restored: DbTotpAlgoV1 = serde_json::from_str(&json).unwrap();
+            assert_eq!(algo, restored);
+        }
+    }
+
+    #[test]
+    fn test_dbvalue_key_usage_serde_roundtrip() {
+        let usages = vec![
+            DbValueKeyUsage::JwsEs256,
+            DbValueKeyUsage::JwsHs256,
+            DbValueKeyUsage::JwsRs256,
+            DbValueKeyUsage::JweA128GCM,
+            DbValueKeyUsage::HkdfS256,
+        ];
+        for usage in usages {
+            let json = serde_json::to_string(&usage).unwrap();
+            let restored: DbValueKeyUsage = serde_json::from_str(&json).unwrap();
+            assert_eq!(usage, restored);
+        }
+    }
+
+    #[test]
+    fn test_dbvalue_key_status_serde_roundtrip() {
+        let statuses = vec![
+            DbValueKeyStatus::Valid,
+            DbValueKeyStatus::Retained,
+            DbValueKeyStatus::Revoked,
+        ];
+        for status in statuses {
+            let json = serde_json::to_string(&status).unwrap();
+            let restored: DbValueKeyStatus = serde_json::from_str(&json).unwrap();
+            assert_eq!(status, restored);
+        }
+    }
+
+    #[test]
+    fn test_dbvalue_access_scope_serde_roundtrip() {
+        let scopes = vec![
+            DbValueAccessScopeV1::IdentityOnly,
+            DbValueAccessScopeV1::ReadOnly,
+            DbValueAccessScopeV1::ReadWrite,
+            DbValueAccessScopeV1::PrivilegeCapable,
+            DbValueAccessScopeV1::Synchronise,
+        ];
+        for scope in scopes {
+            let json = serde_json::to_string(&scope).unwrap();
+            let restored: DbValueAccessScopeV1 = serde_json::from_str(&json).unwrap();
+            assert_eq!(scope, restored);
+        }
+    }
+
+    #[test]
+    fn test_dbvalue_session_state_serde_roundtrip() {
+        let cid = DbCidV1 {
+            timestamp: Duration::from_secs(12345),
+            server_id: Uuid::new_v4(),
+        };
+        let states = vec![
+            DbValueSessionStateV1::ExpiresAt("2024-01-01T00:00:00Z".to_string()),
+            DbValueSessionStateV1::Never,
+            DbValueSessionStateV1::RevokedAt(cid),
+        ];
+        for state in &states {
+            let json = serde_json::to_string(state).unwrap();
+            let restored: DbValueSessionStateV1 = serde_json::from_str(&json).unwrap();
+            assert_eq!(state, &restored);
+        }
+    }
+
+    #[test]
+    fn test_dbbackup_code_debug_format() {
+        let codes = DbBackupCodeV1 {
+            code_set: vec!["12345".to_string(), "67890".to_string()]
+                .into_iter()
+                .collect(),
+        };
+        let debug_str = format!("{:?}", codes);
+        assert!(debug_str.contains("codes remaining: 2"));
+    }
+
+    #[test]
+    fn test_dbtotp_v1_debug_hides_key() {
+        let totp = DbTotpV1 {
+            label: "test".to_string(),
+            key: vec![1, 2, 3, 4, 5],
+            step: 30,
+            algo: DbTotpAlgoV1::S1,
+            digits: Some(6),
+        };
+        let debug_str = format!("{:?}", totp);
+        assert!(!debug_str.contains("1, 2, 3, 4, 5"));
+    }
+
+    #[test]
+    fn test_dbcred_display() {
+        let pw_cred = DbCred::Pw {
+            password: None,
+            webauthn: None,
+            totp: None,
+            backup_code: None,
+            claims: vec![],
+            uuid: Uuid::new_v4(),
+        };
+        let display = format!("{}", pw_cred);
+        assert!(display.starts_with("Pw"));
+    }
+
+    #[test]
+    fn test_dbcred_last_changed_timestamp_v1_returns_fixed() {
+        let cred = DbCred::Pw {
+            password: None,
+            webauthn: None,
+            totp: None,
+            backup_code: None,
+            claims: vec![],
+            uuid: Uuid::new_v4(),
+        };
+        let ts = cred.last_changed_timestamp();
+        let expected = OffsetDateTime::from_unix_timestamp(932964162_i64).unwrap();
+        assert_eq!(ts, expected);
+    }
+
+    #[test]
+    fn test_dbvaluesetv2_len_and_is_empty() {
+        let set = DbValueSetV2::Utf8(vec!["a".to_string(), "b".to_string()]);
+        assert_eq!(set.len(), 2);
+        assert!(!set.is_empty());
+
+        let empty_set = DbValueSetV2::Uuid(vec![]);
+        assert_eq!(empty_set.len(), 0);
+        assert!(empty_set.is_empty());
+
+        let single = DbValueSetV2::Bool(vec![true]);
+        assert_eq!(single.len(), 1);
+        assert!(!single.is_empty());
     }
 }

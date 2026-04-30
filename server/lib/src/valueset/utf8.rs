@@ -4,8 +4,8 @@ use crate::utils::trigraph_iter;
 use crate::valueset::{
     DbValueSetV2, ScimResolveStatus, ValueSet, ValueSetResolveStatus, ValueSetScimPut,
 };
-use kanidm_proto::scim_v1::client::ScimStrings;
-use kanidm_proto::scim_v1::JsonValue;
+use kubidm_proto::scim_v1::client::ScimStrings;
+use kubidm_proto::scim_v1::JsonValue;
 use std::collections::BTreeSet;
 
 #[derive(Debug, Clone)]

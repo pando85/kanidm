@@ -172,3 +172,80 @@ impl ValueSetT for ValueSetTotpSecret {
         Some(&self.map)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::ValueSetTotpSecret;
+    use crate::credential::totp::{Totp, TotpAlgo, TotpDigits};
+    use crate::prelude::ValueSet;
+
+    fn make_totp() -> Totp {
+        Totp::new(vec![0xAA; 32], 30, TotpAlgo::Sha256, TotpDigits::Six)
+    }
+
+    #[test]
+    fn test_valueset_totp_new() {
+        let vs: ValueSet = ValueSetTotpSecret::new("primary".to_string(), make_totp());
+        assert_eq!(vs.len(), 1);
+    }
+
+    #[test]
+    fn test_valueset_totp_insert_checked_duplicate_rejected() {
+        let mut vs: ValueSet = ValueSetTotpSecret::new("primary".to_string(), make_totp());
+        let result = vs.insert_checked(crate::prelude::Value::TotpSecret(
+            "primary".to_string(),
+            make_totp(),
+        ));
+        assert_eq!(result.unwrap(), false);
+        assert_eq!(vs.len(), 1);
+    }
+
+    #[test]
+    fn test_valueset_totp_insert_checked_new_label() {
+        let mut vs: ValueSet = ValueSetTotpSecret::new("primary".to_string(), make_totp());
+        let result = vs.insert_checked(crate::prelude::Value::TotpSecret(
+            "secondary".to_string(),
+            make_totp(),
+        ));
+        assert_eq!(result.unwrap(), true);
+        assert_eq!(vs.len(), 2);
+    }
+
+    #[test]
+    fn test_valueset_totp_as_totp_map() {
+        let vs: ValueSet = ValueSetTotpSecret::new("primary".to_string(), make_totp());
+        let map = vs.as_totp_map().expect("Expected map");
+        assert_eq!(map.len(), 1);
+        assert!(map.contains_key("primary"));
+    }
+
+    #[test]
+    fn test_valueset_totp_contains() {
+        let vs: ValueSet = ValueSetTotpSecret::new("primary".to_string(), make_totp());
+        assert!(vs.contains(&crate::prelude::PartialValue::Utf8("primary".to_string())));
+        assert!(!vs.contains(&crate::prelude::PartialValue::Utf8("other".to_string())));
+    }
+
+    #[test]
+    fn test_valueset_totp_syntax() {
+        let vs: ValueSet = ValueSetTotpSecret::new("primary".to_string(), make_totp());
+        assert_eq!(vs.syntax(), crate::prelude::SyntaxType::TotpSecret);
+    }
+
+    #[test]
+    fn test_valueset_totp_dbv2_roundtrip() {
+        let vs: ValueSet = ValueSetTotpSecret::new("primary".to_string(), make_totp());
+        let dbvs = vs.to_db_valueset_v2();
+        let vs2 = crate::valueset::from_db_valueset_v2(dbvs).expect("Failed to restore");
+        assert_eq!(vs2.len(), 1);
+        let map = vs2.as_totp_map().expect("Expected map");
+        assert!(map.contains_key("primary"));
+    }
+
+    #[test]
+    fn test_valueset_totp_clear() {
+        let mut vs: ValueSet = ValueSetTotpSecret::new("primary".to_string(), make_totp());
+        vs.clear();
+        assert_eq!(vs.len(), 0);
+    }
+}

@@ -1,8 +1,8 @@
-use kanidm_proto::constants::DEFAULT_CLIENT_CONFIG_PATH;
-pub const DEFAULT_MAIL_SENDER_CONFIG_PATH: &str = "/etc/kanidm/mail-sender";
+use kubidm_proto::constants::DEFAULT_CLIENT_CONFIG_PATH;
+pub const DEFAULT_MAIL_SENDER_CONFIG_PATH: &str = "/etc/kubidm/mail-sender";
 
 #[derive(Debug, clap::Parser, Clone)]
-#[clap(about = "Kanidm Mail Sender")]
+#[clap(about = "Kubidm Mail Sender")]
 pub struct Opt {
     /// Enable debugging of the sender
     #[clap(short, long, env = "KANIDM_DEBUG")]

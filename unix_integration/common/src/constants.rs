@@ -1,10 +1,10 @@
 use crate::unix_config::{HomeAttr, UidAttr};
 
 pub const DEFAULT_CONFIG_PATH: &str = env!("KANIDM_RESOLVER_CONFIG_PATH");
-pub const DEFAULT_SOCK_PATH: &str = "/var/run/kanidm-unixd/sock";
-pub const DEFAULT_TASK_SOCK_PATH: &str = "/var/run/kanidm-unixd/task_sock";
-pub const DEFAULT_PERSISTENT_DB_PATH: &str = "/var/lib/kanidm-unixd/kanidm.db";
-pub const DEFAULT_CACHE_DB_PATH: &str = "/var/cache/kanidm-unixd/kanidm.cache.db";
+pub const DEFAULT_SOCK_PATH: &str = "/var/run/kubidm-unixd/sock";
+pub const DEFAULT_TASK_SOCK_PATH: &str = "/var/run/kubidm-unixd/task_sock";
+pub const DEFAULT_PERSISTENT_DB_PATH: &str = "/var/lib/kubidm-unixd/kubidm.db";
+pub const DEFAULT_CACHE_DB_PATH: &str = "/var/cache/kubidm-unixd/kubidm.cache.db";
 pub const DEFAULT_CONN_TIMEOUT: u64 = 2;
 pub const DEFAULT_CACHE_TIMEOUT_MINIMUM: u64 = 60; // seconds
 pub const DEFAULT_CACHE_TIMEOUT_MAXIMUM: u64 = 24 * 3600; // seconds
@@ -20,7 +20,7 @@ pub const DEFAULT_UID_ATTR_MAP: UidAttr = UidAttr::Spn;
 pub const DEFAULT_GID_ATTR_MAP: UidAttr = UidAttr::Spn;
 pub const DEFAULT_SELINUX: bool = true;
 pub const DEFAULT_TPM_TCTI_NAME: &str = "device:/dev/tpmrm0";
-pub const DEFAULT_HSM_PIN_PATH: &str = "/var/lib/kanidm-unixd/hsm-pin";
+pub const DEFAULT_HSM_PIN_PATH: &str = "/var/lib/kubidm-unixd/hsm-pin";
 pub const DEFAULT_KANIDM_SERVICE_ACCOUNT_TOKEN_PATH: &str =
     env!("KANIDM_RESOLVER_SERVICE_ACCOUNT_TOKEN_PATH");
 

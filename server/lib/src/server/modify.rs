@@ -609,7 +609,7 @@ impl QueryServerWriteTransaction<'_> {
 mod tests {
     use crate::credential::Credential;
     use crate::prelude::*;
-    use kanidm_lib_crypto::CryptoPolicy;
+    use kubidm_lib_crypto::CryptoPolicy;
     use time::OffsetDateTime;
 
     #[qs_test]

@@ -1,8 +1,9 @@
 :root {
   --totp-width-and-height: 30px;
   --totp-stroke-width: 60px;
-  --navbar-colors-transition: color 0.15s ease-in-out,
-    background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+  --navbar-colors-transition:
+    color 0.15s ease-in-out, background-color 0.15s ease-in-out,
+    border-color 0.15s ease-in-out;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -78,7 +79,7 @@ nav a.navbar-brand {
   transition: var(--navbar-colors-transition);
 }
 
-.kanidm_logo {
+.kubidm_logo {
   width: 12em;
   height: 12em;
 }

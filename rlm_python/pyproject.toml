@@ -1,13 +1,13 @@
 [project]
 name = "rlm-python"
 version = "0.1.0"
-description = "FreeRADIUS Kanidm module"
+description = "FreeRADIUS Kubidm module"
 readme = "README.md"
-requires-python = ">=3.10"
-dependencies = ["kanidm"]
+requires-python = ">=3.12,<4.0"
+dependencies = ["kubidm"]
 
 [dependency-groups]
-dev = ["mypy>=1.20.2", "pytest>=9.0.3", "ruff>=0.15.12", "ty>=0.0.32"]
+dev = ["mypy>=1.15.0", "pytest>=9.0.2", "ruff>=0.11.9", "ty>=0.0.0a8"]
 
 [tool.uv.sources]
-kanidm = { path = "../pykanidm" }
+kubidm = { path = "../pykubidm" }

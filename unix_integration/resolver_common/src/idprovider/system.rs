@@ -1,10 +1,8 @@
-use super::interface::{
-    unix_common::unix_passwd::{CryptPw, EtcGroup, EtcShadow, EtcUser},
-    unix_common::unix_proto::PamAuthRequest,
-    unix_common::unix_proto::{NssGroup, NssUser},
-};
 use super::interface::{AuthCredHandler, AuthRequest, Id, IdpError};
 use hashbrown::HashMap;
+use kubidm_unix_common::unix_passwd::{CryptPw, EtcGroup, EtcShadow, EtcUser};
+use kubidm_unix_common::unix_proto::PamAuthRequest;
+use kubidm_unix_common::unix_proto::{NssGroup, NssUser};
 use std::sync::Arc;
 use time::OffsetDateTime;
 use tokio::sync::Mutex;

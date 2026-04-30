@@ -9,11 +9,11 @@
 #![deny(clippy::needless_pass_by_value)]
 #![deny(clippy::trivially_copy_pass_by_ref)]
 
-use kanidm_client::{KanidmClient, KanidmClientBuilder};
-use kanidm_proto::internal::{CURegState, Filter, Modify, ModifyList};
-use kanidmd_core::config::{Configuration, IntegrationTestConfig};
-use kanidmd_core::{create_server_core, CoreHandle};
-use kanidmd_lib::prelude::{Attribute, NAME_SYSTEM_ADMINS};
+use kubidm_client::{KubidmClient, KubidmClientBuilder};
+use kubidm_proto::internal::{CURegState, Filter, Modify, ModifyList};
+use kubidmd_core::config::{Configuration, IntegrationTestConfig};
+use kubidmd_core::{create_server_core, CoreHandle};
+use kubidmd_lib::prelude::{Attribute, NAME_SYSTEM_ADMINS};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream};
 use std::str::FromStr;
 use std::sync::atomic::{AtomicU16, Ordering};
@@ -66,7 +66,7 @@ fn port_loop() -> u16 {
 }
 
 pub struct AsyncTestEnvironment {
-    pub rsclient: KanidmClient,
+    pub rsclient: KubidmClient,
     pub http_sock_addr: SocketAddr,
     pub core_handle: CoreHandle,
     pub ldap_url: Option<Url>,
@@ -118,7 +118,7 @@ pub async fn setup_async_test(mut config: Configuration) -> AsyncTestEnvironment
     task::yield_now().await;
 
     #[allow(clippy::panic)]
-    let rsclient = match KanidmClientBuilder::new()
+    let rsclient = match KubidmClientBuilder::new()
         .address(addr.to_string())
         .enable_native_ca_roots(false)
         .no_proxy()
@@ -138,7 +138,14 @@ pub async fn setup_async_test(mut config: Configuration) -> AsyncTestEnvironment
     }
 }
 
+<<<<<<< HEAD
 pub async fn setup_account_passkey(rsclient: &KanidmClient, account_name: &str) -> SoftPasskey {
+=======
+pub async fn setup_account_passkey(
+    rsclient: &KubidmClient,
+    account_name: &str,
+) -> WebauthnAuthenticator<SoftPasskey> {
+>>>>>>> master
     // Create an intent token for them
     let intent_token = rsclient
         .idm_person_account_credential_update_intent(account_name, Some(1234))
@@ -203,7 +210,7 @@ pub async fn setup_account_passkey(rsclient: &KanidmClient, account_name: &str) 
 }
 
 /// creates a user (username: `id`) and puts them into a group, creating it if need be.
-pub async fn create_user(rsclient: &KanidmClient, id: &str, group_name: &str) {
+pub async fn create_user(rsclient: &KubidmClient, id: &str, group_name: &str) {
     #[allow(clippy::expect_used)]
     rsclient
         .idm_person_account_create(id, id)
@@ -232,7 +239,7 @@ pub async fn create_user(rsclient: &KanidmClient, id: &str, group_name: &str) {
 }
 
 pub async fn create_user_with_all_attrs(
-    rsclient: &KanidmClient,
+    rsclient: &KubidmClient,
     id: &str,
     optional_group: Option<&str>,
 ) {
@@ -244,7 +251,7 @@ pub async fn create_user_with_all_attrs(
 }
 
 pub async fn add_all_attrs(
-    rsclient: &KanidmClient,
+    rsclient: &KubidmClient,
     id: &str,
     group_name: &str,
     legalname: Option<&str>,
@@ -295,7 +302,7 @@ pub async fn add_all_attrs(
     }
 }
 
-pub async fn is_attr_writable(rsclient: &KanidmClient, id: &str, attr: Attribute) -> Option<bool> {
+pub async fn is_attr_writable(rsclient: &KubidmClient, id: &str, attr: Attribute) -> Option<bool> {
     println!("writing to attribute: {attr}");
     match attr {
         Attribute::RadiusSecret => Some(
@@ -363,7 +370,7 @@ pub async fn is_attr_writable(rsclient: &KanidmClient, id: &str, attr: Attribute
     }
 }
 
-pub async fn login_account(rsclient: &KanidmClient, id: &str) {
+pub async fn login_account(rsclient: &KubidmClient, id: &str) {
     #[allow(clippy::expect_used)]
     rsclient
         .idm_person_account_primary_credential_set_password(id, NOT_ADMIN_TEST_PASSWORD)
@@ -389,7 +396,7 @@ pub async fn login_account(rsclient: &KanidmClient, id: &str) {
 // Login to the given account, but first login with default admin credentials.
 // This is necessary when switching between unprivileged accounts, but adds extra calls which
 // create extra debugging noise, so should be avoided when unnecessary.
-pub async fn login_account_via_admin(rsclient: &KanidmClient, id: &str) {
+pub async fn login_account_via_admin(rsclient: &KubidmClient, id: &str) {
     let _ = rsclient.logout().await;
 
     #[allow(clippy::expect_used)]
@@ -401,7 +408,7 @@ pub async fn login_account_via_admin(rsclient: &KanidmClient, id: &str) {
 }
 
 pub async fn test_read_attrs(
-    rsclient: &KanidmClient,
+    rsclient: &KubidmClient,
     id: &str,
     attrs: &[Attribute],
     is_readable: bool,
@@ -433,7 +440,7 @@ pub async fn test_read_attrs(
 }
 
 pub async fn test_write_attrs(
-    rsclient: &KanidmClient,
+    rsclient: &KubidmClient,
     id: &str,
     attrs: &[Attribute],
     is_writeable: bool,
@@ -448,7 +455,7 @@ pub async fn test_write_attrs(
 }
 
 pub async fn test_modify_group(
-    rsclient: &KanidmClient,
+    rsclient: &KubidmClient,
     group_names: &[&str],
     can_be_modified: bool,
 ) {
@@ -474,7 +481,7 @@ pub async fn test_modify_group(
 }
 
 /// Logs in with the admin user and puts them in idm_admins so they can do admin things
-pub async fn login_put_admin_idm_admins(rsclient: &KanidmClient) {
+pub async fn login_put_admin_idm_admins(rsclient: &KubidmClient) {
     #[allow(clippy::expect_used)]
     rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
@@ -494,7 +501,7 @@ macro_rules! assert_no_cache {
         // Check we have correct nocache headers.
         let cache_header: &str = $response
             .headers()
-            .get(kanidm_client::http::header::CACHE_CONTROL)
+            .get(kubidm_client::http::header::CACHE_CONTROL)
             .expect("missing cache-control header")
             .to_str()
             .expect("invalid cache-control header");

@@ -81,3 +81,72 @@ pub static LOCKED_ENTRY_CLASSES: LazyLock<BTreeSet<String>> = LazyLock::new(|| {
 
     BTreeSet::from_iter(classes.into_iter().map(|ec| ec.into()))
 });
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_protected_entry_classes_contains_system() {
+        assert!(PROTECTED_ENTRY_CLASSES.contains("system"));
+        assert!(PROTECTED_ENTRY_CLASSES.contains("domain_info"));
+        assert!(PROTECTED_ENTRY_CLASSES.contains("system_info"));
+        assert!(PROTECTED_ENTRY_CLASSES.contains("system_config"));
+        assert!(PROTECTED_ENTRY_CLASSES.contains("dyngroup"));
+        assert!(PROTECTED_ENTRY_CLASSES.contains("sync_object"));
+        assert!(PROTECTED_ENTRY_CLASSES.contains("tombstone"));
+        assert!(PROTECTED_ENTRY_CLASSES.contains("recycled"));
+    }
+
+    #[test]
+    fn test_protected_mod_entry_classes_contains_recycled() {
+        // Recycled IS in PROTECTED_MOD_ENTRY_CLASSES (unlike create/delete)
+        assert!(PROTECTED_MOD_ENTRY_CLASSES.contains("recycled"));
+        assert!(PROTECTED_MOD_ENTRY_CLASSES.contains("system"));
+        assert!(PROTECTED_MOD_ENTRY_CLASSES.contains("tombstone"));
+    }
+
+    #[test]
+    fn test_protected_mod_pres_entry_classes_contains_all() {
+        // All protected classes should be in the PRES set
+        for class in PROTECTED_ENTRY_CLASSES.iter() {
+            assert!(
+                PROTECTED_MOD_PRES_ENTRY_CLASSES.contains(class),
+                "Class {} should be in PROTECTED_MOD_PRES_ENTRY_CLASSES",
+                class
+            );
+        }
+    }
+
+    #[test]
+    fn test_protected_mod_rem_entry_classes_excludes_recycled() {
+        // Recycled is NOT in PROTECTED_MOD_REM_ENTRY_CLASSES
+        assert!(!PROTECTED_MOD_REM_ENTRY_CLASSES.contains("recycled"));
+        // But system classes are
+        assert!(PROTECTED_MOD_REM_ENTRY_CLASSES.contains("system"));
+        assert!(PROTECTED_MOD_REM_ENTRY_CLASSES.contains("tombstone"));
+    }
+
+    #[test]
+    fn test_locked_entry_classes() {
+        assert!(LOCKED_ENTRY_CLASSES.contains("tombstone"));
+        // Recycled is NOT locked (recycle bin admin can remove)
+        assert!(!LOCKED_ENTRY_CLASSES.contains("recycled"));
+    }
+
+    #[test]
+    fn test_protected_entry_classes_not_empty() {
+        assert!(!PROTECTED_ENTRY_CLASSES.is_empty());
+        assert!(!PROTECTED_MOD_ENTRY_CLASSES.is_empty());
+        assert!(!PROTECTED_MOD_PRES_ENTRY_CLASSES.is_empty());
+        assert!(!PROTECTED_MOD_REM_ENTRY_CLASSES.is_empty());
+        assert!(!LOCKED_ENTRY_CLASSES.is_empty());
+    }
+
+    #[test]
+    fn test_protected_mod_pres_vs_rem_diff() {
+        // recycled is in PRES but NOT in REM
+        assert!(PROTECTED_MOD_PRES_ENTRY_CLASSES.contains("recycled"));
+        assert!(!PROTECTED_MOD_REM_ENTRY_CLASSES.contains("recycled"));
+    }
+}

@@ -18,12 +18,13 @@ use std::path::PathBuf;
 
 use identify_user_no_tui::{run_identity_verification_no_tui, IdentifyUserState};
 
-use kanidm_client::{ClientError, StatusCode};
+use kubidm_client::{ClientError, StatusCode};
 use url::Url;
 use uuid::Uuid;
 
-include!("../opt/kanidm.rs");
+include!("../opt/kubidm.rs");
 
+mod approval;
 mod common;
 mod domain;
 mod graph;
@@ -75,8 +76,8 @@ pub(crate) fn handle_client_error(response: ClientError, _output_mode: OutputMod
 }
 
 pub(crate) fn handle_group_account_policy_error(response: ClientError, _output_mode: OutputMode) {
-    use kanidm_proto::internal::OperationError::SchemaViolation;
-    use kanidm_proto::internal::SchemaError::AttributeNotValidForClass;
+    use kubidm_proto::internal::OperationError::SchemaViolation;
+    use kubidm_proto::internal::SchemaError::AttributeNotValidForClass;
 
     if let ClientError::Http(_status, Some(SchemaViolation(AttributeNotValidForClass(att))), opid) =
         response
@@ -89,7 +90,7 @@ pub(crate) fn handle_group_account_policy_error(response: ClientError, _output_m
 }
 
 impl SelfOpt {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: KubidmClientParser) {
         match self {
             SelfOpt::Whoami => {
                 let client = opt.to_client(OpType::Read).await;
@@ -144,7 +145,7 @@ impl SelfOpt {
 }
 
 impl SystemOpt {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: KubidmClientParser) {
         match self {
             SystemOpt::Api { commands } => commands.exec(opt).await,
             SystemOpt::PwBadlist { commands } => commands.exec(opt).await,
@@ -153,34 +154,35 @@ impl SystemOpt {
             SystemOpt::Domain { commands } => commands.exec(opt).await,
             SystemOpt::Message { commands } => commands.exec(opt).await,
             SystemOpt::Synch { commands } => commands.exec(opt).await,
+            SystemOpt::Approval { commands } => commands.exec(opt).await,
         }
     }
 }
 
-impl KanidmClientParser {
+impl KubidmClientParser {
     pub async fn exec(self) {
         match self.commands.clone() {
-            KanidmClientOpt::Raw { commands } => commands.exec(self).await,
-            KanidmClientOpt::Login(lopt) => lopt.exec(self).await,
-            KanidmClientOpt::Reauth => self.reauth().await,
-            KanidmClientOpt::Logout(lopt) => lopt.exec(self).await,
-            KanidmClientOpt::Session { commands } => commands.exec(self).await,
-            KanidmClientOpt::CSelf { commands } => commands.exec(self).await,
-            KanidmClientOpt::Person { commands } => commands.exec(self).await,
-            KanidmClientOpt::ServiceAccount { commands } => commands.exec(self).await,
-            KanidmClientOpt::Group { commands } => commands.exec(self).await,
-            KanidmClientOpt::Graph(gops) => gops.exec(self).await,
-            KanidmClientOpt::System { commands } => commands.exec(self).await,
-            KanidmClientOpt::Schema {
+            KubidmClientOpt::Raw { commands } => commands.exec(self).await,
+            KubidmClientOpt::Login(lopt) => lopt.exec(self).await,
+            KubidmClientOpt::Reauth => self.reauth().await,
+            KubidmClientOpt::Logout(lopt) => lopt.exec(self).await,
+            KubidmClientOpt::Session { commands } => commands.exec(self).await,
+            KubidmClientOpt::CSelf { commands } => commands.exec(self).await,
+            KubidmClientOpt::Person { commands } => commands.exec(self).await,
+            KubidmClientOpt::ServiceAccount { commands } => commands.exec(self).await,
+            KubidmClientOpt::Group { commands } => commands.exec(self).await,
+            KubidmClientOpt::Graph(gops) => gops.exec(self).await,
+            KubidmClientOpt::System { commands } => commands.exec(self).await,
+            KubidmClientOpt::Schema {
                 commands: SchemaOpt::Class { commands },
             } => commands.exec(self).await,
-            KanidmClientOpt::Schema {
+            KubidmClientOpt::Schema {
                 commands: SchemaOpt::Attribute { commands },
             } => commands.exec(self).await,
-            KanidmClientOpt::Recycle { commands } => commands.exec(self).await,
-            KanidmClientOpt::Version => {
+            KubidmClientOpt::Recycle { commands } => commands.exec(self).await,
+            KubidmClientOpt::Version => {
                 self.output_mode
-                    .print_message(format!("kanidm {}", env!("KANIDM_PKG_VERSION")));
+                    .print_message(format!("kubidm {}", env!("KANIDM_PKG_VERSION")));
             }
         }
     }
@@ -217,8 +219,8 @@ mod identify_user_no_tui {
         CODE_FAILURE_ERROR_MESSAGE, IDENTITY_UNAVAILABLE_ERROR_MESSAGE, INVALID_STATE_ERROR_MESSAGE,
     };
 
-    use kanidm_client::{ClientError, KanidmClient};
-    use kanidm_proto::internal::{IdentifyUserRequest, IdentifyUserResponse};
+    use kubidm_client::{ClientError, KubidmClient};
+    use kubidm_proto::internal::{IdentifyUserRequest, IdentifyUserResponse};
 
     use dialoguer::{Confirm, Input};
     use regex::Regex;
@@ -249,7 +251,7 @@ mod identify_user_no_tui {
 
     pub(super) async fn run_identity_verification_no_tui(
         mut state: IdentifyUserState,
-        client: KanidmClient,
+        client: KubidmClient,
         self_id: &str,
         mut other_id: Option<String>,
     ) {

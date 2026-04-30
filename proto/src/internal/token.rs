@@ -211,3 +211,294 @@ impl fmt::Display for Group {
         write!(f, "uuid: {} ]", self.uuid)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_uat() -> UserAuthToken {
+        UserAuthToken {
+            session_id: Uuid::new_v4(),
+            issued_at: OffsetDateTime::UNIX_EPOCH,
+            expiry: None,
+            purpose: UatPurpose::ReadOnly,
+            uuid: Uuid::new_v4(),
+            displayname: "Test User".to_string(),
+            spn: "testuser@example.com".to_string(),
+            mail_primary: Some("test@example.com".to_string()),
+            ui_hints: BTreeSet::new(),
+            limit_search_max_results: None,
+            limit_search_max_filter_test: None,
+        }
+    }
+
+    #[test]
+    fn test_uat_purpose_serde_readonly() {
+        let purpose = UatPurpose::ReadOnly;
+        let json = serde_json::to_string(&purpose).expect("Failed to serialize");
+        assert_eq!(json, "\"readonly\"");
+        let deserialized: UatPurpose = serde_json::from_str(&json).expect("Failed to deserialize");
+        assert!(matches!(deserialized, UatPurpose::ReadOnly));
+    }
+
+    #[test]
+    fn test_uat_purpose_serde_readwrite_with_expiry() {
+        let expiry = OffsetDateTime::UNIX_EPOCH + time::Duration::hours(1);
+        let purpose = UatPurpose::ReadWrite {
+            expiry: Some(expiry),
+        };
+        let json = serde_json::to_string(&purpose).expect("Failed to serialize");
+        assert!(json.contains("readwrite"));
+        let deserialized: UatPurpose = serde_json::from_str(&json).expect("Failed to deserialize");
+        assert!(matches!(deserialized, UatPurpose::ReadWrite { .. }));
+    }
+
+    #[test]
+    fn test_uat_purpose_serde_readwrite_no_expiry() {
+        let purpose = UatPurpose::ReadWrite { expiry: None };
+        let json = serde_json::to_string(&purpose).expect("Failed to serialize");
+        assert!(json.contains("readwrite"));
+        let deserialized: UatPurpose = serde_json::from_str(&json).expect("Failed to deserialize");
+        assert!(matches!(
+            deserialized,
+            UatPurpose::ReadWrite { expiry: None }
+        ));
+    }
+
+    #[test]
+    fn test_uat_name() {
+        let uat = make_uat();
+        assert_eq!(uat.name(), "testuser");
+    }
+
+    #[test]
+    fn test_uat_name_no_at() {
+        let mut uat = make_uat();
+        uat.spn = "testuser".to_string();
+        assert_eq!(uat.name(), "testuser");
+    }
+
+    #[test]
+    fn test_uat_display() {
+        let uat = make_uat();
+        let display = format!("{}", uat);
+        assert!(display.contains("testuser@example.com"));
+        assert!(display.contains("Test User"));
+        assert!(display.contains("read only"));
+    }
+
+    #[test]
+    fn test_uat_display_with_expiry() {
+        let mut uat = make_uat();
+        uat.expiry = Some(OffsetDateTime::UNIX_EPOCH + time::Duration::hours(1));
+        let display = format!("{}", uat);
+        assert!(display.contains("expiry:"));
+    }
+
+    #[test]
+    fn test_uat_display_readwrite_purpose() {
+        let mut uat = make_uat();
+        uat.purpose = UatPurpose::ReadWrite { expiry: None };
+        let display = format!("{}", uat);
+        assert!(display.contains("read write"));
+    }
+
+    #[test]
+    fn test_uat_eq_by_session_id() {
+        let uat1 = make_uat();
+        let uat2 = uat1.clone();
+        assert_eq!(uat1, uat2);
+
+        let mut uat3 = make_uat();
+        uat3.session_id = Uuid::new_v4();
+        assert_ne!(uat1, uat3);
+    }
+
+    #[test]
+    fn test_uat_purpose_privilege_state_readonly() {
+        let uat = make_uat();
+        let ct = OffsetDateTime::UNIX_EPOCH + time::Duration::hours(1);
+        assert!(matches!(
+            uat.purpose_privilege_state(ct),
+            PrivilegesActive::False
+        ));
+    }
+
+    #[test]
+    fn test_uat_purpose_privilege_state_readwrite_active() {
+        let mut uat = make_uat();
+        let future = OffsetDateTime::UNIX_EPOCH + time::Duration::hours(2);
+        uat.purpose = UatPurpose::ReadWrite {
+            expiry: Some(future),
+        };
+        let ct = OffsetDateTime::UNIX_EPOCH + time::Duration::hours(1);
+        assert!(matches!(
+            uat.purpose_privilege_state(ct),
+            PrivilegesActive::True
+        ));
+    }
+
+    #[test]
+    fn test_uat_purpose_privilege_state_readwrite_expired() {
+        let mut uat = make_uat();
+        let past = OffsetDateTime::UNIX_EPOCH + time::Duration::minutes(30);
+        uat.purpose = UatPurpose::ReadWrite { expiry: Some(past) };
+        let ct = OffsetDateTime::UNIX_EPOCH + time::Duration::hours(1);
+        assert!(matches!(
+            uat.purpose_privilege_state(ct),
+            PrivilegesActive::ReauthRequired
+        ));
+    }
+
+    #[test]
+    fn test_uat_purpose_privilege_state_readwrite_no_expiry() {
+        let mut uat = make_uat();
+        uat.purpose = UatPurpose::ReadWrite { expiry: None };
+        let ct = OffsetDateTime::UNIX_EPOCH + time::Duration::hours(1);
+        assert!(matches!(
+            uat.purpose_privilege_state(ct),
+            PrivilegesActive::ReauthRequired
+        ));
+    }
+
+    #[test]
+    fn test_uat_serde_roundtrip() {
+        let uat = make_uat();
+        let json = serde_json::to_string(&uat).expect("Failed to serialize");
+        let deserialized: UserAuthToken =
+            serde_json::from_str(&json).expect("Failed to deserialize");
+        assert_eq!(uat.session_id, deserialized.session_id);
+        assert_eq!(uat.spn, deserialized.spn);
+        assert_eq!(uat.displayname, deserialized.displayname);
+        assert_eq!(uat.uuid, deserialized.uuid);
+    }
+
+    #[test]
+    fn test_api_token_purpose_serde() {
+        assert_eq!(
+            serde_json::to_string(&ApiTokenPurpose::ReadOnly).unwrap(),
+            "\"readonly\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ApiTokenPurpose::ReadWrite).unwrap(),
+            "\"readwrite\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ApiTokenPurpose::Synchronise).unwrap(),
+            "\"synchronise\""
+        );
+
+        let deserialized: ApiTokenPurpose = serde_json::from_str("\"readonly\"").unwrap();
+        assert!(matches!(deserialized, ApiTokenPurpose::ReadOnly));
+    }
+
+    #[test]
+    fn test_api_token_display() {
+        let token = ApiToken {
+            account_id: Uuid::new_v4(),
+            token_id: Uuid::new_v4(),
+            label: "my-token".to_string(),
+            expiry: None,
+            issued_at: OffsetDateTime::UNIX_EPOCH,
+            purpose: ApiTokenPurpose::ReadOnly,
+        };
+        let display = format!("{}", token);
+        assert!(display.contains("my-token"));
+        assert!(display.contains("never"));
+    }
+
+    #[test]
+    fn test_api_token_display_with_expiry() {
+        let token = ApiToken {
+            account_id: Uuid::new_v4(),
+            token_id: Uuid::new_v4(),
+            label: "my-token".to_string(),
+            expiry: Some(OffsetDateTime::UNIX_EPOCH + time::Duration::days(365)),
+            issued_at: OffsetDateTime::UNIX_EPOCH,
+            purpose: ApiTokenPurpose::ReadWrite,
+        };
+        let display = format!("{}", token);
+        assert!(display.contains("my-token"));
+        assert!(display.contains("token expiry:"));
+    }
+
+    #[test]
+    fn test_api_token_eq_by_token_id() {
+        let token1 = ApiToken {
+            account_id: Uuid::new_v4(),
+            token_id: Uuid::new_v4(),
+            label: "token1".to_string(),
+            expiry: None,
+            issued_at: OffsetDateTime::UNIX_EPOCH,
+            purpose: ApiTokenPurpose::ReadOnly,
+        };
+        let mut token2 = token1.clone();
+        token2.account_id = Uuid::new_v4();
+        token2.label = "token2".to_string();
+        // Same token_id means equal
+        assert_eq!(token1, token2);
+
+        let mut token3 = token1.clone();
+        token3.token_id = Uuid::new_v4();
+        assert_ne!(token1, token3);
+    }
+
+    #[test]
+    fn test_api_token_default_purpose() {
+        // When purpose is missing from JSON, it should default to ReadOnly
+        let json = r#"{"account_id":"00000000-0000-0000-0000-000000000000","token_id":"00000000-0000-0000-0000-000000000001","label":"test","issued_at":0,"expiry":null}"#;
+        let token: ApiToken = serde_json::from_str(json).expect("Failed to deserialize");
+        assert!(matches!(token.purpose, ApiTokenPurpose::ReadOnly));
+    }
+
+    #[test]
+    fn test_group_display() {
+        let group = Group {
+            spn: "group@example.com".to_string(),
+            uuid: "00000000-0000-0000-0000-000000000001".to_string(),
+        };
+        let display = format!("{}", group);
+        assert!(display.contains("group@example.com"));
+        assert!(display.contains("00000000-0000-0000-0000-000000000001"));
+    }
+
+    #[test]
+    fn test_radius_auth_token_display() {
+        let token = RadiusAuthToken {
+            name: "testuser".to_string(),
+            displayname: "Test User".to_string(),
+            uuid: "00000000-0000-0000-0000-000000000001".to_string(),
+            secret: "secret123".to_string(),
+            groups: vec![Group {
+                spn: "group@example.com".to_string(),
+                uuid: "00000000-0000-0000-0000-000000000002".to_string(),
+            }],
+        };
+        let display = format!("{}", token);
+        assert!(display.contains("testuser"));
+        assert!(display.contains("Test User"));
+        assert!(display.contains("secret123"));
+        assert!(display.contains("group@example.com"));
+    }
+
+    #[test]
+    fn test_scim_sync_token_serde() {
+        let token = ScimSyncToken {
+            token_id: Uuid::new_v4(),
+            issued_at: OffsetDateTime::UNIX_EPOCH,
+            purpose: ApiTokenPurpose::Synchronise,
+        };
+        let json = serde_json::to_string(&token).expect("Failed to serialize");
+        let deserialized: ScimSyncToken =
+            serde_json::from_str(&json).expect("Failed to deserialize");
+        assert_eq!(token.token_id, deserialized.token_id);
+        assert!(matches!(deserialized.purpose, ApiTokenPurpose::Synchronise));
+    }
+
+    #[test]
+    fn test_scim_sync_token_default_purpose() {
+        let json = r#"{"token_id":"00000000-0000-0000-0000-000000000000","issued_at":0}"#;
+        let token: ScimSyncToken = serde_json::from_str(json).expect("Failed to deserialize");
+        assert!(matches!(token.purpose, ApiTokenPurpose::ReadOnly));
+    }
+}

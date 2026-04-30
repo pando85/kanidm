@@ -132,7 +132,7 @@ pub static SCHEMA_ATTR_DOMAIN_DISPLAY_NAME: LazyLock<SchemaAttribute> =
     LazyLock::new(|| SchemaAttribute {
         uuid: UUID_SCHEMA_ATTR_DOMAIN_DISPLAY_NAME,
         name: Attribute::DomainDisplayName,
-        description: "The user-facing display name of the Kanidm domain".to_string(),
+        description: "The user-facing display name of the Kubidm domain".to_string(),
         indexed: true,
         syntax: SyntaxType::Utf8String,
         ..Default::default()
@@ -652,7 +652,7 @@ pub static SCHEMA_ATTR_SYNC_YIELD_AUTHORITY: LazyLock<SchemaAttribute> =
         uuid: UUID_SCHEMA_ATTR_SYNC_YIELD_AUTHORITY,
         name: Attribute::SyncYieldAuthority,
         description:
-            "A set of attributes that have their authority yielded to Kanidm in a sync agreement"
+            "A set of attributes that have their authority yielded to Kubidm in a sync agreement"
                 .to_string(),
         multivalue: true,
         syntax: SyntaxType::Utf8StringInsensitive,
@@ -1378,7 +1378,7 @@ pub static SCHEMA_CLASS_KEY_PROVIDER_INTERNAL_DL6: LazyLock<SchemaClass> =
     LazyLock::new(|| SchemaClass {
         uuid: UUID_SCHEMA_CLASS_KEY_PROVIDER_INTERNAL,
         name: EntryClass::KeyProviderInternal.into(),
-        description: "The Kanidm internal cryptographic key provider".to_string(),
+        description: "The Kubidm internal cryptographic key provider".to_string(),
         ..Default::default()
     });
 
@@ -1538,4 +1538,427 @@ pub static SCHEMA_CLASS_ASSERTION_NONCE: LazyLock<SchemaClass> = LazyLock::new(|
     ],
     ..Default::default()
 }
+});
+
+// =========================================
+// Time-Bounded Access
+
+pub static SCHEMA_ATTR_MEMBER_VALID_FROM: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_MEMBER_VALID_FROM,
+        name: Attribute::MemberValidFrom,
+        description: "The datetime after which a group membership becomes valid".to_string(),
+        sync_allowed: true,
+        syntax: SyntaxType::DateTime,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_MEMBER_VALID_UNTIL: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_MEMBER_VALID_UNTIL,
+        name: Attribute::MemberValidUntil,
+        description: "The datetime after which a group membership expires".to_string(),
+        sync_allowed: true,
+        syntax: SyntaxType::DateTime,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_MAX_GRANT_DURATION: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_MAX_GRANT_DURATION,
+        name: Attribute::MaxGrantDuration,
+        description: "The maximum duration in seconds for time-bounded access grants".to_string(),
+        syntax: SyntaxType::Uint32,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_TIME_BOUNDED_MEMBER: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_TIME_BOUNDED_MEMBER,
+        name: Attribute::TimeBoundedMemberAttr,
+        description: "A time-bounded group member with validity period".to_string(),
+        indexed: true,
+        multivalue: true,
+        syntax: SyntaxType::TimeBoundedMember,
+        ..Default::default()
+    });
+
+pub static SCHEMA_CLASS_TIME_BOUNDED_GRANT: LazyLock<SchemaClass> = LazyLock::new(|| SchemaClass {
+    uuid: UUID_SCHEMA_CLASS_TIME_BOUNDED_GRANT,
+    name: EntryClass::TimeBoundedGrant.into(),
+    description: "A time-bounded access grant that automatically expires".to_string(),
+    systemmust: vec![],
+    systemmay: vec![
+        Attribute::TimeBoundedMemberAttr,
+        Attribute::MaxGrantDuration,
+    ],
+    systemsupplements: vec![EntryClass::Group.into()],
+    ..Default::default()
+});
+
+// =========================================
+// OAuth2/OIDC Federation
+
+pub static SCHEMA_ATTR_OAUTH2_ISSUER: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_OAUTH2_ISSUER,
+        name: Attribute::OAuth2Issuer,
+        description: "The issuer URL of the OAuth2/OIDC provider for discovery".to_string(),
+        syntax: SyntaxType::Url,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_OAUTH2_JWKS_URI: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_OAUTH2_JWKS_URI,
+        name: Attribute::OAuth2JwksUri,
+        description: "The JWKS endpoint URL for key verification".to_string(),
+        syntax: SyntaxType::Url,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_OAUTH2_USERINFO_ENDPOINT: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_OAUTH2_USERINFO_ENDPOINT,
+        name: Attribute::OAuth2UserinfoEndpoint,
+        description: "The userinfo endpoint URL of the OAuth2/OIDC provider".to_string(),
+        syntax: SyntaxType::Url,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_OAUTH2_EMAIL_DOMAIN: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_OAUTH2_EMAIL_DOMAIN,
+        name: Attribute::OAuth2EmailDomain,
+        description: "Email domain for home realm discovery routing".to_string(),
+        syntax: SyntaxType::Utf8StringInsensitive,
+        multivalue: true,
+        indexed: true,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_OAUTH2_DISPLAY_NAME: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_OAUTH2_DISPLAY_NAME,
+        name: Attribute::OAuth2DisplayName,
+        description: "Display name for the IdP in the user-facing IdP selection UI".to_string(),
+        syntax: SyntaxType::Utf8String,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_OAUTH2_AUTO_DISCOVERY: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_OAUTH2_AUTO_DISCOVERY,
+        name: Attribute::OAuth2AutoDiscovery,
+        description: "Enable automatic OIDC discovery from the issuer URL".to_string(),
+        syntax: SyntaxType::Boolean,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_OAUTH2_LINK_LOCAL_ACCOUNT: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_OAUTH2_LINK_LOCAL_ACCOUNT,
+        name: Attribute::OAuth2LinkLocalAccount,
+        description: "Reference to a local account linked to this federated identity".to_string(),
+        syntax: SyntaxType::ReferenceUuid,
+        multivalue: true,
+        indexed: true,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_OAUTH2_LINK_POLICY: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_OAUTH2_LINK_POLICY,
+        name: Attribute::OAuth2LinkPolicy,
+        description:
+            "Policy for account linking: 'auto' (same email), 'manual', or 'admin_approval'"
+                .to_string(),
+        syntax: SyntaxType::Utf8StringInsensitive,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_OAUTH2_IDP_INITIATED_ENABLED: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_OAUTH2_IDP_INITIATED_ENABLED,
+        name: Attribute::OAuth2IdpInitiatedEnabled,
+        description: "Enable IdP-initiated login flows for this federation provider".to_string(),
+        syntax: SyntaxType::Boolean,
+        ..Default::default()
+    });
+
+pub static SCHEMA_ATTR_OAUTH2_FEDERATION_ID: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_OAUTH2_FEDERATION_ID,
+        name: Attribute::OAuth2FederationId,
+        description: "Unique federation identifier for metadata exchange".to_string(),
+        syntax: SyntaxType::Utf8StringIname,
+        indexed: true,
+        unique: true,
+        ..Default::default()
+    });
+
+pub static SCHEMA_CLASS_OAUTH2_FEDERATION: LazyLock<SchemaClass> = LazyLock::new(|| {
+    SchemaClass {
+    uuid: UUID_SCHEMA_CLASS_OAUTH2_FEDERATION,
+    name: EntryClass::OAuth2Federation.into(),
+    description: "A federated OAuth2/OIDC Identity Provider configuration with discovery and account linking support".to_string(),
+    systemmust: vec![
+        Attribute::Name,
+        Attribute::OAuth2ClientId,
+        Attribute::OAuth2ClientSecret,
+        Attribute::OAuth2Issuer,
+    ],
+    systemmay: vec![
+        Attribute::Description,
+        Attribute::OAuth2DisplayName,
+        Attribute::OAuth2AuthorisationEndpoint,
+        Attribute::OAuth2TokenEndpoint,
+        Attribute::OAuth2JwksUri,
+        Attribute::OAuth2UserinfoEndpoint,
+        Attribute::OAuth2RequestScopes,
+        Attribute::OAuth2EmailDomain,
+        Attribute::OAuth2AutoDiscovery,
+        Attribute::OAuth2LinkPolicy,
+        Attribute::OAuth2IdpInitiatedEnabled,
+        Attribute::OAuth2FederationId,
+        Attribute::Image,
+    ],
+    ..Default::default()
+}
+});
+
+#[allow(dead_code)]
+pub static SCHEMA_CLASS_OAUTH2_LINKED_ACCOUNT: LazyLock<SchemaClass> =
+    LazyLock::new(|| SchemaClass {
+        uuid: UUID_SCHEMA_CLASS_OAUTH2_LINKED_ACCOUNT,
+        name: EntryClass::OAuth2LinkedAccount.into(),
+        description: "Marker class for accounts that have linked federated identities".to_string(),
+        systemmay: vec![Attribute::OAuth2LinkLocalAccount],
+        systemsupplements: vec![EntryClass::OAuth2Account.into()],
+        ..Default::default()
+    });
+
+// =========================================
+// Approval Workflows
+// Note: These schema definitions are foundational infrastructure for approval workflows.
+// They will be used in future work for implementing approval request creation, decision handling,
+// and approval queue API endpoints.
+
+#[allow(dead_code)]
+pub static SCHEMA_ATTR_APPROVAL_POLICY_NAME: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_APPROVAL_POLICY_NAME,
+        name: Attribute::ApprovalPolicyName,
+        description: "The unique name of an approval policy".to_string(),
+        indexed: true,
+        unique: true,
+        syntax: SyntaxType::Utf8StringIname,
+        ..Default::default()
+    });
+
+#[allow(dead_code)]
+pub static SCHEMA_ATTR_APPROVAL_OPERATION_TYPE: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_APPROVAL_OPERATION_TYPE,
+        name: Attribute::ApprovalOperationType,
+        description: "The type of operation requiring approval".to_string(),
+        indexed: true,
+        multivalue: true,
+        syntax: SyntaxType::Utf8StringInsensitive,
+        ..Default::default()
+    });
+
+#[allow(dead_code)]
+pub static SCHEMA_ATTR_APPROVAL_PATTERN: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_APPROVAL_PATTERN,
+        name: Attribute::ApprovalPatternAttr,
+        description: "The approval pattern (any_one, majority, all)".to_string(),
+        syntax: SyntaxType::Utf8StringInsensitive,
+        ..Default::default()
+    });
+
+#[allow(dead_code)]
+pub static SCHEMA_ATTR_APPROVER: LazyLock<SchemaAttribute> = LazyLock::new(|| SchemaAttribute {
+    uuid: UUID_SCHEMA_ATTR_APPROVER,
+    name: Attribute::Approver,
+    description: "A reference to a user who can approve requests".to_string(),
+    indexed: true,
+    multivalue: true,
+    syntax: SyntaxType::ReferenceUuid,
+    ..Default::default()
+});
+
+#[allow(dead_code)]
+pub static SCHEMA_ATTR_BACKUP_APPROVER: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_BACKUP_APPROVER,
+        name: Attribute::BackupApprover,
+        description: "A reference to a backup approver for escalation".to_string(),
+        indexed: true,
+        multivalue: true,
+        syntax: SyntaxType::ReferenceUuid,
+        ..Default::default()
+    });
+
+#[allow(dead_code)]
+pub static SCHEMA_ATTR_APPROVAL_TIMEOUT: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_APPROVAL_TIMEOUT,
+        name: Attribute::ApprovalTimeout,
+        description: "The timeout in seconds for approval requests".to_string(),
+        syntax: SyntaxType::Uint32,
+        ..Default::default()
+    });
+
+#[allow(dead_code)]
+pub static SCHEMA_ATTR_ESCALATION_TIMEOUT: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_ESCALATION_TIMEOUT,
+        name: Attribute::EscalationTimeout,
+        description: "The timeout in seconds before escalating to backup approvers".to_string(),
+        syntax: SyntaxType::Uint32,
+        ..Default::default()
+    });
+
+#[allow(dead_code)]
+pub static SCHEMA_ATTR_APPROVAL_POLICY_ENABLED: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_APPROVAL_POLICY_ENABLED,
+        name: Attribute::ApprovalPolicyEnabled,
+        description: "Whether the approval policy is enabled".to_string(),
+        syntax: SyntaxType::Boolean,
+        ..Default::default()
+    });
+
+#[allow(dead_code)]
+pub static SCHEMA_CLASS_APPROVAL_POLICY: LazyLock<SchemaClass> = LazyLock::new(|| SchemaClass {
+    uuid: UUID_SCHEMA_CLASS_APPROVAL_POLICY,
+    name: EntryClass::ApprovalPolicy.into(),
+    description: "A policy defining approval requirements for sensitive operations".to_string(),
+    systemmust: vec![
+        Attribute::ApprovalPolicyName,
+        Attribute::ApprovalOperationType,
+        Attribute::Approver,
+        Attribute::ApprovalPatternAttr,
+        Attribute::ApprovalTimeout,
+    ],
+    systemmay: vec![
+        Attribute::Description,
+        Attribute::BackupApprover,
+        Attribute::EscalationTimeout,
+        Attribute::ApprovalPolicyEnabled,
+    ],
+    ..Default::default()
+});
+
+#[allow(dead_code)]
+pub static SCHEMA_ATTR_APPROVAL_REQUEST_POLICY: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_APPROVAL_REQUEST_POLICY,
+        name: Attribute::ApprovalRequestPolicy,
+        description: "Reference to the approval policy this request is based on".to_string(),
+        indexed: true,
+        syntax: SyntaxType::ReferenceUuid,
+        ..Default::default()
+    });
+
+#[allow(dead_code)]
+pub static SCHEMA_ATTR_APPROVAL_TARGET: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_APPROVAL_TARGET,
+        name: Attribute::ApprovalTarget,
+        description: "Reference to the entry that is the target of the approval request"
+            .to_string(),
+        indexed: true,
+        syntax: SyntaxType::ReferenceUuid,
+        ..Default::default()
+    });
+
+#[allow(dead_code)]
+pub static SCHEMA_ATTR_APPROVAL_REQUESTOR: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_APPROVAL_REQUESTOR,
+        name: Attribute::ApprovalRequestor,
+        description: "Reference to the user who requested the approval".to_string(),
+        indexed: true,
+        syntax: SyntaxType::ReferenceUuid,
+        ..Default::default()
+    });
+
+#[allow(dead_code)]
+pub static SCHEMA_ATTR_APPROVAL_STATE: LazyLock<SchemaAttribute> = LazyLock::new(|| {
+    SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_APPROVAL_STATE,
+        name: Attribute::ApprovalState,
+        description: "The current state of an approval request (pending, approved, rejected, expired, cancelled, escalated)".to_string(),
+        indexed: true,
+        syntax: SyntaxType::Utf8StringInsensitive,
+        ..Default::default()
+    }
+});
+
+#[allow(dead_code)]
+pub static SCHEMA_ATTR_APPROVAL_DECISION: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_APPROVAL_DECISION,
+        name: Attribute::ApprovalDecision,
+        description:
+            "An approval decision record containing approver, action, time, and optional comment"
+                .to_string(),
+        multivalue: true,
+        syntax: SyntaxType::Json,
+        ..Default::default()
+    });
+
+#[allow(dead_code)]
+pub static SCHEMA_ATTR_APPROVAL_ESCALATION_LEVEL: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_APPROVAL_ESCALATION_LEVEL,
+        name: Attribute::ApprovalEscalationLevel,
+        description: "The current escalation level of an approval request".to_string(),
+        syntax: SyntaxType::Uint32,
+        ..Default::default()
+    });
+
+#[allow(dead_code)]
+pub static SCHEMA_ATTR_APPROVAL_EXPIRES: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_APPROVAL_EXPIRES,
+        name: Attribute::ApprovalExpires,
+        description: "The datetime when this approval request expires".to_string(),
+        indexed: true,
+        syntax: SyntaxType::DateTime,
+        ..Default::default()
+    });
+
+#[allow(dead_code)]
+pub static SCHEMA_ATTR_APPROVAL_OPERATION_DETAILS: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_APPROVAL_OPERATION_DETAILS,
+        name: Attribute::ApprovalOperationDetails,
+        description: "JSON-encoded details about the operation requiring approval".to_string(),
+        syntax: SyntaxType::JsonFilter,
+        ..Default::default()
+    });
+
+#[allow(dead_code)]
+pub static SCHEMA_CLASS_APPROVAL_REQUEST: LazyLock<SchemaClass> = LazyLock::new(|| SchemaClass {
+    uuid: UUID_SCHEMA_CLASS_APPROVAL_REQUEST,
+    name: EntryClass::ApprovalRequest.into(),
+    description: "A request for approval to perform a sensitive operation".to_string(),
+    systemmust: vec![
+        Attribute::ApprovalRequestPolicy,
+        Attribute::ApprovalOperationType,
+        Attribute::ApprovalTarget,
+        Attribute::ApprovalRequestor,
+        Attribute::ApprovalState,
+    ],
+    systemmay: vec![
+        Attribute::ApprovalDecision,
+        Attribute::ApprovalEscalationLevel,
+        Attribute::ApprovalExpires,
+        Attribute::ApprovalOperationDetails,
+    ],
+    ..Default::default()
 });

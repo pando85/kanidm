@@ -22,8 +22,8 @@ use crypto_glue::{
 use futures::pin_mut;
 use hyper::body::Incoming;
 use hyper_util::rt::{TokioExecutor, TokioIo, TokioTimer};
-use kanidm_proto::{config::ServerRole, constants::KSESSIONID, internal::COOKIE_AUTH_SESSION_ID};
-use kanidmd_lib::{idm::authentication::ClientCertInfo, status::StatusActor};
+use kubidm_proto::{config::ServerRole, constants::KSESSIONID, internal::COOKIE_AUTH_SESSION_ID};
+use kubidmd_lib::{idm::authentication::ClientCertInfo, status::StatusActor};
 use serde::de::DeserializeOwned;
 use sketching::*;
 use std::fmt::Write;
@@ -50,6 +50,7 @@ const HTTPS_CLIENT_IO_TIMEOUT: Duration = Duration::from_secs(60);
 const HTTPS_CLIENT_REQUEST_TIMEOUT: Duration = Duration::from_secs(300);
 
 mod apidocs;
+pub(crate) mod authorization;
 pub(crate) mod cache_buster;
 pub(crate) mod errors;
 mod extractors;
@@ -62,6 +63,7 @@ pub(crate) mod trace;
 mod v1;
 mod v1_domain;
 mod v1_oauth2;
+mod v1_oauth2_federation;
 mod v1_scim;
 mod views;
 
@@ -118,7 +120,7 @@ impl ServerState {
                         // it can occur if the load balancer isn't sticking sessions to the correct
                         // node. That can cause this error. So we want to specifically call it out
                         // to admins so they can investigate that the fault is occurring *outside*
-                        // of kanidm.
+                        // of kubidm.
                         warn!("Invalid Signature errors can occur if your instance restarted recently, if a load balancer is not configured for sticky sessions, or a session was tampered with.");
                     }
                     None
@@ -309,6 +311,7 @@ pub async fn create_https_server(
     };
     let app = Router::new()
         .merge(oauth2::route_setup(state.clone()))
+        .merge(authorization::route_setup())
         .merge(v1_scim::route_setup())
         .merge(v1::route_setup(state.clone()))
         .route("/robots.txt", get(generic::robots_txt))

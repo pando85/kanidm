@@ -28,14 +28,14 @@ use std::time::Duration;
 use compact_jwt::Jwk;
 
 pub use http;
-use kanidm_proto::constants::uri::V1_AUTH_VALID;
-use kanidm_proto::constants::{
+use kubidm_proto::constants::uri::V1_AUTH_VALID;
+use kubidm_proto::constants::{
     ATTR_DOMAIN_DISPLAY_NAME, ATTR_DOMAIN_LDAP_BASEDN, ATTR_DOMAIN_SSID, ATTR_ENTRY_MANAGED_BY,
     ATTR_KEY_ACTION_REVOKE, ATTR_LDAP_ALLOW_UNIX_PW_BIND, ATTR_LDAP_MAX_QUERYABLE_ATTRS, ATTR_NAME,
     CLIENT_TOKEN_CACHE, KOPID, KSESSIONID, KVERSION,
 };
-use kanidm_proto::internal::*;
-use kanidm_proto::v1::*;
+use kubidm_proto::internal::*;
+use kubidm_proto::v1::*;
 use reqwest::cookie::{CookieStore, Jar};
 use reqwest::Response;
 pub use reqwest::StatusCode;
@@ -51,6 +51,7 @@ use webauthn_rs_proto::{
 };
 
 mod application;
+mod approval;
 mod domain;
 mod group;
 mod message;
@@ -87,22 +88,22 @@ pub enum ClientError {
 
 /// Settings describing a single instance.
 #[derive(Debug, Deserialize, Serialize)]
-pub struct KanidmClientConfigInstance {
+pub struct KubidmClientConfigInstance {
     /// The URL of the server, ie `https://example.com`.
     ///
-    /// Environment variable is `KANIDM_URL`. Yeah, we know.
+    /// Environment variable is `KUBIDM_URL`. Yeah, we know.
     pub uri: Option<String>,
     /// Whether to verify the TLS certificate of the server matches the hostname you connect to, defaults to `true`.
     ///
-    /// Environment variable is slightly inverted - `KANIDM_SKIP_HOSTNAME_VERIFICATION`.
+    /// Environment variable is slightly inverted - `KUBIDM_SKIP_HOSTNAME_VERIFICATION`.
     pub verify_hostnames: Option<bool>,
     /// Whether to verify the Certificate Authority details of the server's TLS certificate, defaults to `true`.
     ///
-    /// Environment variable is slightly inverted - `KANIDM_ACCEPT_INVALID_CERTS`.
+    /// Environment variable is slightly inverted - `KUBIDM_ACCEPT_INVALID_CERTS`.
     pub verify_ca: Option<bool>,
     /// Optionally you can specify the path of a CA certificate to use for verifying the server, if you're not using one trusted by your system certificate store.
     ///
-    /// Environment variable is `KANIDM_CA_PATH`.
+    /// Environment variable is `KUBIDM_CA_PATH`.
     pub ca_path: Option<String>,
 
     /// Connection Timeout for the client, in seconds.
@@ -110,28 +111,28 @@ pub struct KanidmClientConfigInstance {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-/// This struct is what Kanidm uses for parsing the client configuration at runtime.
+/// This struct is what Kubidm uses for parsing the client configuration at runtime.
 ///
 /// # Configuration file inheritance
 ///
 /// The configuration files are loaded in order, with the last one loaded overriding the previous one.
 ///
-/// 1. The "system" config is loaded from in [kanidm_proto::constants::DEFAULT_CLIENT_CONFIG_PATH].
-/// 2. Then a per-user configuration, from [kanidm_proto::constants::DEFAULT_CLIENT_CONFIG_PATH_HOME] is loaded.
+/// 1. The "system" config is loaded from in [kubidm_proto::constants::DEFAULT_CLIENT_CONFIG_PATH].
+/// 2. Then a per-user configuration, from [kubidm_proto::constants::DEFAULT_CLIENT_CONFIG_PATH_HOME] is loaded.
 /// 3. All of these may be overridden by setting environment variables.
 ///
-pub struct KanidmClientConfig {
+pub struct KubidmClientConfig {
     // future editors, please leave this public so others can parse the config!
     #[serde(flatten)]
-    pub default: KanidmClientConfigInstance,
+    pub default: KubidmClientConfigInstance,
 
     #[serde(flatten)]
     // future editors, please leave this public so others can parse the config!
-    pub instances: BTreeMap<String, KanidmClientConfigInstance>,
+    pub instances: BTreeMap<String, KubidmClientConfigInstance>,
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct KanidmClientBuilder {
+pub struct KubidmClientBuilder {
     address: Option<String>,
     verify_ca: bool,
     verify_hostnames: bool,
@@ -144,7 +145,7 @@ pub struct KanidmClientBuilder {
     disable_system_ca_store: bool,
 }
 
-impl Display for KanidmClientBuilder {
+impl Display for KubidmClientBuilder {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match &self.address {
             Some(value) => writeln!(f, "address: {value}")?,
@@ -176,12 +177,12 @@ impl Display for KanidmClientBuilder {
 }
 
 #[derive(Debug)]
-pub struct KanidmClient {
+pub struct KubidmClient {
     pub(crate) client: reqwest::Client,
     client_cookies: Arc<Jar>,
     pub(crate) addr: String,
     pub(crate) origin: Url,
-    pub(crate) builder: KanidmClientBuilder,
+    pub(crate) builder: KubidmClientBuilder,
     pub(crate) bearer_token: RwLock<Option<String>>,
     pub(crate) auth_session_id: RwLock<Option<String>>,
     pub(crate) check_version: Mutex<bool>,
@@ -200,9 +201,9 @@ fn read_file_metadata<P: AsRef<Path>>(path: &P) -> Result<Metadata, ()> {
     })
 }
 
-impl KanidmClientBuilder {
+impl KubidmClientBuilder {
     pub fn new() -> Self {
-        KanidmClientBuilder {
+        KubidmClientBuilder {
             address: None,
             verify_ca: true,
             verify_hostnames: true,
@@ -259,8 +260,8 @@ impl KanidmClientBuilder {
         })
     }
 
-    fn apply_config_options(self, kcc: KanidmClientConfigInstance) -> Result<Self, ClientError> {
-        let KanidmClientBuilder {
+    fn apply_config_options(self, kcc: KubidmClientConfigInstance) -> Result<Self, ClientError> {
+        let KubidmClientBuilder {
             address,
             verify_ca,
             verify_hostnames,
@@ -287,7 +288,7 @@ impl KanidmClientBuilder {
         };
         let connect_timeout = kcc.connect_timeout.or(connect_timeout);
 
-        Ok(KanidmClientBuilder {
+        Ok(KubidmClientBuilder {
             address,
             verify_ca,
             verify_hostnames,
@@ -324,7 +325,7 @@ impl KanidmClientBuilder {
         // error. This check enforces that we get the CORRECT error message instead.
         if !config_path.as_ref().exists() {
             debug!("{:?} does not exist", config_path);
-            let diag = kanidm_lib_file_permissions::diagnose_path(config_path.as_ref());
+            let diag = kubidm_lib_file_permissions::diagnose_path(config_path.as_ref());
             debug!(%diag);
             return Ok(self);
         };
@@ -356,7 +357,7 @@ impl KanidmClientBuilder {
                         );
                     }
                 };
-                let diag = kanidm_lib_file_permissions::diagnose_path(config_path.as_ref());
+                let diag = kubidm_lib_file_permissions::diagnose_path(config_path.as_ref());
                 info!(%diag);
 
                 return Ok(self);
@@ -369,7 +370,7 @@ impl KanidmClientBuilder {
             ClientError::ConfigParseIssue(format!("{e:?}"))
         })?;
 
-        let mut config: KanidmClientConfig = toml::from_str(&contents).map_err(|e| {
+        let mut config: KubidmClientConfig = toml::from_str(&contents).map_err(|e| {
             error!("{:?}", e);
             ClientError::ConfigParseIssue(format!("{e:?}"))
         })?;
@@ -394,7 +395,7 @@ impl KanidmClientBuilder {
     }
 
     pub fn address(self, address: String) -> Self {
-        KanidmClientBuilder {
+        KubidmClientBuilder {
             address: Some(address),
             ..self
         }
@@ -402,7 +403,7 @@ impl KanidmClientBuilder {
 
     /// Enable or disable the native ca roots. By default these roots are enabled.
     pub fn enable_native_ca_roots(self, enable: bool) -> Self {
-        KanidmClientBuilder {
+        KubidmClientBuilder {
             // We have to flip the bool state here due to Default on bool being false
             // and we want our options to be positive to a native speaker.
             disable_system_ca_store: !enable,
@@ -411,7 +412,7 @@ impl KanidmClientBuilder {
     }
 
     pub fn danger_accept_invalid_hostnames(self, accept_invalid_hostnames: bool) -> Self {
-        KanidmClientBuilder {
+        KubidmClientBuilder {
             // We have to flip the bool state here due to english language.
             verify_hostnames: !accept_invalid_hostnames,
             ..self
@@ -419,7 +420,7 @@ impl KanidmClientBuilder {
     }
 
     pub fn danger_accept_invalid_certs(self, accept_invalid_certs: bool) -> Self {
-        KanidmClientBuilder {
+        KubidmClientBuilder {
             // We have to flip the bool state here due to english language.
             verify_ca: !accept_invalid_certs,
             ..self
@@ -427,28 +428,28 @@ impl KanidmClientBuilder {
     }
 
     pub fn connect_timeout(self, secs: u64) -> Self {
-        KanidmClientBuilder {
+        KubidmClientBuilder {
             connect_timeout: Some(secs),
             ..self
         }
     }
 
     pub fn request_timeout(self, secs: u64) -> Self {
-        KanidmClientBuilder {
+        KubidmClientBuilder {
             request_timeout: Some(secs),
             ..self
         }
     }
 
     pub fn no_proxy(self) -> Self {
-        KanidmClientBuilder {
+        KubidmClientBuilder {
             use_system_proxies: false,
             ..self
         }
     }
 
     pub fn set_token_cache_path(self, token_cache_path: Option<String>) -> Self {
-        KanidmClientBuilder {
+        KubidmClientBuilder {
             token_cache_path,
             ..self
         }
@@ -462,7 +463,7 @@ impl KanidmClientBuilder {
             ClientError::CertParseIssue(format!("{e:?}"))
         })?;
 
-        Ok(KanidmClientBuilder {
+        Ok(KubidmClientBuilder {
             ca: Some(ca),
             ..self
         })
@@ -493,13 +494,13 @@ impl KanidmClientBuilder {
 
     /*
     /// Consume self and return an async client.
-    pub fn build(self) -> Result<KanidmClient, reqwest::Error> {
-        self.build_async().map(|asclient| KanidmClient { asclient })
+    pub fn build(self) -> Result<KubidmClient, reqwest::Error> {
+        self.build_async().map(|asclient| KubidmClient { asclient })
     }
     */
 
     /// Build the client ready for usage.
-    pub fn build(self) -> Result<KanidmClient, ClientError> {
+    pub fn build(self) -> Result<KubidmClient, ClientError> {
         // Errghh, how to handle this cleaner.
         let address = match &self.address {
             Some(a) => a.clone(),
@@ -516,7 +517,7 @@ impl KanidmClientBuilder {
         let client_cookies = Arc::new(Jar::default());
 
         let mut client_builder = reqwest::Client::builder()
-            .user_agent(KanidmClientBuilder::user_agent())
+            .user_agent(KubidmClientBuilder::user_agent())
             // We don't directly use cookies, but it may be required for load balancers that
             // implement sticky sessions with cookies.
             .cookie_store(true)
@@ -568,7 +569,7 @@ impl KanidmClientBuilder {
             None => CLIENT_TOKEN_CACHE.to_string(),
         };
 
-        Ok(KanidmClient {
+        Ok(KubidmClient {
             client,
             client_cookies,
             addr: address,
@@ -599,8 +600,8 @@ fn find_reqwest_error_source<E: std::error::Error + 'static>(
     None
 }
 
-impl KanidmClient {
-    /// Access the underlying reqwest client that has been configured for this Kanidm server
+impl KubidmClient {
+    /// Access the underlying reqwest client that has been configured for this Kubidm server
     pub fn client(&self) -> &reqwest::Client {
         &self.client
     }
@@ -2113,8 +2114,8 @@ impl KanidmClient {
 
 #[cfg(test)]
 mod tests {
-    use super::{KanidmClient, KanidmClientBuilder};
-    use kanidm_proto::constants::CLIENT_TOKEN_CACHE;
+    use super::{KubidmClient, KubidmClientBuilder};
+    use kubidm_proto::constants::CLIENT_TOKEN_CACHE;
     use reqwest::StatusCode;
     use url::Url;
 
@@ -2126,7 +2127,7 @@ mod tests {
                 .body("")
                 .unwrap(),
         );
-        let client = KanidmClientBuilder::new()
+        let client = KubidmClientBuilder::new()
             .address("http://localhost:8080".to_string())
             .enable_native_ca_roots(false)
             .build()
@@ -2140,7 +2141,7 @@ mod tests {
                 .body("")
                 .unwrap(),
         );
-        let client = KanidmClientBuilder::new()
+        let client = KubidmClientBuilder::new()
             .address("http://localhost:8080".to_string())
             .enable_native_ca_roots(false)
             .build()
@@ -2151,8 +2152,8 @@ mod tests {
 
     #[test]
     fn test_make_url() {
-        use kanidm_proto::constants::DEFAULT_SERVER_ADDRESS;
-        let client: KanidmClient = KanidmClientBuilder::new()
+        use kubidm_proto::constants::DEFAULT_SERVER_ADDRESS;
+        let client: KubidmClient = KubidmClientBuilder::new()
             .address(format!("https://{DEFAULT_SERVER_ADDRESS}"))
             .enable_native_ca_roots(false)
             .build()
@@ -2166,7 +2167,7 @@ mod tests {
             Url::parse(&format!("https://{DEFAULT_SERVER_ADDRESS}/hello")).unwrap()
         );
 
-        let client: KanidmClient = KanidmClientBuilder::new()
+        let client: KubidmClient = KubidmClientBuilder::new()
             .address(format!("https://{DEFAULT_SERVER_ADDRESS}/cheese/"))
             .enable_native_ca_roots(false)
             .build()
@@ -2178,12 +2179,12 @@ mod tests {
     }
 
     #[test]
-    fn test_kanidmclientbuilder_display() {
-        let defaultclient = KanidmClientBuilder::default();
+    fn test_kubidmclientbuilder_display() {
+        let defaultclient = KubidmClientBuilder::default();
         println!("{defaultclient}");
         assert!(defaultclient.to_string().contains("verify_ca"));
 
-        let testclient = KanidmClientBuilder {
+        let testclient = KubidmClientBuilder {
             address: Some("https://example.com".to_string()),
             verify_ca: true,
             verify_hostnames: true,

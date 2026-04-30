@@ -1,7 +1,7 @@
 [package]
-name = "kanidmd_lib_macros"
-description = "Kanidm Server Library Support Macros"
-documentation = "https://docs.rs/kanidm/latest/kanidm/"
+name = "kubidmd_lib_macros"
+description = "Kubidm Server Library Support Macros"
+documentation = "https://docs.rs/kubidm/latest/kubidm/"
 
 version = { workspace = true }
 authors = { workspace = true }

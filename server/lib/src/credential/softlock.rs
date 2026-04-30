@@ -541,4 +541,66 @@ mod tests {
             }
         );
     }
+
+    #[test]
+    fn test_credential_softlock_unrestricted_never_locks() {
+        let ct = Duration::from_secs(100);
+        let mut lock = CredSoftLock::new(CredSoftLockPolicy::Unrestricted);
+        assert!(lock.is_valid());
+        for _ in 0..200 {
+            lock.record_failure(ct);
+            assert!(lock.is_valid(), "Unrestricted should never lock");
+        }
+    }
+
+    #[test]
+    fn test_credential_softlock_rapid_failures() {
+        let ct = Duration::from_secs(100);
+        let mut lock = CredSoftLock::new(CredSoftLockPolicy::Password);
+        lock.record_failure(ct);
+        lock.record_failure(ct);
+        lock.record_failure(ct);
+        assert!(!lock.is_valid());
+    }
+
+    #[test]
+    fn test_credential_softlock_password_boundary_counts() {
+        let ct = Duration::from_secs(100);
+        let policy = CredSoftLockPolicy::Password;
+
+        let state = policy.failure_next_state(1, ct);
+        if let LockState::Locked { unlock_at, .. } = state {
+            assert_eq!(unlock_at, ct + Duration::from_secs(1));
+        } else {
+            panic!("Expected Locked state at count 1");
+        }
+
+        let state = policy.failure_next_state(3, ct);
+        if let LockState::Locked { unlock_at, .. } = state {
+            assert_eq!(unlock_at, ct + Duration::from_secs(3));
+        } else {
+            panic!("Expected Locked state at count 3");
+        }
+    }
+
+    #[test]
+    fn test_credential_softlock_apply_time_step_same_expire_at_twice() {
+        let ct = Duration::from_secs(100);
+        let expire_at = Duration::from_secs(200);
+        let mut lock = CredSoftLock::new(CredSoftLockPolicy::Password);
+        lock.record_failure(ct);
+        assert!(!lock.is_valid());
+        lock.apply_time_step(ct, Some(expire_at));
+        lock.apply_time_step(ct, Some(expire_at));
+    }
+
+    #[test]
+    fn test_credential_softlock_apply_time_step_past_expire() {
+        let ct = Duration::from_secs(100);
+        let past_expire = Duration::from_secs(50);
+        let mut lock = CredSoftLock::new(CredSoftLockPolicy::Password);
+        lock.record_failure(ct);
+        assert!(!lock.is_valid());
+        lock.apply_time_step(ct, Some(past_expire));
+    }
 }

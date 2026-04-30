@@ -2,19 +2,24 @@ use super::migration::{MIGRATION_ENTRY_CLASSES, MIGRATION_IGNORE_CLASSES};
 use super::profiles::{
     AccessControlReceiverCondition, AccessControlSearchResolved, AccessControlTargetCondition,
 };
+use super::utils::check_time_restriction;
 use super::AccessSrchResult;
 use crate::prelude::*;
 use std::collections::BTreeSet;
 use std::ops::Sub;
 use std::sync::Arc;
 
-pub(super) enum SearchResult {
+pub enum SearchResult {
     Deny,
     Grant,
     Allow(BTreeSet<Attribute>),
+    #[allow(dead_code)]
+    ReauthRequired {
+        reason: String,
+    },
 }
 
-pub(super) fn apply_search_access(
+pub fn apply_search_access(
     ident: &Identity,
     related_acp: &[AccessControlSearchResolved],
     entry: &Arc<EntrySealedCommitted>,
@@ -25,7 +30,8 @@ pub(super) fn apply_search_access(
     let mut denied = false;
     let mut grant = false;
     let constrain = BTreeSet::default();
-    let mut allow = BTreeSet::default();
+    let mut allow = BTreeSet::new();
+    let mut reauth_required: Option<String> = None;
 
     // The access control profile
     match search_filter_entry(ident, related_acp, entry) {
@@ -34,6 +40,9 @@ pub(super) fn apply_search_access(
         AccessSrchResult::Ignore => {}
         // AccessSrchResult::Constrain { mut attr } => constrain.append(&mut attr),
         AccessSrchResult::Allow { mut attr } => allow.append(&mut attr),
+        AccessSrchResult::ReauthRequired { reason } => {
+            reauth_required = Some(reason);
+        }
     };
 
     match search_oauth2_filter_entry(ident, entry) {
@@ -42,6 +51,9 @@ pub(super) fn apply_search_access(
         AccessSrchResult::Ignore => {}
         // AccessSrchResult::Constrain { mut attr } => constrain.append(&mut attr),
         AccessSrchResult::Allow { mut attr } => allow.append(&mut attr),
+        AccessSrchResult::ReauthRequired { reason } => {
+            reauth_required = Some(reason);
+        }
     };
 
     match search_applications_filter_entry(ident, entry) {
@@ -50,6 +62,9 @@ pub(super) fn apply_search_access(
         AccessSrchResult::Ignore => {}
         // AccessSrchResult::Constrain { mut attr } => constrain.append(&mut attr),
         AccessSrchResult::Allow { mut attr } => allow.append(&mut attr),
+        AccessSrchResult::ReauthRequired { reason } => {
+            reauth_required = Some(reason);
+        }
     };
 
     match search_sync_account_filter_entry(ident, entry) {
@@ -58,6 +73,9 @@ pub(super) fn apply_search_access(
         AccessSrchResult::Ignore => {}
         // AccessSrchResult::Constrain{ mut attr } => constrain.append(&mut attr),
         AccessSrchResult::Allow { mut attr } => allow.append(&mut attr),
+        AccessSrchResult::ReauthRequired { reason } => {
+            reauth_required = Some(reason);
+        }
     };
 
     // We'll add more modules later.
@@ -68,6 +86,8 @@ pub(super) fn apply_search_access(
         SearchResult::Deny
     } else if grant {
         SearchResult::Grant
+    } else if let Some(reason) = reauth_required {
+        SearchResult::ReauthRequired { reason }
     } else {
         let allowed_attrs = if !constrain.is_empty() {
             // bit_and
@@ -159,7 +179,7 @@ fn search_filter_entry(
     let ident_memberof = ident.get_memberof();
     let ident_uuid = ident.get_uuid();
 
-    let allowed_attrs: BTreeSet<Attribute> = related_acp
+    let acp_results: Vec<(BTreeSet<Attribute>, bool, Option<u32>)> = related_acp
         .iter()
         .filter_map(|acs| {
             // Assert that the receiver condition applies.
@@ -193,6 +213,15 @@ fn search_filter_entry(
                         return None
                     }
                 }
+                AccessControlReceiverCondition::Delegated { scope_filter_resolved } => {
+                    // Check if the entry matches the delegated scope filter
+                    if let Some(filter) = scope_filter_resolved {
+                        if !entry.entry_match_no_index(filter) {
+                            debug!(entry = ?entry.get_display_id(), acs = %acs.acp.acp.name, "entry DOES NOT match delegated scope filter");
+                            return None
+                        }
+                    }
+                }
             };
 
             match &acs.target_condition {
@@ -202,14 +231,47 @@ fn search_filter_entry(
                         return None
                     }
                 }
+                AccessControlTargetCondition::DelegatedScope { scope_filter_resolved } => {
+                    // Check if the entry matches the delegated scope filter
+                    if let Some(filter) = scope_filter_resolved {
+                        if !entry.entry_match_no_index(filter) {
+                            debug!(entry = ?entry.get_display_id(), acs = %acs.acp.acp.name, "entry DOES NOT match delegated scope filter");
+                            return None
+                        }
+                    }
+                }
             };
+
+            // Check time restrictions
+            if !check_time_restriction(
+                acs.acp.acp.time_restriction_start,
+                acs.acp.acp.time_restriction_end,
+            ) {
+                debug!(entry = ?entry.get_display_id(), acs = %acs.acp.acp.name, "time restriction not satisfied");
+                return None;
+            }
 
             // -- Conditions pass -- release the attributes.
             debug!(entry = ?entry.get_display_id(), acs = %acs.acp.acp.name, "acs applied to entry");
             // add search_attrs to allowed.
-            Some(acs.acp.attrs.iter().cloned())
+            Some((acs.acp.attrs.clone(), acs.acp.acp.require_reauth, acs.acp.acp.reauth_max_age))
         })
-        .flatten()
+        .collect();
+
+    // Check if any ACP requires reauth
+    let any_requires_reauth = acp_results.iter().any(|(_, req_reauth, _)| *req_reauth);
+
+    if any_requires_reauth && !matches!(ident.access_scope(), AccessScope::ReadWrite) {
+        return AccessSrchResult::ReauthRequired {
+            reason:
+                "This operation requires elevated privileges. Please re-authenticate to continue."
+                    .to_string(),
+        };
+    }
+
+    let allowed_attrs: BTreeSet<Attribute> = acp_results
+        .into_iter()
+        .flat_map(|(a, _, _)| a.into_iter())
         .collect();
 
     AccessSrchResult::Allow {
@@ -359,6 +421,217 @@ fn search_sync_account_filter_entry(
             }
             // Fall through
             AccessSrchResult::Ignore
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::server::identity::Identity;
+
+    fn make_user_ident_rw() -> Identity {
+        let entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Name, Value::new_iname("testuser")),
+                (
+                    Attribute::Uuid,
+                    Value::Uuid(uuid::uuid!("00000000-0000-0000-0000-000000000001"))
+                )
+            )
+            .into_sealed_committed(),
+        );
+        Identity::from_impersonate_entry_readwrite(entry)
+    }
+
+    fn make_user_ident_ro() -> Identity {
+        let entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Name, Value::new_iname("testuser")),
+                (
+                    Attribute::Uuid,
+                    Value::Uuid(uuid::uuid!("00000000-0000-0000-0000-000000000001"))
+                )
+            )
+            .into_sealed_committed(),
+        );
+        Identity::from_impersonate_entry_readonly(entry)
+    }
+
+    fn make_sealed_entry(class: &str, uuid: Uuid) -> Arc<EntrySealedCommitted> {
+        Arc::new(
+            entry_init!(
+                (Attribute::Class, Value::new_iutf8(class)),
+                (Attribute::Uuid, Value::Uuid(uuid))
+            )
+            .into_sealed_committed(),
+        )
+    }
+
+    #[test]
+    fn test_search_filter_entry_internal_system_grants() {
+        let ident = Identity::from_internal();
+        let entry = make_sealed_entry(
+            "account",
+            uuid::uuid!("00000000-0000-0000-0000-000000000100"),
+        );
+        let acps: Vec<AccessControlSearchResolved> = vec![];
+        let result = search_filter_entry(&ident, &acps, &entry);
+        assert!(matches!(result, AccessSrchResult::Grant));
+    }
+
+    #[test]
+    fn test_search_filter_entry_migration_with_valid_class_grants() {
+        let ident = Identity::migration();
+        let entry = make_sealed_entry(
+            "account",
+            uuid::uuid!("00000000-0000-0000-0000-000000000100"),
+        );
+        let acps: Vec<AccessControlSearchResolved> = vec![];
+        let result = search_filter_entry(&ident, &acps, &entry);
+        assert!(matches!(result, AccessSrchResult::Grant));
+    }
+
+    #[test]
+    fn test_search_filter_entry_migration_with_invalid_class_denied() {
+        let ident = Identity::migration();
+        let entry = make_sealed_entry(
+            "tombstone",
+            uuid::uuid!("00000000-0000-0000-0000-000000000100"),
+        );
+        let acps: Vec<AccessControlSearchResolved> = vec![];
+        let result = search_filter_entry(&ident, &acps, &entry);
+        assert!(matches!(result, AccessSrchResult::Deny));
+    }
+
+    #[test]
+    fn test_search_filter_entry_migration_no_class_denied() {
+        let ident = Identity::migration();
+        let entry = Arc::new(
+            entry_init!((
+                Attribute::Uuid,
+                Value::Uuid(uuid::uuid!("00000000-0000-0000-0000-000000000100"))
+            ))
+            .into_sealed_committed(),
+        );
+        let acps: Vec<AccessControlSearchResolved> = vec![];
+        let result = search_filter_entry(&ident, &acps, &entry);
+        assert!(matches!(result, AccessSrchResult::Deny));
+    }
+
+    #[test]
+    fn test_search_filter_entry_user_synchronise_denied() {
+        let entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Name, Value::new_iname("testuser")),
+                (
+                    Attribute::Uuid,
+                    Value::Uuid(uuid::uuid!("00000000-0000-0000-0000-000000000001"))
+                )
+            )
+            .into_sealed_committed(),
+        );
+        let ident = Identity::from_impersonate_entry_readwrite(entry)
+            .project_with_scope(AccessScope::Synchronise);
+        let target = make_sealed_entry(
+            "account",
+            uuid::uuid!("00000000-0000-0000-0000-000000000100"),
+        );
+        let acps: Vec<AccessControlSearchResolved> = vec![];
+        let result = search_filter_entry(&ident, &acps, &target);
+        assert!(matches!(result, AccessSrchResult::Deny));
+    }
+
+    #[test]
+    fn test_search_filter_entry_user_readonly_no_acps_empty_allow() {
+        let ident = make_user_ident_ro();
+        let entry = make_sealed_entry(
+            "account",
+            uuid::uuid!("00000000-0000-0000-0000-000000000100"),
+        );
+        let acps: Vec<AccessControlSearchResolved> = vec![];
+        let result = search_filter_entry(&ident, &acps, &entry);
+        match result {
+            AccessSrchResult::Allow { attr } => assert!(attr.is_empty()),
+            _ => panic!("Expected Allow with empty attrs"),
+        }
+    }
+
+    #[test]
+    fn test_search_filter_entry_user_rw_no_acps_empty_allow() {
+        let ident = make_user_ident_rw();
+        let entry = make_sealed_entry(
+            "account",
+            uuid::uuid!("00000000-0000-0000-0000-000000000100"),
+        );
+        let acps: Vec<AccessControlSearchResolved> = vec![];
+        let result = search_filter_entry(&ident, &acps, &entry);
+        match result {
+            AccessSrchResult::Allow { attr } => assert!(attr.is_empty()),
+            _ => panic!("Expected Allow with empty attrs"),
+        }
+    }
+
+    #[test]
+    fn test_search_oauth2_filter_entry_internal_ignores() {
+        let ident = Identity::from_internal();
+        let entry = make_sealed_entry(
+            "oauth2_resource_server",
+            uuid::uuid!("00000000-0000-0000-0000-000000000100"),
+        );
+        let result = search_oauth2_filter_entry(&ident, &entry);
+        assert!(matches!(result, AccessSrchResult::Ignore));
+    }
+
+    #[test]
+    fn test_search_applications_filter_entry_internal_ignores() {
+        let ident = Identity::from_internal();
+        let entry = make_sealed_entry(
+            "application",
+            uuid::uuid!("00000000-0000-0000-0000-000000000100"),
+        );
+        let result = search_applications_filter_entry(&ident, &entry);
+        assert!(matches!(result, AccessSrchResult::Ignore));
+    }
+
+    #[test]
+    fn test_search_sync_account_filter_entry_internal_ignores() {
+        let ident = Identity::from_internal();
+        let entry = make_sealed_entry(
+            "sync_account",
+            uuid::uuid!("00000000-0000-0000-0000-000000000100"),
+        );
+        let result = search_sync_account_filter_entry(&ident, &entry);
+        assert!(matches!(result, AccessSrchResult::Ignore));
+    }
+
+    #[test]
+    fn test_apply_search_access_internal_system_grants() {
+        let ident = Identity::from_internal();
+        let entry = make_sealed_entry(
+            "account",
+            uuid::uuid!("00000000-0000-0000-0000-000000000100"),
+        );
+        let acps: Vec<AccessControlSearchResolved> = vec![];
+        let result = apply_search_access(&ident, &acps, &entry);
+        assert!(matches!(result, SearchResult::Grant));
+    }
+
+    #[test]
+    fn test_apply_search_access_user_no_acps_empty_allow() {
+        let ident = make_user_ident_rw();
+        let entry = make_sealed_entry(
+            "account",
+            uuid::uuid!("00000000-0000-0000-0000-000000000100"),
+        );
+        let acps: Vec<AccessControlSearchResolved> = vec![];
+        let result = apply_search_access(&ident, &acps, &entry);
+        match result {
+            SearchResult::Allow(attrs) => assert!(attrs.is_empty()),
+            _ => panic!("Expected Allow with empty attrs"),
         }
     }
 }

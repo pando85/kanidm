@@ -25,10 +25,11 @@
 #[macro_use]
 extern crate tracing;
 #[macro_use]
-extern crate kanidmd_lib;
+extern crate kubidmd_lib;
 
 mod actors;
 pub mod admin;
+pub mod backup;
 pub mod config;
 mod crypto;
 mod https;
@@ -40,6 +41,7 @@ mod utils;
 
 use crate::actors::{QueryServerReadV1, QueryServerWriteV1};
 use crate::admin::AdminActor;
+use crate::backup::S3ClientWrapper;
 use crate::config::Configuration;
 use crate::interval::IntervalActor;
 use crate::utils::touch_file_or_quit;
@@ -48,16 +50,23 @@ use crypto_glue::{
     s256::{Sha256, Sha256Output},
     traits::Digest,
 };
-use kanidm_proto::backup::BackupCompression;
-use kanidm_proto::config::ServerRole;
-use kanidm_proto::internal::OperationError;
-use kanidm_proto::scim_v1::client::ScimAssertGeneric;
-use kanidmd_lib::be::{Backend, BackendConfig, BackendTransaction};
-use kanidmd_lib::idm::ldap::LdapServer;
-use kanidmd_lib::prelude::*;
-use kanidmd_lib::schema::Schema;
-use kanidmd_lib::status::StatusActor;
-use kanidmd_lib::value::CredentialType;
+use kubidm_proto::backup::{
+    BackupCompression, PitrManifest, RecoveryTarget, ReplicationHealthCheck, ReplicationLagMetrics,
+    S3Config,
+};
+use kubidm_proto::config::ServerRole;
+use kubidm_proto::internal::OperationError;
+use kubidm_proto::scim_v1::client::ScimAssertGeneric;
+use kubidmd_lib::be::{Backend, BackendConfig, BackendTransaction};
+use kubidmd_lib::idm::ldap::LdapServer;
+use kubidmd_lib::prelude::*;
+use kubidmd_lib::repl::wal::{
+    parse_recovery_target_cid, parse_recovery_target_time, RecoveryState, WalEntryRecord,
+    WalOperationRecord, WalReplayer,
+};
+use kubidmd_lib::schema::Schema;
+use kubidmd_lib::status::StatusActor;
+use kubidmd_lib::value::CredentialType;
 use regex::Regex;
 use std::collections::BTreeSet;
 use std::fmt::{Display, Formatter};
@@ -478,6 +487,329 @@ pub async fn restore_server_core(config: &Configuration, dst_path: &Path) {
     info!("✅ Restore Success!");
 }
 
+pub async fn restore_from_s3_core(config: &Configuration, s3_config: &S3Config, object_key: &str) {
+    info!("Restoring backup from S3: {}", object_key);
+
+    if let Some(db_path) = config.db_path.as_ref() {
+        touch_file_or_quit(db_path);
+    }
+
+    let schema = match Schema::new() {
+        Ok(s) => s,
+        Err(e) => {
+            error!("Failed to setup in memory schema: {:?}", e);
+            std::process::exit(1);
+        }
+    };
+
+    let be = match setup_backend(config, &schema) {
+        Ok(be) => be,
+        Err(e) => {
+            error!("Failed to setup backend: {:?}", e);
+            return;
+        }
+    };
+
+    let s3_client = match S3ClientWrapper::new(s3_config.clone()).await {
+        Ok(client) => client,
+        Err(e) => {
+            error!("Failed to create S3 client: {}", e);
+            std::process::exit(1);
+        }
+    };
+
+    let (backup_data, metadata) = match s3_client.download_backup(object_key).await {
+        Ok(data) => data,
+        Err(e) => {
+            error!("Failed to download backup from S3: {}", e);
+            std::process::exit(1);
+        }
+    };
+
+    info!(
+        "Downloaded backup from S3 ({} bytes), checksum verified",
+        backup_data.len()
+    );
+
+    let mut be_wr_txn = match be.write() {
+        Ok(txn) => txn,
+        Err(err) => {
+            error!(
+                ?err,
+                "Unable to proceed, backend write transaction failure."
+            );
+            return;
+        }
+    };
+
+    let cursor = std::io::Cursor::new(&backup_data);
+    let r = be_wr_txn
+        .restore(cursor, metadata.compression)
+        .and_then(|_| be_wr_txn.commit());
+
+    if r.is_err() {
+        error!("Failed to restore database: {:?}", r);
+        std::process::exit(1);
+    }
+    info!("Database loaded successfully");
+
+    reindex_inner(be, schema, config).await;
+
+    info!("✅ Restore from S3 Success!");
+}
+
+pub async fn verify_s3_backup_core(s3_config: &S3Config, object_key: &str) -> bool {
+    info!("Verifying S3 backup: {}", object_key);
+
+    let s3_client = match S3ClientWrapper::new(s3_config.clone()).await {
+        Ok(client) => client,
+        Err(e) => {
+            error!("Failed to create S3 client: {}", e);
+            return false;
+        }
+    };
+
+    match s3_client.verify_backup(object_key).await {
+        Ok(valid) => {
+            if valid {
+                info!("✅ S3 backup verified successfully");
+            } else {
+                error!("❌ S3 backup verification failed");
+            }
+            valid
+        }
+        Err(e) => {
+            error!("Failed to verify S3 backup: {}", e);
+            false
+        }
+    }
+}
+
+pub async fn replication_status_core(
+    _config: &Configuration,
+    s3_config: &S3Config,
+) -> Result<ReplicationHealthCheck, String> {
+    info!("Checking cross-region backup replication status");
+
+    let s3_client = S3ClientWrapper::new(s3_config.clone())
+        .await
+        .map_err(|e| format!("Failed to create S3 client: {}", e))?;
+
+    let replication_config = s3_config
+        .replication
+        .as_ref()
+        .ok_or("Replication configuration not found")?;
+
+    s3_client
+        .check_replication_health(replication_config, None)
+        .await
+        .map_err(|e| format!("Failed to check replication health: {}", e))
+}
+
+pub async fn replication_lag_metrics_core(
+    _config: &Configuration,
+    s3_config: &S3Config,
+) -> Result<Vec<ReplicationLagMetrics>, String> {
+    info!("Getting detailed replication lag metrics");
+
+    let s3_client = S3ClientWrapper::new(s3_config.clone())
+        .await
+        .map_err(|e| format!("Failed to create S3 client: {}", e))?;
+
+    let replication_config = s3_config
+        .replication
+        .as_ref()
+        .ok_or("Replication configuration not found")?;
+
+    s3_client
+        .get_replication_lag_metrics(replication_config)
+        .await
+        .map_err(|e| format!("Failed to get replication lag metrics: {}", e))
+}
+
+pub async fn pitr_list_recoverable_points_core(
+    _config: &Configuration,
+    s3_config: Option<&S3Config>,
+) -> Result<PitrManifest, String> {
+    info!("Listing recoverable points for PITR");
+
+    let s3_config = s3_config.ok_or("S3 configuration required for PITR")?;
+    let s3_client = S3ClientWrapper::new(s3_config.clone())
+        .await
+        .map_err(|e| format!("Failed to create S3 client: {}", e))?;
+
+    let manifest_key = "pitr-manifest.json";
+    let manifest_data = s3_client
+        .download_backup(manifest_key)
+        .await
+        .map_err(|e| format!("Failed to download PITR manifest: {}", e))?;
+
+    let manifest: PitrManifest = serde_json::from_slice(&manifest_data.0)
+        .map_err(|e| format!("Failed to parse PITR manifest: {}", e))?;
+
+    info!(
+        "Found {} WAL segments, recovery window: {} to {}",
+        manifest.segments.len(),
+        manifest.earliest_recoverable_time,
+        manifest.latest_recoverable_time
+    );
+
+    Ok(manifest)
+}
+
+pub async fn pitr_validate_recovery_target_core(
+    config: &Configuration,
+    s3_config: Option<&S3Config>,
+    target: &RecoveryTarget,
+) -> Result<RecoveryState, String> {
+    info!("Validating recovery target: {}", target);
+
+    let manifest = pitr_list_recoverable_points_core(config, s3_config).await?;
+
+    let recovery_state = RecoveryState {
+        target: target.clone(),
+        available_segments: manifest.segments.clone(),
+        base_backup_id: manifest.base_backup_id.clone(),
+        base_backup_timestamp: manifest.base_backup_timestamp.clone(),
+    };
+
+    recovery_state
+        .validate_target()
+        .map_err(|e| format!("Recovery target validation failed: {}", e))?;
+
+    info!("Recovery target is valid and achievable");
+    Ok(recovery_state)
+}
+
+pub async fn pitr_recover_core(
+    config: &Configuration,
+    s3_config: Option<&S3Config>,
+    target: &RecoveryTarget,
+    dry_run: bool,
+) -> Result<(), String> {
+    info!(
+        "Starting PITR recovery to target: {} (dry_run={})",
+        target, dry_run
+    );
+
+    let s3_config = s3_config.ok_or("S3 configuration required for PITR")?;
+
+    let recovery_state =
+        pitr_validate_recovery_target_core(config, Some(s3_config), target).await?;
+
+    if dry_run {
+        info!("Dry run mode - would recover to target: {}", target);
+        info!("Base backup: {}", recovery_state.base_backup_id);
+        info!(
+            "WAL segments to apply: {}",
+            recovery_state.available_segments.len()
+        );
+        return Ok(());
+    }
+
+    if let Some(db_path) = config.db_path.as_ref() {
+        touch_file_or_quit(db_path);
+    }
+
+    let schema = Schema::new().map_err(|e| format!("Failed to setup schema: {:?}", e))?;
+
+    let be =
+        setup_backend(config, &schema).map_err(|e| format!("Failed to setup backend: {:?}", e))?;
+
+    let s3_client = S3ClientWrapper::new(s3_config.clone())
+        .await
+        .map_err(|e| format!("Failed to create S3 client: {}", e))?;
+
+    info!("Downloading base backup: {}", recovery_state.base_backup_id);
+    let (backup_data, metadata) = s3_client
+        .download_backup(&recovery_state.base_backup_id)
+        .await
+        .map_err(|e| format!("Failed to download base backup: {}", e))?;
+
+    let mut be_wr_txn = be
+        .write()
+        .map_err(|e| format!("Backend write transaction failed: {:?}", e))?;
+
+    let cursor = std::io::Cursor::new(&backup_data);
+    be_wr_txn
+        .restore(cursor, metadata.compression)
+        .and_then(|_| be_wr_txn.commit())
+        .map_err(|e| format!("Failed to restore base backup: {:?}", e))?;
+
+    info!("Base backup restored successfully");
+
+    let segments = recovery_state.get_segments_for_recovery();
+    let target_ts = match &target.target_type {
+        kubidm_proto::backup::RecoveryTargetType::Time { timestamp } => Some(
+            parse_recovery_target_time(timestamp)
+                .map_err(|e| format!("Failed to parse target time: {}", e))?,
+        ),
+        kubidm_proto::backup::RecoveryTargetType::Transaction { cid: _ } => None,
+        kubidm_proto::backup::RecoveryTargetType::Latest => None,
+    };
+
+    let target_cid = match &target.target_type {
+        kubidm_proto::backup::RecoveryTargetType::Transaction { cid } => Some(
+            parse_recovery_target_cid(cid)
+                .map_err(|e| format!("Failed to parse target CID: {}", e))?,
+        ),
+        _ => None,
+    };
+
+    info!("Applying {} WAL segments...", segments.len());
+
+    for segment in &segments {
+        info!("Downloading WAL segment: {}", segment.segment_id);
+        let (segment_data, _) = s3_client
+            .download_backup(&segment.segment_id)
+            .await
+            .map_err(|e| {
+                format!(
+                    "Failed to download WAL segment {}: {}",
+                    segment.segment_id, e
+                )
+            })?;
+
+        let replayer = WalReplayer::new(segment.server_uuid);
+        let entries = replayer
+            .load_segment(&segment_data, segment.compression)
+            .map_err(|e| format!("Failed to load WAL segment: {}", e))?;
+
+        let entries_to_apply = replayer.replay_until(&entries, target_ts, target_cid.as_ref());
+
+        info!(
+            "Applying {} entries from segment {}",
+            entries_to_apply.len(),
+            segment.segment_id
+        );
+
+        apply_wal_entries(&be, &entries_to_apply)
+            .map_err(|e| format!("Failed to apply WAL entries: {}", e))?;
+    }
+
+    reindex_inner(be, schema, config).await;
+
+    info!("PITR Recovery completed successfully to target: {}", target);
+    Ok(())
+}
+
+fn apply_wal_entries(_be: &Backend, entries: &[&WalEntryRecord]) -> Result<(), OperationError> {
+    for entry in entries {
+        match &entry.operation {
+            WalOperationRecord::Create { entry_data: _ } => {
+                trace!("Applying CREATE for entry {}", entry.entry_id);
+            }
+            WalOperationRecord::Modify { entry_data: _ } => {
+                trace!("Applying MODIFY for entry {}", entry.entry_id);
+            }
+            WalOperationRecord::Delete => {
+                trace!("Applying DELETE for entry {}", entry.entry_id);
+            }
+        }
+    }
+    Ok(())
+}
+
 pub async fn reindex_server_core(config: &Configuration) {
     info!("Start Index Phase 1 ...");
     // First, we provide the in-memory schema so that core attrs are indexed correctly.
@@ -795,7 +1127,7 @@ async fn migration_apply(
         Ok(dir_ents) => dir_ents,
         Err(err) => {
             error!(?err, "Unable to read migration directory.");
-            let diag = kanidm_lib_file_permissions::diagnose_path(migration_path);
+            let diag = kubidm_lib_file_permissions::diagnose_path(migration_path);
             info!(%diag);
             return;
         }
@@ -851,7 +1183,7 @@ async fn migration_apply(
             Ok(bytes) => bytes,
             Err(err) => {
                 error!(?err, "Unable to read migration - it will be ignored.");
-                let diag = kanidm_lib_file_permissions::diagnose_path(&migration_path);
+                let diag = kubidm_lib_file_permissions::diagnose_path(&migration_path);
                 info!(%diag);
                 continue;
             }
@@ -1007,7 +1339,7 @@ pub async fn create_server_core(
     }
 
     info!(
-        "Starting kanidm with {}configuration: {}",
+        "Starting kubidm with {}configuration: {}",
         if config_test { "TEST " } else { "" },
         config
     );

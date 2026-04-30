@@ -69,9 +69,9 @@ buildx/kanidmd:
 		--label "com.kanidm.version=$(CONTAINER_IMAGE_EXT_VERSION)" \
 		$(CONTAINER_BUILD_ARGS) .
 
-.PHONY: buildx/kanidm_tools
-buildx/kanidm_tools: ## Build multiarch kanidm tool images and push to docker hub
-buildx/kanidm_tools:
+.PHONY: buildx/kubidm_tools
+buildx/kubidm_tools: ## Build multiarch kubidm tool images and push to docker hub
+buildx/kubidm_tools:
 	@$(CONTAINER_TOOL) buildx build $(CONTAINER_TOOL_ARGS) \
 		--pull $(CONTAINER_BUILDX_ACTION) --platform $(CONTAINER_IMAGE_ARCH) \
 		-f tools/Dockerfile \
@@ -97,7 +97,7 @@ buildx/radiusd:
 		-t $(CONTAINER_IMAGE_BASE)/radius:$(CONTAINER_IMAGE_EXT_VERSION) .
 
 .PHONY: buildx
-buildx: buildx/kanidmd buildx/kanidm_tools buildx/radiusd
+buildx: buildx/kanidmd buildx/kubidm_tools buildx/radiusd
 
 .PHONY: build/kanidmd
 build/kanidmd:	## Build the kanidmd docker image locally
@@ -157,7 +157,7 @@ test:
 
 .PHONY: precommit
 precommit: ## all the usual test things
-precommit: test codespell test/pykanidm doc/format
+precommit: test codespell test/pykubidm doc/format
 
 .PHONY: vendor
 vendor: ## Vendor required crates
@@ -169,7 +169,7 @@ vendor-prep: vendor
 	tar -cJf vendor.tar.xz vendor
 
 .PHONY: install-tools
-install-tools: ## install kanidm_tools in your local environment
+install-tools: ## install kubidm_tools in your local environment
 install-tools:
 	cargo install --path tools/cli --force
 
@@ -179,7 +179,7 @@ codespell:
 	codespell -c \
 	-D .codespell_dictionary \
 	--ignore-words .codespell_ignore \
-	--skip='./target,./pykanidm/.venv,./pykanidm/.mypy_cache,./.mypy_cache,./pykanidm/uv.lock' \
+	--skip='./target,./pykubidm/.venv,./pykubidm/.mypy_cache,./.mypy_cache,./pykubidm/uv.lock' \
 	--skip='./book/*.js' \
 	--skip='./book/book/*' \
 	--skip='./book/src/images/*' \
@@ -188,32 +188,32 @@ codespell:
 	--skip='*.br' \
 	--skip='./rlm_python/mods-available/eap' \
 	--skip='./server/lib/src/constants/system_config.rs' \
-	--skip='./pykanidm/site'
+	--skip='./pykubidm/site'
 
-.PHONY: test/pykanidm/pytest
-test/pykanidm/pytest: ## python library testing
-	cd pykanidm && \
+.PHONY: test/pykubidm/pytest
+test/pykubidm/pytest: ## python library testing
+	cd pykubidm && \
 	uv run pytest -vv
 
-.PHONY: test/pykanidm/lint
-test/pykanidm/lint: ## python library linting
-	cd pykanidm && \
-	uv run ruff check tests kanidm
+.PHONY: test/pykubidm/lint
+test/pykubidm/lint: ## python library linting
+	cd pykubidm && \
+	uv run ruff check tests kubidm
 
-.PHONY: test/pykanidm/mypy
-test/pykanidm/mypy: ## python library type checking
-	cd pykanidm && \
-	uv run mypy --strict tests kanidm && \
-	uv run ty check tests kanidm \
+.PHONY: test/pykubidm/mypy
+test/pykubidm/mypy: ## python library type checking
+	cd pykubidm && \
+	uv run mypy --strict tests kubidm && \
+	uv run ty check tests kubidm \
 		--ignore unused-type-ignore-comment
 
-.PHONY: test/pykanidm
-test/pykanidm: ## run the kanidm python module test suite (mypy/lint/pytest)
-test/pykanidm: test/pykanidm/pytest test/pykanidm/mypy test/pykanidm/lint
+.PHONY: test/pykubidm
+test/pykubidm: ## run the kubidm python module test suite (mypy/lint/pytest)
+test/pykubidm: test/pykubidm/pytest test/pykubidm/mypy test/pykubidm/lint
 
-.PHONY: test/pykanidm/coverage
-test/pykanidm/coverage: ## run the Kanidm Python module test suite with coverage
-	cd pykanidm && \
+.PHONY: test/pykubidm/coverage
+test/pykubidm/coverage: ## run the Kubidm Python module test suite with coverage
+	cd pykubidm && \
 	uv run coverage run -m pytest && \
 	uv run coverage html
 
@@ -272,16 +272,16 @@ book_versioned:
 clean_book:
 	rm -rf ./docs
 
-.PHONY: docs/pykanidm/build
-docs/pykanidm/build: ## Build the mkdocs
-docs/pykanidm/build:
-	cd pykanidm && \
+.PHONY: docs/pykubidm/build
+docs/pykubidm/build: ## Build the mkdocs
+docs/pykubidm/build:
+	cd pykubidm && \
 	uv run --group docs mkdocs build
 
-.PHONY: docs/pykanidm/serve
-docs/pykanidm/serve: ## Run the local mkdocs server
-docs/pykanidm/serve:
-	cd pykanidm && \
+.PHONY: docs/pykubidm/serve
+docs/pykubidm/serve: ## Run the local mkdocs server
+docs/pykubidm/serve:
+	cd pykubidm && \
 	uv run --group docs mkdocs serve
 
 ########################################################################
@@ -291,29 +291,29 @@ prep:
 	cargo outdated -R
 	cargo audit
 
-.PHONY: release/kanidm
-release/kanidm: ## Build the Kanidm CLI - ensure you include the environment variable KANIDM_BUILD_PROFILE
-	cargo build -p kanidm_tools --bin kanidm --release
+.PHONY: release/kubidm
+release/kubidm: ## Build the Kubidm CLI - ensure you include the environment variable KANIDM_BUILD_PROFILE
+	cargo build -p kubidm_tools --bin kubidm --release
 
-.PHONY: release/kanidmd
-release/kanidmd: ## Build the Kanidm daemon - ensure you include the environment variable KANIDM_BUILD_PROFILE
-	cargo build -p daemon --bin kanidmd --release
+.PHONY: release/kubidmd
+release/kubidmd: ## Build the Kubidm daemon - ensure you include the environment variable KANIDM_BUILD_PROFILE
+	cargo build -p daemon --bin kubidmd --release
 
-.PHONY: release/kanidm-ssh
-release/kanidm-ssh: ## Build the Kanidm SSH tools - ensure you include the environment variable KANIDM_BUILD_PROFILE
+.PHONY: release/kubidm-ssh
+release/kubidm-ssh: ## Build the Kubidm SSH tools - ensure you include the environment variable KANIDM_BUILD_PROFILE
 	cargo build --release \
-		--bin kanidm_ssh_authorizedkeys \
-		--bin kanidm_ssh_authorizedkeys_direct
+		--bin kubidm_ssh_authorizedkeys \
+		--bin kubidm_ssh_authorizedkeys_direct
 
-.PHONY: release/kanidm-unixd
-release/kanidm-unixd: ## Build the Kanidm UNIX tools - ensure you include the environment variable KANIDM_BUILD_PROFILE
-release/kanidm-unixd:
-	cargo build -p pam_kanidm --release
-	cargo build -p nss_kanidm --release
-	cargo build --features unix -p kanidm_unix_int --release \
-		--bin kanidm_unixd \
-		--bin kanidm_unixd_tasks \
-		--bin kanidm-unix
+.PHONY: release/kubidm-unixd
+release/kubidm-unixd: ## Build the Kubidm UNIX tools - ensure you include the environment variable KANIDM_BUILD_PROFILE
+release/kubidm-unixd:
+	cargo build -p pam_kubidm --release
+	cargo build -p nss_kubidm --release
+	cargo build --features unix -p kubidm_unix_int --release \
+		--bin kubidm_unixd \
+		--bin kubidm_unixd_tasks \
+		--bin kubidm-unix
 
 # cert things
 
@@ -323,7 +323,7 @@ cert/clean:
 	rm -f /tmp/kanidm/*.pem
 	rm -f /tmp/kanidm/*.cnf
 	rm -f /tmp/kanidm/*.csr
-	rm -f /tmp/kanidm/ca.txt*
+	rm -f /tmp/kanidm/*.ca.txt*
 	rm -f /tmp/kanidm/ca.{cnf,srl,srl.old}
 
 
@@ -373,13 +373,13 @@ publish: ## Publish to crates.io
 publish:
 	cargo publish -p sketching
 	cargo publish -p scim_proto
-	cargo publish -p kanidm_build_profiles
-	cargo publish -p kanidm_proto
-	cargo publish -p kanidm_utils_users
-	cargo publish -p kanidm_lib_file_permissions
-	cargo publish -p kanidm_lib_crypto
-	cargo publish -p kanidm_client
-	cargo publish -p kanidm_tools
+	cargo publish -p kubidm_build_profiles
+	cargo publish -p kubidm_proto
+	cargo publish -p kubidm_utils_users
+	cargo publish -p kubidm_lib_file_permissions
+	cargo publish -p kubidm_lib_crypto
+	cargo publish -p kubidm_client
+	cargo publish -p kubidm_tools
 
 .PHONY: rust_container
 rust_container: # Build and run a container based on the Linux rust base container, with our requirements included
@@ -389,3 +389,14 @@ rust_container:
 		--rm -it \
 		--name kanidm \
 		--mount type=bind,source=$(PWD),target=/kanidm -w /kanidm kanidm_rust:latest
+
+.PHONY: update-changelog
+update-changelog: ## Update CHANGELOG.md from git history using git-cliff
+update-changelog:
+	git cliff --output CHANGELOG.md
+
+.PHONY: update-version
+update-version: ## Update version across workspace from root Cargo.toml
+update-version:
+	@VERSION=$$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n1); \
+	echo "Workspace version: $$VERSION"

@@ -9,7 +9,7 @@ use crate::https::views::login::ReauthPurpose;
 use crate::https::views::reauth::{
     render_readonly, render_reauth, uat_privilege_decision, PrivilegeDecision,
 };
-use crate::https::views::{cookies, KanidmHxEventName};
+use crate::https::views::{cookies, KubidmHxEventName};
 use crate::https::ServerState;
 use askama::Template;
 use askama_web::WebTemplate;
@@ -25,12 +25,12 @@ use axum_htmx::{
     SwapOption,
 };
 use futures_util::TryFutureExt;
-use kanidm_proto::internal::{
+use kubidm_proto::internal::{
     CUCredState, CUExtPortal, CURegState, CURegWarning, CURequest, CUSessionToken, CUStatus,
     CredentialDetail, OperationError, PasskeyDetail, PasswordFeedback, TotpAlgo, UiHint,
     UserAuthToken, COOKIE_CU_SESSION_TOKEN,
 };
-use kanidmd_lib::prelude::ClientAuthInfo;
+use kubidmd_lib::prelude::ClientAuthInfo;
 use qrcode::render::svg;
 use qrcode::QrCode;
 use serde::{Deserialize, Serialize};
@@ -104,6 +104,18 @@ struct CredResetPartialView {
     unixcred: Option<CredentialDetail>,
     sshkeys_state: CUCredState,
     sshkeys: BTreeMap<String, SshKey>,
+    // Pending changes tracking
+    has_pending_changes: bool,
+    primary_has_pending_changes: bool,
+    passkeys_have_pending_changes: bool,
+    attested_passkeys_have_pending_changes: bool,
+    unixcred_has_pending_changes: bool,
+    sshkeys_have_pending_changes: bool,
+    // Auto-commit indicators (used by backend, not directly in template)
+    #[allow(dead_code)]
+    should_auto_commit_first_cred: bool,
+    #[allow(dead_code)]
+    should_auto_commit_passkey: bool,
 }
 
 #[skip_serializing_none]
@@ -449,6 +461,7 @@ pub(crate) async fn finish_passkey(
     State(state): State<ServerState>,
     Extension(kopid): Extension<KOpId>,
     DomainInfo(domain_info): DomainInfo,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
     jar: CookieJar,
     Form(passkey_create): Form<PasskeyCreateForm>,
 ) -> axum::response::Result<Response> {
@@ -465,9 +478,24 @@ pub(crate) async fn finish_passkey(
 
             let cu_status = state
                 .qe_r_ref
-                .handle_idmcredentialupdate(cu_session_token, cu_request, kopid.eventid)
+                .handle_idmcredentialupdate(cu_session_token.clone(), cu_request, kopid.eventid)
                 .map_err(|op_err| HtmxError::new(&kopid, op_err, domain_info.clone()))
                 .await?;
+
+            // Auto-commit for first credential or passkey if conditions are met
+            if cu_status.should_auto_commit_first_cred || cu_status.should_auto_commit_passkey {
+                // Commit the changes
+                state
+                    .qe_w_ref
+                    .handle_idmcredentialupdatecommit(cu_session_token, kopid.eventid)
+                    .map_err(|op_err| HtmxError::new(&kopid, op_err, domain_info.clone()))
+                    .await?;
+
+                // No longer need the cookie jar.
+                let jar = cookies::destroy(jar, COOKIE_CU_SESSION_TOKEN, &state);
+
+                return end_session_response(state, kopid, client_auth_info, jar).await;
+            }
 
             Ok(get_cu_partial_response(cu_status))
         }
@@ -529,7 +557,7 @@ pub(crate) async fn view_new_passkey(
     };
 
     let passkey_init_trigger =
-        HxResponseTrigger::after_swap([HxEvent::from(KanidmHxEventName::AddPasskeySwapped)]);
+        HxResponseTrigger::after_swap([HxEvent::from(KubidmHxEventName::AddPasskeySwapped)]);
     Ok((
         passkey_init_trigger,
         HxPushUrl("/ui/reset/add_passkey".to_string()),
@@ -602,7 +630,7 @@ pub(crate) async fn add_totp(
 
     let check_totpcode = u32::from_str(&new_totp_form.check_totpcode).unwrap_or_default();
     let swapped_handler_trigger =
-        HxResponseTrigger::after_swap([HxEvent::from(KanidmHxEventName::AddTotpSwapped)]);
+        HxResponseTrigger::after_swap([HxEvent::from(KubidmHxEventName::AddTotpSwapped)]);
 
     // If the user has not provided a name or added only spaces we exit early
     if new_totp_form.name.trim().is_empty() {
@@ -688,7 +716,7 @@ pub(crate) async fn view_new_pwd(
     State(state): State<ServerState>,
     Extension(kopid): Extension<KOpId>,
     HxRequest(_hx_request): HxRequest,
-    VerifiedClientInformation(_client_auth_info): VerifiedClientInformation,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
     DomainInfo(domain_info): DomainInfo,
     jar: CookieJar,
     RawForm(raw_form_bytes): RawForm,
@@ -697,7 +725,7 @@ pub(crate) async fn view_new_pwd(
 
     let cu_session_token: CUSessionToken = get_cu_session(&jar).await?;
     let swapped_handler_trigger =
-        HxResponseTrigger::after_swap([HxEvent::from(KanidmHxEventName::AddPasswordSwapped)]);
+        HxResponseTrigger::after_swap([HxEvent::from(KubidmHxEventName::AddPasswordSwapped)]);
 
     let new_passwords = match opt_form {
         None => {
@@ -717,13 +745,29 @@ pub(crate) async fn view_new_pwd(
         let res = state
             .qe_r_ref
             .handle_idmcredentialupdate(
-                cu_session_token,
+                cu_session_token.clone(),
                 CURequest::Password(new_passwords.new_password),
                 kopid.eventid,
             )
             .await;
         match res {
-            Ok(cu_status) => return Ok(get_cu_partial_response(cu_status)),
+            Ok(cu_status) => {
+                // Auto-commit for first credential if conditions are met
+                if cu_status.should_auto_commit_first_cred {
+                    // Commit the changes
+                    state
+                        .qe_w_ref
+                        .handle_idmcredentialupdatecommit(cu_session_token, kopid.eventid)
+                        .map_err(|op_err| HtmxError::new(&kopid, op_err, domain_info.clone()))
+                        .await?;
+
+                    // No longer need the cookie jar.
+                    let jar = cookies::destroy(jar, COOKIE_CU_SESSION_TOKEN, &state);
+
+                    return end_session_response(state, kopid, client_auth_info, jar).await;
+                }
+                return Ok(get_cu_partial_response(cu_status));
+            }
             Err(OperationError::PasswordQuality(password_feedback)) => {
                 (password_feedback, StatusCode::UNPROCESSABLE_ENTITY)
             }
@@ -824,7 +868,7 @@ pub(crate) async fn view_set_unixcred(
 
     let cu_session_token: CUSessionToken = get_cu_session(&jar).await?;
     let swapped_handler_trigger =
-        HxResponseTrigger::after_swap([HxEvent::from(KanidmHxEventName::AddPasswordSwapped)]);
+        HxResponseTrigger::after_swap([HxEvent::from(KubidmHxEventName::AddPasswordSwapped)]);
 
     let new_passwords = match opt_form {
         None => {
@@ -1131,6 +1175,14 @@ fn get_cu_partial(cu_status: CUStatus) -> CredResetPartialView {
         unixcred,
         sshkeys_state,
         sshkeys,
+        has_pending_changes,
+        primary_has_pending_changes,
+        passkeys_have_pending_changes,
+        attested_passkeys_have_pending_changes,
+        unixcred_has_pending_changes,
+        sshkeys_have_pending_changes,
+        should_auto_commit_first_cred,
+        should_auto_commit_passkey,
         ..
     } = cu_status;
 
@@ -1162,6 +1214,14 @@ fn get_cu_partial(cu_status: CUStatus) -> CredResetPartialView {
         unixcred,
         sshkeys_state,
         sshkeys: sshkeyss,
+        has_pending_changes,
+        primary_has_pending_changes,
+        passkeys_have_pending_changes,
+        attested_passkeys_have_pending_changes,
+        unixcred_has_pending_changes,
+        sshkeys_have_pending_changes,
+        should_auto_commit_first_cred,
+        should_auto_commit_passkey,
     }
 }
 

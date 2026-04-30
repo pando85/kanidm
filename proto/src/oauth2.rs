@@ -312,7 +312,7 @@ impl TryFrom<&str> for AccessTokenType {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TokenRevokeRequest {
     pub token: String,
-    /// Not required for Kanidm.
+    /// Not required for Kubidm.
     /// <https://datatracker.ietf.org/doc/html/rfc7009#section-4.1.2>
     pub token_type_hint: Option<String>,
 
@@ -368,7 +368,7 @@ impl From<(&str, Option<&str>)> for ClientAuth {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AccessTokenIntrospectRequest {
     pub token: String,
-    /// Not required for Kanidm.
+    /// Not required for Kubidm.
     /// <https://datatracker.ietf.org/doc/html/rfc7009#section-4.1.2>
     pub token_type_hint: Option<String>,
 
@@ -492,7 +492,7 @@ impl std::str::FromStr for Prompt {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum GrantType {
     #[serde(rename = "authorization_code")]
@@ -510,28 +510,26 @@ fn grant_types_supported_default() -> Vec<GrantType> {
     ]
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum SubjectType {
     Pairwise,
     Public,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub enum PkceAlg {
     S256,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "UPPERCASE")]
-/// Algorithms supported for token signatures. Prefers `ES256`
 pub enum IdTokenSignAlg {
-    // WE REFUSE TO SUPPORT NONE. DON'T EVEN ASK. IT WON'T HAPPEN.
     ES256,
     RS256,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum EndpointAuthMethod {
     None,
@@ -545,7 +543,7 @@ fn token_endpoint_auth_methods_supported_default() -> Vec<EndpointAuthMethod> {
     vec![EndpointAuthMethod::ClientSecretBasic]
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum DisplayValue {
     Page,
@@ -554,9 +552,8 @@ pub enum DisplayValue {
     Wap,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
-// https://openid.net/specs/openid-connect-core-1_0.html#ClaimTypes
 pub enum ClaimType {
     Normal,
     Aggregated,
@@ -601,7 +598,7 @@ pub struct OidcWebfingerResponse {
 /// The response to an OpenID connect discovery request
 /// <https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata>
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct OidcDiscoveryResponse {
     pub issuer: Url,
     pub authorization_endpoint: Url,
@@ -664,7 +661,7 @@ pub struct OidcDiscoveryResponse {
     // "content type that contains a set of Claims as its members that are a subset of the Metadata
     //  values defined in Section 3. Other Claims MAY also be returned. "
     //
-    // In addition, we also return the following claims in kanidm
+    // In addition, we also return the following claims in kubidm
 
     // rfc7009
     pub revocation_endpoint: Option<Url>,
@@ -768,7 +765,7 @@ impl DeviceAuthorizationResponse {
 
 #[cfg(test)]
 mod tests {
-    use super::{AccessTokenRequest, GrantTypeReq, OAUTH2_TOKEN_TYPE_ACCESS_TOKEN};
+    use super::*;
     use std::collections::BTreeSet;
     use url::Url;
 
@@ -994,5 +991,1087 @@ mod tests {
         assert!(req.prompt.contains(&super::Prompt::Login));
         assert!(req.prompt.contains(&super::Prompt::Consent));
         assert!(req.prompt.contains(&super::Prompt::SelectAccount));
+    }
+
+    #[test]
+    fn test_code_challenge_method_serde() {
+        let method = CodeChallengeMethod::S256;
+        let json = serde_json::to_string(&method).unwrap();
+        let de: CodeChallengeMethod = serde_json::from_str(&json).unwrap();
+        assert_eq!(method, de);
+    }
+
+    #[test]
+    fn test_pkce_request_serde() {
+        let req = PkceRequest {
+            code_challenge: vec![1, 2, 3, 4, 5],
+            code_challenge_method: CodeChallengeMethod::S256,
+        };
+        let json = serde_json::to_string(&req).unwrap();
+        assert!(json.contains("code_challenge"));
+        assert!(json.contains("S256"));
+        let de: PkceRequest = serde_json::from_str(&json).unwrap();
+        assert_eq!(de.code_challenge, vec![1, 2, 3, 4, 5]);
+        assert_eq!(de.code_challenge_method, CodeChallengeMethod::S256);
+    }
+
+    #[test]
+    fn test_authorisation_request_serde_full() {
+        let mut scope = BTreeSet::new();
+        scope.insert("openid".to_string());
+        scope.insert("profile".to_string());
+
+        let req = AuthorisationRequest {
+            response_type: ResponseType::Code,
+            response_mode: Some(ResponseMode::Query),
+            client_id: "test_client".to_string(),
+            state: Some("random_state".to_string()),
+            pkce_request: Some(PkceRequest {
+                code_challenge: vec![10, 20, 30],
+                code_challenge_method: CodeChallengeMethod::S256,
+            }),
+            redirect_uri: Url::parse("https://example.com/callback").unwrap(),
+            scope: scope.clone(),
+            nonce: Some("nonce_val".to_string()),
+            oidc_ext: AuthorisationRequestOidc {
+                display: Some("page".to_string()),
+                prompt: Some("login".to_string()),
+                ui_locales: None,
+                claims_locales: None,
+                id_token_hint: None,
+                login_hint: Some("user@example.com".to_string()),
+                acr: None,
+            },
+            max_age: Some(3600),
+            unknown_keys: BTreeMap::new(),
+        };
+
+        let json = serde_json::to_string(&req).unwrap();
+        assert!(json.contains("\"response_type\":\"code\""));
+        assert!(json.contains("\"client_id\":\"test_client\""));
+        assert!(json.contains("\"state\":\"random_state\""));
+        assert!(json.contains("\"nonce\":\"nonce_val\""));
+        assert!(json.contains("\"max_age\":3600"));
+        assert!(json.contains("\"login_hint\":\"user@example.com\""));
+
+        let de: AuthorisationRequest = serde_json::from_str(&json).unwrap();
+        assert_eq!(de.response_type, ResponseType::Code);
+        assert_eq!(de.response_mode, Some(ResponseMode::Query));
+        assert_eq!(de.client_id, "test_client");
+        assert_eq!(de.state, Some("random_state".to_string()));
+        assert!(de.pkce_request.is_some());
+        assert_eq!(de.nonce, Some("nonce_val".to_string()));
+        assert_eq!(de.max_age, Some(3600));
+        assert_eq!(de.oidc_ext.login_hint, Some("user@example.com".to_string()));
+    }
+
+    #[test]
+    fn test_authorisation_request_serde_minimal() {
+        let mut scope = BTreeSet::new();
+        scope.insert("openid".to_string());
+
+        let req = AuthorisationRequest {
+            response_type: ResponseType::Code,
+            response_mode: None,
+            client_id: "minimal_client".to_string(),
+            state: None,
+            pkce_request: None,
+            redirect_uri: Url::parse("https://example.com/cb").unwrap(),
+            scope: scope.clone(),
+            nonce: None,
+            oidc_ext: AuthorisationRequestOidc::default(),
+            max_age: None,
+            unknown_keys: BTreeMap::new(),
+        };
+
+        let json = serde_json::to_string(&req).unwrap();
+        assert!(!json.contains("\"state\""));
+        assert!(!json.contains("\"nonce\""));
+        assert!(!json.contains("\"max_age\""));
+        assert!(!json.contains("\"response_mode\""));
+
+        let de: AuthorisationRequest = serde_json::from_str(&json).unwrap();
+        assert_eq!(de.response_type, ResponseType::Code);
+        assert!(de.state.is_none());
+        assert!(de.pkce_request.is_none());
+        assert!(de.nonce.is_none());
+        assert!(de.max_age.is_none());
+    }
+
+    #[test]
+    fn test_authorisation_request_get_response_mode() {
+        let base = AuthorisationRequest {
+            response_type: ResponseType::Code,
+            response_mode: None,
+            client_id: "c".to_string(),
+            state: None,
+            pkce_request: None,
+            redirect_uri: Url::parse("https://example.com/cb").unwrap(),
+            scope: BTreeSet::new(),
+            nonce: None,
+            oidc_ext: AuthorisationRequestOidc::default(),
+            max_age: None,
+            unknown_keys: BTreeMap::new(),
+        };
+
+        assert_eq!(base.get_response_mode(), Some(ResponseMode::Query));
+
+        let mut req = base.clone();
+        req.response_type = ResponseType::Token;
+        assert_eq!(req.get_response_mode(), Some(ResponseMode::Fragment));
+
+        req.response_mode = Some(ResponseMode::Query);
+        req.response_type = ResponseType::Token;
+        assert_eq!(req.get_response_mode(), None);
+
+        let mut req2 = base.clone();
+        req2.response_type = ResponseType::IdToken;
+        assert_eq!(req2.get_response_mode(), Some(ResponseMode::Fragment));
+
+        req2.response_mode = Some(ResponseMode::Query);
+        assert_eq!(req2.get_response_mode(), None);
+
+        let mut req3 = base;
+        req3.response_mode = Some(ResponseMode::FormPost);
+        assert_eq!(req3.get_response_mode(), Some(ResponseMode::FormPost));
+    }
+
+    #[test]
+    fn test_authorisation_request_oidc_serde() {
+        let oidc = AuthorisationRequestOidc {
+            display: Some("popup".to_string()),
+            prompt: Some("consent".to_string()),
+            ui_locales: None,
+            claims_locales: None,
+            id_token_hint: Some("hint_token".to_string()),
+            login_hint: Some("admin@example.com".to_string()),
+            acr: Some("urn:mace:incommon:iap:silver".to_string()),
+        };
+
+        let json = serde_json::to_string(&oidc).unwrap();
+        assert!(json.contains("\"display\":\"popup\""));
+        assert!(json.contains("\"prompt\":\"consent\""));
+        assert!(json.contains("\"id_token_hint\":\"hint_token\""));
+        assert!(json.contains("\"login_hint\":\"admin@example.com\""));
+        assert!(json.contains("\"acr\":\"urn:mace:incommon:iap:silver\""));
+
+        let de: AuthorisationRequestOidc = serde_json::from_str(&json).unwrap();
+        assert_eq!(de.display, Some("popup".to_string()));
+        assert_eq!(de.prompt, Some("consent".to_string()));
+        assert_eq!(de.id_token_hint, Some("hint_token".to_string()));
+        assert_eq!(de.login_hint, Some("admin@example.com".to_string()));
+        assert_eq!(de.acr, Some("urn:mace:incommon:iap:silver".to_string()));
+    }
+
+    #[test]
+    fn test_authorisation_request_oidc_serde_default() {
+        let oidc = AuthorisationRequestOidc::default();
+        let json = serde_json::to_string(&oidc).unwrap();
+        assert_eq!(json, "{}");
+        let de: AuthorisationRequestOidc = serde_json::from_str(&json).unwrap();
+        assert!(de.display.is_none());
+        assert!(de.prompt.is_none());
+        assert!(de.id_token_hint.is_none());
+        assert!(de.login_hint.is_none());
+        assert!(de.acr.is_none());
+    }
+
+    #[test]
+    fn test_authorisation_response_consent_requested_serde() {
+        let mut scopes = BTreeSet::new();
+        scopes.insert("openid".to_string());
+        let mut pii = BTreeSet::new();
+        pii.insert("email".to_string());
+
+        let resp = AuthorisationResponse::ConsentRequested {
+            client_name: "My App".to_string(),
+            scopes: scopes.clone(),
+            pii_scopes: pii.clone(),
+            consent_token: "token_abc".to_string(),
+        };
+
+        let json = serde_json::to_string(&resp).unwrap();
+        assert!(json.contains("\"ConsentRequested\""));
+        assert!(json.contains("\"client_name\":\"My App\""));
+        assert!(json.contains("\"consent_token\":\"token_abc\""));
+
+        let de: AuthorisationResponse = serde_json::from_str(&json).unwrap();
+        match de {
+            AuthorisationResponse::ConsentRequested {
+                client_name,
+                scopes: s,
+                pii_scopes: p,
+                consent_token,
+            } => {
+                assert_eq!(client_name, "My App");
+                assert_eq!(s, scopes);
+                assert_eq!(p, pii);
+                assert_eq!(consent_token, "token_abc");
+            }
+            _ => panic!("Wrong variant"),
+        }
+    }
+
+    #[test]
+    fn test_authorisation_response_permitted_serde() {
+        let resp = AuthorisationResponse::Permitted;
+        let json = serde_json::to_string(&resp).unwrap();
+        assert!(json.contains("\"Permitted\""));
+        let de: AuthorisationResponse = serde_json::from_str(&json).unwrap();
+        assert!(matches!(de, AuthorisationResponse::Permitted));
+    }
+
+    #[test]
+    fn test_grant_type_req_authorization_code_serde() {
+        let req = GrantTypeReq::AuthorizationCode {
+            code: "auth_code_123".to_string(),
+            redirect_uri: Url::parse("https://example.com/cb").unwrap(),
+            code_verifier: Some("verifier_xyz".to_string()),
+        };
+
+        let json = serde_json::to_string(&req).unwrap();
+        assert!(json.contains("\"grant_type\":\"authorization_code\""));
+        assert!(json.contains("\"code\":\"auth_code_123\""));
+        assert!(json.contains("\"code_verifier\":\"verifier_xyz\""));
+
+        let de: GrantTypeReq = serde_json::from_str(&json).unwrap();
+        match de {
+            GrantTypeReq::AuthorizationCode {
+                code,
+                redirect_uri,
+                code_verifier,
+            } => {
+                assert_eq!(code, "auth_code_123");
+                assert_eq!(redirect_uri, Url::parse("https://example.com/cb").unwrap());
+                assert_eq!(code_verifier, Some("verifier_xyz".to_string()));
+            }
+            _ => panic!("Wrong variant"),
+        }
+    }
+
+    #[test]
+    fn test_grant_type_req_client_credentials_serde() {
+        let req = GrantTypeReq::ClientCredentials { scope: None };
+        let json = serde_json::to_string(&req).unwrap();
+        assert!(json.contains("\"grant_type\":\"client_credentials\""));
+        let de: GrantTypeReq = serde_json::from_str(&json).unwrap();
+        assert!(matches!(
+            de,
+            GrantTypeReq::ClientCredentials { scope: None }
+        ));
+    }
+
+    #[test]
+    fn test_grant_type_req_refresh_token_serde() {
+        let mut scopes = BTreeSet::new();
+        scopes.insert("openid".to_string());
+
+        let req = GrantTypeReq::RefreshToken {
+            refresh_token: "refresh_abc".to_string(),
+            scope: Some(scopes.clone()),
+        };
+
+        let json = serde_json::to_string(&req).unwrap();
+        assert!(json.contains("\"grant_type\":\"refresh_token\""));
+        assert!(json.contains("\"refresh_token\":\"refresh_abc\""));
+
+        let de: GrantTypeReq = serde_json::from_str(&json).unwrap();
+        match de {
+            GrantTypeReq::RefreshToken {
+                refresh_token,
+                scope,
+            } => {
+                assert_eq!(refresh_token, "refresh_abc");
+                assert_eq!(scope, Some(scopes));
+            }
+            _ => panic!("Wrong variant"),
+        }
+    }
+
+    #[test]
+    fn test_grant_type_req_device_code_serde() {
+        let req = GrantTypeReq::DeviceCode {
+            device_code: "dev_code_123".to_string(),
+            scope: None,
+        };
+        let json = serde_json::to_string(&req).unwrap();
+        assert!(json.contains("\"grant_type\":\"urn:ietf:params:oauth:grant-type:device_code\""));
+        assert!(json.contains("\"device_code\":\"dev_code_123\""));
+
+        let de: GrantTypeReq = serde_json::from_str(&json).unwrap();
+        match de {
+            GrantTypeReq::DeviceCode { device_code, scope } => {
+                assert_eq!(device_code, "dev_code_123");
+                assert!(scope.is_none());
+            }
+            _ => panic!("Wrong variant"),
+        }
+    }
+
+    #[test]
+    fn test_access_token_request_serde() {
+        let atr = AccessTokenRequest {
+            grant_type: GrantTypeReq::RefreshToken {
+                refresh_token: "rt_123".to_string(),
+                scope: None,
+            },
+            client_post_auth: ClientPostAuth {
+                client_id: Some("myclient".to_string()),
+                client_secret: Some("secret123".to_string()),
+            },
+        };
+
+        let json = serde_json::to_string(&atr).unwrap();
+        assert!(json.contains("\"grant_type\":\"refresh_token\""));
+        assert!(json.contains("\"client_id\":\"myclient\""));
+        assert!(json.contains("\"client_secret\":\"secret123\""));
+
+        let de: AccessTokenRequest = serde_json::from_str(&json).unwrap();
+        match &de.grant_type {
+            GrantTypeReq::RefreshToken { refresh_token, .. } => {
+                assert_eq!(refresh_token, "rt_123");
+            }
+            _ => panic!("Wrong variant"),
+        }
+        assert_eq!(de.client_post_auth.client_id, Some("myclient".to_string()));
+    }
+
+    #[test]
+    fn test_access_token_response_serde() {
+        let mut scope = BTreeSet::new();
+        scope.insert("openid".to_string());
+        scope.insert("groups".to_string());
+
+        let resp = AccessTokenResponse {
+            access_token: "at_12345".to_string(),
+            token_type: AccessTokenType::Bearer,
+            issued_token_type: Some(IssuedTokenType::AccessToken),
+            expires_in: 3600,
+            refresh_token: Some("rt_67890".to_string()),
+            scope: scope.clone(),
+            id_token: Some("idt_jwt".to_string()),
+        };
+
+        let json = serde_json::to_string(&resp).unwrap();
+        assert!(json.contains("\"access_token\":\"at_12345\""));
+        assert!(json.contains("\"token_type\":\"Bearer\""));
+        assert!(json.contains("\"expires_in\":3600"));
+        assert!(json.contains("\"refresh_token\":\"rt_67890\""));
+        assert!(json.contains("\"id_token\":\"idt_jwt\""));
+
+        let de: AccessTokenResponse = serde_json::from_str(&json).unwrap();
+        assert_eq!(de.access_token, "at_12345");
+        assert_eq!(de.token_type, AccessTokenType::Bearer);
+        assert_eq!(de.issued_token_type, Some(IssuedTokenType::AccessToken));
+        assert_eq!(de.expires_in, 3600);
+        assert_eq!(de.refresh_token, Some("rt_67890".to_string()));
+        assert_eq!(de.scope, scope);
+        assert_eq!(de.id_token, Some("idt_jwt".to_string()));
+    }
+
+    #[test]
+    fn test_access_token_response_minimal_serde() {
+        let resp = AccessTokenResponse {
+            access_token: "at_min".to_string(),
+            token_type: AccessTokenType::Bearer,
+            issued_token_type: None,
+            expires_in: 600,
+            refresh_token: None,
+            scope: BTreeSet::new(),
+            id_token: None,
+        };
+
+        let json = serde_json::to_string(&resp).unwrap();
+        assert!(!json.contains("\"refresh_token\""));
+        assert!(!json.contains("\"id_token\""));
+        assert!(!json.contains("\"issued_token_type\""));
+
+        let de: AccessTokenResponse = serde_json::from_str(&json).unwrap();
+        assert_eq!(de.access_token, "at_min");
+        assert!(de.refresh_token.is_none());
+        assert!(de.id_token.is_none());
+        assert!(de.issued_token_type.is_none());
+    }
+
+    #[test]
+    fn test_access_token_type_bearer_serde() {
+        let tt = AccessTokenType::Bearer;
+        let json = serde_json::to_string(&tt).unwrap();
+        let de: AccessTokenType = serde_json::from_str(&json).unwrap();
+        assert_eq!(tt, de);
+    }
+
+    #[test]
+    fn test_access_token_type_pop_serde() {
+        let tt = AccessTokenType::PoP;
+        let json = serde_json::to_string(&tt).unwrap();
+        let de: AccessTokenType = serde_json::from_str(&json).unwrap();
+        assert_eq!(tt, de);
+    }
+
+    #[test]
+    fn test_access_token_type_na_serde() {
+        let tt = AccessTokenType::NA;
+        let json = serde_json::to_string(&tt).unwrap();
+        assert!(json.contains("N_A"));
+        let de: AccessTokenType = serde_json::from_str(&json).unwrap();
+        assert_eq!(tt, de);
+    }
+
+    #[test]
+    fn test_access_token_type_dpop_serde() {
+        let tt = AccessTokenType::DPoP;
+        let json = serde_json::to_string(&tt).unwrap();
+        let de: AccessTokenType = serde_json::from_str(&json).unwrap();
+        assert_eq!(tt, de);
+    }
+
+    #[test]
+    fn test_token_revoke_request_serde() {
+        let req = TokenRevokeRequest {
+            token: "tok_to_revoke".to_string(),
+            token_type_hint: Some("access_token".to_string()),
+            client_post_auth: ClientPostAuth::default(),
+        };
+
+        let json = serde_json::to_string(&req).unwrap();
+        assert!(json.contains("\"token\":\"tok_to_revoke\""));
+        assert!(json.contains("\"token_type_hint\":\"access_token\""));
+
+        let de: TokenRevokeRequest = serde_json::from_str(&json).unwrap();
+        assert_eq!(de.token, "tok_to_revoke");
+        assert_eq!(de.token_type_hint, Some("access_token".to_string()));
+    }
+
+    #[test]
+    fn test_token_revoke_request_minimal_serde() {
+        let req = TokenRevokeRequest {
+            token: "tok_min".to_string(),
+            token_type_hint: None,
+            client_post_auth: ClientPostAuth::default(),
+        };
+
+        let json = serde_json::to_string(&req).unwrap();
+        assert!(!json.contains("token_type_hint"));
+
+        let de: TokenRevokeRequest = serde_json::from_str(&json).unwrap();
+        assert_eq!(de.token, "tok_min");
+        assert!(de.token_type_hint.is_none());
+    }
+
+    #[test]
+    fn test_client_post_auth_serde() {
+        let auth = ClientPostAuth {
+            client_id: Some("id123".to_string()),
+            client_secret: Some("sec456".to_string()),
+        };
+
+        let json = serde_json::to_string(&auth).unwrap();
+        let de: ClientPostAuth = serde_json::from_str(&json).unwrap();
+        assert_eq!(de.client_id, Some("id123".to_string()));
+        assert_eq!(de.client_secret, Some("sec456".to_string()));
+    }
+
+    #[test]
+    fn test_client_post_auth_default_serde() {
+        let auth = ClientPostAuth::default();
+        let json = serde_json::to_string(&auth).unwrap();
+        assert_eq!(json, "{}");
+        let de: ClientPostAuth = serde_json::from_str(&json).unwrap();
+        assert!(de.client_id.is_none());
+        assert!(de.client_secret.is_none());
+    }
+
+    #[test]
+    fn test_client_post_auth_from_tuple() {
+        let auth: ClientPostAuth = ("myclient", Some("mysecret")).into();
+        assert_eq!(auth.client_id, Some("myclient".to_string()));
+        assert_eq!(auth.client_secret, Some("mysecret".to_string()));
+
+        let auth2: ClientPostAuth = ("client2", None).into();
+        assert_eq!(auth2.client_id, Some("client2".to_string()));
+        assert_eq!(auth2.client_secret, None);
+    }
+
+    #[test]
+    fn test_client_auth_serde() {
+        let auth = ClientAuth {
+            client_id: "cid".to_string(),
+            client_secret: Some("csecret".to_string()),
+        };
+
+        let json = serde_json::to_string(&auth).unwrap();
+        let de: ClientAuth = serde_json::from_str(&json).unwrap();
+        assert_eq!(de.client_id, "cid");
+        assert_eq!(de.client_secret, Some("csecret".to_string()));
+    }
+
+    #[test]
+    fn test_client_auth_no_secret_serde() {
+        let auth = ClientAuth {
+            client_id: "cid2".to_string(),
+            client_secret: None,
+        };
+        let json = serde_json::to_string(&auth).unwrap();
+        assert!(!json.contains("client_secret"));
+        let de: ClientAuth = serde_json::from_str(&json).unwrap();
+        assert_eq!(de.client_id, "cid2");
+        assert!(de.client_secret.is_none());
+    }
+
+    #[test]
+    fn test_client_auth_from_tuple() {
+        let auth: ClientAuth = ("myclient", Some("mysecret")).into();
+        assert_eq!(auth.client_id, "myclient");
+        assert_eq!(auth.client_secret, Some("mysecret".to_string()));
+    }
+
+    #[test]
+    fn test_access_token_introspect_request_serde() {
+        let req = AccessTokenIntrospectRequest {
+            token: "introspect_me".to_string(),
+            token_type_hint: Some("refresh_token".to_string()),
+            client_post_auth: ClientPostAuth {
+                client_id: Some("cid".to_string()),
+                client_secret: Some("csec".to_string()),
+            },
+        };
+
+        let json = serde_json::to_string(&req).unwrap();
+        assert!(json.contains("\"token\":\"introspect_me\""));
+
+        let de: AccessTokenIntrospectRequest = serde_json::from_str(&json).unwrap();
+        assert_eq!(de.token, "introspect_me");
+        assert_eq!(de.token_type_hint, Some("refresh_token".to_string()));
+    }
+
+    #[test]
+    fn test_access_token_introspect_response_active_serde() {
+        let mut scope = BTreeSet::new();
+        scope.insert("openid".to_string());
+
+        let resp = AccessTokenIntrospectResponse {
+            active: true,
+            scope: scope.clone(),
+            client_id: Some("client1".to_string()),
+            username: Some("user1".to_string()),
+            token_type: Some(AccessTokenType::Bearer),
+            exp: Some(1234567890),
+            iat: Some(1234560000),
+            nbf: Some(1234560000),
+            sub: Some("user1".to_string()),
+            aud: Some("client1".to_string()),
+            iss: Some("https://id.example.com".to_string()),
+            jti: Uuid::new_v4(),
+        };
+
+        let json = serde_json::to_string(&resp).unwrap();
+        assert!(json.contains("\"active\":true"));
+        assert!(json.contains("\"client_id\":\"client1\""));
+
+        let de: AccessTokenIntrospectResponse = serde_json::from_str(&json).unwrap();
+        assert!(de.active);
+        assert_eq!(de.scope, scope);
+        assert_eq!(de.client_id, Some("client1".to_string()));
+        assert_eq!(de.username, Some("user1".to_string()));
+        assert_eq!(de.token_type, Some(AccessTokenType::Bearer));
+        assert_eq!(de.exp, Some(1234567890));
+    }
+
+    #[test]
+    fn test_access_token_introspect_response_inactive() {
+        let session_id = Uuid::new_v4();
+        let resp = AccessTokenIntrospectResponse::inactive(session_id);
+        assert!(!resp.active);
+        assert!(resp.scope.is_empty());
+        assert!(resp.client_id.is_none());
+        assert!(resp.username.is_none());
+        assert_eq!(resp.jti, session_id);
+    }
+
+    #[test]
+    fn test_response_type_serde() {
+        let variants = [
+            (ResponseType::Code, "code"),
+            (ResponseType::Token, "token"),
+            (ResponseType::IdToken, "id_token"),
+        ];
+        for (variant, expected) in variants {
+            let json = serde_json::to_string(&variant).unwrap();
+            assert_eq!(json, format!("\"{expected}\""));
+            let de: ResponseType = serde_json::from_str(&json).unwrap();
+            assert_eq!(variant, de);
+        }
+    }
+
+    #[test]
+    fn test_response_mode_serde() {
+        assert_eq!(
+            serde_json::to_string(&ResponseMode::Query).unwrap(),
+            "\"query\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ResponseMode::Fragment).unwrap(),
+            "\"fragment\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ResponseMode::FormPost).unwrap(),
+            "\"form_post\""
+        );
+
+        let de: ResponseMode = serde_json::from_str("\"query\"").unwrap();
+        assert_eq!(de, ResponseMode::Query);
+        let de: ResponseMode = serde_json::from_str("\"fragment\"").unwrap();
+        assert_eq!(de, ResponseMode::Fragment);
+        let de: ResponseMode = serde_json::from_str("\"form_post\"").unwrap();
+        assert_eq!(de, ResponseMode::FormPost);
+    }
+
+    #[test]
+    fn test_response_mode_invalid_is_catchall() {
+        assert_eq!(ResponseMode::Invalid, ResponseMode::Invalid);
+    }
+
+    #[test]
+    fn test_grant_type_serde() {
+        let json = serde_json::to_string(&GrantType::AuthorisationCode).unwrap();
+        assert_eq!(json, "\"authorization_code\"");
+        let de: GrantType = serde_json::from_str(&json).unwrap();
+        assert_eq!(de, GrantType::AuthorisationCode);
+
+        let json = serde_json::to_string(&GrantType::Implicit).unwrap();
+        assert_eq!(json, "\"implicit\"");
+        let de: GrantType = serde_json::from_str(&json).unwrap();
+        assert_eq!(de, GrantType::Implicit);
+
+        let json = serde_json::to_string(&GrantType::TokenExchange).unwrap();
+        assert_eq!(json, "\"urn:ietf:params:oauth:grant-type:token-exchange\"");
+        let de: GrantType = serde_json::from_str(&json).unwrap();
+        assert_eq!(de, GrantType::TokenExchange);
+    }
+
+    #[test]
+    fn test_subject_type_serde() {
+        assert_eq!(
+            serde_json::to_string(&SubjectType::Pairwise).unwrap(),
+            "\"pairwise\""
+        );
+        assert_eq!(
+            serde_json::to_string(&SubjectType::Public).unwrap(),
+            "\"public\""
+        );
+        let de: SubjectType = serde_json::from_str("\"pairwise\"").unwrap();
+        assert_eq!(de, SubjectType::Pairwise);
+        let de: SubjectType = serde_json::from_str("\"public\"").unwrap();
+        assert_eq!(de, SubjectType::Public);
+    }
+
+    #[test]
+    fn test_id_token_sign_alg_serde() {
+        assert_eq!(
+            serde_json::to_string(&IdTokenSignAlg::ES256).unwrap(),
+            "\"ES256\""
+        );
+        assert_eq!(
+            serde_json::to_string(&IdTokenSignAlg::RS256).unwrap(),
+            "\"RS256\""
+        );
+        let de: IdTokenSignAlg = serde_json::from_str("\"ES256\"").unwrap();
+        assert_eq!(de, IdTokenSignAlg::ES256);
+        let de: IdTokenSignAlg = serde_json::from_str("\"RS256\"").unwrap();
+        assert_eq!(de, IdTokenSignAlg::RS256);
+    }
+
+    #[test]
+    fn test_token_endpoint_auth_method_serde() {
+        let variants = [
+            (
+                TokenEndpointAuthMethod::ClientSecretPost,
+                "client_secret_post",
+            ),
+            (
+                TokenEndpointAuthMethod::ClientSecretBasic,
+                "client_secret_basic",
+            ),
+            (
+                TokenEndpointAuthMethod::ClientSecretJwt,
+                "client_secret_jwt",
+            ),
+            (TokenEndpointAuthMethod::PrivateKeyJwt, "private_key_jwt"),
+        ];
+        for (variant, expected) in variants {
+            let json = serde_json::to_string(&variant).unwrap();
+            assert_eq!(json, format!("\"{expected}\""));
+            let de: TokenEndpointAuthMethod = serde_json::from_str(&json).unwrap();
+            assert_eq!(variant, de);
+        }
+    }
+
+    #[test]
+    fn test_oidc_discovery_response_serde() {
+        let resp = OidcDiscoveryResponse {
+            issuer: Url::parse("https://id.example.com").unwrap(),
+            authorization_endpoint: Url::parse("https://id.example.com/oauth2/authorise").unwrap(),
+            token_endpoint: Url::parse("https://id.example.com/oauth2/token").unwrap(),
+            userinfo_endpoint: Some(Url::parse("https://id.example.com/oauth2/userinfo").unwrap()),
+            jwks_uri: Url::parse("https://id.example.com/oauth2/openid/jwks").unwrap(),
+            registration_endpoint: None,
+            scopes_supported: Some(vec!["openid".to_string(), "profile".to_string()]),
+            response_types_supported: vec![ResponseType::Code],
+            response_modes_supported: vec![ResponseMode::Query, ResponseMode::Fragment],
+            grant_types_supported: vec![GrantType::AuthorisationCode],
+            acr_values_supported: None,
+            subject_types_supported: vec![SubjectType::Public],
+            id_token_signing_alg_values_supported: vec![IdTokenSignAlg::ES256],
+            id_token_encryption_alg_values_supported: None,
+            id_token_encryption_enc_values_supported: None,
+            userinfo_signing_alg_values_supported: None,
+            userinfo_encryption_alg_values_supported: None,
+            userinfo_encryption_enc_values_supported: None,
+            request_object_signing_alg_values_supported: None,
+            request_object_encryption_alg_values_supported: None,
+            request_object_encryption_enc_values_supported: None,
+            token_endpoint_auth_methods_supported: vec![TokenEndpointAuthMethod::ClientSecretBasic],
+            token_endpoint_auth_signing_alg_values_supported: None,
+            display_values_supported: None,
+            claim_types_supported: vec![ClaimType::Normal],
+            claims_supported: Some(vec!["sub".to_string()]),
+            service_documentation: None,
+            claims_locales_supported: None,
+            ui_locales_supported: None,
+            claims_parameter_supported: false,
+            op_policy_uri: None,
+            op_tos_uri: None,
+            request_parameter_supported: false,
+            request_uri_parameter_supported: false,
+            require_request_uri_registration: false,
+            code_challenge_methods_supported: vec![PkceAlg::S256],
+            revocation_endpoint: Some(Url::parse("https://id.example.com/oauth2/revoke").unwrap()),
+            revocation_endpoint_auth_methods_supported: vec![
+                TokenEndpointAuthMethod::ClientSecretBasic,
+            ],
+            introspection_endpoint: Some(
+                Url::parse("https://id.example.com/oauth2/introspect").unwrap(),
+            ),
+            introspection_endpoint_auth_methods_supported: vec![
+                TokenEndpointAuthMethod::ClientSecretBasic,
+            ],
+            introspection_endpoint_auth_signing_alg_values_supported: None,
+            device_authorization_endpoint: Some(
+                Url::parse("https://id.example.com/oauth2/device").unwrap(),
+            ),
+        };
+
+        let json = serde_json::to_string(&resp).unwrap();
+        assert!(json.contains("\"response_types_supported\":[\"code\"]"));
+        assert!(json.contains("\"subject_types_supported\":[\"public\"]"));
+        assert!(json.contains("\"id_token_signing_alg_values_supported\":[\"ES256\"]"));
+        assert!(json.contains("\"code_challenge_methods_supported\":[\"S256\"]"));
+        assert!(json.contains("\"claims_parameter_supported\":false"));
+
+        let de: OidcDiscoveryResponse = serde_json::from_str(&json).unwrap();
+        assert_eq!(de.issuer, resp.issuer);
+        assert_eq!(de.authorization_endpoint, resp.authorization_endpoint);
+        assert_eq!(de.token_endpoint, resp.token_endpoint);
+        assert_eq!(de.response_types_supported, resp.response_types_supported);
+        assert_eq!(de.subject_types_supported, resp.subject_types_supported);
+        assert_eq!(
+            de.id_token_signing_alg_values_supported,
+            resp.id_token_signing_alg_values_supported
+        );
+        assert_eq!(
+            de.code_challenge_methods_supported,
+            resp.code_challenge_methods_supported
+        );
+    }
+
+    #[test]
+    fn test_oidc_discovery_response_defaults() {
+        let json = r#"{
+            "issuer": "https://id.example.com",
+            "authorization_endpoint": "https://id.example.com/oauth2/authorise",
+            "token_endpoint": "https://id.example.com/oauth2/token",
+            "jwks_uri": "https://id.example.com/oauth2/openid/jwks",
+            "response_types_supported": ["code"],
+            "subject_types_supported": ["public"],
+            "id_token_signing_alg_values_supported": ["RS256"],
+            "code_challenge_methods_supported": ["S256"],
+            "revocation_endpoint_auth_methods_supported": ["client_secret_basic"],
+            "introspection_endpoint_auth_methods_supported": ["client_secret_basic"]
+        }"#;
+
+        let de: OidcDiscoveryResponse = serde_json::from_str(json).unwrap();
+        assert_eq!(
+            de.response_modes_supported,
+            vec![ResponseMode::Query, ResponseMode::Fragment]
+        );
+        assert_eq!(
+            de.grant_types_supported,
+            vec![
+                GrantType::AuthorisationCode,
+                GrantType::Implicit,
+                GrantType::TokenExchange
+            ]
+        );
+        assert_eq!(
+            de.token_endpoint_auth_methods_supported,
+            vec![TokenEndpointAuthMethod::ClientSecretBasic]
+        );
+        assert_eq!(de.claim_types_supported, vec![ClaimType::Normal]);
+        assert!(!de.claims_parameter_supported);
+        assert!(!de.request_parameter_supported);
+        assert!(!de.request_uri_parameter_supported);
+        assert!(!de.require_request_uri_registration);
+    }
+
+    #[test]
+    fn test_device_authorization_response_serde() {
+        let verification_uri = Url::parse("https://example.com/device").unwrap();
+        let user_code = "123-456".to_string();
+        let device_code_bytes: [u8; 16] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+
+        let resp = DeviceAuthorizationResponse::new(
+            verification_uri,
+            device_code_bytes,
+            user_code.clone(),
+        );
+
+        let json = serde_json::to_string(&resp).unwrap();
+        assert!(json.contains("\"verification_uri\":\"https://example.com/device\""));
+        assert!(json.contains("\"user_code\":\"123-456\""));
+        assert!(json.contains(&format!(
+            "\"expires_in\":{OAUTH2_DEVICE_CODE_EXPIRY_SECONDS}"
+        )));
+        assert!(json.contains(&format!(
+            "\"interval\":{OAUTH2_DEVICE_CODE_INTERVAL_SECONDS}"
+        )));
+        assert!(json.contains("verification_uri_complete"));
+
+        let json2 = serde_json::to_string(
+            &serde_json::from_str::<DeviceAuthorizationResponse>(&json).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(json, json2);
+    }
+
+    #[test]
+    fn test_error_response_serde() {
+        let err = ErrorResponse {
+            error: "invalid_request".to_string(),
+            error_description: Some("Missing parameter".to_string()),
+            error_uri: Some(Url::parse("https://example.com/errors/invalid").unwrap()),
+        };
+
+        let json = serde_json::to_string(&err).unwrap();
+        assert!(json.contains("\"error\":\"invalid_request\""));
+        assert!(json.contains("\"error_description\":\"Missing parameter\""));
+        assert!(json.contains("\"error_uri\""));
+
+        let de: ErrorResponse = serde_json::from_str(&json).unwrap();
+        assert_eq!(de.error, "invalid_request");
+        assert_eq!(de.error_description, Some("Missing parameter".to_string()));
+        assert!(de.error_uri.is_some());
+    }
+
+    #[test]
+    fn test_error_response_minimal_serde() {
+        let err = ErrorResponse {
+            error: "unauthorized_client".to_string(),
+            error_description: None,
+            error_uri: None,
+        };
+        let json = serde_json::to_string(&err).unwrap();
+        assert!(!json.contains("error_description"));
+        assert!(!json.contains("error_uri"));
+
+        let de: ErrorResponse = serde_json::from_str(&json).unwrap();
+        assert_eq!(de.error, "unauthorized_client");
+        assert!(de.error_description.is_none());
+        assert!(de.error_uri.is_none());
+    }
+
+    #[test]
+    fn test_pkce_alg_serde() {
+        assert_eq!(serde_json::to_string(&PkceAlg::S256).unwrap(), "\"S256\"");
+        let de: PkceAlg = serde_json::from_str("\"S256\"").unwrap();
+        assert_eq!(de, PkceAlg::S256);
+    }
+
+    #[test]
+    fn test_display_value_serde() {
+        assert_eq!(
+            serde_json::to_string(&DisplayValue::Page).unwrap(),
+            "\"page\""
+        );
+        assert_eq!(
+            serde_json::to_string(&DisplayValue::Popup).unwrap(),
+            "\"popup\""
+        );
+        assert_eq!(
+            serde_json::to_string(&DisplayValue::Touch).unwrap(),
+            "\"touch\""
+        );
+        assert_eq!(
+            serde_json::to_string(&DisplayValue::Wap).unwrap(),
+            "\"wap\""
+        );
+        let de: DisplayValue = serde_json::from_str("\"page\"").unwrap();
+        assert_eq!(de, DisplayValue::Page);
+    }
+
+    #[test]
+    fn test_claim_type_serde() {
+        assert_eq!(
+            serde_json::to_string(&ClaimType::Normal).unwrap(),
+            "\"normal\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ClaimType::Aggregated).unwrap(),
+            "\"aggregated\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ClaimType::Distributed).unwrap(),
+            "\"distributed\""
+        );
+        let de: ClaimType = serde_json::from_str("\"normal\"").unwrap();
+        assert_eq!(de, ClaimType::Normal);
+    }
+
+    #[test]
+    fn test_issued_token_type_serde() {
+        let variants = [
+            (IssuedTokenType::AccessToken, "AccessToken"),
+            (IssuedTokenType::RefreshToken, "RefreshToken"),
+            (IssuedTokenType::IdToken, "IdToken"),
+            (IssuedTokenType::Saml1, "Saml1"),
+            (IssuedTokenType::Saml2, "Saml2"),
+        ];
+        for (variant, expected) in variants {
+            let json = serde_json::to_string(&variant).unwrap();
+            assert_eq!(json, format!("\"{expected}\""));
+            let de: IssuedTokenType = serde_json::from_str(&json).unwrap();
+            assert_eq!(variant, de);
+        }
+    }
+
+    #[test]
+    fn test_oidc_webfinger_rel_serde() {
+        let rel = OidcWebfingerRel {
+            rel: "http://openid.net/specs/connect/1.0/issuer".to_string(),
+            href: "https://id.example.com".to_string(),
+        };
+        let json = serde_json::to_string(&rel).unwrap();
+        let de: OidcWebfingerRel = serde_json::from_str(&json).unwrap();
+        assert_eq!(de.rel, "http://openid.net/specs/connect/1.0/issuer");
+        assert_eq!(de.href, "https://id.example.com");
+    }
+
+    #[test]
+    fn test_oidc_webfinger_response_serde() {
+        let resp = OidcWebfingerResponse {
+            subject: "acct:user@example.com".to_string(),
+            links: vec![OidcWebfingerRel {
+                rel: "http://openid.net/specs/connect/1.0/issuer".to_string(),
+                href: "https://id.example.com".to_string(),
+            }],
+        };
+        let json = serde_json::to_string(&resp).unwrap();
+        assert!(json.contains("\"subject\":\"acct:user@example.com\""));
+        let de: OidcWebfingerResponse = serde_json::from_str(&json).unwrap();
+        assert_eq!(de.subject, "acct:user@example.com");
+        assert_eq!(de.links.len(), 1);
+    }
+
+    #[test]
+    fn test_oauth2_rfc8414_metadata_response_serde() {
+        let resp = Oauth2Rfc8414MetadataResponse {
+            issuer: Url::parse("https://id.example.com").unwrap(),
+            authorization_endpoint: Url::parse("https://id.example.com/oauth2/authorise").unwrap(),
+            token_endpoint: Url::parse("https://id.example.com/oauth2/token").unwrap(),
+            jwks_uri: Some(Url::parse("https://id.example.com/oauth2/openid/jwks").unwrap()),
+            registration_endpoint: None,
+            scopes_supported: None,
+            response_types_supported: vec![ResponseType::Code],
+            response_modes_supported: vec![ResponseMode::Query],
+            grant_types_supported: vec![GrantType::AuthorisationCode],
+            token_endpoint_auth_methods_supported: vec![TokenEndpointAuthMethod::ClientSecretBasic],
+            token_endpoint_auth_signing_alg_values_supported: None,
+            service_documentation: None,
+            ui_locales_supported: None,
+            op_policy_uri: None,
+            op_tos_uri: None,
+            revocation_endpoint: None,
+            revocation_endpoint_auth_methods_supported: vec![],
+            introspection_endpoint: None,
+            introspection_endpoint_auth_methods_supported: vec![],
+            introspection_endpoint_auth_signing_alg_values_supported: None,
+            code_challenge_methods_supported: vec![PkceAlg::S256],
+        };
+
+        let json = serde_json::to_string(&resp).unwrap();
+
+        let de: Oauth2Rfc8414MetadataResponse = serde_json::from_str(&json).unwrap();
+        assert_eq!(de.issuer, resp.issuer);
+        assert_eq!(de.authorization_endpoint, resp.authorization_endpoint);
+        assert_eq!(de.response_types_supported, resp.response_types_supported);
+    }
+
+    #[test]
+    fn test_oauth2_rfc9068_token_serde() {
+        let extensions = OAuth2RFC9068TokenExtensions {
+            auth_time: Some(1234567890),
+            acr: Some("urn:mace:incommon:iap:silver".to_string()),
+            amr: Some(vec!["pwd".to_string(), "mfa".to_string()]),
+            scope: {
+                let mut s = BTreeSet::new();
+                s.insert("openid".to_string());
+                s
+            },
+            nonce: Some("abc123".to_string()),
+            session_id: Uuid::new_v4(),
+            parent_session_id: Some(Uuid::new_v4()),
+        };
+
+        let token = OAuth2RFC9068Token {
+            iss: "https://id.example.com".to_string(),
+            sub: Uuid::new_v4(),
+            aud: "client_id_123".to_string(),
+            exp: 9999999999,
+            nbf: 1234567890,
+            iat: 1234567890,
+            jti: Uuid::new_v4(),
+            client_id: "client_id_123".to_string(),
+            extensions: extensions.clone(),
+        };
+
+        let json = serde_json::to_string(&token).unwrap();
+        assert!(json.contains("\"iss\":\"https://id.example.com\""));
+        assert!(json.contains("\"aud\":\"client_id_123\""));
+        assert!(json.contains("\"client_id\":\"client_id_123\""));
+
+        let de: OAuth2RFC9068Token<OAuth2RFC9068TokenExtensions> =
+            serde_json::from_str(&json).unwrap();
+        assert_eq!(de.iss, "https://id.example.com");
+        assert_eq!(de.aud, "client_id_123");
+        assert_eq!(de.client_id, "client_id_123");
+        assert_eq!(de.exp, 9999999999);
+        assert_eq!(de.extensions.auth_time, extensions.auth_time);
+        assert_eq!(de.extensions.acr, extensions.acr);
+        assert_eq!(de.extensions.nonce, extensions.nonce);
+        assert_eq!(de.extensions.scope, extensions.scope);
+    }
+
+    #[test]
+    fn test_device_code_constants() {
+        assert_eq!(OAUTH2_DEVICE_CODE_EXPIRY_SECONDS, 300);
+        assert_eq!(OAUTH2_DEVICE_CODE_INTERVAL_SECONDS, 5);
+    }
+
+    #[test]
+    fn test_token_type_access_token_constant() {
+        assert_eq!(
+            OAUTH2_TOKEN_TYPE_ACCESS_TOKEN,
+            "urn:ietf:params:oauth:token-type:access_token"
+        );
     }
 }

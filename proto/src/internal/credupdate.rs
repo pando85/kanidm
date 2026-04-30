@@ -201,6 +201,18 @@ pub struct CUStatus {
     #[schema(value_type = BTreeMap<String, Value>)]
     pub sshkeys: BTreeMap<String, SshPublicKey>,
     pub sshkeys_state: CUCredState,
+
+    // Pending changes tracking for UI
+    pub has_pending_changes: bool,
+    pub primary_has_pending_changes: bool,
+    pub passkeys_have_pending_changes: bool,
+    pub attested_passkeys_have_pending_changes: bool,
+    pub unixcred_has_pending_changes: bool,
+    pub sshkeys_have_pending_changes: bool,
+
+    // Auto-commit indicators for first credential and passkey scenarios
+    pub should_auto_commit_first_cred: bool,
+    pub should_auto_commit_passkey: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
@@ -466,5 +478,63 @@ mod tests {
         let s = totp.to_uri();
         println!("{s}");
         assert_eq!(s,"otpauth://totp/blackhats%20australia:william%3A%253A?secret=VK54ZXI&issuer=blackhats%20australia&algorithm=SHA256&digits=6&period=30");
+    }
+
+    #[test]
+    fn test_totp_algo_display() {
+        assert_eq!(TotpAlgo::Sha1.to_string(), "SHA1");
+        assert_eq!(TotpAlgo::Sha256.to_string(), "SHA256");
+        assert_eq!(TotpAlgo::Sha512.to_string(), "SHA512");
+    }
+
+    #[test]
+    fn test_totp_secret_get_secret() {
+        let totp = TotpSecret {
+            accountname: "test".to_string(),
+            issuer: "test".to_string(),
+            secret: vec![0xaa, 0xbb, 0xcc, 0xdd],
+            step: 30,
+            algo: TotpAlgo::Sha256,
+            digits: 6,
+        };
+        let secret = totp.get_secret();
+        assert_eq!(secret, "VK54ZXI");
+    }
+
+    #[test]
+    fn test_totp_secret_uri_contains_account_and_issuer() {
+        let totp = TotpSecret {
+            accountname: "user@example.com".to_string(),
+            issuer: "MyApp".to_string(),
+            secret: vec![0x01, 0x02, 0x03],
+            step: 60,
+            algo: TotpAlgo::Sha1,
+            digits: 8,
+        };
+        let uri = totp.to_uri();
+        assert!(uri.starts_with("otpauth://totp/"));
+        assert!(uri.contains("MyApp"));
+        assert!(uri.contains("user%40example.com"));
+        assert!(uri.contains("algorithm=SHA1"));
+        assert!(uri.contains("digits=8"));
+        assert!(uri.contains("period=60"));
+    }
+
+    #[test]
+    fn test_totp_secret_serde() {
+        let totp = TotpSecret {
+            accountname: "testuser".to_string(),
+            issuer: "TestIssuer".to_string(),
+            secret: vec![0x01, 0x02, 0x03, 0x04],
+            step: 30,
+            algo: TotpAlgo::Sha512,
+            digits: 6,
+        };
+        let json = serde_json::to_string(&totp).expect("Failed to serialize");
+        let deserialized: TotpSecret = serde_json::from_str(&json).expect("Failed to deserialize");
+        assert_eq!(deserialized.accountname, "testuser");
+        assert_eq!(deserialized.issuer, "TestIssuer");
+        assert!(matches!(deserialized.algo, TotpAlgo::Sha512));
+        assert_eq!(deserialized.digits, 6);
     }
 }

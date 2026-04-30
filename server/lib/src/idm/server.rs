@@ -9,8 +9,8 @@ use crate::idm::authentication::{AuthState, PreValidatedTokenStatus};
 use crate::idm::authsession::{AuthSession, AuthSessionData};
 use crate::idm::credupdatesession::CredentialUpdateSessionMutex;
 use crate::idm::delayed::{
-    AuthSessionRecord, BackupCodeRemoval, DelayedAction, PasswordUpgrade, UnixPasswordUpgrade,
-    WebauthnCounterIncrement,
+    ApprovalEscalationCheck, ApprovalTimeoutCheck, AuthSessionRecord, BackupCodeRemoval,
+    DelayedAction, PasswordUpgrade, UnixPasswordUpgrade, WebauthnCounterIncrement,
 };
 use crate::idm::event::{
     AuthEvent, AuthEventStep, AuthResult, CredentialStatusEvent, LdapAuthEvent, LdapTokenAuthEvent,
@@ -35,12 +35,12 @@ use compact_jwt::{Jwk, JwsCompact};
 use concread::bptree::{BptreeMap, BptreeMapReadTxn, BptreeMapWriteTxn};
 use concread::cowcell::CowCellReadTxn;
 use concread::hashmap::{HashMap, HashMapReadTxn, HashMapWriteTxn};
-use kanidm_lib_crypto::CryptoPolicy;
-use kanidm_proto::internal::{
+use kubidm_lib_crypto::CryptoPolicy;
+use kubidm_proto::internal::{
     ApiToken, CredentialStatus, PasswordFeedback, RadiusAuthToken, ScimSyncToken, UatPurpose,
     UserAuthToken,
 };
-use kanidm_proto::v1::{UnixGroupToken, UnixUserToken};
+use kubidm_proto::v1::{UnixGroupToken, UnixUserToken};
 use rand::prelude::*;
 use std::convert::TryFrom;
 use std::sync::Arc;
@@ -192,7 +192,7 @@ impl IdmServer {
                 origin,
                 rp_id
             );
-            admin_error!("To change the origin or domain name see: https://kanidm.github.io/kanidm/master/server_configuration.html");
+            admin_error!("To change the origin or domain name see: https://kubidm.github.io/kubidm/master/server_configuration.html");
             return Err(OperationError::InvalidState);
         };
 
@@ -617,7 +617,7 @@ pub trait IdmServerTransaction<'a> {
                 OperationError::NotAuthenticated
             })?;
 
-            let apit = kanidm_proto::internal::ApiToken {
+            let apit = kubidm_proto::internal::ApiToken {
                 account_id: entry.get_uuid(),
                 token_id: session_id,
                 label: api_token_internal.label.clone(),
@@ -2146,6 +2146,72 @@ impl IdmServerProxyWriteTransaction<'_> {
     }
 
     #[instrument(level = "debug", skip_all)]
+    fn process_approval_timeout_check(
+        &mut self,
+        atc: &ApprovalTimeoutCheck,
+    ) -> Result<(), OperationError> {
+        info!(request_uuid = %atc.request_uuid, "Processing approval timeout check");
+
+        let filter = filter!(f_and!([
+            f_eq(Attribute::Class, EntryClass::ApprovalRequest.into()),
+            f_eq(Attribute::Uuid, PartialValue::Uuid(atc.request_uuid)),
+            f_eq(Attribute::ApprovalState, PartialValue::new_utf8s("pending"))
+        ]));
+
+        let entries = self.qs_write.internal_search(filter.clone())?;
+
+        if entries.is_empty() {
+            debug!("Approval request not found or not in pending state");
+            return Ok(());
+        }
+
+        let modlist = ModifyList::new_list(vec![
+            Modify::Purged(Attribute::ApprovalState),
+            Modify::Present(Attribute::ApprovalState, Value::new_iutf8("expired")),
+        ]);
+
+        self.qs_write.internal_modify(&filter, &modlist)
+    }
+
+    #[instrument(level = "debug", skip_all)]
+    fn process_approval_escalation_check(
+        &mut self,
+        aec: &ApprovalEscalationCheck,
+    ) -> Result<(), OperationError> {
+        info!(request_uuid = %aec.request_uuid, "Processing approval escalation check");
+
+        let filter = filter!(f_and!([
+            f_eq(Attribute::Class, EntryClass::ApprovalRequest.into()),
+            f_eq(Attribute::Uuid, PartialValue::Uuid(aec.request_uuid)),
+            f_eq(Attribute::ApprovalState, PartialValue::new_utf8s("pending"))
+        ]));
+
+        let entries = self.qs_write.internal_search(filter.clone())?;
+
+        if entries.is_empty() {
+            debug!("Approval request not found or not in pending state");
+            return Ok(());
+        }
+
+        let entry = entries.first().ok_or_else(|| {
+            debug!("Approval request not found after existence check");
+            OperationError::NoMatchingEntries
+        })?;
+        let current_level = entry
+            .get_ava_single_uint32(Attribute::ApprovalEscalationLevel)
+            .unwrap_or(0);
+
+        let new_level = current_level + 1;
+
+        let modlist = ModifyList::new_list(vec![
+            Modify::Purged(Attribute::ApprovalEscalationLevel),
+            Modify::Present(Attribute::ApprovalEscalationLevel, Value::Uint32(new_level)),
+        ]);
+
+        self.qs_write.internal_modify(&filter, &modlist)
+    }
+
+    #[instrument(level = "debug", skip_all)]
     fn process_unixpwupgrade(&mut self, pwu: &UnixPasswordUpgrade) -> Result<(), OperationError> {
         info!(session_id = %pwu.target_uuid, "Processing unix password hash upgrade");
 
@@ -2297,6 +2363,10 @@ impl IdmServerProxyWriteTransaction<'_> {
             DelayedAction::WebauthnCounterIncrement(wci) => self.process_webauthncounterinc(wci),
             DelayedAction::BackupCodeRemoval(bcr) => self.process_backupcoderemoval(bcr),
             DelayedAction::AuthSessionRecord(asr) => self.process_authsessionrecord(asr),
+            DelayedAction::ApprovalTimeoutCheck(atc) => self.process_approval_timeout_check(atc),
+            DelayedAction::ApprovalEscalationCheck(aec) => {
+                self.process_approval_escalation_check(aec)
+            }
         }
     }
 
@@ -2372,8 +2442,8 @@ mod tests {
     use crate::server::keys::KeyProvidersTransaction;
     use crate::value::{AuthType, SessionState};
     use compact_jwt::{traits::JwsVerifiable, JwsCompact, JwsEs256Verifier, JwsVerifier};
-    use kanidm_lib_crypto::CryptoPolicy;
-    use kanidm_proto::v1::{AuthAllowed, AuthIssueSession, AuthMech};
+    use kubidm_lib_crypto::CryptoPolicy;
+    use kubidm_proto::v1::{AuthAllowed, AuthIssueSession, AuthMech};
     use time::OffsetDateTime;
     use uuid::Uuid;
 
@@ -3790,7 +3860,7 @@ mod tests {
         idms: &IdmServer,
         idms_delayed: &mut IdmServerDelayed,
     ) {
-        use kanidm_proto::internal::UserAuthToken;
+        use kubidm_proto::internal::UserAuthToken;
 
         let ct = duration_from_epoch_now();
 

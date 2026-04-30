@@ -1,0 +1,36 @@
+---
+# mkdocs.yml
+site_name: Kubidm Python library
+use_directory_urls: false
+theme:
+  name: material
+  color_mode: auto
+  user_color_mode_toggle: true
+  hljs_languages:
+    - rust
+    - json
+    - yaml
+
+repo_name: "kubidm/kubidm"
+repo_url: "https://github.com/kubidm/kubidm"
+
+plugins:
+  - search:
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          rendering:
+            show_source: true
+  - gen-files:
+      scripts:
+        - docs/hooks/gen_files.py
+watch:
+  - "kubidm/"
+
+nav:
+  - "Home": index.md
+  - "Client": kubidmclient.md
+  - "Client Configuration": kubidmclientconfig.md
+  - "RADIUS Client": radiusclient.md
+  - "Token Storage": tokenstore.md

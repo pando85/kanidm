@@ -16,6 +16,25 @@ struct RestoreOpt {
     path: PathBuf,
 }
 
+#[derive(Debug, Args)]
+struct PitrRecoverOpt {
+    /// Target time for recovery (RFC3339 format, e.g., "2024-01-15T10:30:00Z")
+    #[clap(long)]
+    target_time: Option<String>,
+
+    /// Target transaction CID for recovery
+    #[clap(long)]
+    target_cid: Option<String>,
+
+    /// Recover to the latest available point
+    #[clap(long, conflicts_with_all = ["target_time", "target_cid"])]
+    latest: bool,
+
+    /// Perform a dry run without actually applying changes
+    #[clap(long)]
+    dry_run: bool,
+}
+
 #[derive(Debug, Subcommand)]
 enum DomainSettingsCmds {
     /// Show the current domain
@@ -26,14 +45,14 @@ enum DomainSettingsCmds {
     Change,
     /// Perform a pre-upgrade-check of this domains content. This will report possible
     /// incompatibilities that can block a successful upgrade to the next version of
-    /// Kanidm. This is a safe read only operation.
+    /// Kubidm. This is a safe read only operation.
     #[clap(name = "upgrade-check")]
     UpgradeCheck,
-    /// ⚠️  Do not use this command unless directed by a project member. ⚠️
+    /// Do not use this command unless directed by a project member.
     /// - Raise the functional level of this domain to the maximum available.
     #[clap(name = "raise")]
     Raise,
-    /// ⚠️  Do not use this command unless directed by a project member. ⚠️
+    /// Do not use this command unless directed by a project member.
     /// - Rerun migrations of this domains database, optionally nominating the level
     ///   to start from.
     #[clap(name = "remigrate")]
@@ -57,6 +76,19 @@ enum DbCommands {
     #[clap(name = "reindex")]
     /// Reindex the database (offline)
     Reindex,
+    #[clap(name = "recover")]
+    /// Point-in-Time Recovery (PITR) - recover database to a specific point in time
+    Recover(PitrRecoverOpt),
+    #[clap(name = "pitr-list")]
+    /// List available recovery points for Point-in-Time Recovery
+    PitrList,
+    #[clap(name = "replicate-status")]
+    /// Check cross-region backup replication status
+    ReplicateStatus {
+        /// Output detailed lag metrics for each region
+        #[clap(long)]
+        detailed: bool,
+    },
 }
 
 #[derive(Debug, Args)]
@@ -109,16 +141,16 @@ enum DbScanOpt {
 }
 
 #[derive(Debug, Parser)]
-#[command(name = "kanidmd")]
-struct KanidmdParser {
+#[command(name = "kubidmd")]
+struct KubidmdParser {
     #[command(subcommand)]
-    commands: KanidmdOpt,
+    commands: KubidmdOpt,
 
     #[clap(short, long, env = "KANIDM_CONFIG", global = true)]
     config_path: Option<PathBuf>,
 
     #[clap(flatten)]
-    kanidmd_options: kanidm_proto::cli::KanidmdCli,
+    kubidmd_options: kubidm_proto::cli::KubidmdCli,
 }
 
 #[derive(Debug, Subcommand)]
@@ -148,9 +180,8 @@ enum ScriptingCommand {
     },
 }
 
-// The main command parser for kanidmd
 #[derive(Debug, Subcommand)]
-enum KanidmdOpt {
+enum KubidmdOpt {
     #[clap(name = "server")]
     /// Start the IDM Server
     Server,

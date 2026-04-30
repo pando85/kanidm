@@ -4,8 +4,8 @@ pub mod uri;
 
 use std::time::Duration;
 
-/// The default location for the `kanidm` CLI tool's token cache.
-pub const CLIENT_TOKEN_CACHE: &str = "~/.cache/kanidm_tokens";
+/// The default location for the `kubidm` CLI tool's token cache.
+pub const CLIENT_TOKEN_CACHE: &str = "~/.cache/kubidm_tokens";
 
 /// Content type string for jpeg
 pub const CONTENT_TYPE_JPG: &str = "image/jpeg";
@@ -29,15 +29,15 @@ pub const VALID_IMAGE_UPLOAD_CONTENT_TYPES: [&str; 5] = [
 
 pub const APPLICATION_JSON: &str = "application/json";
 
-/// The "system" path for Kanidm client config
+/// The "system" path for Kubidm client config
 pub const DEFAULT_CLIENT_CONFIG_PATH: &str = env!("KANIDM_CLIENT_CONFIG_PATH");
-/// The user-owned path for Kanidm client config
-pub const DEFAULT_CLIENT_CONFIG_PATH_HOME: &str = "~/.config/kanidm";
+/// The user-owned path for Kubidm client config
+pub const DEFAULT_CLIENT_CONFIG_PATH_HOME: &str = "~/.config/kubidm";
 
-/// The default HTTPS bind address for the Kanidm server
+/// The default HTTPS bind address for the Kubidm server
 pub const DEFAULT_SERVER_ADDRESS: &str = "127.0.0.1:8443";
 pub const DEFAULT_SERVER_LOCALHOST: &str = "localhost:8443";
-/// The default LDAP bind address for the Kanidm client
+/// The default LDAP bind address for the Kubidm client
 pub const DEFAULT_LDAP_LOCALHOST: &str = "localhost:636";
 /// The default amount of attributes that can be queried in LDAP
 pub const DEFAULT_LDAP_MAXIMUM_QUERYABLE_ATTRIBUTES: usize = 48;
@@ -70,8 +70,19 @@ pub const ATTR_ACP_MODIFY_PRESENTATTR: &str = "acp_modify_presentattr";
 pub const ATTR_ACP_MODIFY_REMOVEDATTR: &str = "acp_modify_removedattr";
 pub const ATTR_ACP_RECEIVER_GROUP: &str = "acp_receiver_group";
 pub const ATTR_ACP_RECEIVER: &str = "acp_receiver";
+pub const ATTR_ACP_REAUTH_MAX_AGE: &str = "acp_reauth_max_age";
+pub const ATTR_ACP_REQUIRE_REAUTH: &str = "acp_require_reauth";
+pub const ATTR_ACP_RECEIVER_DELEGATED: &str = "acp_receiver_delegated";
+pub const ATTR_ACP_TARGET_DELEGATED_SCOPE: &str = "acp_target_delegated_scope";
+pub const ATTR_DELEGATED_SCOPE_FILTER: &str = "delegated_scope_filter";
+pub const ATTR_DELEGATED_SCOPE_GROUP: &str = "delegated_scope_group";
+pub const ATTR_DELEGATED_BY: &str = "delegated_by";
+pub const ATTR_DELEGATED_ROLE_TEMPLATE: &str = "delegated_role_template";
 pub const ATTR_ACP_SEARCH_ATTR: &str = "acp_search_attr";
 pub const ATTR_ACP_TARGET_SCOPE: &str = "acp_targetscope";
+pub const ATTR_ACP_TIME_RESTRICTION_START: &str = "acp_time_restriction_start";
+pub const ATTR_ACP_TIME_RESTRICTION_END: &str = "acp_time_restriction_end";
+pub const ATTR_ACP_SCOPE_FILTER: &str = "acp_scope_filter";
 pub const ATTR_API_TOKEN_SESSION: &str = "api_token_session";
 pub const ATTR_APPLICATION_PASSWORD: &str = "application_password";
 pub const ATTR_APPLICATION_URL: &str = "application_url";
@@ -152,10 +163,13 @@ pub const ATTR_LINKEDGROUP: &str = "linked_group";
 pub const ATTR_LOGINSHELL: &str = "loginshell";
 pub const ATTR_MAIL: &str = "mail";
 pub const ATTR_MAIL_DESTINATION: &str = "mail_destination";
+pub const ATTR_MAX_GRANT_DURATION: &str = "max_grant_duration";
 pub const ATTR_MAY: &str = "may";
 pub const ATTR_MEMBER: &str = "member";
 pub const ATTR_MEMBER_CREATE_ONCE: &str = "member_create_once";
 pub const ATTR_MEMBEROF: &str = "memberof";
+pub const ATTR_MEMBER_VALID_FROM: &str = "member_valid_from";
+pub const ATTR_MEMBER_VALID_UNTIL: &str = "member_valid_until";
 pub const ATTR_MESSAGE_TEMPLATE: &str = "message_template";
 pub const ATTR_MULTIVALUE: &str = "multivalue";
 pub const ATTR_MUST: &str = "must";
@@ -194,6 +208,16 @@ pub const ATTR_OAUTH2_ACCOUNT_CREDENTIAL_UUID: &str = "oauth2_account_credential
 pub const ATTR_OAUTH2_ACCOUNT_PROVIDER: &str = "oauth2_account_provider";
 pub const ATTR_OAUTH2_ACCOUNT_UNIQUE_USER_ID: &str = "oauth2_account_unique_user_id";
 pub const ATTR_OAUTH2_CONSENT_PROMPT_ENABLE: &str = "oauth2_consent_prompt_enable";
+pub const ATTR_OAUTH2_ISSUER: &str = "oauth2_issuer";
+pub const ATTR_OAUTH2_JWKS_URI: &str = "oauth2_jwks_uri";
+pub const ATTR_OAUTH2_USERINFO_ENDPOINT: &str = "oauth2_userinfo_endpoint";
+pub const ATTR_OAUTH2_EMAIL_DOMAIN: &str = "oauth2_email_domain";
+pub const ATTR_OAUTH2_DISPLAY_NAME: &str = "oauth2_display_name";
+pub const ATTR_OAUTH2_AUTO_DISCOVERY: &str = "oauth2_auto_discovery";
+pub const ATTR_OAUTH2_LINK_LOCAL_ACCOUNT: &str = "oauth2_link_local_account";
+pub const ATTR_OAUTH2_LINK_POLICY: &str = "oauth2_link_policy";
+pub const ATTR_OAUTH2_IDP_INITIATED_ENABLED: &str = "oauth2_idp_initiated_enabled";
+pub const ATTR_OAUTH2_FEDERATION_ID: &str = "oauth2_federation_id";
 pub const ATTR_OBJECTCLASS: &str = "objectclass";
 pub const ATTR_OTHER_NO_INDEX: &str = "other-no-index";
 pub const ATTR_PASSKEYS: &str = "passkeys";
@@ -221,6 +245,22 @@ pub const ATTR_SUDOHOST: &str = "sudohost";
 pub const ATTR_SUPPLEMENTS: &str = "supplements";
 pub const ATTR_LDAP_SSHPUBLICKEY: &str = "sshpublickey";
 pub const ATTR_S256: &str = "s256";
+pub const ATTR_APPROVAL_POLICY_NAME: &str = "approval_policy_name";
+pub const ATTR_APPROVAL_OPERATION_TYPE: &str = "approval_operation_type";
+pub const ATTR_APPROVAL_PATTERN: &str = "approval_pattern";
+pub const ATTR_APPROVER: &str = "approver";
+pub const ATTR_BACKUP_APPROVER: &str = "backup_approver";
+pub const ATTR_APPROVAL_TIMEOUT: &str = "approval_timeout";
+pub const ATTR_ESCALATION_TIMEOUT: &str = "escalation_timeout";
+pub const ATTR_APPROVAL_POLICY_ENABLED: &str = "approval_policy_enabled";
+pub const ATTR_APPROVAL_REQUEST_POLICY: &str = "approval_request_policy";
+pub const ATTR_APPROVAL_TARGET: &str = "approval_target";
+pub const ATTR_APPROVAL_REQUESTOR: &str = "approval_requestor";
+pub const ATTR_APPROVAL_STATE: &str = "approval_state";
+pub const ATTR_APPROVAL_DECISION: &str = "approval_decision";
+pub const ATTR_APPROVAL_ESCALATION_LEVEL: &str = "approval_escalation_level";
+pub const ATTR_APPROVAL_EXPIRES: &str = "approval_expires";
+pub const ATTR_APPROVAL_OPERATION_DETAILS: &str = "approval_operation_details";
 pub const ATTR_SSH_PUBLICKEY: &str = "ssh_publickey";
 pub const ATTR_SYNC_ALLOWED: &str = "sync_allowed";
 pub const ATTR_SYNC_CLASS: &str = "sync_class";
@@ -237,6 +277,7 @@ pub const ATTR_SYSTEMMAY: &str = "systemmay";
 pub const ATTR_SYSTEMMUST: &str = "systemmust";
 pub const ATTR_SYSTEMSUPPLEMENTS: &str = "systemsupplements";
 pub const ATTR_TERM: &str = "term";
+pub const ATTR_TIME_BOUNDED_MEMBER: &str = "time_bounded_member";
 pub const ATTR_UID: &str = "uid";
 pub const ATTR_UIDNUMBER: &str = "uidnumber";
 pub const ATTR_UNIQUE: &str = "unique";
@@ -302,7 +343,7 @@ pub const TEST_ENTRYCLASS_TEST_CLASS: &str = "testclass";
 pub const KSESSIONID: &str = "X-KANIDM-AUTH-SESSION-ID";
 /// HTTP Header containing the backend operation ID
 pub const KOPID: &str = "X-KANIDM-OPID";
-/// HTTP Header containing the Kanidm server version
+/// HTTP Header containing the Kubidm server version
 pub const KVERSION: &str = "X-KANIDM-VERSION";
 
 /// X-Forwarded-For header
@@ -323,6 +364,9 @@ pub const ACCESS_CONTROL_RECEIVER_ENTRY_MANAGER: &str = "access_control_receiver
 pub const ACCESS_CONTROL_RECEIVER_GROUP: &str = "access_control_receiver_group";
 pub const ACCESS_CONTROL_SEARCH: &str = "access_control_search";
 pub const ACCESS_CONTROL_TARGET_SCOPE: &str = "access_control_target_scope";
+pub const ACCESS_CONTROL_RECEIVER_DELEGATED: &str = "access_control_receiver_delegated";
+pub const ACCESS_CONTROL_TARGET_DELEGATED_SCOPE: &str = "access_control_target_delegated_scope";
+pub const DELEGATED_ROLE: &str = "delegated_role";
 
 /// Entryclass
 pub const ENTRYCLASS_BUILTIN: &str = "builtin";
@@ -345,6 +389,8 @@ pub const ENTRYCLASS_MEMBER_OF: &str = "memberof";
 pub const ENTRYCLASS_MEMORIAL: &str = "memorial";
 pub const ENTRYCLASS_OAUTH2_ACCOUNT: &str = "oauth2_account";
 pub const ENTRYCLASS_OAUTH2_CLIENT: &str = "oauth2_client";
+pub const ENTRYCLASS_OAUTH2_FEDERATION: &str = "oauth2_federation";
+pub const ENTRYCLASS_OAUTH2_LINKED_ACCOUNT: &str = "oauth2_linked_account";
 pub const ENTRYCLASS_OBJECT: &str = "object";
 pub const ENTRYCLASS_ORG_PERSON: &str = "orgperson";
 pub const ENTRYCLASS_OUTBOUND_MESSAGE: &str = "outbound_message";
@@ -360,6 +406,7 @@ pub const ENTRYCLASS_SYSTEM: &str = "system";
 pub const ENTRYCLASS_SYSTEM_CONFIG: &str = "system_config";
 pub const ENTRYCLASS_SYSTEM_INFO: &str = "system_info";
 pub const ENTRYCLASS_TOMBSTONE: &str = "tombstone";
+pub const ENTRYCLASS_TIME_BOUNDED_GRANT: &str = "time_bounded_grant";
 pub const ENTRYCLASS_USER: &str = "user";
 pub const ENTRYCLASS_KEY_PROVIDER: &str = "key_provider";
 pub const ENTRYCLASS_KEY_PROVIDER_INTERNAL: &str = "key_provider_internal";
@@ -370,3 +417,5 @@ pub const ENTRYCLASS_KEY_OBJECT_JWT_HS256: &str = "key_object_jwt_hs256";
 pub const ENTRYCLASS_KEY_OBJECT_JWT_RS256: &str = "key_object_jwt_rs256";
 pub const ENTRYCLASS_KEY_OBJECT_JWE_A128GCM: &str = "key_object_jwe_a128gcm";
 pub const ENTRYCLASS_KEY_OBJECT_INTERNAL: &str = "key_object_internal";
+pub const ENTRYCLASS_APPROVAL_POLICY: &str = "approval_policy";
+pub const ENTRYCLASS_APPROVAL_REQUEST: &str = "approval_request";

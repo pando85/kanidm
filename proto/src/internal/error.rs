@@ -154,7 +154,7 @@ pub enum OperationError {
     AU0007UserAuthTokenInvalid,
     AU0008ClientAuthInfoPrevalidation,
 
-    // Kanidm Generic Errors
+    // Kubidm Generic Errors
     KG001TaskTimeout,
     KG002TaskCommFailure,
     KG003CacheClearFailed,
@@ -625,22 +625,343 @@ impl OperationError {
     }
 }
 
-#[test]
-fn test_operationerror_as_nice_string() {
-    assert_eq!(
-        OperationError::CU0001WebauthnAttestationNotTrusted.to_string(),
-        "CU0001WebauthnAttestationNotTrusted".to_string()
-    );
-    assert_eq!(
-        OperationError::CU0003WebauthnUserNotVerified.to_string(),
-        "CU0003WebauthnUserNotVerified - User Verification bit not set while registering credential, you may need to configure a PIN on this device.".to_string()
-    );
-    assert_eq!(
-        OperationError::SessionExpired.to_string(),
-        "SessionExpired".to_string()
-    );
-    assert_eq!(
-        OperationError::CorruptedEntry(12345).to_string(),
-        "CorruptedEntry(12345)".to_string()
-    );
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::attribute::Attribute;
+
+    #[test]
+    fn test_operationerror_as_nice_string() {
+        assert_eq!(
+            OperationError::CU0001WebauthnAttestationNotTrusted.to_string(),
+            "CU0001WebauthnAttestationNotTrusted".to_string()
+        );
+        assert_eq!(
+            OperationError::CU0003WebauthnUserNotVerified.to_string(),
+            "CU0003WebauthnUserNotVerified - User Verification bit not set while registering credential, you may need to configure a PIN on this device.".to_string()
+        );
+        assert_eq!(
+            OperationError::SessionExpired.to_string(),
+            "SessionExpired".to_string()
+        );
+        assert_eq!(
+            OperationError::CorruptedEntry(12345).to_string(),
+            "CorruptedEntry(12345)".to_string()
+        );
+    }
+
+    #[test]
+    fn test_operationerror_display_key_variants() {
+        assert_eq!(
+            OperationError::InvalidState.to_string(),
+            "InvalidState".to_string()
+        );
+        assert_eq!(OperationError::Backend.to_string(), "Backend".to_string());
+        assert_eq!(
+            OperationError::AccessDenied.to_string(),
+            "AccessDenied".to_string()
+        );
+        assert_eq!(
+            OperationError::NotAuthenticated.to_string(),
+            "NotAuthenticated".to_string()
+        );
+        assert_eq!(
+            OperationError::NotAuthorised.to_string(),
+            "NotAuthorised".to_string()
+        );
+        assert_eq!(
+            OperationError::NoMatchingEntries.to_string(),
+            "NoMatchingEntries".to_string()
+        );
+        assert_eq!(
+            OperationError::ResourceLimit.to_string(),
+            "ResourceLimit".to_string()
+        );
+        assert_eq!(
+            OperationError::CryptographyError.to_string(),
+            "CryptographyError".to_string()
+        );
+        assert_eq!(OperationError::Webauthn.to_string(), "Webauthn".to_string());
+        assert_eq!(
+            OperationError::QueueDisconnected.to_string(),
+            "QueueDisconnected".to_string()
+        );
+        assert_eq!(
+            OperationError::FilterGeneration.to_string(),
+            "FilterGeneration".to_string()
+        );
+        assert_eq!(
+            OperationError::FilterParseError.to_string(),
+            "FilterParseError".to_string()
+        );
+    }
+
+    #[test]
+    fn test_operationerror_display_with_message() {
+        assert_eq!(
+            OperationError::InvalidAccountState("locked".to_string()).to_string(),
+            "InvalidAccountState(\"locked\") - Invalid account state: locked".to_string()
+        );
+        assert_eq!(
+            OperationError::MissingClass("account".to_string()).to_string(),
+            "MissingClass(\"account\") - Missing class: account".to_string()
+        );
+        assert!(OperationError::InvalidLabel.to_string().contains("invalid"));
+        assert!(OperationError::DuplicateLabel
+            .to_string()
+            .contains("already in use"));
+        assert!(OperationError::DuplicateKey
+            .to_string()
+            .contains("already exists"));
+        assert!(OperationError::DatabaseLockAcquisitionTimeout
+            .to_string()
+            .contains("database lock"));
+        assert!(OperationError::ReferenceLoop
+            .to_string()
+            .contains("reference loop"));
+    }
+
+    #[test]
+    fn test_operationerror_display_with_payload() {
+        assert_eq!(
+            OperationError::CorruptedIndex("idx".to_string()).to_string(),
+            "CorruptedIndex(\"idx\")".to_string()
+        );
+        assert_eq!(
+            OperationError::InvalidAttributeName("bad".to_string()).to_string(),
+            "InvalidAttributeName(\"bad\")".to_string()
+        );
+        assert_eq!(
+            OperationError::InvalidAttribute("bad".to_string()).to_string(),
+            "InvalidAttribute(\"bad\")".to_string()
+        );
+        assert_eq!(
+            OperationError::InvalidAcpState("test".to_string()).to_string(),
+            "InvalidAcpState(\"test\")".to_string()
+        );
+        assert_eq!(
+            OperationError::InvalidSchemaState("test".to_string()).to_string(),
+            "InvalidSchemaState(\"test\")".to_string()
+        );
+    }
+
+    #[test]
+    fn test_schemaerror_debug_variants() {
+        assert!(format!("{:?}", SchemaError::NotImplemented).contains("NotImplemented"));
+        assert!(format!("{:?}", SchemaError::NoClassFound).contains("NoClassFound"));
+        assert!(format!("{:?}", SchemaError::InvalidClass(vec!["foo".into()])).contains("foo"));
+        assert!(format!(
+            "{:?}",
+            SchemaError::MissingMustAttribute(vec![Attribute::Account])
+        )
+        .contains("Account"));
+        assert!(format!("{:?}", SchemaError::InvalidAttribute("bar".into())).contains("bar"));
+        assert!(format!("{:?}", SchemaError::InvalidAttributeSyntax("baz".into())).contains("baz"));
+        assert!(format!("{:?}", SchemaError::AttributeNotValidForClass("x".into())).contains("x"));
+        assert!(format!(
+            "{:?}",
+            SchemaError::SupplementsNotSatisfied(vec!["a".into()])
+        )
+        .contains("a"));
+        assert!(format!("{:?}", SchemaError::ExcludesNotSatisfied(vec!["b".into()])).contains("b"));
+        assert!(format!("{:?}", SchemaError::EmptyFilter).contains("EmptyFilter"));
+        assert!(format!("{:?}", SchemaError::Corrupted).contains("Corrupted"));
+        assert!(format!("{:?}", SchemaError::PhantomAttribute("p".into())).contains("p"));
+    }
+
+    #[test]
+    fn test_schemaerror_serde_roundtrip() {
+        let original = SchemaError::MissingMustAttribute(vec![Attribute::Account, Attribute::Name]);
+        let json = serde_json::to_string(&original).unwrap();
+        let recovered: SchemaError = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, recovered);
+
+        let original = SchemaError::InvalidClass(vec!["foo".into(), "bar".into()]);
+        let json = serde_json::to_string(&original).unwrap();
+        let recovered: SchemaError = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, recovered);
+
+        let original = SchemaError::NotImplemented;
+        let json = serde_json::to_string(&original).unwrap();
+        let recovered: SchemaError = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, recovered);
+
+        let original = SchemaError::Corrupted;
+        let json = serde_json::to_string(&original).unwrap();
+        let recovered: SchemaError = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, recovered);
+    }
+
+    #[test]
+    fn test_pluginerror_debug_variants() {
+        assert!(format!("{:?}", PluginError::Base("err".into())).contains("err"));
+        assert!(format!("{:?}", PluginError::ReferentialIntegrity("ref".into())).contains("ref"));
+        assert!(format!("{:?}", PluginError::CredImport("cred".into())).contains("cred"));
+        assert!(format!("{:?}", PluginError::Oauth2Secrets).contains("Oauth2Secrets"));
+    }
+
+    #[test]
+    fn test_pluginerror_serde_roundtrip() {
+        let original = PluginError::Base("some error".into());
+        let json = serde_json::to_string(&original).unwrap();
+        let recovered: PluginError = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, recovered);
+
+        let original = PluginError::Oauth2Secrets;
+        let json = serde_json::to_string(&original).unwrap();
+        let recovered: PluginError = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, recovered);
+    }
+
+    #[test]
+    fn test_consistencyerror_debug_variants() {
+        assert!(format!("{:?}", ConsistencyError::Unknown).contains("Unknown"));
+        assert!(format!(
+            "{:?}",
+            ConsistencyError::SchemaClassMissingAttribute("class".into(), "attr".into())
+        )
+        .contains("class"));
+        assert!(
+            format!("{:?}", ConsistencyError::SchemaUuidNotUnique(Uuid::nil()))
+                .contains("00000000")
+        );
+        assert!(format!("{:?}", ConsistencyError::QueryServerSearchFailure)
+            .contains("QueryServerSearchFailure"));
+        assert!(format!("{:?}", ConsistencyError::EntryUuidCorrupt(42)).contains("42"));
+        assert!(format!("{:?}", ConsistencyError::UuidIndexCorrupt("idx".into())).contains("idx"));
+        assert!(format!("{:?}", ConsistencyError::RefintNotUpheld(99)).contains("99"));
+        assert!(format!("{:?}", ConsistencyError::MemberOfInvalid(7)).contains("7"));
+        assert!(
+            format!("{:?}", ConsistencyError::InvalidAttributeType("ty".into())).contains("ty")
+        );
+        assert!(format!("{:?}", ConsistencyError::DuplicateUniqueAttribute)
+            .contains("DuplicateUniqueAttribute"));
+        assert!(format!("{:?}", ConsistencyError::InvalidSpn(3)).contains("3"));
+        assert!(format!("{:?}", ConsistencyError::SqliteIntegrityFailure)
+            .contains("SqliteIntegrityFailure"));
+        assert!(format!("{:?}", ConsistencyError::BackendAllIdsSync).contains("BackendAllIdsSync"));
+        assert!(format!("{:?}", ConsistencyError::BackendIndexSync).contains("BackendIndexSync"));
+        assert!(format!("{:?}", ConsistencyError::RuvInconsistent("ruv".into())).contains("ruv"));
+    }
+
+    #[test]
+    fn test_consistencyerror_serde_roundtrip() {
+        let original = ConsistencyError::Unknown;
+        let json = serde_json::to_string(&original).unwrap();
+        let recovered: ConsistencyError = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, recovered);
+
+        let original = ConsistencyError::EntryUuidCorrupt(12345);
+        let json = serde_json::to_string(&original).unwrap();
+        let recovered: ConsistencyError = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, recovered);
+
+        let uuid = Uuid::new_v4();
+        let original = ConsistencyError::SchemaUuidNotUnique(uuid);
+        let json = serde_json::to_string(&original).unwrap();
+        let recovered: ConsistencyError = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, recovered);
+
+        let original = ConsistencyError::KeyProviderUuidMissing { key_object: uuid };
+        let json = serde_json::to_string(&original).unwrap();
+        let recovered: ConsistencyError = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, recovered);
+
+        let original = ConsistencyError::KeyProviderNotFound {
+            key_object: uuid,
+            provider: Uuid::new_v4(),
+        };
+        let json = serde_json::to_string(&original).unwrap();
+        let recovered: ConsistencyError = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, recovered);
+    }
+
+    #[test]
+    fn test_operationerror_serde_roundtrip() {
+        let original = OperationError::SessionExpired;
+        let json = serde_json::to_string(&original).unwrap();
+        let recovered: OperationError = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, recovered);
+
+        let original = OperationError::AccessDenied;
+        let json = serde_json::to_string(&original).unwrap();
+        let recovered: OperationError = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, recovered);
+
+        let original = OperationError::CorruptedEntry(42);
+        let json = serde_json::to_string(&original).unwrap();
+        let recovered: OperationError = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, recovered);
+
+        let original = OperationError::SchemaViolation(SchemaError::NotImplemented);
+        let json = serde_json::to_string(&original).unwrap();
+        let recovered: OperationError = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, recovered);
+
+        let original = OperationError::Plugin(PluginError::Oauth2Secrets);
+        let json = serde_json::to_string(&original).unwrap();
+        let recovered: OperationError = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, recovered);
+
+        let original = OperationError::ConsistencyError(vec![ConsistencyError::Unknown]);
+        let json = serde_json::to_string(&original).unwrap();
+        let recovered: OperationError = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, recovered);
+
+        let original = OperationError::InvalidAttributeName("test".into());
+        let json = serde_json::to_string(&original).unwrap();
+        let recovered: OperationError = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, recovered);
+
+        let original = OperationError::MissingAttribute(Attribute::Account);
+        let json = serde_json::to_string(&original).unwrap();
+        let recovered: OperationError = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, recovered);
+
+        let original = OperationError::ResourceLimit;
+        let json = serde_json::to_string(&original).unwrap();
+        let recovered: OperationError = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, recovered);
+    }
+
+    #[test]
+    fn test_operationerror_partialeq_same_variant() {
+        assert_eq!(
+            OperationError::SessionExpired,
+            OperationError::SessionExpired
+        );
+        assert_eq!(OperationError::AccessDenied, OperationError::AccessDenied);
+        assert_eq!(OperationError::InvalidState, OperationError::InvalidState);
+        assert_eq!(
+            OperationError::CorruptedEntry(1),
+            OperationError::CorruptedEntry(2)
+        );
+        assert_eq!(
+            OperationError::CorruptedIndex("a".into()),
+            OperationError::CorruptedIndex("b".into())
+        );
+        assert_eq!(
+            OperationError::SchemaViolation(SchemaError::NotImplemented),
+            OperationError::SchemaViolation(SchemaError::Corrupted)
+        );
+    }
+
+    #[test]
+    fn test_operationerror_partialeq_different_variant() {
+        assert_ne!(OperationError::SessionExpired, OperationError::AccessDenied);
+        assert_ne!(OperationError::Backend, OperationError::InvalidState);
+        assert_ne!(
+            OperationError::NotAuthenticated,
+            OperationError::NotAuthorised
+        );
+        assert_ne!(
+            OperationError::ResourceLimit,
+            OperationError::CryptographyError
+        );
+        assert_ne!(OperationError::Webauthn, OperationError::QueueDisconnected);
+        assert_ne!(
+            OperationError::FilterGeneration,
+            OperationError::FilterParseError
+        );
+    }
 }

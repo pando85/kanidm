@@ -1,10 +1,10 @@
-use crate::{ClientError, KanidmClient};
-use kanidm_proto::scim_v1::{
+use crate::{ClientError, KubidmClient};
+use kubidm_proto::scim_v1::{
     client::{ScimListSchemaAttribute, ScimListSchemaClass},
     ScimEntryGetQuery,
 };
 
-impl KanidmClient {
+impl KubidmClient {
     pub async fn scim_schema_class_list(
         &self,
         query: Option<ScimEntryGetQuery>,

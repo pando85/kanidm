@@ -510,7 +510,7 @@ wheel:x:481:admin,testuser
 
     #[test]
     fn test_parse_group_freebsd() {
-        let group_data = r#"wheel:*:0:root,testuser,kanidm"#;
+        let group_data = r#"wheel:*:0:root,testuser,kubidm"#;
         let groups = parse_etc_group(group_data.as_bytes()).expect("Failed to parse groups");
         assert_eq!(
             groups[0],
@@ -521,14 +521,14 @@ wheel:x:481:admin,testuser
                 members: vec![
                     "root".to_string(),
                     "testuser".to_string(),
-                    "kanidm".to_string()
+                    "kubidm".to_string()
                 ]
             }
         );
         // empty group
         let group_data = r#"
         # $FreeBSD$
-# 
+#
 wheel:*:0:"#;
         let groups = parse_etc_group(group_data.as_bytes()).expect("Failed to parse groups");
         assert_eq!(

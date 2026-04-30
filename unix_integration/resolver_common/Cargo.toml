@@ -14,8 +14,8 @@ repository = { workspace = true }
 [features]
 default = ["unix"]
 unix = []
-selinux = ["sparkle_unix_common/selinux"]
-tpm = ["kanidm-hsm-crypto/tpm", "sparkle_unix_common/tpm"]
+selinux = ["kubidm_unix_common/selinux"]
+tpm = ["kanidm-hsm-crypto/tpm", "kubidm_unix_common/tpm"]
 dhat-heap = ["dep:dhat"]
 dhat-ad-hoc = ["dep:dhat"]
 
@@ -34,12 +34,12 @@ futures = { workspace = true }
 hashbrown = { workspace = true }
 libc = { workspace = true }
 lru = { workspace = true }
-kanidm_client = { workspace = true }
-kanidm_proto = { workspace = true }
+kubidm_client = { workspace = true }
+kubidm_proto = { workspace = true }
 kanidm-hsm-crypto = { workspace = true }
-kanidm_lib_crypto = { workspace = true }
-kanidm_lib_file_permissions = { workspace = true }
-sparkle_unix_common = { workspace = true }
+kubidm_lib_crypto = { workspace = true }
+kubidm_lib_file_permissions = { workspace = true }
+kubidm_unix_common = { workspace = true }
 notify-debouncer-full = { workspace = true }
 rand = { workspace = true }
 rusqlite = { workspace = true }
@@ -69,17 +69,17 @@ prctl = { workspace = true }
 procfs = { workspace = true }
 
 [target.'cfg(not(target_family = "windows"))'.dependencies]
-kanidm_utils_users = { workspace = true }
+kubidm_utils_users = { workspace = true }
 
 [dev-dependencies]
-kanidmd_core = { workspace = true }
-kanidmd_testkit = { workspace = true }
+kubidmd_core = { workspace = true }
+kubidmd_testkit = { workspace = true }
 tempfile = { workspace = true }
 
 [build-dependencies]
 clap = { workspace = true, features = ["derive"] }
 clap_complete = { workspace = true }
-kanidm_build_profiles = { workspace = true }
+kubidm_build_profiles = { workspace = true }
 
 [package.metadata.cargo-machete]
-ignored = ["kanidm_build_profiles", "clap_complete"]
+ignored = ["kubidm_build_profiles", "clap_complete"]

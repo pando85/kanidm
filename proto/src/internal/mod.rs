@@ -1,4 +1,4 @@
-//! Kanidm internal elements
+//! Kubidm internal elements
 //!
 //! Items defined in this module *may* change between releases without notice.
 
@@ -15,13 +15,17 @@ use uuid::Uuid;
 
 use num_enum::TryFromPrimitive;
 
+mod authorization;
 mod credupdate;
 mod error;
+mod pip;
 mod raw;
 mod token;
 
+pub use self::authorization::*;
 pub use self::credupdate::*;
 pub use self::error::*;
+pub use self::pip::*;
 pub use self::raw::*;
 pub use self::token::*;
 
@@ -120,7 +124,7 @@ pub enum ImageType {
 impl TryFrom<&str> for ImageType {
     type Error = &'static str;
     /// ```
-    /// use kanidm_proto::internal::ImageType;
+    /// use kubidm_proto::internal::ImageType;
     /// assert_eq!(ImageType::try_from("png").unwrap(), ImageType::Png);
     /// assert!(ImageType::try_from("krabs").is_err());
     /// ```
@@ -279,5 +283,5 @@ fn test_fstype_deser() {
     assert_eq!(FsType::try_from("zfs"), Ok(FsType::Zfs));
     assert_eq!(FsType::try_from("generic"), Ok(FsType::Generic));
     assert_eq!(FsType::try_from(" "), Err(()));
-    assert_eq!(FsType::try_from("crab🦀"), Err(()));
+    assert_eq!(FsType::try_from("crab"), Err(()));
 }

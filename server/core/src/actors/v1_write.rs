@@ -1,19 +1,23 @@
 use std::iter;
 
 use compact_jwt::JweCompact;
-use kanidm_proto::internal::{
+use kubidm_proto::internal::{
     CUIntentToken, CUSessionToken, CUStatus, CreateRequest, DeleteRequest, ImageValue,
     Modify as ProtoModify, ModifyList as ProtoModifyList, ModifyRequest,
     Oauth2ClaimMapJoin as ProtoOauth2ClaimMapJoin, OperationError,
 };
+<<<<<<< HEAD
 use kanidm_proto::v1::{AccountUnixExtend, Entry as ProtoEntry, GroupUnixExtend};
 use kanidmd_lib::valueset::image::ImageValueThings;
+=======
+use kubidm_proto::v1::{AccountUnixExtend, Entry as ProtoEntry, GroupUnixExtend};
+>>>>>>> master
 use std::str::FromStr;
 use time::OffsetDateTime;
 use tracing::{info, instrument, trace};
 use uuid::Uuid;
 
-use kanidmd_lib::{
+use kubidmd_lib::{
     event::{CreateEvent, DeleteEvent, ModifyEvent, ReviveRecycledEvent},
     filter::{Filter, FilterInvalid},
     idm::account::DestroySessionTokenEvent,
@@ -33,7 +37,7 @@ use kanidmd_lib::{
     value::{OauthClaimMapJoin, PartialValue, Value},
 };
 
-use kanidmd_lib::prelude::*;
+use kubidmd_lib::prelude::*;
 
 #[cfg(feature = "dev-oauth2-device-flow")]
 use std::collections::BTreeSet;
@@ -1788,7 +1792,7 @@ impl QueryServerWriteV1 {
         client_id: &str,
         scope: &Option<BTreeSet<String>>,
         eventid: Uuid,
-    ) -> Result<kanidm_proto::oauth2::DeviceAuthorizationResponse, Oauth2Error> {
+    ) -> Result<kubidm_proto::oauth2::DeviceAuthorizationResponse, Oauth2Error> {
         let ct = duration_from_epoch_now();
         let mut idms_prox_write = self
             .idms
@@ -1801,5 +1805,148 @@ impl QueryServerWriteV1 {
                 idms_prox_write.commit().map_err(Oauth2Error::ServerError)?;
                 Ok(res)
             })
+    }
+
+    #[instrument(
+        level = "info",
+        name = "approval_policy_create",
+        skip_all,
+        fields(uuid = ?eventid)
+    )]
+    pub async fn handle_approval_policy_create(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        request: kubidm_proto::v1::ApprovalPolicyCreateRequest,
+        eventid: Uuid,
+    ) -> Result<(), OperationError> {
+        let ct = duration_from_epoch_now();
+        let mut idms_prox_write = self.idms.proxy_write(ct).await?;
+        let ident = idms_prox_write
+            .validate_client_auth_info_to_ident(client_auth_info, ct)
+            .map_err(|e| {
+                error!(?e, "Invalid identity");
+                e
+            })?;
+
+        idms_prox_write
+            .qs_write
+            .approval_policy_create(&ident, &request)
+            .and_then(|_| idms_prox_write.commit())
+    }
+
+    #[instrument(
+        level = "info",
+        name = "approval_policy_delete",
+        skip_all,
+        fields(uuid = ?eventid)
+    )]
+    pub async fn handle_approval_policy_delete(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        name: String,
+        eventid: Uuid,
+    ) -> Result<(), OperationError> {
+        let ct = duration_from_epoch_now();
+        let mut idms_prox_write = self.idms.proxy_write(ct).await?;
+        let ident = idms_prox_write
+            .validate_client_auth_info_to_ident(client_auth_info, ct)
+            .map_err(|e| {
+                error!(?e, "Invalid identity");
+                e
+            })?;
+
+        idms_prox_write
+            .qs_write
+            .approval_policy_delete(&ident, &name)
+            .and_then(|_| idms_prox_write.commit())
+    }
+
+    #[instrument(
+        level = "info",
+        name = "approval_policy_enable",
+        skip_all,
+        fields(uuid = ?eventid)
+    )]
+    pub async fn handle_approval_policy_enable(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        name: String,
+        enable: bool,
+        eventid: Uuid,
+    ) -> Result<(), OperationError> {
+        let ct = duration_from_epoch_now();
+        let mut idms_prox_write = self.idms.proxy_write(ct).await?;
+        let ident = idms_prox_write
+            .validate_client_auth_info_to_ident(client_auth_info, ct)
+            .map_err(|e| {
+                error!(?e, "Invalid identity");
+                e
+            })?;
+
+        idms_prox_write
+            .qs_write
+            .approval_policy_enable(&ident, &name, enable)
+            .and_then(|_| idms_prox_write.commit())
+    }
+
+    #[instrument(
+        level = "info",
+        name = "approval_request_decision",
+        skip_all,
+        fields(uuid = ?eventid)
+    )]
+    pub async fn handle_approval_request_decision(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        uuid: String,
+        request: kubidm_proto::v1::ApprovalDecisionRequest,
+        eventid: Uuid,
+    ) -> Result<(), OperationError> {
+        let ct = duration_from_epoch_now();
+        let mut idms_prox_write = self.idms.proxy_write(ct).await?;
+        let ident = idms_prox_write
+            .validate_client_auth_info_to_ident(client_auth_info, ct)
+            .map_err(|e| {
+                error!(?e, "Invalid identity");
+                e
+            })?;
+
+        let request_uuid =
+            Uuid::parse_str(&uuid).map_err(|_| OperationError::InvalidRequestState)?;
+
+        idms_prox_write
+            .qs_write
+            .approval_request_decision(&ident, request_uuid, request, ct)
+            .and_then(|_| idms_prox_write.commit())
+    }
+
+    #[instrument(
+        level = "info",
+        name = "approval_request_cancel",
+        skip_all,
+        fields(uuid = ?eventid)
+    )]
+    pub async fn handle_approval_request_cancel(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        uuid: String,
+        eventid: Uuid,
+    ) -> Result<(), OperationError> {
+        let ct = duration_from_epoch_now();
+        let mut idms_prox_write = self.idms.proxy_write(ct).await?;
+        let ident = idms_prox_write
+            .validate_client_auth_info_to_ident(client_auth_info, ct)
+            .map_err(|e| {
+                error!(?e, "Invalid identity");
+                e
+            })?;
+
+        let request_uuid =
+            Uuid::parse_str(&uuid).map_err(|_| OperationError::InvalidRequestState)?;
+
+        idms_prox_write
+            .qs_write
+            .approval_request_cancel(&ident, request_uuid)
+            .and_then(|_| idms_prox_write.commit())
     }
 }

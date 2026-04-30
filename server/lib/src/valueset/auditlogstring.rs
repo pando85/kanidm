@@ -3,7 +3,7 @@ use crate::repl::cid::Cid;
 use crate::schema::SchemaAttribute;
 use crate::valueset::ScimResolveStatus;
 use crate::valueset::{DbValueSetV2, ValueSet};
-use kanidm_proto::scim_v1::server::ScimAuditString;
+use kubidm_proto::scim_v1::server::ScimAuditString;
 use std::collections::BTreeMap;
 use time::OffsetDateTime;
 
@@ -111,7 +111,7 @@ impl ValueSetT for ValueSetAuditLogString {
     }
 
     fn to_scim_value(&self) -> Option<ScimResolveStatus> {
-        Some(ScimResolveStatus::Resolved(ScimValueKanidm::from(
+        Some(ScimResolveStatus::Resolved(ScimValueKubidm::from(
             self.map
                 .iter()
                 .map(|(cid, strdata)| {
@@ -401,5 +401,95 @@ mod tests {
 ]
 "#;
         crate::valueset::scim_json_reflexive(&vs, data);
+    }
+
+    #[test]
+    fn test_valueset_auditlogstring_new() {
+        let cid = Cid::new_zero();
+        let vs: ValueSet = ValueSetAuditLogString::new((cid, "test log".to_string()));
+        assert_eq!(vs.len(), 1);
+    }
+
+    #[test]
+    fn test_valueset_auditlogstring_insert_checked() {
+        let cid0 = Cid::new_count(0);
+        let mut vs: ValueSet = ValueSetAuditLogString::new((cid0, "first".to_string()));
+        assert!(vs
+            .insert_checked(Value::AuditLogString(
+                Cid::new_count(1),
+                "second".to_string()
+            ))
+            .unwrap());
+        assert!(!vs
+            .insert_checked(Value::AuditLogString(
+                Cid::new_count(0),
+                "updated".to_string()
+            ))
+            .unwrap());
+        assert_eq!(vs.len(), 2);
+    }
+
+    #[test]
+    fn test_valueset_auditlogstring_equal() {
+        let vs1: ValueSet = ValueSetAuditLogString::new((Cid::new_count(0), "same".to_string()));
+        let vs2: ValueSet = ValueSetAuditLogString::new((Cid::new_count(0), "same".to_string()));
+        assert!(vs1.equal(&vs2));
+    }
+
+    #[test]
+    fn test_valueset_auditlogstring_not_equal() {
+        let vs1: ValueSet = ValueSetAuditLogString::new((Cid::new_count(0), "alpha".to_string()));
+        let vs2: ValueSet = ValueSetAuditLogString::new((Cid::new_count(0), "beta".to_string()));
+        assert!(!vs1.equal(&vs2));
+    }
+
+    #[test]
+    fn test_valueset_auditlogstring_clear() {
+        let mut vs: ValueSet =
+            ValueSetAuditLogString::new((Cid::new_count(0), "entry".to_string()));
+        assert_eq!(vs.len(), 1);
+        vs.clear();
+        assert_eq!(vs.len(), 0);
+    }
+
+    #[test]
+    fn test_valueset_auditlogstring_contains_utf8() {
+        let vs: ValueSet = ValueSetAuditLogString::new((Cid::new_count(0), "hello".to_string()));
+        assert!(vs.contains(&crate::prelude::PartialValue::new_utf8s("hello")));
+        assert!(!vs.contains(&crate::prelude::PartialValue::new_utf8s("world")));
+    }
+
+    #[test]
+    fn test_valueset_auditlogstring_contains_cid() {
+        let cid = Cid::new_count(5);
+        let vs: ValueSet = ValueSetAuditLogString::new((cid.clone(), "entry".to_string()));
+        assert!(vs.contains(&crate::prelude::PartialValue::Cid(cid)));
+    }
+
+    #[test]
+    fn test_valueset_auditlogstring_dbv2_roundtrip() {
+        let mut vs: ValueSet = ValueSetAuditLogString::new((Cid::new_count(0), "log0".to_string()));
+        vs.insert_checked(Value::AuditLogString(Cid::new_count(1), "log1".to_string()))
+            .unwrap();
+        let dbvs = vs.to_db_valueset_v2();
+        let vs2 = crate::valueset::from_db_valueset_v2(dbvs).expect("Failed to restore");
+        assert!(vs.equal(&vs2));
+    }
+
+    #[test]
+    fn test_valueset_auditlogstring_capacity_ring_buffer() {
+        let mut vs: ValueSet = ValueSetAuditLogString::new((Cid::new_count(0), "log0".to_string()));
+        for i in 1..=AUDIT_LOG_STRING_CAPACITY {
+            vs.insert_checked(Value::AuditLogString(
+                Cid::new_count(i as u64),
+                format!("log{i}"),
+            ))
+            .unwrap();
+        }
+        assert_eq!(vs.len(), AUDIT_LOG_STRING_CAPACITY);
+        assert!(
+            !vs.contains(&crate::prelude::PartialValue::new_utf8s("log0")),
+            "oldest entry should have been evicted"
+        );
     }
 }

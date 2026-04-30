@@ -1,5 +1,5 @@
 use axum::{middleware::from_fn, response::Redirect, routing::get, Router};
-use kanidm_proto::{attribute, internal, scim_v1, v1};
+use kubidm_proto::{attribute, internal, scim_v1, v1};
 use utoipa::{
     openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
     Modify, OpenApi,
@@ -43,7 +43,7 @@ impl Modify for SecurityAddon {
             )
         )
     ),
-    external_docs(url = "https://kanidm.com/docs", description = "Kanidm documentation page"),
+    external_docs(url = "https://kubidm.com/docs", description = "Kubidm documentation page"),
 
     paths(
         super::generic::status,
@@ -72,6 +72,10 @@ impl Modify for SecurityAddon {
         super::v1_oauth2::oauth2_id_claimmap_join_post,
         super::v1_oauth2::oauth2_id_claimmap_post,
         super::v1_oauth2::oauth2_id_claimmap_delete,
+
+        super::v1_oauth2_federation::oauth2_federation_get,
+        super::v1_oauth2_federation::oauth2_federation_post,
+        super::v1_oauth2_federation::oauth2_federation_id_get,
 
         super::v1_scim::scim_sync_post,
         super::v1_scim::scim_sync_get,
@@ -203,6 +207,16 @@ impl Modify for SecurityAddon {
         super::v1::recycle_bin_get,
         super::v1::recycle_bin_id_get,
         super::v1::recycle_bin_revive_id_post,
+        super::v1::approval_policy_list,
+        super::v1::approval_policy_get,
+        super::v1::approval_policy_create,
+        super::v1::approval_policy_delete,
+        super::v1::approval_policy_enable,
+        super::v1::approval_policy_disable,
+        super::v1::approval_request_list,
+        super::v1::approval_request_get,
+        super::v1::approval_request_decision,
+        super::v1::approval_request_cancel,
         super::v1::auth,
         super::v1::auth_valid,
         super::v1::logout,
@@ -219,6 +233,9 @@ impl Modify for SecurityAddon {
         super::v1_scim::sync_account_token_delete,
         super::v1::debug_ipinfo,
         super::v1::public_jwk_key_id_get,
+
+        super::authorization::authorize,
+        super::authorization::authorize_batch,
 
     ),
     components(
@@ -298,6 +315,14 @@ impl Modify for SecurityAddon {
             internal::AppLink,
 
             internal::IdentifyUserRequest,
+            internal::AuthorizationRequest,
+            internal::AuthorizationResponse,
+            internal::AuthorizationDecision,
+            internal::AuthorizationAction,
+            internal::AuthorizationExplanation,
+            internal::BatchAuthorizationRequest,
+            internal::BatchAuthorizationResponse,
+            internal::DecisionCacheEntry,
             // terrible workaround for other things
             response_schema::CreationChallengeResponse,
 
@@ -323,14 +348,14 @@ impl Modify for SecurityAddon {
     ),
     modifiers(&SecurityAddon),
     tags(
-        (name = "kanidm", description = "Kanidm API")
+        (name = "kubidm", description = "Kubidm API")
     ),
     info(
-        title = "Kanidm",
-        description = "API for interacting with the Kanidm system. This is a work in progress.",
+        title = "Kubidm",
+        description = "API for interacting with the Kubidm system. This is a work in progress.",
         contact( // <https://docs.rs/utoipa-gen/3.5.0/utoipa_gen/derive.OpenApi.html#info-attribute-syntax>
-            name="Kanidm Github",
-            url="https://github.com/kanidm/kanidm",
+            name="Kubidm Github",
+            url="https://github.com/kubidm/kubidm",
         )
     )
 )]

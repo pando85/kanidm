@@ -1,14 +1,12 @@
-//! The Kanidmd server library. This implements all of the internal components of the server
+//! The Kubidmd server library. This implements all of the internal components of the server
 //! which is used to process authentication, store identities and enforce access controls.
 
 #![deny(warnings)]
 #![deny(deprecated)]
 #![recursion_limit = "512"]
 #![warn(unused_extern_crates)]
-// Enable some groups of clippy lints.
 #![deny(clippy::suspicious)]
 #![deny(clippy::perf)]
-// Specific lints to enforce.
 #![deny(clippy::todo)]
 #![deny(clippy::unimplemented)]
 #![deny(clippy::unwrap_used)]
@@ -36,10 +34,6 @@ extern crate rusqlite;
 #[macro_use]
 extern crate tracing;
 
-// #[macro_use]
-// extern crate sketching;
-
-// This has to be before 'be' so the import order works
 #[macro_use]
 pub mod macros;
 
@@ -49,11 +43,8 @@ pub mod credential;
 pub mod entry;
 pub mod event;
 pub mod filter;
-
-// If this module is ever made public outside of this crate, firstyear will be extremely sad.
-// This is *purely migration data*. Don't even think about using it in test cases for anything
-// else.
 pub(crate) mod migration_data;
+pub mod pip;
 
 pub mod modify;
 pub mod time;
@@ -69,9 +60,6 @@ pub mod server;
 pub mod status;
 pub mod testkit;
 
-/// A prelude of imports that should be imported by all other Kanidm modules to
-/// help make imports cleaner.
-// Clippy is wrong, these are used. Hush little clippy.
 #[allow(unused_imports)]
 pub mod prelude {
     pub(crate) use crate::be::Limits;
@@ -112,18 +100,18 @@ pub mod prelude {
         ValueSet, ValueSetBool, ValueSetCid, ValueSetIname, ValueSetIutf8, ValueSetRefer,
         ValueSetSha256, ValueSetSyntax, ValueSetT, ValueSetUtf8, ValueSetUuid,
     };
-    pub use kanidm_proto::attribute::{AttrString, Attribute};
-    pub use kanidm_proto::constants::*;
-    pub use kanidm_proto::internal::{
+    pub use kubidm_proto::attribute::{AttrString, Attribute};
+    pub use kubidm_proto::constants::*;
+    pub use kubidm_proto::internal::{
         ConsistencyError, Filter as ProtoFilter, OperationError, PluginError, SchemaError,
     };
-    pub use kanidm_proto::scim_v1::JsonValue;
-    pub(crate) use kanidm_proto::scim_v1::{
-        server::{ScimEntryKanidm, ScimValueKanidm},
+    pub use kubidm_proto::scim_v1::JsonValue;
+    pub(crate) use kubidm_proto::scim_v1::{
+        server::{ScimEntryKubidm, ScimValueKubidm},
         ScimEntryHeader,
     };
     #[cfg(test)]
-    pub use kanidmd_lib_macros::*;
+    pub use kubidmd_lib_macros::*;
     pub use sketching::{
         admin_debug, admin_error, admin_info, admin_warn, filter_error, filter_info, filter_trace,
         filter_warn, perf_trace, request_error, request_info, request_trace, request_warn,

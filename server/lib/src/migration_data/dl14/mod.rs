@@ -1,5 +1,6 @@
 mod access;
 pub(super) mod accounts;
+mod delegation;
 mod groups;
 mod key_providers;
 pub(crate) mod schema;
@@ -7,13 +8,14 @@ mod system_config;
 
 use self::access::*;
 use self::accounts::*;
+use self::delegation::*;
 use self::groups::*;
 use self::schema::*;
 use self::system_config::*;
 use crate::constants::UUID_SCHEMA_ATTR_EC_KEY_PRIVATE;
 use crate::migration_data::dl14::key_providers::e_key_provider_internal_dl6;
 use crate::prelude::*;
-use kanidm_proto::internal::OperationError;
+use kubidm_proto::internal::OperationError;
 use uuid::Uuid;
 
 pub fn phase_1_schema_attrs() -> Vec<EntryInitNew> {
@@ -131,8 +133,27 @@ pub fn phase_1_schema_attrs() -> Vec<EntryInitNew> {
         SCHEMA_ATTR_ACCOUNT_SOFTLOCK_EXPIRE.clone().into(),
         // DL14
         SCHEMA_ATTR_PASSWORD_CHANGED_TIME.clone().into(),
+<<<<<<< HEAD
         SCHEMA_ATTR_OAUTH2_REFRESH_TOKEN_EXPIRY.clone().into(),
         SCHEMA_ATTR_DOMAIN_ALLOW_ACCOUNT_RECOVERY.clone().into(),
+=======
+        // OAuth2 Federation (DL14+)
+        SCHEMA_ATTR_OAUTH2_ISSUER.clone().into(),
+        SCHEMA_ATTR_OAUTH2_JWKS_URI.clone().into(),
+        SCHEMA_ATTR_OAUTH2_USERINFO_ENDPOINT.clone().into(),
+        SCHEMA_ATTR_OAUTH2_EMAIL_DOMAIN.clone().into(),
+        SCHEMA_ATTR_OAUTH2_DISPLAY_NAME.clone().into(),
+        SCHEMA_ATTR_OAUTH2_AUTO_DISCOVERY.clone().into(),
+        SCHEMA_ATTR_OAUTH2_LINK_LOCAL_ACCOUNT.clone().into(),
+        SCHEMA_ATTR_OAUTH2_LINK_POLICY.clone().into(),
+        SCHEMA_ATTR_OAUTH2_IDP_INITIATED_ENABLED.clone().into(),
+        SCHEMA_ATTR_OAUTH2_FEDERATION_ID.clone().into(),
+        // Time-bounded access
+        SCHEMA_ATTR_MEMBER_VALID_FROM.clone().into(),
+        SCHEMA_ATTR_MEMBER_VALID_UNTIL.clone().into(),
+        SCHEMA_ATTR_MAX_GRANT_DURATION.clone().into(),
+        SCHEMA_ATTR_TIME_BOUNDED_MEMBER.clone().into(),
+>>>>>>> master
     ]
 }
 
@@ -182,6 +203,11 @@ pub fn phase_2_schema_classes() -> Vec<EntryInitNew> {
         SCHEMA_CLASS_ASSERTION_NONCE.clone().into(),
         SCHEMA_CLASS_KEY_OBJECT_JWT_HS256_DL6.clone().into(),
         SCHEMA_CLASS_ASSERTION_NONCE.clone().into(),
+        // Time-bounded access
+        SCHEMA_CLASS_TIME_BOUNDED_GRANT.clone().into(),
+        // OAuth2 Federation (DL14+)
+        SCHEMA_CLASS_OAUTH2_FEDERATION.clone().into(),
+        SCHEMA_CLASS_OAUTH2_LINKED_ACCOUNT.clone().into(),
     ]
 }
 
@@ -252,6 +278,10 @@ pub fn phase_6_builtin_non_admin_entries() -> Result<Vec<EntryInitNew>, Operatio
         // other things
         IDM_UI_ENABLE_EXPERIMENTAL_FEATURES.clone().try_into()?,
         IDM_ACCOUNT_MAIL_READ.clone().try_into()?,
+        // Delegated roles
+        BUILTIN_DELEGATED_ROLE_HELPDESK.clone().into(),
+        BUILTIN_DELEGATED_ROLE_USER_ADMIN.clone().into(),
+        BUILTIN_DELEGATED_ROLE_GROUP_ADMIN.clone().into(),
     ])
 }
 

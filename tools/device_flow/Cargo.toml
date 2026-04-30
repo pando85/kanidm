@@ -1,7 +1,7 @@
 [package]
-name = "kanidm_device_flow"
-description = "Kanidm Device Flow Example Client"
-documentation = "https://kanidm.github.io/kanidm/stable/"
+name = "kubidm_device_flow"
+description = "Kubidm Device Flow Example Client"
+documentation = "https://kubidm.github.io/kubidm/stable/"
 version = { workspace = true }
 authors = { workspace = true }
 rust-version = { workspace = true }
@@ -19,7 +19,7 @@ test = false
 
 [dependencies]
 anyhow = { workspace = true }
-kanidm_proto = { workspace = true }
+kubidm_proto = { workspace = true }
 oauth2_ext = { workspace = true }
 reqwest = { workspace = true }
 sketching = { workspace = true }

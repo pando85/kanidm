@@ -46,8 +46,8 @@ Reindexing will resolve this by forcing all indexes to be recreated based on the
 
 ```bash
 docker stop <container name>
-docker run --rm -i -t -v kanidmd:/data \
-    kanidm/server:latest /sbin/kanidmd database reindex -c /data/server.toml
+docker run --rm -i -t -v kubidmd:/data \
+    kubidm/server:latest /sbin/kubidmd database reindex -c /data/server.toml
 docker start <container name>
 ```
 
@@ -62,8 +62,8 @@ server.toml, you must run a vacuum for this to take effect:
 
 ```bash
 docker stop <container name>
-docker run --rm -i -t -v kanidmd:/data \
-    kanidm/server:latest /sbin/kanidmd database vacuum -c /data/server.toml
+docker run --rm -i -t -v kubidmd:/data \
+    kubidm/server:latest /sbin/kubidmd database vacuum -c /data/server.toml
 docker start <container name>
 ```
 
@@ -80,8 +80,8 @@ You can run a verification with:
 
 ```bash
 docker stop <container name>
-docker run --rm -i -t -v kanidmd:/data \
-    kanidm/server:latest /sbin/kanidmd database verify -c /data/server.toml
+docker run --rm -i -t -v kubidmd:/data \
+    kubidm/server:latest /sbin/kubidmd database verify -c /data/server.toml
 docker start <container name>
 ```
 

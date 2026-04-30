@@ -36,12 +36,9 @@ use self::profiles::{
     AccessControlSearchResolved, AccessControlTarget, AccessControlTargetCondition,
 };
 
-use kanidm_proto::scim_v1::server::ScimAttributeEffectiveAccess;
+use kubidm_proto::scim_v1::server::ScimAttributeEffectiveAccess;
 
-use self::create::{apply_create_access, CreateResult};
-use self::delete::{apply_delete_access, DeleteResult};
-use self::modify::{apply_modify_access, ModifyResult};
-use self::search::{apply_search_access, SearchResult};
+use self::create::apply_create_access;
 
 const ACP_RESOLVE_FILTER_CACHE_MAX: usize = 256;
 const ACP_RESOLVE_FILTER_CACHE_LOCAL: usize = 0;
@@ -52,7 +49,14 @@ mod migration;
 mod modify;
 pub mod profiles;
 mod protected;
+mod reauth;
 mod search;
+mod utils;
+
+pub use self::create::CreateResult;
+pub use self::delete::{apply_delete_access, DeleteResult};
+pub use self::modify::{apply_modify_access, ModifyResult};
+pub use self::search::{apply_search_access, SearchResult};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Access {
@@ -116,7 +120,13 @@ pub enum AccessSrchResult {
         attr: BTreeSet<Attribute>,
     },
     */
-    Allow { attr: BTreeSet<Attribute> },
+    Allow {
+        attr: BTreeSet<Attribute>,
+    },
+    #[allow(dead_code)]
+    ReauthRequired {
+        reason: String,
+    },
 }
 
 pub enum AccessModResult<'a> {
@@ -141,6 +151,10 @@ pub enum AccessModResult<'a> {
         rem_attr: BTreeSet<Attribute>,
         pres_class: BTreeSet<&'a str>,
         rem_class: BTreeSet<&'a str>,
+    },
+    #[allow(dead_code)]
+    ReauthRequired {
+        reason: String,
     },
 }
 
@@ -190,6 +204,37 @@ fn resolve_access_conditions(
             }
         }
         AccessControlReceiver::EntryManager => AccessControlReceiverCondition::EntryManager,
+        AccessControlReceiver::Delegated {
+            scope_group,
+            scope_filter,
+            ..
+        } => {
+            let scope_filter_resolved = if let Some(filter) = scope_filter {
+                filter
+                    .resolve(ident, None, Some(acp_resolve_filter_cache))
+                    .map_err(|e| {
+                        admin_error!(?e, "Failed to resolve delegated scope filter");
+                        e
+                    })
+                    .ok()
+            } else {
+                None
+            };
+
+            if let Some(scope_group_uuid) = scope_group {
+                let group_check = ident_memberof
+                    .map(|imo| imo.contains(scope_group_uuid))
+                    .unwrap_or_default();
+
+                if !group_check {
+                    return None;
+                }
+            }
+
+            AccessControlReceiverCondition::Delegated {
+                scope_filter_resolved,
+            }
+        }
         AccessControlReceiver::None => return None,
         // AccessControlReceiverCondition::None,
     };
@@ -203,6 +248,26 @@ fn resolve_access_conditions(
             })
             .ok()
             .map(AccessControlTargetCondition::Scope)?,
+        AccessControlTarget::DelegatedScope {
+            scope_group: _,
+            scope_filter,
+        } => {
+            let scope_filter_resolved = if let Some(filter) = scope_filter {
+                filter
+                    .resolve(ident, None, Some(acp_resolve_filter_cache))
+                    .map_err(|e| {
+                        admin_error!(?e, "Failed to resolve delegated scope filter");
+                        e
+                    })
+                    .ok()
+            } else {
+                None
+            };
+
+            AccessControlTargetCondition::DelegatedScope {
+                scope_filter_resolved,
+            }
+        }
         AccessControlTarget::None => return None,
     };
 
@@ -341,6 +406,7 @@ pub trait AccessControlsTransaction<'a> {
                         );
                         decision
                     }
+                    SearchResult::ReauthRequired { .. } => false,
                 }
             })
             .collect();
@@ -464,6 +530,7 @@ pub trait AccessControlsTransaction<'a> {
 
                         Some(entry.reduce_attributes(&reduced_attrs, effective_permissions))
                     }
+                    SearchResult::ReauthRequired { .. } => None,
                 }
 
                 // End filter
@@ -654,6 +721,7 @@ pub trait AccessControlsTransaction<'a> {
                     // Yield the result
                     decision
                 }
+                ModifyResult::ReauthRequired { .. } => false,
             }
         });
 
@@ -820,6 +888,7 @@ pub trait AccessControlsTransaction<'a> {
                     // Yield the result
                     decision
                 }
+                ModifyResult::ReauthRequired { .. } => false,
             }
         });
 
@@ -910,6 +979,7 @@ pub trait AccessControlsTransaction<'a> {
 
                     decision
                 }
+                CreateResult::ReauthRequired { .. } => false,
             }
         });
 
@@ -966,6 +1036,7 @@ pub trait AccessControlsTransaction<'a> {
             match apply_delete_access(&de.ident, related_acp.as_slice(), e) {
                 DeleteResult::Deny => false,
                 DeleteResult::Grant => true,
+                DeleteResult::ReauthRequired { .. } => false,
             }
         });
         if r {
@@ -1042,6 +1113,7 @@ pub trait AccessControlsTransaction<'a> {
                 // Bound by requested attrs?
                 Access::Allow(allowed_attrs.into_iter().collect())
             }
+            SearchResult::ReauthRequired { .. } => Access::Deny,
         };
 
         // == modify ==
@@ -1070,6 +1142,12 @@ pub trait AccessControlsTransaction<'a> {
                     AccessClass::Allow(pres_cls.into_iter().map(|s| s.into()).collect()),
                     AccessClass::Allow(rem_cls.into_iter().map(|s| s.into()).collect()),
                 ),
+                ModifyResult::ReauthRequired { .. } => (
+                    Access::Deny,
+                    Access::Deny,
+                    AccessClass::Deny,
+                    AccessClass::Deny,
+                ),
             };
 
         // == delete ==
@@ -1078,6 +1156,7 @@ pub trait AccessControlsTransaction<'a> {
         let delete = match delete_status {
             DeleteResult::Deny => false,
             DeleteResult::Grant => true,
+            DeleteResult::ReauthRequired { .. } => false,
         };
 
         AccessEffectivePermission {
@@ -3741,5 +3820,1050 @@ mod tests {
         );
 
         test_acp_modify!(&me_pres, vec![acp_allow.clone()], &r1_set, false);
+    }
+
+    #[allow(clippy::disallowed_methods)]
+    #[test]
+    fn test_access_time_restriction_valid() {
+        sketching::test_init();
+
+        let ev1 = E_TESTPERSON_1.clone().into_sealed_committed();
+        let r_set = vec![Arc::new(ev1.clone())];
+        let ex_set = vec![Arc::new(ev1)];
+
+        let se_admin = SearchEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+        );
+
+        let now = time::OffsetDateTime::now_utc();
+        let start = now - time::Duration::hours(1);
+        let end = now + time::Duration::hours(1);
+
+        let acp = AccessControlSearch::from_raw_with_time(
+            "test_acp_time_valid",
+            Uuid::new_v4(),
+            UUID_TEST_GROUP_1,
+            filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+            Attribute::Name.as_ref(),
+            Some(start),
+            Some(end),
+        );
+
+        test_acp_search!(&se_admin, vec![acp], r_set, ex_set);
+    }
+
+    #[allow(clippy::disallowed_methods)]
+    #[test]
+    fn test_access_time_restriction_expired() {
+        sketching::test_init();
+
+        let ev1 = E_TESTPERSON_1.clone().into_sealed_committed();
+        let r_set = vec![Arc::new(ev1)];
+        let ex_set = vec![];
+
+        let se_admin = SearchEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+        );
+
+        let now = time::OffsetDateTime::now_utc();
+        let start = now - time::Duration::hours(2);
+        let end = now - time::Duration::hours(1);
+
+        let acp = AccessControlSearch::from_raw_with_time(
+            "test_acp_time_expired",
+            Uuid::new_v4(),
+            UUID_TEST_GROUP_1,
+            filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+            Attribute::Name.as_ref(),
+            Some(start),
+            Some(end),
+        );
+
+        test_acp_search!(&se_admin, vec![acp], r_set, ex_set);
+    }
+
+    #[allow(clippy::disallowed_methods)]
+    #[test]
+    fn test_access_time_restriction_future() {
+        sketching::test_init();
+
+        let ev1 = E_TESTPERSON_1.clone().into_sealed_committed();
+        let r_set = vec![Arc::new(ev1)];
+        let ex_set = vec![];
+
+        let se_admin = SearchEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+        );
+
+        let now = time::OffsetDateTime::now_utc();
+        let start = now + time::Duration::hours(1);
+        let end = now + time::Duration::hours(2);
+
+        let acp = AccessControlSearch::from_raw_with_time(
+            "test_acp_time_future",
+            Uuid::new_v4(),
+            UUID_TEST_GROUP_1,
+            filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+            Attribute::Name.as_ref(),
+            Some(start),
+            Some(end),
+        );
+
+        test_acp_search!(&se_admin, vec![acp], r_set, ex_set);
+    }
+
+    #[allow(clippy::disallowed_methods)]
+    #[test]
+    fn test_access_time_restriction_start_only() {
+        sketching::test_init();
+
+        let ev1 = E_TESTPERSON_1.clone().into_sealed_committed();
+        let r_set = vec![Arc::new(ev1.clone())];
+        let ex_set = vec![Arc::new(ev1)];
+
+        let se_admin = SearchEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+        );
+
+        let now = time::OffsetDateTime::now_utc();
+        let start = now - time::Duration::hours(1);
+
+        let acp = AccessControlSearch::from_raw_with_time(
+            "test_acp_time_start_only",
+            Uuid::new_v4(),
+            UUID_TEST_GROUP_1,
+            filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+            Attribute::Name.as_ref(),
+            Some(start),
+            None,
+        );
+
+        test_acp_search!(&se_admin, vec![acp], r_set, ex_set);
+    }
+
+    #[allow(clippy::disallowed_methods)]
+    #[test]
+    fn test_access_time_restriction_end_only() {
+        sketching::test_init();
+
+        let ev1 = E_TESTPERSON_1.clone().into_sealed_committed();
+        let r_set = vec![Arc::new(ev1.clone())];
+        let ex_set = vec![Arc::new(ev1)];
+
+        let se_admin = SearchEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+        );
+
+        let now = time::OffsetDateTime::now_utc();
+        let end = now + time::Duration::hours(1);
+
+        let acp = AccessControlSearch::from_raw_with_time(
+            "test_acp_time_end_only",
+            Uuid::new_v4(),
+            UUID_TEST_GROUP_1,
+            filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+            Attribute::Name.as_ref(),
+            None,
+            Some(end),
+        );
+
+        test_acp_search!(&se_admin, vec![acp], r_set, ex_set);
+    }
+
+    // =========================================================================
+    // Delegated Administration Tests
+    // =========================================================================
+
+    #[test]
+    fn test_access_delegated_receiver_search_with_scope_group() {
+        sketching::test_init();
+
+        let test_entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Name, Value::new_iname("testperson1")),
+                (Attribute::Uuid, Value::Uuid(UUID_TEST_ACCOUNT_1))
+            )
+            .into_sealed_committed(),
+        );
+
+        let data_set = vec![test_entry.clone()];
+
+        let se_a = SearchEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_pres(Attribute::Name)),
+        );
+        let expect_a = vec![test_entry];
+
+        let se_b = SearchEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_2.clone(),
+            filter_all!(f_pres(Attribute::Name)),
+        );
+        let expect_b = vec![];
+
+        let acp = AccessControlSearch::from_delegated_receiver(
+            "test_delegated_acp",
+            Uuid::new_v4(),
+            Some(UUID_TEST_GROUP_1),
+            None,
+            AccessControlTarget::Scope(filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            ))),
+            Attribute::Name.as_ref(),
+        );
+
+        test_acp_search!(&se_a, vec![acp.clone()], data_set.clone(), expect_a);
+        test_acp_search!(&se_b, vec![acp], data_set, expect_b);
+    }
+
+    #[test]
+    fn test_access_delegated_receiver_search_with_scope_filter() {
+        sketching::test_init();
+
+        let test_entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Name, Value::new_iname("testperson1")),
+                (Attribute::Uuid, Value::Uuid(UUID_TEST_ACCOUNT_1)),
+                (Attribute::EntryManagedBy, Value::Refer(UUID_TEST_GROUP_1))
+            )
+            .into_sealed_committed(),
+        );
+
+        let data_set = vec![test_entry.clone()];
+
+        let se = SearchEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_pres(Attribute::Name)),
+        );
+        let expect = vec![test_entry];
+
+        let acp = AccessControlSearch::from_delegated_receiver(
+            "test_delegated_filter_acp",
+            Uuid::new_v4(),
+            None,
+            Some(filter_valid!(f_eq(
+                Attribute::EntryManagedBy,
+                PartialValue::Refer(UUID_TEST_GROUP_1)
+            ))),
+            AccessControlTarget::Scope(filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            ))),
+            Attribute::Name.as_ref(),
+        );
+
+        test_acp_search!(&se, vec![acp], data_set, expect);
+    }
+
+    #[test]
+    fn test_access_delegated_receiver_search_no_match() {
+        sketching::test_init();
+
+        let test_entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Name, Value::new_iname("testperson1")),
+                (Attribute::Uuid, Value::Uuid(UUID_TEST_ACCOUNT_1))
+            )
+            .into_sealed_committed(),
+        );
+
+        let data_set = vec![test_entry];
+
+        let se = SearchEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_pres(Attribute::Name)),
+        );
+        let expect: Vec<Arc<EntrySealedCommitted>> = vec![];
+
+        let acp = AccessControlSearch::from_delegated_receiver(
+            "test_delegated_no_match",
+            Uuid::new_v4(),
+            Some(UUID_TEST_GROUP_2),
+            None,
+            AccessControlTarget::Scope(filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            ))),
+            Attribute::Name.as_ref(),
+        );
+
+        test_acp_search!(&se, vec![acp], data_set, expect);
+    }
+
+    #[test]
+    fn test_access_delegated_target_search_with_scope_filter() {
+        sketching::test_init();
+
+        let test_entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Name, Value::new_iname("testperson1")),
+                (Attribute::Uuid, Value::Uuid(UUID_TEST_ACCOUNT_1)),
+                (Attribute::EntryManagedBy, Value::Refer(UUID_TEST_GROUP_1))
+            )
+            .into_sealed_committed(),
+        );
+
+        let data_set = vec![test_entry.clone()];
+
+        let se = SearchEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_pres(Attribute::Name)),
+        );
+        let expect = vec![test_entry];
+
+        let acp = AccessControlSearch::from_delegated_target(
+            "test_delegated_target",
+            Uuid::new_v4(),
+            UUID_TEST_GROUP_1,
+            None,
+            Some(filter_valid!(f_eq(
+                Attribute::EntryManagedBy,
+                PartialValue::Refer(UUID_TEST_GROUP_1)
+            ))),
+            Attribute::Name.as_ref(),
+        );
+
+        test_acp_search!(&se, vec![acp], data_set, expect);
+    }
+
+    #[test]
+    fn test_access_delegated_target_search_filter_not_matching() {
+        sketching::test_init();
+
+        let test_entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Name, Value::new_iname("testperson1")),
+                (Attribute::Uuid, Value::Uuid(UUID_TEST_ACCOUNT_1)),
+                (Attribute::EntryManagedBy, Value::Refer(UUID_TEST_GROUP_2))
+            )
+            .into_sealed_committed(),
+        );
+
+        let data_set = vec![test_entry];
+
+        let se = SearchEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_pres(Attribute::Name)),
+        );
+        let expect: Vec<Arc<EntrySealedCommitted>> = vec![];
+
+        let acp = AccessControlSearch::from_delegated_target(
+            "test_delegated_target_nomatch",
+            Uuid::new_v4(),
+            UUID_TEST_GROUP_1,
+            None,
+            Some(filter_valid!(f_eq(
+                Attribute::EntryManagedBy,
+                PartialValue::Refer(UUID_TEST_GROUP_1)
+            ))),
+            Attribute::Name.as_ref(),
+        );
+
+        test_acp_search!(&se, vec![acp], data_set, expect);
+    }
+
+    #[test]
+    fn test_access_delegated_receiver_modify_with_scope_group() {
+        sketching::test_init();
+
+        let test_entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Name, Value::new_iname("testperson1")),
+                (Attribute::Uuid, Value::Uuid(UUID_TEST_ACCOUNT_1))
+            )
+            .into_sealed_committed(),
+        );
+
+        let data_set = vec![test_entry];
+
+        let me_pres = ModifyEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+            modlist!([m_pres(Attribute::Name, &Value::new_iname("newvalue"))]),
+        );
+
+        let me_pres_denied = ModifyEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_2.clone(),
+            filter_all!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+            modlist!([m_pres(Attribute::Name, &Value::new_iname("newvalue"))]),
+        );
+
+        let acp = AccessControlModify::from_delegated_receiver(
+            "test_delegated_modify",
+            Uuid::new_v4(),
+            Some(UUID_TEST_GROUP_1),
+            None,
+            AccessControlTarget::Scope(filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            ))),
+            "name",
+            "name",
+            "",
+            "",
+        );
+
+        test_acp_modify!(&me_pres, vec![acp.clone()], &data_set, true);
+        test_acp_modify!(&me_pres_denied, vec![acp], &data_set, false);
+    }
+
+    #[test]
+    fn test_access_delegated_receiver_modify_with_scope_filter() {
+        sketching::test_init();
+
+        let test_entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Name, Value::new_iname("testperson1")),
+                (Attribute::Uuid, Value::Uuid(UUID_TEST_ACCOUNT_1)),
+                (Attribute::EntryManagedBy, Value::Refer(UUID_TEST_GROUP_1))
+            )
+            .into_sealed_committed(),
+        );
+
+        let data_set = vec![test_entry];
+
+        let me_pres = ModifyEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+            modlist!([m_pres(Attribute::Name, &Value::new_iname("newvalue"))]),
+        );
+
+        let acp = AccessControlModify::from_delegated_receiver(
+            "test_delegated_modify_filter",
+            Uuid::new_v4(),
+            None,
+            Some(filter_valid!(f_eq(
+                Attribute::EntryManagedBy,
+                PartialValue::Refer(UUID_TEST_GROUP_1)
+            ))),
+            AccessControlTarget::Scope(filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            ))),
+            "name",
+            "name",
+            "",
+            "",
+        );
+
+        test_acp_modify!(&me_pres, vec![acp], &data_set, true);
+    }
+
+    #[test]
+    fn test_access_delegated_target_modify_with_scope_filter() {
+        sketching::test_init();
+
+        let test_entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Name, Value::new_iname("testperson1")),
+                (Attribute::Uuid, Value::Uuid(UUID_TEST_ACCOUNT_1)),
+                (Attribute::EntryManagedBy, Value::Refer(UUID_TEST_GROUP_1))
+            )
+            .into_sealed_committed(),
+        );
+
+        let data_set = vec![test_entry];
+
+        let me_pres = ModifyEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+            modlist!([m_pres(Attribute::Name, &Value::new_iname("newvalue"))]),
+        );
+
+        let acp = AccessControlModify::from_delegated_target(
+            "test_delegated_target_modify",
+            Uuid::new_v4(),
+            UUID_TEST_GROUP_1,
+            None,
+            Some(filter_valid!(f_eq(
+                Attribute::EntryManagedBy,
+                PartialValue::Refer(UUID_TEST_GROUP_1)
+            ))),
+            "name",
+            "name",
+            "",
+            "",
+        );
+
+        test_acp_modify!(&me_pres, vec![acp], &data_set, true);
+    }
+
+    #[test]
+    fn test_access_delegated_receiver_delete_with_scope_group() {
+        sketching::test_init();
+
+        let test_entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Name, Value::new_iname("testperson1")),
+                (Attribute::Uuid, Value::Uuid(UUID_TEST_ACCOUNT_1))
+            )
+            .into_sealed_committed(),
+        );
+
+        let data_set = vec![test_entry];
+
+        let de_a = DeleteEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+        );
+
+        let de_b = DeleteEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_2.clone(),
+            filter_all!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+        );
+
+        let acp = AccessControlDelete::from_delegated_receiver(
+            "test_delegated_delete",
+            Uuid::new_v4(),
+            Some(UUID_TEST_GROUP_1),
+            None,
+            AccessControlTarget::Scope(filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            ))),
+        );
+
+        test_acp_delete!(&de_a, vec![acp.clone()], &data_set, true);
+        test_acp_delete!(&de_b, vec![acp], &data_set, false);
+    }
+
+    #[test]
+    fn test_access_delegated_receiver_delete_with_scope_filter() {
+        sketching::test_init();
+
+        let test_entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Name, Value::new_iname("testperson1")),
+                (Attribute::Uuid, Value::Uuid(UUID_TEST_ACCOUNT_1)),
+                (Attribute::EntryManagedBy, Value::Refer(UUID_TEST_GROUP_1))
+            )
+            .into_sealed_committed(),
+        );
+
+        let data_set = vec![test_entry];
+
+        let de = DeleteEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+        );
+
+        let acp = AccessControlDelete::from_delegated_receiver(
+            "test_delegated_delete_filter",
+            Uuid::new_v4(),
+            None,
+            Some(filter_valid!(f_eq(
+                Attribute::EntryManagedBy,
+                PartialValue::Refer(UUID_TEST_GROUP_1)
+            ))),
+            AccessControlTarget::Scope(filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            ))),
+        );
+
+        test_acp_delete!(&de, vec![acp], &data_set, true);
+    }
+
+    #[test]
+    fn test_access_delegated_target_delete_with_scope_filter() {
+        sketching::test_init();
+
+        let test_entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Name, Value::new_iname("testperson1")),
+                (Attribute::Uuid, Value::Uuid(UUID_TEST_ACCOUNT_1)),
+                (Attribute::EntryManagedBy, Value::Refer(UUID_TEST_GROUP_1))
+            )
+            .into_sealed_committed(),
+        );
+
+        let data_set = vec![test_entry];
+
+        let de = DeleteEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            )),
+        );
+
+        let acp = AccessControlDelete::from_delegated_target(
+            "test_delegated_target_delete",
+            Uuid::new_v4(),
+            UUID_TEST_GROUP_1,
+            None,
+            Some(filter_valid!(f_eq(
+                Attribute::EntryManagedBy,
+                PartialValue::Refer(UUID_TEST_GROUP_1)
+            ))),
+        );
+
+        test_acp_delete!(&de, vec![acp], &data_set, true);
+    }
+
+    #[test]
+    fn test_access_delegated_combined_scope_group_and_filter() {
+        sketching::test_init();
+
+        let test_entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Name, Value::new_iname("testperson1")),
+                (Attribute::Uuid, Value::Uuid(UUID_TEST_ACCOUNT_1)),
+                (Attribute::EntryManagedBy, Value::Refer(UUID_TEST_GROUP_1))
+            )
+            .into_sealed_committed(),
+        );
+
+        let data_set = vec![test_entry.clone()];
+
+        let se = SearchEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_pres(Attribute::Name)),
+        );
+        let expect = vec![test_entry];
+
+        let acp = AccessControlSearch::from_delegated_receiver(
+            "test_delegated_combined",
+            Uuid::new_v4(),
+            Some(UUID_TEST_GROUP_1),
+            Some(filter_valid!(f_eq(
+                Attribute::EntryManagedBy,
+                PartialValue::Refer(UUID_TEST_GROUP_1)
+            ))),
+            AccessControlTarget::Scope(filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            ))),
+            Attribute::Name.as_ref(),
+        );
+
+        test_acp_search!(&se, vec![acp], data_set, expect);
+    }
+
+    #[test]
+    fn test_access_delegated_combined_scope_group_wrong_filter() {
+        sketching::test_init();
+
+        let test_entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Name, Value::new_iname("testperson1")),
+                (Attribute::Uuid, Value::Uuid(UUID_TEST_ACCOUNT_1)),
+                (Attribute::EntryManagedBy, Value::Refer(UUID_TEST_GROUP_2))
+            )
+            .into_sealed_committed(),
+        );
+
+        let data_set = vec![test_entry];
+
+        let se = SearchEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_pres(Attribute::Name)),
+        );
+        let expect: Vec<Arc<EntrySealedCommitted>> = vec![];
+
+        let acp = AccessControlSearch::from_delegated_receiver(
+            "test_delegated_combined_wrong",
+            Uuid::new_v4(),
+            Some(UUID_TEST_GROUP_1),
+            Some(filter_valid!(f_eq(
+                Attribute::EntryManagedBy,
+                PartialValue::Refer(UUID_TEST_GROUP_1)
+            ))),
+            AccessControlTarget::Scope(filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            ))),
+            Attribute::Name.as_ref(),
+        );
+
+        test_acp_search!(&se, vec![acp], data_set, expect);
+    }
+
+    #[test]
+    fn test_access_delegated_multiple_roles() {
+        sketching::test_init();
+
+        let test_entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Name, Value::new_iname("testperson1")),
+                (Attribute::Uuid, Value::Uuid(UUID_TEST_ACCOUNT_1)),
+                (Attribute::Description, Value::new_utf8s("test description"))
+            )
+            .into_sealed_committed(),
+        );
+
+        let data_set = vec![test_entry.clone()];
+
+        let se = SearchEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_pres(Attribute::Name)),
+        );
+        let expect = vec![test_entry];
+
+        let acp1 = AccessControlSearch::from_delegated_receiver(
+            "test_delegated_role1",
+            Uuid::new_v4(),
+            Some(UUID_TEST_GROUP_1),
+            None,
+            AccessControlTarget::Scope(filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            ))),
+            Attribute::Name.as_ref(),
+        );
+
+        let acp2 = AccessControlSearch::from_delegated_receiver(
+            "test_delegated_role2",
+            Uuid::new_v4(),
+            Some(UUID_TEST_GROUP_1),
+            None,
+            AccessControlTarget::Scope(filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            ))),
+            Attribute::Description.as_ref(),
+        );
+
+        test_acp_search!(&se, vec![acp1, acp2], data_set, expect);
+    }
+
+    #[test]
+    fn test_access_delegated_create_with_scope_group() {
+        sketching::test_init();
+
+        let test_entry = entry_init!(
+            (Attribute::Class, EntryClass::Object.to_value()),
+            (Attribute::Name, Value::new_iname("testperson1")),
+            (Attribute::Uuid, Value::Uuid(UUID_TEST_ACCOUNT_1))
+        );
+
+        let data_set = vec![test_entry];
+
+        let ce = CreateEvent::new_impersonate_identity(
+            Identity::from_impersonate_entry_readwrite(E_TEST_ACCOUNT_1.clone()),
+            vec![],
+        );
+
+        let acp = AccessControlCreate::from_delegated_receiver(
+            "test_delegated_create",
+            Uuid::new_v4(),
+            Some(UUID_TEST_GROUP_1),
+            None,
+            AccessControlTarget::Scope(filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            ))),
+            EntryClass::Object.into(),
+            "class name uuid",
+        );
+
+        test_acp_create!(&ce, vec![acp], &data_set, true);
+    }
+
+    #[test]
+    fn test_access_delegated_create_with_scope_filter() {
+        sketching::test_init();
+
+        let test_entry = entry_init!(
+            (Attribute::Class, EntryClass::Object.to_value()),
+            (Attribute::Name, Value::new_iname("testperson1")),
+            (Attribute::Uuid, Value::Uuid(UUID_TEST_ACCOUNT_1)),
+            (Attribute::EntryManagedBy, Value::Refer(UUID_TEST_GROUP_1))
+        );
+
+        let data_set = vec![test_entry];
+
+        let ce = CreateEvent::new_impersonate_identity(
+            Identity::from_impersonate_entry_readwrite(E_TEST_ACCOUNT_1.clone()),
+            vec![],
+        );
+
+        let acp = AccessControlCreate::from_delegated_receiver(
+            "test_delegated_create_filter",
+            Uuid::new_v4(),
+            None,
+            Some(filter_valid!(f_eq(
+                Attribute::EntryManagedBy,
+                PartialValue::Refer(UUID_TEST_GROUP_1)
+            ))),
+            AccessControlTarget::Scope(filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            ))),
+            EntryClass::Object.into(),
+            "class name uuid entry_managed_by",
+        );
+
+        test_acp_create!(&ce, vec![acp], &data_set, true);
+    }
+
+    #[test]
+    fn test_access_delegated_create_denied_wrong_group() {
+        sketching::test_init();
+
+        let test_entry = entry_init!(
+            (Attribute::Class, EntryClass::Object.to_value()),
+            (Attribute::Name, Value::new_iname("testperson1")),
+            (Attribute::Uuid, Value::Uuid(UUID_TEST_ACCOUNT_1))
+        );
+
+        let data_set = vec![test_entry];
+
+        let ce = CreateEvent::new_impersonate_identity(
+            Identity::from_impersonate_entry_readwrite(E_TEST_ACCOUNT_1.clone()),
+            vec![],
+        );
+
+        let acp = AccessControlCreate::from_delegated_receiver(
+            "test_delegated_create_denied",
+            Uuid::new_v4(),
+            Some(UUID_TEST_GROUP_2),
+            None,
+            AccessControlTarget::Scope(filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            ))),
+            EntryClass::Object.into(),
+            "class name uuid",
+        );
+
+        test_acp_create!(&ce, vec![acp], &data_set, false);
+    }
+
+    #[test]
+    fn test_access_delegated_effective_permissions() {
+        sketching::test_init();
+
+        let test_entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Name, Value::new_iname("testperson1")),
+                (Attribute::Uuid, Value::Uuid(UUID_TEST_ACCOUNT_1))
+            )
+            .into_sealed_committed(),
+        );
+
+        let r_set = vec![test_entry];
+
+        let admin = Identity::from_impersonate_entry_readwrite(E_TEST_ACCOUNT_1.clone());
+
+        let search_acp = AccessControlSearch::from_delegated_receiver(
+            "test_delegated_search",
+            Uuid::new_v4(),
+            Some(UUID_TEST_GROUP_1),
+            None,
+            AccessControlTarget::Scope(filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            ))),
+            Attribute::Name.as_ref(),
+        );
+
+        let modify_acp = AccessControlModify::from_delegated_receiver(
+            "test_delegated_modify",
+            Uuid::new_v4(),
+            Some(UUID_TEST_GROUP_1),
+            None,
+            AccessControlTarget::Scope(filter_valid!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname("testperson1")
+            ))),
+            "name",
+            "name",
+            "",
+            "",
+        );
+
+        test_acp_effective_permissions!(
+            &admin,
+            None,
+            vec![search_acp],
+            vec![modify_acp],
+            &r_set,
+            vec![AccessEffectivePermission {
+                ident: UUID_TEST_ACCOUNT_1,
+                delete: false,
+                target: uuid!("cc8e95b4-c24f-4d68-ba54-8bed76f63930"),
+                search: Access::Allow(btreeset![Attribute::Name]),
+                modify_pres: Access::Allow(btreeset![Attribute::Name]),
+                modify_rem: Access::Allow(btreeset![Attribute::Name]),
+                modify_pres_class: AccessClass::Allow(BTreeSet::new()),
+                modify_rem_class: AccessClass::Allow(BTreeSet::new()),
+            }]
+        )
+    }
+
+    #[test]
+    fn test_access_delegated_scope_inheritance() {
+        sketching::test_init();
+
+        let test_entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Class, EntryClass::Account.to_value()),
+                (Attribute::Name, Value::new_iname("testperson1")),
+                (Attribute::Uuid, Value::Uuid(UUID_TEST_ACCOUNT_1))
+            )
+            .into_sealed_committed(),
+        );
+
+        let data_set = vec![test_entry.clone()];
+
+        let se = SearchEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_pres(Attribute::Name)),
+        );
+        let expect = vec![test_entry];
+
+        let acp = AccessControlSearch::from_delegated_receiver(
+            "test_delegated_inheritance",
+            Uuid::new_v4(),
+            Some(UUID_TEST_GROUP_1),
+            None,
+            AccessControlTarget::Scope(filter_valid!(f_pres(Attribute::Class))),
+            Attribute::Name.as_ref(),
+        );
+
+        test_acp_search!(&se, vec![acp], data_set, expect);
+    }
+
+    #[test]
+    fn test_access_delegated_wildcard_scope() {
+        sketching::test_init();
+
+        let test_entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Name, Value::new_iname("testperson1")),
+                (Attribute::Uuid, Value::Uuid(UUID_TEST_ACCOUNT_1))
+            )
+            .into_sealed_committed(),
+        );
+
+        let data_set = vec![test_entry.clone()];
+
+        let se = SearchEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_pres(Attribute::Name)),
+        );
+        let expect = vec![test_entry];
+
+        let acp = AccessControlSearch::from_delegated_receiver(
+            "test_delegated_wildcard",
+            Uuid::new_v4(),
+            Some(UUID_TEST_GROUP_1),
+            None,
+            AccessControlTarget::Scope(filter_valid!(f_pres(Attribute::Class))),
+            "name uuid class",
+        );
+
+        test_acp_search!(&se, vec![acp], data_set, expect);
+    }
+
+    #[test]
+    fn test_access_delegated_nested_filter() {
+        sketching::test_init();
+
+        let test_entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Class, EntryClass::Account.to_value()),
+                (Attribute::Name, Value::new_iname("testperson1")),
+                (Attribute::Uuid, Value::Uuid(UUID_TEST_ACCOUNT_1))
+            )
+            .into_sealed_committed(),
+        );
+
+        let data_set = vec![test_entry.clone()];
+
+        let se = SearchEvent::new_impersonate_entry(
+            E_TEST_ACCOUNT_1.clone(),
+            filter_all!(f_pres(Attribute::Name)),
+        );
+        let expect = vec![test_entry];
+
+        let acp = AccessControlSearch::from_delegated_receiver(
+            "test_delegated_nested",
+            Uuid::new_v4(),
+            Some(UUID_TEST_GROUP_1),
+            None,
+            AccessControlTarget::Scope(filter_valid!(f_and!([
+                f_pres(Attribute::Class),
+                f_eq(Attribute::Name, PartialValue::new_iname("testperson1"))
+            ]))),
+            Attribute::Name.as_ref(),
+        );
+
+        test_acp_search!(&se, vec![acp], data_set, expect);
     }
 }

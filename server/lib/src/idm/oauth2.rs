@@ -24,8 +24,14 @@ use concread::cowcell::*;
 use crypto_glue::{s256::Sha256, traits::Digest};
 use hashbrown::HashMap;
 use hashbrown::HashSet;
+<<<<<<< HEAD
 use kanidm_proto::constants::*;
 pub use kanidm_proto::oauth2::{
+=======
+use kubidm_proto::constants::*;
+use kubidm_proto::oauth2::IssuedTokenType;
+pub use kubidm_proto::oauth2::{
+>>>>>>> master
     AccessTokenIntrospectRequest, AccessTokenIntrospectResponse, AccessTokenRequest,
     AccessTokenResponse, AccessTokenType, AuthorisationRequest, ClaimType, ClientAuth,
     ClientPostAuth, CodeChallengeMethod, DeviceAuthorizationResponse, DisplayValue,
@@ -2306,7 +2312,7 @@ impl IdmServerProxyReadTransaction<'_> {
                 && could_allow_localhost_redirect
                 && !type_allows_localhost_redirect
             {
-                warn!(redirect_uri = %auth_req.redirect_uri, "OAuth2 redirect_uri returns to localhost, but localhost redirection is not allowed. See 'kanidm system oauth2 enable-localhost-redirects'");
+                warn!(redirect_uri = %auth_req.redirect_uri, "OAuth2 redirect_uri returns to localhost, but localhost redirection is not allowed. See 'kubidm system oauth2 enable-localhost-redirects'");
             } else {
                 // Not localhost - must be missing the redirect uri then, which is why strict/origin/opaque all failed to assert
                 if o2rs.strict_redirect_uri {
@@ -3522,10 +3528,10 @@ mod tests {
         JwaAlg, Jwk, JwsCompact, JwsEs256Verifier, JwsVerifier, OidcSubject, OidcToken,
         OidcUnverified,
     };
-    use kanidm_lib_crypto::CryptoPolicy;
-    use kanidm_proto::constants::*;
-    use kanidm_proto::internal::{SshPublicKey, UserAuthToken};
-    use kanidm_proto::oauth2::*;
+    use kubidm_lib_crypto::CryptoPolicy;
+    use kubidm_proto::constants::*;
+    use kubidm_proto::internal::{SshPublicKey, UserAuthToken};
+    use kubidm_proto::oauth2::*;
     use std::collections::{BTreeMap, BTreeSet};
     use std::convert::TryFrom;
     use std::str::FromStr;
@@ -5381,7 +5387,7 @@ mod tests {
                 == Some(
                     Url::parse(&format!(
                         "https://idm.example.com{}",
-                        kanidm_proto::constants::uri::OAUTH2_TOKEN_INTROSPECT_ENDPOINT
+                        kubidm_proto::constants::uri::OAUTH2_TOKEN_INTROSPECT_ENDPOINT
                     ))
                     .unwrap()
                 )

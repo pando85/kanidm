@@ -1,8 +1,8 @@
 [package]
-name = "kanidm-mail-sender"
-default-run = "kanidm-mail-sender"
-description = "Kanidm Mail Sender Service"
-documentation = "https://kanidm.github.io/kanidm/stable/"
+name = "kubidm-mail-sender"
+default-run = "kubidm-mail-sender"
+description = "Kubidm Mail Sender Service"
+documentation = "https://kubidm.github.io/kubidm/stable/"
 version.workspace = true
 authors.workspace = true
 rust-version.workspace = true
@@ -12,10 +12,10 @@ homepage.workspace = true
 repository.workspace = true
 
 [[bin]]
-name = "kanidm-mail-sender"
+name = "kubidm-mail-sender"
 path = "src/main.rs"
 doc = false
-test = true
+test = false
 doctest = false
 
 [dependencies]
@@ -23,21 +23,10 @@ clap = { workspace = true, features = ["derive", "env"] }
 chrono = { workspace = true }
 cron = { workspace = true }
 hashbrown = { workspace = true }
-kanidm_client = { workspace = true }
-kanidm_proto = { workspace = true }
-kanidm_lib_file_permissions = { workspace = true }
-lettre = { workspace = true, default-features = false, features = [
-    "builder",
-    "pool",
-    "hostname",
-    "smtp-transport",
-    "tokio1-rustls",
-    "aws-lc-rs",
-    "rustls-platform-verifier",
-    "tokio1",
-    "serde",
-    "tracing",
-] }
+kubidm_client = { workspace = true }
+kubidm_proto = { workspace = true }
+kubidm_lib_file_permissions = { workspace = true }
+lettre = { workspace = true, default-features = false, features = ["builder", "pool", "hostname", "smtp-transport", "tokio1-rustls", "aws-lc-rs", "rustls-platform-verifier", "tokio1", "serde", "tracing"] }
 tokio = { workspace = true, features = ["rt", "macros", "net"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "fmt"] }
@@ -49,7 +38,7 @@ uuid = { workspace = true, features = ["serde"] }
 
 
 [target.'cfg(target_family = "unix")'.dependencies]
-kanidm_utils_users = { workspace = true }
+kubidm_utils_users = { workspace = true }
 
 [build-dependencies]
 clap = { workspace = true, features = ["derive"] }

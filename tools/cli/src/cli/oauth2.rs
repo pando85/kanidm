@@ -1,13 +1,13 @@
 use crate::OpType;
 use crate::{handle_client_error, Oauth2Opt, OutputMode};
-use crate::{KanidmClientParser, Oauth2ClaimMapJoin};
+use crate::{KubidmClientParser, Oauth2ClaimMapJoin};
 use anyhow::{Context, Error};
-use kanidm_proto::internal::{ImageValue, Oauth2ClaimMapJoin as ProtoOauth2ClaimMapJoin};
+use kubidm_proto::internal::{ImageValue, Oauth2ClaimMapJoin as ProtoOauth2ClaimMapJoin};
 use std::fs::read;
 use std::process::exit;
 
 impl Oauth2Opt {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: KubidmClientParser) {
         match self {
             #[cfg(feature = "dev-oauth2-device-flow")]
             Oauth2Opt::DeviceFlowDisable(nopt) => {
@@ -253,7 +253,7 @@ impl Oauth2Opt {
                             if opt.debug {
                                 eprintln!(
                                     "{}",
-                                    kanidm_lib_file_permissions::diagnose_path(path.as_ref())
+                                    kubidm_lib_file_permissions::diagnose_path(path.as_ref())
                                 );
                             }
                             Err(err).context(format!("Failed to read file at '{}'", path.display()))

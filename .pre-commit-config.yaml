@@ -1,0 +1,50 @@
+---
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-executables-have-shebangs
+        exclude: \.(rs|in)$
+      - id: check-merge-conflict
+      - id: check-shebang-scripts-are-executable
+        exclude: \.(rs|in)$
+      - id: end-of-file-fixer
+        exclude_types: [binary]
+        exclude: (^pykubidm/|^book/src/|^server/core/static/|^server/core/templates/|^server/lib/src/|^server/testkit/|^examples/|^tools/|^unix_integration/|^scripts/|^rlm_python/|^platform/|^proto/|^artwork/|\.yamllint$|\.codespell_ignore$|\.txt$|\.nix$|\.(rst|map|min\.js|min\.css|json|svg|pem|toml|rs|sh|service|conf|cfg|ini|md|js|yml|yaml|lock|drawio\.svg)$|Makefile$|Dockerfile$|\.gitignore$|\.editorconfig$|\.rustfmt\.toml$|deno\.json$|Cargo\.toml$|rust-toolchain\.toml$|prettier-ignore|eslint\.config\.mjs)
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+        exclude: (^pykubidm/|^book/src/|^server/core/static/|^server/core/templates/|^examples/|^tools/|^unix_integration/|^rlm_python/|^platform/|\.nix$|\.service$|\.(rst|map|min\.js|min\.css|json|svg|md|rs|lock|drawio\.svg)$)
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+        args: [-d, "{rules: {line-length: {max: 120, level: warning}}}"]
+        exclude: (^scripts/otel/|^\.github/workflows/)
+  - repo: https://github.com/gruntwork-io/pre-commit
+    rev: v0.1.30
+    hooks:
+      - id: shellcheck
+        exclude: (^server/builder\.sh$|^rlm_python/|^platform/|^tools/|\.in$)
+  - repo: https://github.com/renovatebot/pre-commit-hooks
+    rev: 43.103.0
+    hooks:
+      - id: renovate-config-validator
+  - repo: https://github.com/doublify/pre-commit-rust
+    rev: v1.0
+    hooks:
+      - id: fmt
+        name: cargo fmt
+        description: Format Rust code with cargo fmt
+        entry: cargo fmt
+        language: system
+        types: [rust]
+        pass_filenames: false
+      - id: clippy
+        name: cargo clippy
+        description: Lint Rust code with cargo clippy
+        entry: cargo clippy
+        language: system
+        types: [rust]
+        pass_filenames: false
+        args: ["--all-targets", "--all-features", "--", "-D", "warnings"]

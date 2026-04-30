@@ -132,3 +132,134 @@ pub fn migration_entry_attrs(
 
     (allow_attrs, allow_cls)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_migration_entry_classes_not_empty() {
+        assert!(!MIGRATION_ENTRY_CLASSES.is_empty());
+        assert!(!MIGRATION_IGNORE_CLASSES.is_empty());
+    }
+
+    #[test]
+    fn test_migration_entry_classes_contains_expected() {
+        assert!(MIGRATION_ENTRY_CLASSES.contains("object"));
+        assert!(MIGRATION_ENTRY_CLASSES.contains("account"));
+        assert!(MIGRATION_ENTRY_CLASSES.contains("person"));
+        assert!(MIGRATION_ENTRY_CLASSES.contains("group"));
+        assert!(MIGRATION_ENTRY_CLASSES.contains("service_account"));
+    }
+
+    #[test]
+    fn test_migration_ignore_classes_contains_key_objects() {
+        assert!(MIGRATION_IGNORE_CLASSES.contains("key_object"));
+        assert!(MIGRATION_IGNORE_CLASSES.contains("key_object_internal"));
+        assert!(MIGRATION_IGNORE_CLASSES.contains("key_object_hkdf_s256"));
+        assert!(MIGRATION_IGNORE_CLASSES.contains("key_object_jwt_es256"));
+    }
+
+    #[test]
+    fn test_migration_entry_attrs_empty_classes() {
+        let (attrs, cls) = migration_entry_attrs(&BTreeSet::new());
+        // Should always have class and uuid
+        assert!(attrs.contains(&Attribute::Class));
+        assert!(attrs.contains(&Attribute::Uuid));
+        // No class-specific attrs
+        assert!(cls.is_empty());
+    }
+
+    #[test]
+    fn test_migration_entry_attrs_domain_info() {
+        let mut classes = BTreeSet::new();
+        classes.insert("domain_info".to_string());
+
+        let (attrs, _cls) = migration_entry_attrs(&classes);
+        assert!(attrs.contains(&Attribute::DomainLdapBasedn));
+        assert!(attrs.contains(&Attribute::DomainDisplayName));
+        assert!(attrs.contains(&Attribute::Class));
+        assert!(attrs.contains(&Attribute::Uuid));
+    }
+
+    #[test]
+    fn test_migration_entry_attrs_group() {
+        let mut classes = BTreeSet::new();
+        classes.insert("group".to_string());
+
+        let (attrs, cls) = migration_entry_attrs(&classes);
+        assert!(attrs.contains(&Attribute::Member));
+        assert!(attrs.contains(&Attribute::Name));
+        assert!(attrs.contains(&Attribute::Description));
+        assert!(cls.contains("group"));
+        assert!(cls.contains("account_policy"));
+    }
+
+    #[test]
+    fn test_migration_entry_attrs_person() {
+        let mut classes = BTreeSet::new();
+        classes.insert("person".to_string());
+
+        let (attrs, cls) = migration_entry_attrs(&classes);
+        assert!(attrs.contains(&Attribute::Name));
+        assert!(attrs.contains(&Attribute::LegalName));
+        assert!(attrs.contains(&Attribute::Mail));
+        assert!(attrs.contains(&Attribute::SshPublicKey));
+        assert!(cls.contains("person"));
+        assert!(cls.contains("account"));
+    }
+
+    #[test]
+    fn test_migration_entry_attrs_service_account() {
+        let mut classes = BTreeSet::new();
+        classes.insert("service_account".to_string());
+
+        let (attrs, cls) = migration_entry_attrs(&classes);
+        assert!(attrs.contains(&Attribute::Name));
+        assert!(attrs.contains(&Attribute::Mail));
+        assert!(attrs.contains(&Attribute::SshPublicKey));
+        assert!(cls.contains("service_account"));
+        assert!(cls.contains("account"));
+    }
+
+    #[test]
+    fn test_migration_entry_attrs_account_policy() {
+        let mut classes = BTreeSet::new();
+        classes.insert("account_policy".to_string());
+
+        let (attrs, cls) = migration_entry_attrs(&classes);
+        assert!(attrs.contains(&Attribute::AuthSessionExpiry));
+        assert!(attrs.contains(&Attribute::AuthPasswordMinimumLength));
+        assert!(attrs.contains(&Attribute::CredentialTypeMinimum));
+        assert!(attrs.contains(&Attribute::PrivilegeExpiry));
+        assert!(cls.is_empty()); // account_policy adds attrs, not classes
+    }
+
+    #[test]
+    fn test_migration_entry_attrs_oauth2_rs() {
+        let mut classes = BTreeSet::new();
+        classes.insert("oauth2_resource_server".to_string());
+
+        let (attrs, cls) = migration_entry_attrs(&classes);
+        assert!(attrs.contains(&Attribute::Name));
+        assert!(attrs.contains(&Attribute::Description));
+        assert!(attrs.contains(&Attribute::OAuth2RsOrigin));
+        assert!(attrs.contains(&Attribute::OAuth2RsScopeMap));
+        assert!(cls.contains("oauth2_resource_server"));
+        assert!(cls.contains("oauth2_resource_server_basic"));
+        assert!(cls.contains("oauth2_resource_server_public"));
+    }
+
+    #[test]
+    fn test_migration_entry_attrs_multiple_classes() {
+        // When multiple classes present, last one wins for cls
+        let mut classes = BTreeSet::new();
+        classes.insert("person".to_string());
+        classes.insert("service_account".to_string());
+
+        let (attrs, _cls) = migration_entry_attrs(&classes);
+        // Both should contribute attrs
+        assert!(attrs.contains(&Attribute::Name));
+        assert!(attrs.contains(&Attribute::Mail));
+    }
+}

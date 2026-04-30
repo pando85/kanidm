@@ -2,8 +2,8 @@ use jsonschema::Validator;
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
-#[kanidmd_testkit::test]
-async fn check_that_the_swagger_api_loads(rsclient: &kanidm_client::KanidmClient) {
+#[kubidmd_testkit::test]
+async fn check_that_the_swagger_api_loads(rsclient: &kubidm_client::KubidmClient) {
     #[derive(Serialize, Deserialize, Debug)]
     struct OpenAPIResponse {
         pub openapi: String,

@@ -284,6 +284,7 @@ impl SchemaAttribute {
             // SyntaxType::Json => matches!(v, PartialValue::Json),
             // Should not be queried
             SyntaxType::Json | SyntaxType::Message => false,
+            SyntaxType::TimeBoundedMember => matches!(v, PartialValue::TimeBoundedMember(_)),
         };
         if r {
             Ok(())
@@ -353,6 +354,7 @@ impl SchemaAttribute {
                 SyntaxType::Sha256 => matches!(v, Value::Sha256(_)),
                 SyntaxType::EcKeyPrivate => matches!(v, Value::SecretValue(_)),
                 SyntaxType::Message => false,
+                SyntaxType::TimeBoundedMember => matches!(v, Value::TimeBoundedMember(_)),
             };
         if r {
             Ok(())
@@ -391,7 +393,7 @@ impl SchemaAttribute {
 
 /// An item representing a class and the rules for that class. These rules enforce that an
 /// [`Entry`]'s avas conform to a set of requirements, giving structure to an entry about
-/// what avas must or may exist. The kanidm project provides attributes in `systemmust` and
+/// what avas must or may exist. The kubidm project provides attributes in `systemmust` and
 /// `systemmay`, which can not be altered. An administrator may extend these in the `must`
 /// and `may` attributes.
 ///
@@ -1264,6 +1266,106 @@ impl SchemaWriteTransaction<'_> {
         );
 
         self.attributes.insert(
+            Attribute::AcpReceiverDelegated,
+            SchemaAttribute {
+                name: Attribute::AcpReceiverDelegated,
+                uuid: UUID_SCHEMA_ATTR_ACP_RECEIVER_DELEGATED,
+                description: String::from(
+                    "The delegated role that receives this access control to allow access",
+                ),
+                multivalue: false,
+                unique: false,
+                phantom: false,
+                sync_allowed: false,
+                replicated: Replicated::True,
+                indexed: true,
+                syntax: SyntaxType::ReferenceUuid,
+            },
+        );
+
+        self.attributes.insert(
+            Attribute::AcpTargetDelegatedScope,
+            SchemaAttribute {
+                name: Attribute::AcpTargetDelegatedScope,
+                uuid: UUID_SCHEMA_ATTR_ACP_TARGET_DELEGATED_SCOPE,
+                description: String::from("The delegated scope filter for target definition"),
+                multivalue: false,
+                unique: false,
+                phantom: false,
+                sync_allowed: false,
+                replicated: Replicated::True,
+                indexed: false,
+                syntax: SyntaxType::JsonFilter,
+            },
+        );
+
+        self.attributes.insert(
+            Attribute::DelegatedScopeFilter,
+            SchemaAttribute {
+                name: Attribute::DelegatedScopeFilter,
+                uuid: UUID_SCHEMA_ATTR_DELEGATED_SCOPE_FILTER,
+                description: String::from(
+                    "A filter defining the scope of delegated administration",
+                ),
+                multivalue: false,
+                unique: false,
+                phantom: false,
+                sync_allowed: false,
+                replicated: Replicated::True,
+                indexed: false,
+                syntax: SyntaxType::JsonFilter,
+            },
+        );
+
+        self.attributes.insert(
+            Attribute::DelegatedScopeGroup,
+            SchemaAttribute {
+                name: Attribute::DelegatedScopeGroup,
+                uuid: UUID_SCHEMA_ATTR_DELEGATED_SCOPE_GROUP,
+                description: String::from("A group defining the scope of delegated administration"),
+                multivalue: false,
+                unique: false,
+                phantom: false,
+                sync_allowed: false,
+                replicated: Replicated::True,
+                indexed: true,
+                syntax: SyntaxType::ReferenceUuid,
+            },
+        );
+
+        self.attributes.insert(
+            Attribute::DelegatedBy,
+            SchemaAttribute {
+                name: Attribute::DelegatedBy,
+                uuid: UUID_SCHEMA_ATTR_DELEGATED_BY,
+                description: String::from("The UUID of the user who delegated this role"),
+                multivalue: false,
+                unique: false,
+                phantom: false,
+                sync_allowed: false,
+                replicated: Replicated::True,
+                indexed: true,
+                syntax: SyntaxType::ReferenceUuid,
+            },
+        );
+
+        self.attributes.insert(
+            Attribute::DelegatedRoleTemplate,
+            SchemaAttribute {
+                name: Attribute::DelegatedRoleTemplate,
+                uuid: UUID_SCHEMA_ATTR_DELEGATED_ROLE_TEMPLATE,
+                description: String::from("The template UUID for this delegated role"),
+                multivalue: false,
+                unique: false,
+                phantom: false,
+                sync_allowed: false,
+                replicated: Replicated::True,
+                indexed: true,
+                syntax: SyntaxType::ReferenceUuid,
+            },
+        );
+
+        self.attributes.insert(
             Attribute::AcpTargetScope,
             SchemaAttribute {
                 name: Attribute::AcpTargetScope,
@@ -1409,6 +1511,92 @@ impl SchemaWriteTransaction<'_> {
                     syntax: SyntaxType::Utf8StringInsensitive,
                 },
             );
+        self.attributes.insert(
+            Attribute::AcpRequireReauth,
+            SchemaAttribute {
+                name: Attribute::AcpRequireReauth,
+                uuid: UUID_SCHEMA_ATTR_ACP_REQUIRE_REAUTH,
+                description: String::from(
+                    "A flag to determine if this ACP requires step-up authentication for operations.",
+                ),
+                multivalue: false,
+                unique: false,
+                phantom: false,
+                sync_allowed: false,
+                replicated: Replicated::True,
+                indexed: false,
+                syntax: SyntaxType::Boolean,
+            },
+        );
+        self.attributes.insert(
+            Attribute::AcpReauthMaxAge,
+            SchemaAttribute {
+                name: Attribute::AcpReauthMaxAge,
+                uuid: UUID_SCHEMA_ATTR_ACP_REAUTH_MAX_AGE,
+                description: String::from(
+                    "The maximum age in seconds since last authentication before step-up is required.",
+                ),
+                multivalue: false,
+                unique: false,
+                phantom: false,
+                sync_allowed: false,
+                replicated: Replicated::True,
+                indexed: false,
+                syntax: SyntaxType::Uint32,
+            },
+        );
+        // Fine-Grained Permission Scoping Attributes
+        self.attributes.insert(
+            Attribute::AcpTimeRestrictionStart,
+            SchemaAttribute {
+                name: Attribute::AcpTimeRestrictionStart,
+                uuid: UUID_SCHEMA_ATTR_ACP_TIME_RESTRICTION_START,
+                description: String::from(
+                    "The start time for time-based access restrictions on this ACP.",
+                ),
+                multivalue: false,
+                unique: false,
+                phantom: false,
+                sync_allowed: false,
+                replicated: Replicated::True,
+                indexed: false,
+                syntax: SyntaxType::DateTime,
+            },
+        );
+        self.attributes.insert(
+            Attribute::AcpTimeRestrictionEnd,
+            SchemaAttribute {
+                name: Attribute::AcpTimeRestrictionEnd,
+                uuid: UUID_SCHEMA_ATTR_ACP_TIME_RESTRICTION_END,
+                description: String::from(
+                    "The end time for time-based access restrictions on this ACP.",
+                ),
+                multivalue: false,
+                unique: false,
+                phantom: false,
+                sync_allowed: false,
+                replicated: Replicated::True,
+                indexed: false,
+                syntax: SyntaxType::DateTime,
+            },
+        );
+        self.attributes.insert(
+            Attribute::AcpScopeFilter,
+            SchemaAttribute {
+                name: Attribute::AcpScopeFilter,
+                uuid: UUID_SCHEMA_ATTR_ACP_SCOPE_FILTER,
+                description: String::from(
+                    "A filter defining the scope of targets this ACP applies to within the target scope.",
+                ),
+                multivalue: false,
+                unique: false,
+                phantom: false,
+                sync_allowed: false,
+                replicated: Replicated::True,
+                indexed: false,
+                syntax: SyntaxType::JsonFilter,
+            },
+        );
         self.attributes.insert(
             Attribute::EntryManagedBy,
             SchemaAttribute {
@@ -2161,7 +2349,12 @@ impl SchemaWriteTransaction<'_> {
                 name: EntryClass::AccessControlProfile.into(),
                 uuid: UUID_SCHEMA_CLASS_ACCESS_CONTROL_PROFILE,
                 description: String::from("System Access Control Profile Class"),
-                systemmay: vec![Attribute::AcpEnable, Attribute::Description],
+                systemmay: vec![
+                    Attribute::AcpEnable,
+                    Attribute::Description,
+                    Attribute::AcpRequireReauth,
+                    Attribute::AcpReauthMaxAge,
+                ],
                 systemmust: vec![Attribute::Name],
                 systemsupplements: vec![
                     EntryClass::AccessControlSearch.into(),
@@ -2204,6 +2397,57 @@ impl SchemaWriteTransaction<'_> {
                 description: String::from("System Access Control Profile Target - Scope"),
                 systemmust: vec![Attribute::AcpTargetScope],
                 systemsupplements: vec![EntryClass::AccessControlProfile.into()],
+                ..Default::default()
+            },
+        );
+        self.classes.insert(
+            EntryClass::AccessControlReceiverDelegated.into(),
+            SchemaClass {
+                name: EntryClass::AccessControlReceiverDelegated.into(),
+                uuid: UUID_SCHEMA_CLASS_ACCESS_CONTROL_RECEIVER_DELEGATED,
+                description: String::from("System Access Control Profile Receiver - Delegated"),
+                systemmust: vec![],
+                systemmay: vec![
+                    Attribute::AcpReceiverDelegated,
+                    Attribute::DelegatedScopeGroup,
+                    Attribute::DelegatedScopeFilter,
+                ],
+                systemsupplements: vec![EntryClass::AccessControlProfile.into()],
+                systemexcludes: vec![
+                    EntryClass::AccessControlReceiverGroup.into(),
+                    EntryClass::AccessControlReceiverEntryManager.into(),
+                ],
+                ..Default::default()
+            },
+        );
+        self.classes.insert(
+            EntryClass::AccessControlTargetDelegatedScope.into(),
+            SchemaClass {
+                name: EntryClass::AccessControlTargetDelegatedScope.into(),
+                uuid: UUID_SCHEMA_CLASS_ACCESS_CONTROL_TARGET_DELEGATED_SCOPE,
+                description: String::from("System Access Control Profile Target - Delegated Scope"),
+                systemmust: vec![],
+                systemmay: vec![
+                    Attribute::DelegatedScopeGroup,
+                    Attribute::DelegatedScopeFilter,
+                ],
+                systemsupplements: vec![EntryClass::AccessControlProfile.into()],
+                systemexcludes: vec![EntryClass::AccessControlTargetScope.into()],
+                ..Default::default()
+            },
+        );
+        self.classes.insert(
+            EntryClass::DelegatedRole.into(),
+            SchemaClass {
+                name: EntryClass::DelegatedRole.into(),
+                uuid: UUID_SCHEMA_CLASS_DELEGATED_ROLE,
+                description: String::from("A delegated administration role template"),
+                systemmust: vec![Attribute::Name],
+                systemmay: vec![
+                    Attribute::Description,
+                    Attribute::DelegatedBy,
+                    Attribute::DelegatedRoleTemplate,
+                ],
                 ..Default::default()
             },
         );

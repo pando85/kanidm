@@ -11,11 +11,11 @@ use compact_jwt::{crypto::JwsRs256Signer, JwsEs256Signer};
 use crypto_glue::{s256::Sha256Output, x509::Certificate};
 use dyn_clone::DynClone;
 use hashbrown::HashSet;
-use kanidm_proto::internal::ImageValue;
-use kanidm_proto::internal::{Filter as ProtoFilter, UiHint};
-use kanidm_proto::scim_v1::JsonValue;
-use kanidm_proto::scim_v1::ScimOauth2ClaimMapJoinChar;
-use kanidm_proto::v1::OutboundMessage;
+use kubidm_proto::internal::ImageValue;
+use kubidm_proto::internal::{Filter as ProtoFilter, UiHint};
+use kubidm_proto::scim_v1::JsonValue;
+use kubidm_proto::scim_v1::ScimOauth2ClaimMapJoinChar;
+use kubidm_proto::v1::OutboundMessage;
 use smolset::SmolSet;
 use sshkey_attest::proto::PublicKey as SshPublicKey;
 use std::cmp::Ordering;
@@ -58,6 +58,7 @@ pub use self::session::{ValueSetApiToken, ValueSetOauth2Session, ValueSetSession
 pub use self::spn::ValueSetSpn;
 pub use self::ssh::ValueSetSshKey;
 pub use self::syntax::ValueSetSyntax;
+pub use self::time_bounded_member::ValueSetTimeBoundedMember;
 pub use self::totp::ValueSetTotpSecret;
 pub use self::uihint::ValueSetUiHint;
 pub use self::uint32::ValueSetUint32;
@@ -94,6 +95,7 @@ mod session;
 mod spn;
 mod ssh;
 mod syntax;
+mod time_bounded_member;
 mod totp;
 mod uihint;
 mod uint32;
@@ -698,6 +700,13 @@ pub trait ValueSetT: std::fmt::Debug + DynClone {
         None
     }
 
+    fn as_time_bounded_member_set(
+        &self,
+    ) -> Option<&BTreeMap<Uuid, crate::value::TimeBoundedMember>> {
+        debug_assert!(false);
+        None
+    }
+
     fn repl_merge_valueset(
         &self,
         _older: &ValueSet,
@@ -751,13 +760,13 @@ pub enum ScimValueIntermediate {
 }
 
 pub enum ScimResolveStatus {
-    Resolved(ScimValueKanidm),
+    Resolved(ScimValueKubidm),
     NeedsResolution(ScimValueIntermediate),
 }
 
 impl<T> From<T> for ScimResolveStatus
 where
-    T: Into<ScimValueKanidm>,
+    T: Into<ScimValueKubidm>,
 {
     fn from(v: T) -> Self {
         Self::Resolved(v.into())
@@ -766,7 +775,7 @@ where
 
 #[cfg(test)]
 impl ScimResolveStatus {
-    pub fn assume_resolved(self) -> ScimValueKanidm {
+    pub fn assume_resolved(self) -> ScimValueKubidm {
         match self {
             ScimResolveStatus::Resolved(v) => v,
             ScimResolveStatus::NeedsResolution(_) => {
@@ -910,7 +919,8 @@ pub fn from_result_value_iter(
         | Value::HexString(_)
         | Value::Json(_)
         | Value::Sha256(_)
-        | Value::KeyInternal { .. } => {
+        | Value::KeyInternal { .. }
+        | Value::TimeBoundedMember(_) => {
             debug_assert!(false);
             return Err(OperationError::InvalidValueState);
         }
@@ -1002,6 +1012,7 @@ pub fn from_value_iter(mut iter: impl Iterator<Item = Value>) -> Result<ValueSet
             debug_assert!(false);
             return Err(OperationError::InvalidValueState);
         }
+        Value::TimeBoundedMember(m) => ValueSetTimeBoundedMember::new(m),
     };
 
     for v in iter {
@@ -1067,6 +1078,7 @@ pub fn from_db_valueset_v2(dbvs: DbValueSetV2) -> Result<ValueSet, OperationErro
         DbValueSetV2::Json(object) => Ok(ValueSetJson::new(object)),
         DbValueSetV2::Sha256(set) => ValueSetSha256::from_dbvs2(set),
         DbValueSetV2::Message(object) => Ok(ValueSetMessage::new(object)),
+        DbValueSetV2::TimeBoundedMember(set) => ValueSetTimeBoundedMember::from_dbvs2(set),
         DbValueSetV2::EcKeyPrivate(_key) => Err(OperationError::InvalidState),
     }
 }

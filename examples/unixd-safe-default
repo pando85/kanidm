@@ -1,15 +1,15 @@
-# Kanidm Unixd minimal Service Configuration - /etc/kanidm/unixd
-# For a full example and documentation, see /usr/share/kanidm-unixd/unixd
+# Kubidm Unixd minimal Service Configuration - /etc/kubidm/unixd
+# For a full example and documentation, see /usr/share/kubidm-unixd/unixd
 # or `example/unixd` in the source repository
 
 version = '2'
 
-# Steps to enable the Kanidm auth provider:
-# 1. Uncomment the `[kanidm]` line below to enable the provider.
+# Steps to enable the Kubidm auth provider:
+# 1. Uncomment the `[kubidm]` line below to enable the provider.
 # 2. Set the `pam_allowed_login_groups` option to one or more valid posix groups.
-# 3. Also update /etc/kanidm/config and set the `idm_uri` option.
+# 3. Also update /etc/kubidm/config and set the `idm_uri` option.
 
-# [kanidm]
+# [kubidm]
 # WITHOUT THIS SET, NOBODY WILL BE ABLE TO LOG IN VIA PAM
 #
 # pam_allowed_login_groups = ["your_posix_login_group"]

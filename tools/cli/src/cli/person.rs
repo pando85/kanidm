@@ -2,27 +2,27 @@ use crate::common::try_expire_at_from_string;
 use crate::OpType;
 use crate::{
     handle_client_error, password_prompt, AccountCertificate, AccountCredential, AccountRadius,
-    AccountSsh, AccountUserAuthToken, AccountValidity, KanidmClientParser, OutputMode, PersonOpt,
+    AccountSsh, AccountUserAuthToken, AccountValidity, KubidmClientParser, OutputMode, PersonOpt,
     PersonPosix,
 };
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::{Confirm, Input, Password, Select};
-use kanidm_client::ClientError::Http as ClientErrorHttp;
-use kanidm_client::KanidmClient;
-use kanidm_proto::attribute::Attribute;
-use kanidm_proto::constants::{
+use kubidm_client::ClientError::Http as ClientErrorHttp;
+use kubidm_client::KubidmClient;
+use kubidm_proto::attribute::Attribute;
+use kubidm_proto::constants::{
     ATTR_ACCOUNT_EXPIRE, ATTR_ACCOUNT_SOFTLOCK_EXPIRE, ATTR_ACCOUNT_VALID_FROM, ATTR_GIDNUMBER,
 };
-use kanidm_proto::internal::OperationError::{
+use kubidm_proto::internal::OperationError::{
     DuplicateKey, DuplicateLabel, InvalidLabel, NoMatchingEntries, PasswordQuality,
 };
-use kanidm_proto::internal::{
+use kubidm_proto::internal::{
     CUCredState, CUExtPortal, CUIntentToken, CURegState, CURegWarning, CUSessionToken, CUStatus,
     SshPublicKey, TotpSecret,
 };
-use kanidm_proto::internal::{CredentialDetail, CredentialDetailType};
-use kanidm_proto::messages::{AccountChangeMessage, ConsoleOutputMode, MessageStatus};
-use kanidm_proto::scim_v1::{client::ScimSshPublicKeys, ScimEntryGetQuery};
+use kubidm_proto::internal::{CredentialDetail, CredentialDetailType};
+use kubidm_proto::messages::{AccountChangeMessage, ConsoleOutputMode, MessageStatus};
+use kubidm_proto::scim_v1::{client::ScimSshPublicKeys, ScimEntryGetQuery};
 use qrcode::render::unicode;
 use qrcode::QrCode;
 use std::fmt::{self, Debug};
@@ -37,7 +37,7 @@ use crate::webauthn::get_authenticator;
 use webauthn_authenticator_rs::WebauthnAuthenticator;
 
 impl PersonOpt {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: KubidmClientParser) {
         match self {
             // id/cred/primary/set
             PersonOpt::Credential { commands } => commands.exec(opt).await,
@@ -502,7 +502,7 @@ impl PersonOpt {
 }
 
 impl AccountCertificate {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: KubidmClientParser) {
         match self {
             AccountCertificate::Status { account_id } => {
                 let client = opt.to_client(OpType::Read).await;
@@ -554,7 +554,7 @@ impl AccountCertificate {
 }
 
 impl AccountCredential {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: KubidmClientParser) {
         match self {
             AccountCredential::Status(aopt) => {
                 let client = opt.to_client(OpType::Read).await;
@@ -645,7 +645,7 @@ impl AccountCredential {
                         println!();
                         println!("This link: {}", url.as_str());
                         println!(
-                            "Or run this command: kanidm person credential use-reset-token {token}"
+                            "Or run this command: kubidm person credential use-reset-token {token}"
                         );
 
                         // Now get the abs time
@@ -811,7 +811,7 @@ impl FromStr for CUAction {
     }
 }
 
-async fn totp_enrol_prompt(session_token: &CUSessionToken, client: &KanidmClient) {
+async fn totp_enrol_prompt(session_token: &CUSessionToken, client: &KubidmClient) {
     // First, submit the server side gen.
     let totp_secret: TotpSecret = match client
         .idm_account_credential_update_init_totp(session_token)
@@ -1011,7 +1011,7 @@ impl fmt::Display for PasskeyClass {
 #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
 async fn passkey_enrol_prompt(
     _session_token: &CUSessionToken,
-    _client: &KanidmClient,
+    _client: &KubidmClient,
     _pk_class: PasskeyClass,
 ) {
     eprintln!("Passkey enrolment is not supported on this platform");
@@ -1020,7 +1020,7 @@ async fn passkey_enrol_prompt(
 #[cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))]
 async fn passkey_enrol_prompt(
     session_token: &CUSessionToken,
-    client: &KanidmClient,
+    client: &KubidmClient,
     pk_class: PasskeyClass,
 ) {
     let pk_reg = match pk_class {
@@ -1115,7 +1115,7 @@ async fn passkey_enrol_prompt(
 
 async fn passkey_remove_prompt(
     session_token: &CUSessionToken,
-    client: &KanidmClient,
+    client: &KubidmClient,
     pk_class: PasskeyClass,
 ) {
     // TODO: make this a scrollable selector with a "cancel" option as the default
@@ -1188,7 +1188,7 @@ async fn passkey_remove_prompt(
     }
 }
 
-async fn sshkey_add_prompt(session_token: &CUSessionToken, client: &KanidmClient) {
+async fn sshkey_add_prompt(session_token: &CUSessionToken, client: &KubidmClient) {
     // Get the key.
     let ssh_pub_key_str: String = Input::new()
         .with_prompt("\nEnter the SSH Public Key (blank to stop) # ")
@@ -1255,7 +1255,7 @@ async fn sshkey_add_prompt(session_token: &CUSessionToken, client: &KanidmClient
     }
 }
 
-async fn sshkey_remove_prompt(session_token: &CUSessionToken, client: &KanidmClient) {
+async fn sshkey_remove_prompt(session_token: &CUSessionToken, client: &KubidmClient) {
     let label: String = Input::new()
         .with_prompt("\nEnter the label of the new SSH Public Key (blank to stop) # ")
         .allow_empty(true)
@@ -1338,6 +1338,7 @@ fn display_status(status: CUStatus) {
         unixcred_state,
         sshkeys,
         sshkeys_state,
+        ..
     } = status;
 
     println!("spn: {spn}");
@@ -1506,7 +1507,7 @@ fn display_status(status: CUStatus) {
 async fn credential_update_exec(
     session_token: CUSessionToken,
     status: CUStatus,
-    client: KanidmClient,
+    client: KubidmClient,
 ) {
     trace!("started credential update exec");
     // Show the initial status,

@@ -5,10 +5,10 @@
 //! or domain entries that are able to be replicated.
 
 use cidr::IpCidr;
-use kanidm_proto::backup::BackupCompression;
-use kanidm_proto::config::ServerRole;
-use kanidm_proto::constants::DEFAULT_SERVER_ADDRESS;
-use kanidm_proto::internal::FsType;
+use kubidm_proto::backup::{BackupCompression, BackupEncryptionConfig, S3Config, WalArchiveConfig};
+use kubidm_proto::config::ServerRole;
+use kubidm_proto::constants::DEFAULT_SERVER_ADDRESS;
+use kubidm_proto::internal::FsType;
 use serde::Deserialize;
 use serde_with::{formats::PreferOne, serde_as, OneOrMany};
 use sketching::LogLevel;
@@ -81,16 +81,32 @@ pub struct OnlineBackup {
 
     #[serde(default)]
     pub compression: BackupCompression,
+
+    /// S3 configuration for cloud backup storage. If provided, backups will also be stored in S3.
+    #[serde(default)]
+    pub s3: Option<S3Config>,
+
+    /// Encryption configuration for client-side backup encryption.
+    /// When enabled, backups are encrypted with AES-256-GCM before storage.
+    #[serde(default)]
+    pub encryption: BackupEncryptionConfig,
+
+    /// WAL archive configuration for Point-in-Time Recovery (PITR).
+    #[serde(default)]
+    pub wal_archive: Option<WalArchiveConfig>,
 }
 
 impl Default for OnlineBackup {
     fn default() -> Self {
         OnlineBackup {
-            path: None, // This makes it revert to the kanidm_db path
+            path: None,
             schedule: default_online_backup_schedule(),
             versions: default_online_backup_versions(),
             enabled: default_online_backup_enabled(),
             compression: BackupCompression::default(),
+            s3: None,
+            encryption: BackupEncryptionConfig::default(),
+            wal_archive: None,
         }
     }
 }
@@ -260,14 +276,14 @@ impl Display for HttpAddressInfo {
 #[derive(Debug, Deserialize, Default)]
 #[serde(deny_unknown_fields)]
 pub struct ServerConfig {
-    /// *REQUIRED* - Kanidm Domain, eg `kanidm.example.com`.
+    /// *REQUIRED* - Kubidm Domain, eg `kubidm.example.com`.
     domain: Option<String>,
     /// *REQUIRED* - The user-facing HTTPS URL for this server, eg <https://idm.example.com>
     origin: Option<Url>,
     /// File path of the database file
     db_path: Option<PathBuf>,
     /// The filesystem type, either "zfs" or "generic". Defaults to "generic" if unset. I you change this, run a database vacuum.
-    db_fs_type: Option<kanidm_proto::internal::FsType>,
+    db_fs_type: Option<kubidm_proto::internal::FsType>,
 
     ///  *REQUIRED* - The file path to the TLS Certificate Chain
     tls_chain: Option<PathBuf>,
@@ -279,7 +295,7 @@ pub struct ServerConfig {
 
     /// The listener address for the HTTPS server.
     ///
-    /// eg. `[::]:8443` or `127.0.0.1:8443`. Defaults to [kanidm_proto::constants::DEFAULT_SERVER_ADDRESS]
+    /// eg. `[::]:8443` or `127.0.0.1:8443`. Defaults to [kubidm_proto::constants::DEFAULT_SERVER_ADDRESS]
     bindaddress: Option<String>,
     /// The listener address for the LDAP server.
     ///
@@ -317,6 +333,10 @@ pub struct ServerConfig {
     repl_config: Option<ReplicationConfiguration>,
     /// An optional OpenTelemetry collector (GRPC) url to send trace and log data to, eg `http://localhost:4317`. If not set, disables the feature.
     otel_grpc_url: Option<String>,
+    /// Policy Information Point (PIP) configuration for external attribute retrieval.
+    /// See [kubidmd_lib::idm::pip::config::PipConfig] for details.
+    #[serde(default)]
+    pip_config: Option<kubidmd_lib::idm::pip::config::PipConfig>,
 }
 
 impl ServerConfigUntagged {
@@ -325,7 +345,7 @@ impl ServerConfigUntagged {
         // see if we can load it from the config file you asked for
         let mut f: File = File::open(config_path.as_ref()).inspect_err(|e| {
             eprintln!("Unable to open config file [{e:?}] 🥺");
-            let diag = kanidm_lib_file_permissions::diagnose_path(config_path.as_ref());
+            let diag = kubidm_lib_file_permissions::diagnose_path(config_path.as_ref());
             eprintln!("{diag}");
         })?;
 
@@ -333,7 +353,7 @@ impl ServerConfigUntagged {
 
         f.read_to_string(&mut contents).inspect_err(|e| {
             eprintln!("unable to read contents {e:?}");
-            let diag = kanidm_lib_file_permissions::diagnose_path(config_path.as_ref());
+            let diag = kubidm_lib_file_permissions::diagnose_path(config_path.as_ref());
             eprintln!("{diag}");
         })?;
 
@@ -376,7 +396,7 @@ pub struct ServerConfigV2 {
     domain: Option<String>,
     origin: Option<Url>,
     db_path: Option<PathBuf>,
-    db_fs_type: Option<kanidm_proto::internal::FsType>,
+    db_fs_type: Option<kubidm_proto::internal::FsType>,
     tls_chain: Option<PathBuf>,
     tls_key: Option<PathBuf>,
     tls_client_ca: Option<PathBuf>,
@@ -404,6 +424,9 @@ pub struct ServerConfigV2 {
     #[serde(rename = "replication")]
     repl_config: Option<ReplicationConfiguration>,
     otel_grpc_url: Option<String>,
+    /// Policy Information Point (PIP) configuration for external attribute retrieval.
+    #[serde(default)]
+    pip_config: Option<kubidmd_lib::idm::pip::config::PipConfig>,
 }
 
 #[derive(Debug, Clone)]
@@ -453,6 +476,8 @@ pub struct Configuration {
     /// This allows internally setting some unsafe options for replication.
     pub integration_repl_config: Option<Box<IntegrationReplConfig>>,
     pub otel_grpc_url: Option<String>,
+    /// Policy Information Point (PIP) configuration for external attribute retrieval.
+    pub pip_config: Option<kubidmd_lib::idm::pip::config::PipConfig>,
 }
 
 impl Configuration {
@@ -460,7 +485,6 @@ impl Configuration {
         ConfigurationBuilder {
             bindaddress: None,
             ldapbindaddress: None,
-            // set by build profiles
             adminbindpath: env!("KANIDM_SERVER_ADMIN_BIND_PATH").to_string(),
             threads: std::thread::available_parallelism()
                 .map(|t| t.get())
@@ -472,7 +496,7 @@ impl Configuration {
             db_fs_type: None,
             db_arc_size: None,
             migration_path: None,
-            maximum_request: 256 * 1024, // 256k
+            maximum_request: 256 * 1024,
             http_client_address_info: HttpAddressInfo::default(),
             ldap_client_address_info: LdapAddressInfo::default(),
             tls_key: None,
@@ -485,6 +509,7 @@ impl Configuration {
             role: None,
             repl_config: None,
             otel_grpc_url: None,
+            pip_config: None,
         }
     }
 
@@ -499,7 +524,7 @@ impl Configuration {
             db_fs_type: None,
             db_arc_size: None,
             migration_path: None,
-            maximum_request: 256 * 1024, // 256k
+            maximum_request: 256 * 1024,
             http_client_address_info: HttpAddressInfo::default(),
             ldap_client_address_info: LdapAddressInfo::default(),
             tls_config: None,
@@ -513,6 +538,7 @@ impl Configuration {
             repl_config: None,
             integration_repl_config: None,
             otel_grpc_url: None,
+            pip_config: None,
         }
     }
 }
@@ -560,17 +586,23 @@ impl fmt::Display for Configuration {
 
         write!(f, "with TLS: {}, ", self.tls_config.is_some())?;
         match &self.online_backup {
-            Some(bck) => write!(
-                f,
-                "online_backup: enabled: {} - schedule: {} versions: {} path: {}, ",
-                bck.enabled,
-                bck.schedule,
-                bck.versions,
-                bck.path
-                    .as_ref()
-                    .map(|p| p.to_string_lossy().to_string())
-                    .unwrap_or("<unset>".to_string())
-            ),
+            Some(bck) => {
+                write!(
+                    f,
+                    "online_backup: enabled: {} - schedule: {} versions: {} path: {}, ",
+                    bck.enabled,
+                    bck.schedule,
+                    bck.versions,
+                    bck.path
+                        .as_ref()
+                        .map(|p| p.to_string_lossy().to_string())
+                        .unwrap_or("<unset>".to_string())
+                )?;
+                if let Some(s3) = &bck.s3 {
+                    write!(f, "s3: {}, ", s3)?;
+                }
+                write!(f, "")
+            }
             None => write!(f, "online_backup: disabled, "),
         }?;
         write!(
@@ -624,11 +656,12 @@ pub struct ConfigurationBuilder {
     log_level: Option<LogLevel>,
     repl_config: Option<ReplicationConfiguration>,
     otel_grpc_url: Option<String>,
+    pip_config: Option<kubidmd_lib::idm::pip::config::PipConfig>,
 }
 
 impl ConfigurationBuilder {
     #![allow(clippy::needless_pass_by_value)]
-    pub fn add_cli_config(mut self, cli_config: &kanidm_proto::cli::KanidmdCli) -> Self {
+    pub fn add_cli_config(mut self, cli_config: &kubidm_proto::cli::KubidmdCli) -> Self {
         // logging
         if let Some(log_level) = &cli_config.log_level {
             self.log_level = Some(*log_level);
@@ -866,6 +899,10 @@ impl ConfigurationBuilder {
             self.otel_grpc_url = config.otel_grpc_url;
         }
 
+        if config.pip_config.is_some() {
+            self.pip_config = config.pip_config;
+        }
+
         self
     }
 
@@ -954,6 +991,10 @@ impl ConfigurationBuilder {
             self.otel_grpc_url = config.otel_grpc_url;
         }
 
+        if config.pip_config.is_some() {
+            self.pip_config = config.pip_config;
+        }
+
         self
     }
 
@@ -988,6 +1029,7 @@ impl ConfigurationBuilder {
             log_level,
             repl_config,
             otel_grpc_url,
+            pip_config,
         } = self;
 
         let tls_config = match (tls_key, tls_chain, tls_client_ca) {
@@ -1055,6 +1097,7 @@ impl ConfigurationBuilder {
             otel_grpc_url,
             integration_repl_config: None,
             integration_test_config: None,
+            pip_config,
         })
     }
 }

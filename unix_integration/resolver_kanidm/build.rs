@@ -30,16 +30,21 @@ fn main() {
     for shell in [Shell::Bash, Shell::Elvish, Shell::Fish, Shell::Zsh] {
         generate_to(
             shell,
+<<<<<<< HEAD:unix_integration/resolver_kanidm/build.rs
             &mut SshAuthorisedKeysOpt::command(),
             "kanidm_ssh_authorizedkeys",
+=======
+            &mut SshAuthorizedOpt::command(),
+            "kubidm_ssh_authorizedkeys",
+>>>>>>> master:unix_integration/resolver/build.rs
             comp_dir.clone(),
         )
         .ok();
 
         generate_to(
             shell,
-            &mut KanidmUnixParser::command(),
-            "kanidm_unix",
+            &mut KubidmUnixParser::command(),
+            "kubidm_unix",
             comp_dir.clone(),
         )
         .ok();

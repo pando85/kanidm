@@ -1,0 +1,405 @@
+#![deny(warnings)]
+use kubidm_client::KubidmClient;
+use kubidm_proto::internal::{
+    AuthorizationAction, AuthorizationDecision, AuthorizationRequest, AuthorizationResponse,
+    BatchAuthorizationRequest, BatchAuthorizationResponse,
+};
+use kubidmd_testkit::{ADMIN_TEST_PASSWORD, ADMIN_TEST_USER};
+use std::collections::BTreeSet;
+use uuid::Uuid;
+
+#[kubidmd_testkit::test]
+async fn test_authorization_endpoint_unauthorized(rsclient: &KubidmClient) {
+    let resource_uuid = Uuid::new_v4();
+    let request = AuthorizationRequest::new(None, resource_uuid, AuthorizationAction::Search);
+
+    let result: Result<AuthorizationResponse, kubidm_client::ClientError> = rsclient
+        .perform_post_request("/v1/authorize", request)
+        .await;
+
+    assert!(result.is_err());
+    match result.unwrap_err() {
+        kubidm_client::ClientError::Unauthorized => (),
+        kubidm_client::ClientError::Http(kubidm_client::StatusCode::UNAUTHORIZED, _, _) => (),
+        other => panic!("Expected Unauthorized error, got {:?}", other),
+    }
+}
+
+#[kubidmd_testkit::test]
+async fn test_authorization_endpoint_authenticated_admin(rsclient: &KubidmClient) {
+    let res = rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await;
+    assert!(res.is_ok());
+
+    let admin_uuid = rsclient
+        .whoami()
+        .await
+        .expect("Unable to call whoami")
+        .expect("No entry matching self returned")
+        .attrs
+        .get("uuid")
+        .and_then(|v| v.first())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .expect("Unable to parse admin uuid");
+
+    let request =
+        AuthorizationRequest::new(Some(admin_uuid), admin_uuid, AuthorizationAction::Search);
+
+    let response: AuthorizationResponse = rsclient
+        .perform_post_request("/v1/authorize", request)
+        .await
+        .expect("Authorization request failed");
+
+    assert_eq!(response.resource, admin_uuid);
+    assert_eq!(response.action, AuthorizationAction::Search);
+}
+
+#[kubidmd_testkit::test]
+async fn test_authorization_decision_deny(rsclient: &KubidmClient) {
+    let res = rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await;
+    assert!(res.is_ok());
+
+    let admin_uuid = rsclient
+        .whoami()
+        .await
+        .expect("Unable to call whoami")
+        .expect("No entry matching self returned")
+        .attrs
+        .get("uuid")
+        .and_then(|v| v.first())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .expect("Unable to parse admin uuid");
+
+    let request = AuthorizationRequest::new(None, admin_uuid, AuthorizationAction::Delete);
+
+    let response: AuthorizationResponse = rsclient
+        .perform_post_request("/v1/authorize", request)
+        .await
+        .expect("Authorization request failed");
+
+    assert_eq!(response.decision, AuthorizationDecision::Deny);
+    assert_eq!(response.resource, admin_uuid);
+    assert_eq!(response.action, AuthorizationAction::Delete);
+}
+
+#[kubidmd_testkit::test]
+async fn test_authorization_decision_types(rsclient: &KubidmClient) {
+    let res = rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await;
+    assert!(res.is_ok());
+
+    let admin_uuid = rsclient
+        .whoami()
+        .await
+        .expect("Unable to call whoami")
+        .expect("No entry matching self returned")
+        .attrs
+        .get("uuid")
+        .and_then(|v| v.first())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .expect("Unable to parse admin uuid");
+
+    for action in [
+        AuthorizationAction::Search,
+        AuthorizationAction::Create,
+        AuthorizationAction::Modify,
+        AuthorizationAction::Delete,
+    ] {
+        let request = AuthorizationRequest::new(None, admin_uuid, action);
+        let response: AuthorizationResponse = rsclient
+            .perform_post_request("/v1/authorize", request)
+            .await
+            .expect("Authorization request failed");
+
+        assert_eq!(response.action, action);
+        assert_eq!(response.resource, admin_uuid);
+    }
+}
+
+#[kubidmd_testkit::test]
+async fn test_authorization_with_explanation(rsclient: &KubidmClient) {
+    let res = rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await;
+    assert!(res.is_ok());
+
+    let admin_uuid = rsclient
+        .whoami()
+        .await
+        .expect("Unable to call whoami")
+        .expect("No entry matching self returned")
+        .attrs
+        .get("uuid")
+        .and_then(|v| v.first())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .expect("Unable to parse admin uuid");
+
+    let request = AuthorizationRequest::new(None, admin_uuid, AuthorizationAction::Search)
+        .with_explanation(true);
+
+    let response: AuthorizationResponse = rsclient
+        .perform_post_request("/v1/authorize", request)
+        .await
+        .expect("Authorization request failed");
+
+    if let Some(explanation) = response.explanation {
+        assert!(!explanation.reason.is_empty());
+    }
+}
+
+#[kubidmd_testkit::test]
+async fn test_batch_authorization_endpoint_unauthorized(rsclient: &KubidmClient) {
+    let requests = vec![
+        AuthorizationRequest::new(None, Uuid::new_v4(), AuthorizationAction::Search),
+        AuthorizationRequest::new(None, Uuid::new_v4(), AuthorizationAction::Modify),
+    ];
+    let batch_request = BatchAuthorizationRequest { requests };
+
+    let result: Result<BatchAuthorizationResponse, kubidm_client::ClientError> = rsclient
+        .perform_post_request("/v1/authorize/batch", batch_request)
+        .await;
+
+    assert!(result.is_err());
+    match result.unwrap_err() {
+        kubidm_client::ClientError::Unauthorized => (),
+        kubidm_client::ClientError::Http(kubidm_client::StatusCode::UNAUTHORIZED, _, _) => (),
+        other => panic!("Expected Unauthorized error, got {:?}", other),
+    }
+}
+
+#[kubidmd_testkit::test]
+async fn test_batch_authorization_endpoint_authenticated(rsclient: &KubidmClient) {
+    let res = rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await;
+    assert!(res.is_ok());
+
+    let admin_uuid = rsclient
+        .whoami()
+        .await
+        .expect("Unable to call whoami")
+        .expect("No entry matching self returned")
+        .attrs
+        .get("uuid")
+        .and_then(|v| v.first())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .expect("Unable to parse admin uuid");
+
+    let requests = vec![
+        AuthorizationRequest::new(None, admin_uuid, AuthorizationAction::Search),
+        AuthorizationRequest::new(None, admin_uuid, AuthorizationAction::Modify),
+    ];
+    let batch_request = BatchAuthorizationRequest { requests };
+
+    let response: BatchAuthorizationResponse = rsclient
+        .perform_post_request("/v1/authorize/batch", batch_request)
+        .await
+        .expect("Batch authorization request failed");
+
+    assert_eq!(response.responses.len(), 2);
+    assert_eq!(response.responses[0].resource, admin_uuid);
+    assert_eq!(response.responses[1].resource, admin_uuid);
+}
+
+#[kubidmd_testkit::test]
+async fn test_batch_authorization_empty_requests(rsclient: &KubidmClient) {
+    let res = rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await;
+    assert!(res.is_ok());
+
+    let batch_request = BatchAuthorizationRequest { requests: vec![] };
+
+    let response: BatchAuthorizationResponse = rsclient
+        .perform_post_request("/v1/authorize/batch", batch_request)
+        .await
+        .expect("Batch authorization request failed");
+
+    assert!(response.responses.is_empty());
+}
+
+#[kubidmd_testkit::test]
+async fn test_batch_authorization_large_batch(rsclient: &KubidmClient) {
+    let res = rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await;
+    assert!(res.is_ok());
+
+    let admin_uuid = rsclient
+        .whoami()
+        .await
+        .expect("Unable to call whoami")
+        .expect("No entry matching self returned")
+        .attrs
+        .get("uuid")
+        .and_then(|v| v.first())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .expect("Unable to parse admin uuid");
+
+    let num_requests = 10;
+    let requests: Vec<AuthorizationRequest> = (0..num_requests)
+        .map(|_| AuthorizationRequest::new(None, admin_uuid, AuthorizationAction::Search))
+        .collect();
+    let batch_request = BatchAuthorizationRequest { requests };
+
+    let response: BatchAuthorizationResponse = rsclient
+        .perform_post_request("/v1/authorize/batch", batch_request)
+        .await
+        .expect("Batch authorization request failed");
+
+    assert_eq!(response.responses.len(), num_requests);
+}
+
+#[kubidmd_testkit::test]
+async fn test_authorization_nonexistent_resource_uuid(rsclient: &KubidmClient) {
+    let res = rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await;
+    assert!(res.is_ok());
+
+    let non_existent_uuid = Uuid::new_v4();
+    let request = AuthorizationRequest::new(None, non_existent_uuid, AuthorizationAction::Search);
+
+    let result: Result<AuthorizationResponse, kubidm_client::ClientError> = rsclient
+        .perform_post_request("/v1/authorize", request)
+        .await;
+
+    assert!(result.is_err());
+}
+
+#[kubidmd_testkit::test]
+async fn test_authorization_with_attributes_filtering(rsclient: &KubidmClient) {
+    let res = rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await;
+    assert!(res.is_ok());
+
+    let admin_uuid = rsclient
+        .whoami()
+        .await
+        .expect("Unable to call whoami")
+        .expect("No entry matching self returned")
+        .attrs
+        .get("uuid")
+        .and_then(|v| v.first())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .expect("Unable to parse admin uuid");
+
+    let attrs: BTreeSet<String> = BTreeSet::from(["name".to_string()]);
+    let request =
+        AuthorizationRequest::new(Some(admin_uuid), admin_uuid, AuthorizationAction::Search)
+            .with_attributes(attrs.clone());
+
+    let response: AuthorizationResponse = rsclient
+        .perform_post_request("/v1/authorize", request)
+        .await
+        .expect("Authorization request failed");
+
+    if let Some(allowed) = response.allowed_attributes {
+        assert!(
+            allowed.contains("name")
+                || allowed.is_empty()
+                || response.decision == AuthorizationDecision::Deny
+        );
+    }
+}
+
+#[kubidmd_testkit::test]
+async fn test_authorization_session_expiry_handling(rsclient: &KubidmClient) {
+    let res = rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await;
+    assert!(res.is_ok());
+
+    let admin_uuid = rsclient
+        .whoami()
+        .await
+        .expect("Unable to call whoami")
+        .expect("No entry matching self returned")
+        .attrs
+        .get("uuid")
+        .and_then(|v| v.first())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .expect("Unable to parse admin uuid");
+
+    let request = AuthorizationRequest::new(None, admin_uuid, AuthorizationAction::Search);
+
+    let response: AuthorizationResponse = rsclient
+        .perform_post_request("/v1/authorize", request.clone())
+        .await
+        .expect("Authorization request failed");
+
+    assert_eq!(response.resource, request.resource);
+    assert_eq!(response.action, request.action);
+}
+
+#[kubidmd_testkit::test]
+async fn test_authorization_concurrent_requests(rsclient: &KubidmClient) {
+    let res = rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await;
+    assert!(res.is_ok());
+
+    let admin_uuid = rsclient
+        .whoami()
+        .await
+        .expect("Unable to call whoami")
+        .expect("No entry matching self returned")
+        .attrs
+        .get("uuid")
+        .and_then(|v| v.first())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .expect("Unable to parse admin uuid");
+
+    let requests: Vec<AuthorizationRequest> = (0..5)
+        .map(|_| AuthorizationRequest::new(None, admin_uuid, AuthorizationAction::Search))
+        .collect();
+
+    let futures: Vec<_> = requests
+        .iter()
+        .map(|req| {
+            rsclient.perform_post_request::<AuthorizationRequest, AuthorizationResponse>(
+                "/v1/authorize",
+                req.clone(),
+            )
+        })
+        .collect();
+
+    let results = futures::future::join_all(futures).await;
+
+    for result in results {
+        assert!(result.is_ok());
+    }
+}
+
+#[kubidmd_testkit::test]
+async fn test_authorization_create_action_unsupported(rsclient: &KubidmClient) {
+    let res = rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await;
+    assert!(res.is_ok());
+
+    let admin_uuid = rsclient
+        .whoami()
+        .await
+        .expect("Unable to call whoami")
+        .expect("No entry matching self returned")
+        .attrs
+        .get("uuid")
+        .and_then(|v| v.first())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .expect("Unable to parse admin uuid");
+
+    let request = AuthorizationRequest::new(None, admin_uuid, AuthorizationAction::Create);
+
+    let response: AuthorizationResponse = rsclient
+        .perform_post_request("/v1/authorize", request)
+        .await
+        .expect("Authorization request failed");
+
+    assert_eq!(response.decision, AuthorizationDecision::Deny);
+}

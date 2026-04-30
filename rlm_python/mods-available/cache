@@ -95,7 +95,7 @@ cache {
 		&reply:Reply-Message += "Cache last updated at %t"
 
 		&reply:Class := "%{randstr:ssssssssssssssssssssssssssssssss}"
-        
+
 	}
 
 	#  This module supports a number of runtime configuration parameters

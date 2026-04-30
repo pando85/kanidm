@@ -22,7 +22,7 @@ static ALLOC: dhat::Alloc = dhat::Alloc;
 use std::os::unix::fs::MetadataExt;
 
 #[cfg(target_family = "unix")]
-use kanidm_utils_users::{get_current_gid, get_current_uid, get_effective_gid, get_effective_uid};
+use kubidm_utils_users::{get_current_gid, get_current_uid, get_effective_gid, get_effective_uid};
 
 #[cfg(target_family = "windows")] // for windows builds
 use whoami;
@@ -31,12 +31,12 @@ use std::fs::{metadata, File};
 // This works on both unix and windows.
 use clap::{Args, Parser, Subcommand};
 use futures::{SinkExt, StreamExt};
-use kanidmd_core::admin::{
+use kubidmd_core::admin::{
     AdminTaskRequest, AdminTaskResponse, ClientCodec, ProtoDomainInfo,
     ProtoDomainUpgradeCheckReport, ProtoDomainUpgradeCheckStatus,
 };
-use kanidmd_core::config::{Configuration, ServerConfigUntagged};
-use kanidmd_core::{
+use kubidmd_core::config::{Configuration, ServerConfigUntagged};
+use kubidmd_core::{
     backup_server_core, cert_generate_core, create_server_core, dbscan_get_id2entry_core,
     dbscan_list_id2entry_core, dbscan_list_index_analysis_core, dbscan_list_index_core,
     dbscan_list_indexes_core, dbscan_list_quarantined_core, dbscan_quarantine_id2entry_core,
@@ -167,7 +167,7 @@ async fn submit_admin_req_human(path: &str, req: AdminTaskRequest) -> ExitCode {
         Ok(s) => s,
         Err(e) => {
             error!(err = ?e, %path, "Unable to connect to socket path");
-            let diag = kanidm_lib_file_permissions::diagnose_path(path.as_ref());
+            let diag = kubidm_lib_file_permissions::diagnose_path(path.as_ref());
             info!(%diag);
             return ExitCode::FAILURE;
         }
@@ -318,7 +318,7 @@ async fn submit_admin_req_human(path: &str, req: AdminTaskRequest) -> ExitCode {
 }
 
 /// Check what we're running as and various filesystem permissions.
-fn check_file_ownership(opt: &KanidmdParser) -> Result<(), ExitCode> {
+fn check_file_ownership(opt: &KubidmdParser) -> Result<(), ExitCode> {
     // Get info about who we are.
     #[cfg(target_family = "unix")]
     let (cuid, ceuid) = {
@@ -356,7 +356,7 @@ fn check_file_ownership(opt: &KanidmdParser) -> Result<(), ExitCode> {
                     None
                 }
             } {
-                if !kanidm_lib_file_permissions::readonly(&cfg_meta) {
+                if !kubidm_lib_file_permissions::readonly(&cfg_meta) {
                     warn!("permissions on {} may not be secure. Should be readonly to running uid. This could be a security risk ...",
                         cfg_path.to_str().unwrap_or("invalid file path"));
                 }
@@ -499,7 +499,7 @@ async fn scripting_command(cmd: ScriptingCommand, config: Configuration) -> Exit
 }
 
 // We have to do this because we can't use tracing until we've started the logging pipeline, and we can't start the logging pipeline until the tokio runtime's doing its thing.
-async fn start_daemon(opt: KanidmdParser, config: Configuration) -> ExitCode {
+async fn start_daemon(opt: KubidmdParser, config: Configuration) -> ExitCode {
     // if we have a server config and it has an OTEL URL, then we'll start the logging pipeline now.
 
     // TODO: only send to stderr when we're not in a TTY
@@ -524,7 +524,7 @@ async fn start_daemon(opt: KanidmdParser, config: Configuration) -> ExitCode {
     // ************************************************
     // HERE'S WHERE YOU CAN START USING THE LOGGER
     // ************************************************
-    info!(version = %env!("KANIDM_PKG_VERSION"), "Starting Kanidmd");
+    info!(version = %env!("KANIDM_PKG_VERSION"), "Starting Kubidmd");
 
     // guard which shuts down the logging/tracing providers when we close out
     let _otelguard = TracingPipelineGuard(provider);
@@ -537,72 +537,87 @@ async fn start_daemon(opt: KanidmdParser, config: Configuration) -> ExitCode {
         return err;
     };
 
-    if let Some(db_path) = config.db_path.as_ref() {
-        let db_pathbuf = db_path.to_path_buf();
-        // We can't check the db_path permissions because it may not exist yet!
-        if let Some(db_parent_path) = db_pathbuf.parent() {
-            if !db_parent_path.exists() {
-                warn!(
-                    "DB folder {} may not exist, server startup may FAIL!",
-                    db_parent_path.to_str().unwrap_or("invalid file path")
-                );
-                let diag = kanidm_lib_file_permissions::diagnose_path(&db_pathbuf);
-                info!(%diag);
-            }
+    let needs_db_check = !matches!(
+        &opt.commands,
+        KubidmdOpt::CertGenerate
+            | KubidmdOpt::ShowReplicationCertificate
+            | KubidmdOpt::RenewReplicationCertificate
+            | KubidmdOpt::RefreshReplicationConsumer { .. }
+            | KubidmdOpt::RecoverAccount { .. }
+            | KubidmdOpt::DisableAccount { .. }
+            | KubidmdOpt::Version
+    );
 
-            let db_par_path_buf = db_parent_path.to_path_buf();
-            let i_meta = match metadata(&db_par_path_buf) {
-                Ok(m) => m,
-                Err(e) => {
+    if needs_db_check {
+        if let Some(db_path) = config.db_path.as_ref() {
+            let db_pathbuf = db_path.to_path_buf();
+            // We can't check the db_path permissions because it may not exist yet!
+            if let Some(db_parent_path) = db_pathbuf.parent() {
+                if !db_parent_path.exists() {
+                    warn!(
+                        "DB folder {} may not exist, server startup may FAIL!",
+                        db_parent_path.to_str().unwrap_or("invalid file path")
+                    );
+                    let diag = kubidm_lib_file_permissions::diagnose_path(&db_pathbuf);
+                    info!(%diag);
+                }
+
+                let db_par_path_buf = db_parent_path.to_path_buf();
+                let i_meta = match metadata(&db_par_path_buf) {
+                    Ok(m) => m,
+                    Err(e) => {
+                        error!(
+                            "Unable to read metadata for database folder '{}' - {:?}",
+                            &db_par_path_buf.to_str().unwrap_or("invalid file path"),
+                            e
+                        );
+                        return ExitCode::FAILURE;
+                    }
+                };
+                if !i_meta.is_dir() {
                     error!(
-                        "Unable to read metadata for database folder '{}' - {:?}",
-                        &db_par_path_buf.to_str().unwrap_or("invalid file path"),
-                        e
+                        "ERROR: Refusing to run - DB folder {} may not be a directory",
+                        db_par_path_buf.to_str().unwrap_or("invalid file path")
                     );
                     return ExitCode::FAILURE;
                 }
-            };
-            if !i_meta.is_dir() {
-                error!(
-                    "ERROR: Refusing to run - DB folder {} may not be a directory",
-                    db_par_path_buf.to_str().unwrap_or("invalid file path")
-                );
-                return ExitCode::FAILURE;
-            }
 
-            if kanidm_lib_file_permissions::readonly(&i_meta) {
-                warn!("WARNING: DB folder permissions on {} indicate it may not be RW. This could cause the server start up to fail!", db_par_path_buf.to_str().unwrap_or("invalid file path"));
+                if kubidm_lib_file_permissions::readonly(&i_meta) {
+                    warn!("WARNING: DB folder permissions on {} indicate it may not be RW. This could cause the server start up to fail!", db_par_path_buf.to_str().unwrap_or("invalid file path"));
+                }
+                #[cfg(not(target_os = "windows"))]
+                if i_meta.mode() & 0o007 != 0 {
+                    warn!("WARNING: DB folder {} has 'everyone' permission bits in the mode. This could be a security risk ...", db_par_path_buf.to_str().unwrap_or("invalid file path"));
+                }
             }
-            #[cfg(not(target_os = "windows"))]
-            if i_meta.mode() & 0o007 != 0 {
-                warn!("WARNING: DB folder {} has 'everyone' permission bits in the mode. This could be a security risk ...", db_par_path_buf.to_str().unwrap_or("invalid file path"));
-            }
+        } else {
+            error!("No db_path set in configuration, server startup will FAIL!");
+            return ExitCode::FAILURE;
         }
-    } else {
-        error!("No db_path set in configuration, server startup will FAIL!");
-        return ExitCode::FAILURE;
     }
 
     let lock_was_setup = match &opt.commands {
         // we aren't going to touch the DB so we can carry on
-        KanidmdOpt::ShowReplicationCertificate
-        | KanidmdOpt::RenewReplicationCertificate
-        | KanidmdOpt::RefreshReplicationConsumer { .. }
-        | KanidmdOpt::RecoverAccount { .. }
-        | KanidmdOpt::DisableAccount { .. } => None,
+        KubidmdOpt::CertGenerate
+        | KubidmdOpt::ShowReplicationCertificate
+        | KubidmdOpt::RenewReplicationCertificate
+        | KubidmdOpt::RefreshReplicationConsumer { .. }
+        | KubidmdOpt::RecoverAccount { .. }
+        | KubidmdOpt::DisableAccount { .. }
+        | KubidmdOpt::Version => None,
         _ => {
             // Okay - Lets now create our lock and go.
             #[allow(clippy::expect_used)]
             let klock_path = match config.db_path.clone() {
                 Some(val) => val.with_extension("klock"),
-                None => std::env::temp_dir().join("kanidmd.klock"),
+                None => std::env::temp_dir().join("kubidmd.klock"),
             };
 
             let flock = match File::create(&klock_path) {
                 Ok(flock) => flock,
                 Err(err) => {
                     error!(
-                        "ERROR: Refusing to start - unable to create kanidmd exclusive lock at {}",
+                        "ERROR: Refusing to start - unable to create kubidmd exclusive lock at {}",
                         klock_path.display()
                     );
                     error!(?err);
@@ -610,11 +625,24 @@ async fn start_daemon(opt: KanidmdParser, config: Configuration) -> ExitCode {
                 }
             };
 
+<<<<<<< HEAD
             match flock.try_lock() {
                 Ok(_) => debug!("Acquired kanidm exclusive lock"),
+=======
+            match flock.try_lock_exclusive() {
+                Ok(true) => debug!("Acquired kubidm exclusive lock"),
+                Ok(false) => {
+                    error!(
+                        "ERROR: Refusing to start - unable to lock kubidmd exclusive lock at {}",
+                        klock_path.display()
+                    );
+                    error!("Is another kubidmd process running?");
+                    return ExitCode::FAILURE;
+                }
+>>>>>>> master
                 Err(err) => {
                     error!(
-                        "ERROR: Refusing to start - unable to lock kanidmd exclusive lock at {}",
+                        "ERROR: Refusing to start - unable to lock kubidmd exclusive lock at {}",
                         klock_path.display()
                     );
                     error!(?err);
@@ -626,13 +654,13 @@ async fn start_daemon(opt: KanidmdParser, config: Configuration) -> ExitCode {
         }
     };
 
-    let result_code = kanidm_main(config, opt).await;
+    let result_code = kubidm_main(config, opt).await;
 
     if let Some(klock_path) = lock_was_setup {
         if let Err(reason) = std::fs::remove_file(&klock_path) {
             warn!(
                 ?reason,
-                "WARNING: Unable to clean up kanidmd exclusive lock at {}",
+                "WARNING: Unable to clean up kubidmd exclusive lock at {}",
                 klock_path.display()
             );
         }
@@ -657,16 +685,16 @@ fn main() -> ExitCode {
     let _profiler = dhat::Profiler::builder().trim_backtraces(Some(40)).build();
 
     // Read CLI args, determine what the user has asked us to do.
-    let opt = KanidmdParser::parse();
+    let opt = KubidmdParser::parse();
 
     // print the app version and bail
-    if let KanidmdOpt::Version = &opt.commands {
-        println!("kanidmd {}", env!("KANIDM_PKG_VERSION"));
+    if let KubidmdOpt::Version = &opt.commands {
+        println!("kubidmd {}", env!("KANIDM_PKG_VERSION"));
         return ExitCode::SUCCESS;
     };
 
     if env!("KANIDM_SERVER_CONFIG_PATH").is_empty() {
-        eprintln!("CRITICAL: Kanidmd was not built correctly and is missing a valid KANIDM_SERVER_CONFIG_PATH value");
+        eprintln!("CRITICAL: Kubidmd was not built correctly and is missing a valid KANIDM_SERVER_CONFIG_PATH value");
         return ExitCode::FAILURE;
     }
 
@@ -699,11 +727,11 @@ fn main() -> ExitCode {
         None
     };
 
-    let is_server = matches!(&opt.commands, KanidmdOpt::Server);
+    let is_server = matches!(&opt.commands, KubidmdOpt::Server);
 
     let config = Configuration::build()
         .add_opt_toml_config(maybe_sconfig)
-        .add_cli_config(&opt.kanidmd_options)
+        .add_cli_config(&opt.kubidmd_options)
         // set threads to 1 unless it's the main server.
         .is_server_mode(is_server)
         .finish();
@@ -726,7 +754,7 @@ fn main() -> ExitCode {
     let maybe_rt = tokio::runtime::Builder::new_multi_thread()
         .worker_threads(config.threads)
         .enable_all()
-        .thread_name("kanidmd-thread-pool")
+        .thread_name("kubidmd-thread-pool")
         // .thread_stack_size(8 * 1024 * 1024)
         // If we want a hook for thread start.
         // .on_thread_start()
@@ -744,7 +772,7 @@ fn main() -> ExitCode {
 
     // Choose where we go.
 
-    if let KanidmdOpt::Scripting { command } = opt.commands {
+    if let KubidmdOpt::Scripting { command } = opt.commands {
         rt.block_on(scripting_command(command, config))
     } else {
         rt.block_on(start_daemon(opt, config))
@@ -753,10 +781,10 @@ fn main() -> ExitCode {
 
 /// Build and execute the main server. The ServerConfig are the configuration options
 /// that we are processing into the config for the main server.
-async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
+async fn kubidm_main(config: Configuration, opt: KubidmdParser) -> ExitCode {
     match &opt.commands {
-        KanidmdOpt::Server | KanidmdOpt::ConfigTest => {
-            let config_test = matches!(&opt.commands, KanidmdOpt::ConfigTest);
+        KubidmdOpt::Server | KubidmdOpt::ConfigTest => {
+            let config_test = matches!(&opt.commands, KubidmdOpt::ConfigTest);
             if config_test {
                 info!("Running in server configuration test mode ...");
             } else {
@@ -775,12 +803,12 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
                                 e
                             );
                             let diag =
-                                kanidm_lib_file_permissions::diagnose_path(&tls_config.chain);
+                                kubidm_lib_file_permissions::diagnose_path(&tls_config.chain);
                             info!(%diag);
                             return ExitCode::FAILURE;
                         }
                     };
-                    if !kanidm_lib_file_permissions::readonly(&i_meta) {
+                    if !kubidm_lib_file_permissions::readonly(&i_meta) {
                         warn!("permissions on {} may not be secure. Should be readonly to running uid. This could be a security risk ...", tls_config.chain.display());
                     }
                 }
@@ -794,12 +822,12 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
                                 tls_config.key.display(),
                                 e
                             );
-                            let diag = kanidm_lib_file_permissions::diagnose_path(&tls_config.key);
+                            let diag = kubidm_lib_file_permissions::diagnose_path(&tls_config.key);
                             info!(%diag);
                             return ExitCode::FAILURE;
                         }
                     };
-                    if !kanidm_lib_file_permissions::readonly(&i_meta) {
+                    if !kubidm_lib_file_permissions::readonly(&i_meta) {
                         warn!("permissions on {} may not be secure. Should be readonly to running uid. This could be a security risk ...", tls_config.key.display());
                     }
                     #[cfg(not(target_os = "windows"))]
@@ -816,7 +844,7 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
                             "TLS CA folder {} does not exist, server startup will FAIL!",
                             ca_dir.display()
                         );
-                        let diag = kanidm_lib_file_permissions::diagnose_path(&ca_dir_path);
+                        let diag = kubidm_lib_file_permissions::diagnose_path(&ca_dir_path);
                         info!(%diag);
                     }
 
@@ -828,7 +856,7 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
                                 ca_dir.display(),
                                 e
                             );
-                            let diag = kanidm_lib_file_permissions::diagnose_path(&ca_dir_path);
+                            let diag = kubidm_lib_file_permissions::diagnose_path(&ca_dir_path);
                             info!(%diag);
                             return ExitCode::FAILURE;
                         }
@@ -840,7 +868,7 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
                         );
                         return ExitCode::FAILURE;
                     }
-                    if kanidm_lib_file_permissions::readonly(&i_meta) {
+                    if kubidm_lib_file_permissions::readonly(&i_meta) {
                         warn!("WARNING: TLS Client CA folder permissions on {} indicate it may not be RW. This could cause the server start up to fail!", ca_dir.display());
                     }
                     #[cfg(not(target_os = "windows"))]
@@ -857,7 +885,7 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
                 unsafe {
                     let _ = sd_notify::notify_and_unset_env(&[sd_notify::NotifyState::Ready]);
                     let _ = sd_notify::notify_and_unset_env(&[sd_notify::NotifyState::Status(
-                        "Started Kanidm 🦀",
+                        "Started Kubidm 🦀",
                     )]);
                 }
 
@@ -941,30 +969,30 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
                 info!("Stopped 🛑 ");
             }
         }
-        KanidmdOpt::CertGenerate => {
+        KubidmdOpt::CertGenerate => {
             info!("Running in certificate generate mode ...");
             cert_generate_core(&config);
         }
-        KanidmdOpt::Database {
+        KubidmdOpt::Database {
             commands: DbCommands::Backup(bopt),
         } => {
             info!("Running in backup mode ...");
 
             backup_server_core(&config, Some(&bopt.path));
         }
-        KanidmdOpt::Database {
+        KubidmdOpt::Database {
             commands: DbCommands::Restore(ropt),
         } => {
             info!("Running in restore mode ...");
             restore_server_core(&config, &ropt.path).await;
         }
-        KanidmdOpt::Database {
+        KubidmdOpt::Database {
             commands: DbCommands::Verify,
         } => {
             info!("Running in db verification mode ...");
             verify_server_core(&config).await;
         }
-        KanidmdOpt::ShowReplicationCertificate => {
+        KubidmdOpt::ShowReplicationCertificate => {
             info!("Running show replication certificate ...");
             submit_admin_req_human(
                 config.adminbindpath.as_str(),
@@ -972,6 +1000,7 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
             )
             .await;
         }
+<<<<<<< HEAD
         KanidmdOpt::ShowReplicationCertificateMetadata => {
             info!("Running show replication certificate metadata ...");
             submit_admin_req_human(
@@ -982,6 +1011,9 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
         }
 
         KanidmdOpt::RenewReplicationCertificate => {
+=======
+        KubidmdOpt::RenewReplicationCertificate => {
+>>>>>>> master
             info!("Running renew replication certificate ...");
             submit_admin_req_human(
                 config.adminbindpath.as_str(),
@@ -989,7 +1021,7 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
             )
             .await;
         }
-        KanidmdOpt::RefreshReplicationConsumer { proceed } => {
+        KubidmdOpt::RefreshReplicationConsumer { proceed } => {
             info!("Running refresh replication consumer ...");
             if !proceed {
                 error!("Unwilling to proceed. Check --help.");
@@ -1001,7 +1033,7 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
                 .await;
             }
         }
-        KanidmdOpt::RecoverAccount { name } => {
+        KubidmdOpt::RecoverAccount { name } => {
             info!("Running account recovery ...");
 
             submit_admin_req_human(
@@ -1012,7 +1044,7 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
             )
             .await;
         }
-        KanidmdOpt::DisableAccount { name } => {
+        KubidmdOpt::DisableAccount { name } => {
             info!("Running account disable ...");
 
             submit_admin_req_human(
@@ -1023,72 +1055,72 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
             )
             .await;
         }
-        KanidmdOpt::Database {
+        KubidmdOpt::Database {
             commands: DbCommands::Reindex,
         } => {
             info!("Running in reindex mode ...");
             reindex_server_core(&config).await;
         }
-        KanidmdOpt::DbScan {
+        KubidmdOpt::DbScan {
             commands: DbScanOpt::ListIndexes,
         } => {
             info!("👀 db scan - list indexes");
             dbscan_list_indexes_core(&config);
         }
-        KanidmdOpt::DbScan {
+        KubidmdOpt::DbScan {
             commands: DbScanOpt::ListId2Entry,
         } => {
             info!("👀 db scan - list id2entry");
             dbscan_list_id2entry_core(&config);
         }
-        KanidmdOpt::DbScan {
+        KubidmdOpt::DbScan {
             commands: DbScanOpt::ListIndexAnalysis,
         } => {
             info!("👀 db scan - list index analysis");
             dbscan_list_index_analysis_core(&config);
         }
-        KanidmdOpt::DbScan {
+        KubidmdOpt::DbScan {
             commands: DbScanOpt::ListIndex(dopt),
         } => {
             info!("👀 db scan - list index content - {}", dopt.index_name);
             dbscan_list_index_core(&config, dopt.index_name.as_str());
         }
-        KanidmdOpt::DbScan {
+        KubidmdOpt::DbScan {
             commands: DbScanOpt::GetId2Entry(dopt),
         } => {
             info!("👀 db scan - get id2 entry - {}", dopt.id);
             dbscan_get_id2entry_core(&config, dopt.id);
         }
 
-        KanidmdOpt::DbScan {
+        KubidmdOpt::DbScan {
             commands: DbScanOpt::QuarantineId2Entry { id },
         } => {
             info!("☣️  db scan - quarantine id2 entry - {}", id);
             dbscan_quarantine_id2entry_core(&config, *id);
         }
 
-        KanidmdOpt::DbScan {
+        KubidmdOpt::DbScan {
             commands: DbScanOpt::ListQuarantined,
         } => {
             info!("☣️  db scan - list quarantined");
             dbscan_list_quarantined_core(&config);
         }
 
-        KanidmdOpt::DbScan {
+        KubidmdOpt::DbScan {
             commands: DbScanOpt::RestoreQuarantined { id },
         } => {
             info!("☣️  db scan - restore quarantined entry - {}", id);
             dbscan_restore_quarantined_core(&config, *id);
         }
 
-        KanidmdOpt::DomainSettings {
+        KubidmdOpt::DomainSettings {
             commands: DomainSettingsCmds::Change,
         } => {
             info!("Running in domain name change mode ... this may take a long time ...");
             domain_rename_core(&config).await;
         }
 
-        KanidmdOpt::DomainSettings {
+        KubidmdOpt::DomainSettings {
             commands: DomainSettingsCmds::Show,
         } => {
             info!("Running domain show ...");
@@ -1097,7 +1129,7 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
                 .await;
         }
 
-        KanidmdOpt::DomainSettings {
+        KubidmdOpt::DomainSettings {
             commands: DomainSettingsCmds::UpgradeCheck,
         } => {
             info!("Running domain upgrade check ...");
@@ -1109,7 +1141,7 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
             .await;
         }
 
-        KanidmdOpt::DomainSettings {
+        KubidmdOpt::DomainSettings {
             commands: DomainSettingsCmds::Raise,
         } => {
             info!("Running domain raise ...");
@@ -1118,7 +1150,7 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
                 .await;
         }
 
-        KanidmdOpt::DomainSettings {
+        KubidmdOpt::DomainSettings {
             commands: DomainSettingsCmds::Remigrate { level },
         } => {
             info!("⚠️  Running domain remigrate ...");
@@ -1130,13 +1162,192 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
             .await;
         }
 
-        KanidmdOpt::Database {
+        KubidmdOpt::Database {
+            commands: DbCommands::PitrList,
+        } => {
+            info!("Running PITR list recovery points ...");
+
+            let s3_config = config.online_backup.as_ref().and_then(|b| b.s3.as_ref());
+
+            match s3_config {
+                Some(s3) => {
+                    match kubidmd_core::pitr_list_recoverable_points_core(&config, Some(s3)).await {
+                        Ok(manifest) => {
+                            info!("Available recovery points:");
+                            info!(
+                                "  Base backup: {} ({})",
+                                manifest.base_backup_id, manifest.base_backup_timestamp
+                            );
+                            info!(
+                                "  Recovery window: {} to {}",
+                                manifest.earliest_recoverable_time,
+                                manifest.latest_recoverable_time
+                            );
+                            info!("  WAL segments: {}", manifest.segments.len());
+                            for segment in &manifest.segments {
+                                info!(
+                                    "    - {} ({} bytes)",
+                                    segment.segment_id, segment.size_bytes
+                                );
+                            }
+                        }
+                        Err(e) => {
+                            error!("Failed to list recovery points: {}", e);
+                        }
+                    }
+                }
+                None => {
+                    error!("S3 configuration is required for PITR. Configure online_backup.s3 in server.toml");
+                }
+            }
+        }
+
+        KubidmdOpt::Database {
+            commands: DbCommands::Recover(pitr_opt),
+        } => {
+            info!("Running PITR recovery ...");
+
+            let s3_config = config.online_backup.as_ref().and_then(|b| b.s3.as_ref());
+
+            match s3_config {
+                Some(s3) => {
+                    let target = if pitr_opt.latest {
+                        kubidm_proto::backup::RecoveryTarget::latest()
+                    } else if let Some(time) = &pitr_opt.target_time {
+                        kubidm_proto::backup::RecoveryTarget::to_time(time).unwrap_or_else(|e| {
+                            error!("Invalid target time: {}", e);
+                            std::process::exit(1);
+                        })
+                    } else if let Some(cid) = &pitr_opt.target_cid {
+                        kubidm_proto::backup::RecoveryTarget::to_transaction(cid).unwrap_or_else(
+                            |e| {
+                                error!("Invalid target CID: {}", e);
+                                std::process::exit(1);
+                            },
+                        )
+                    } else {
+                        error!("Must specify --target-time, --target-cid, or --latest");
+                        std::process::exit(1);
+                    };
+
+                    match kubidmd_core::pitr_recover_core(
+                        &config,
+                        Some(s3),
+                        &target,
+                        pitr_opt.dry_run,
+                    )
+                    .await
+                    {
+                        Ok(()) => {
+                            if pitr_opt.dry_run {
+                                info!("PITR dry run completed successfully");
+                            } else {
+                                info!("PITR recovery completed successfully");
+                            }
+                        }
+                        Err(e) => {
+                            error!("PITR recovery failed: {}", e);
+                            std::process::exit(1);
+                        }
+                    }
+                }
+                None => {
+                    error!("S3 configuration is required for PITR. Configure online_backup.s3 in server.toml");
+                }
+            }
+        }
+
+        KubidmdOpt::Database {
             commands: DbCommands::Vacuum,
         } => {
             info!("Running in vacuum mode ...");
             vacuum_server_core(&config);
         }
-        KanidmdOpt::Scripting { .. } | KanidmdOpt::Version => {}
+
+        KubidmdOpt::Database {
+            commands: DbCommands::ReplicateStatus { detailed },
+        } => {
+            info!("Checking cross-region backup replication status ...");
+
+            let s3_config = config.online_backup.as_ref().and_then(|b| b.s3.as_ref());
+
+            match s3_config {
+                Some(s3) => match &s3.replication {
+                    Some(replication) if replication.enabled => {
+                        match kubidmd_core::replication_status_core(&config, s3).await {
+                            Ok(health) => {
+                                info!("Replication Health Check:");
+                                info!("  Overall Status: {}", health.overall_status);
+                                info!("  Healthy Regions: {}", health.healthy_regions);
+                                info!("  Unhealthy Regions: {}", health.unhealthy_regions);
+                                info!("  Maximum Lag: {} seconds", health.max_lag_seconds);
+                                info!("  Last Check: {}", health.last_check_timestamp);
+
+                                for region in &health.regions {
+                                    info!(
+                                        "  Region {} (bucket: {}):",
+                                        region.region, region.bucket
+                                    );
+                                    info!("    Status: {}", region.status);
+                                    info!("    Backups Replicated: {}", region.backups_replicated);
+                                    info!("    Bytes Replicated: {}", region.bytes_replicated);
+                                    if let Some(lag) = region.lag_seconds {
+                                        info!("    Lag: {} seconds", lag);
+                                    }
+                                    if let Some(last_sync) = &region.last_sync_timestamp {
+                                        info!("    Last Sync: {}", last_sync);
+                                    }
+                                    if let Some(error) = &region.last_error {
+                                        info!("    Last Error: {}", error);
+                                    }
+                                }
+
+                                if *detailed {
+                                    match kubidmd_core::replication_lag_metrics_core(&config, s3)
+                                        .await
+                                    {
+                                        Ok(metrics) => {
+                                            info!("Detailed Lag Metrics:");
+                                            for metric in &metrics {
+                                                info!("  Region {}:", metric.region);
+                                                info!("    Lag Seconds: {}", metric.lag_seconds);
+                                                info!(
+                                                    "    Pending Backups: {}",
+                                                    metric.pending_backups
+                                                );
+                                                info!(
+                                                    "    Sync Interval: {} seconds",
+                                                    metric.replication_delay_seconds
+                                                );
+                                                if let Some(last_backup) =
+                                                    &metric.last_backup_timestamp
+                                                {
+                                                    info!("    Last Backup: {}", last_backup);
+                                                }
+                                            }
+                                        }
+                                        Err(e) => {
+                                            error!("Failed to get detailed lag metrics: {}", e);
+                                        }
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                error!("Failed to check replication status: {}", e);
+                                std::process::exit(1);
+                            }
+                        }
+                    }
+                    _ => {
+                        info!("Cross-region replication is not enabled. Configure online_backup.s3.replication in server.toml");
+                    }
+                },
+                None => {
+                    error!("S3 configuration is required for replication status. Configure online_backup.s3 in server.toml");
+                }
+            }
+        }
+        KubidmdOpt::Scripting { .. } | KubidmdOpt::Version => {}
     }
     ExitCode::SUCCESS
 }

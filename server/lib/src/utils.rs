@@ -229,4 +229,126 @@ mod tests {
         let gc: Vec<_> = GraphemeClusterIter::new(d, 3).collect();
         assert_eq!(gc, gc_expect);
     }
+
+    #[test]
+    fn test_utils_grapheme_cluster_iter_empty() {
+        let gc: Vec<_> = GraphemeClusterIter::new("", 1).collect();
+        assert!(gc.is_empty());
+    }
+
+    #[test]
+    fn test_utils_grapheme_cluster_iter_window_larger_than_string() {
+        // Window larger than string length should return empty
+        let gc: Vec<_> = GraphemeClusterIter::new("abc", 10).collect();
+        assert!(gc.is_empty());
+    }
+
+    #[test]
+    fn test_utils_grapheme_cluster_iter_simple_ascii() {
+        let d = "abc";
+        let gc: Vec<_> = GraphemeClusterIter::new(d, 1).collect();
+        assert_eq!(gc, vec!["a", "b", "c"]);
+
+        let gc: Vec<_> = GraphemeClusterIter::new(d, 2).collect();
+        assert_eq!(gc, vec!["ab", "bc"]);
+
+        let gc: Vec<_> = GraphemeClusterIter::new(d, 3).collect();
+        assert_eq!(gc, vec!["abc"]);
+    }
+
+    #[test]
+    fn test_utils_grapheme_cluster_iter_size_hint() {
+        let iter = GraphemeClusterIter::new("abc", 1);
+        // "abc" has 3 char boundaries (0,1,2,3) -> 3 clusters for window=1
+        assert_eq!(iter.size_hint(), (3, Some(3)));
+    }
+
+    #[test]
+    fn test_utils_trigraph_iter() {
+        use crate::utils::trigraph_iter;
+
+        let clusters: Vec<_> = trigraph_iter("abc").collect();
+        // trigraph iter chains window=3, window=2, window=1
+        // window=3: ["abc"]
+        // window=2: ["ab", "bc"]
+        // window=1: ["a", "b", "c"]
+        assert_eq!(clusters, vec!["abc", "ab", "bc", "a", "b", "c"]);
+    }
+
+    #[test]
+    fn test_utils_trigraph_iter_short_string() {
+        use crate::utils::trigraph_iter;
+
+        let clusters: Vec<_> = trigraph_iter("ab").collect();
+        // window=3: [] (too short)
+        // window=2: ["ab"]
+        // window=1: ["a", "b"]
+        assert_eq!(clusters, vec!["ab", "a", "b"]);
+    }
+
+    #[test]
+    fn test_utils_password_from_random_len() {
+        use crate::utils::password_from_random_len;
+
+        let pw = password_from_random_len(10);
+        assert_eq!(pw.len(), 10);
+        // All characters should be from the allowed set
+        let allowed = "abcdefghjkpqrstuvwxyz0123456789";
+        for c in pw.chars() {
+            assert!(allowed.contains(c), "Invalid character: {}", c);
+        }
+    }
+
+    #[test]
+    fn test_utils_password_from_random() {
+        use crate::utils::password_from_random;
+
+        let pw = password_from_random();
+        assert_eq!(pw.len(), 48);
+    }
+
+    #[test]
+    fn test_utils_readable_password_from_random() {
+        use crate::utils::readable_password_from_random;
+
+        let pw = readable_password_from_random();
+        // Format: XXXXX-XXXXX-XXXXX-XXXXX (4 groups of 5)
+        assert_eq!(pw.len(), 23);
+        assert_eq!(pw.chars().filter(|&c| c == '-').count(), 3);
+        let parts: Vec<&str> = pw.split('-').collect();
+        assert_eq!(parts.len(), 4);
+        for part in &parts {
+            assert_eq!(part.len(), 5);
+        }
+    }
+
+    #[test]
+    fn test_utils_backup_code_from_random() {
+        use crate::utils::backup_code_from_random;
+
+        let codes = backup_code_from_random();
+        assert_eq!(codes.len(), 8);
+        for code in &codes {
+            assert_eq!(code.len(), 23);
+        }
+    }
+
+    #[test]
+    fn test_utils_distinct_alpha_distribution() {
+        use crate::utils::DistinctAlpha;
+        use rand::distr::Distribution;
+        use rand::rng;
+
+        // Generate many characters and verify they're all from the allowed set
+        let allowed = "abcdefghjkpqrstuvwxyz0123456789";
+        let mut rng = rng();
+        for _ in 0..1000 {
+            let c = DistinctAlpha.sample(&mut rng);
+            assert!(
+                allowed.contains(c),
+                "DistinctAlpha produced invalid character: {}",
+                c
+            );
+        }
+    }
 }
