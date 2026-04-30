@@ -1,3 +1,3 @@
 pub mod interface;
-pub mod kubidm;
+pub mod kanidm;
 pub mod system;

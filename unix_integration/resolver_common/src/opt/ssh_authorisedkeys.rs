@@ -1,10 +1,12 @@
+use clap::Parser;
+
 #[derive(Debug, Parser)]
-#[command(name = "kubidm_ssh_authorizedkeys")]
-struct SshAuthorizedOpt {
+#[command(name = "kanidm_ssh_authorizedkeys")]
+pub struct SshAuthorisedKeysOpt {
     #[clap(short, long)]
-    debug: bool,
+    pub debug: bool,
     #[clap()]
-    account_id: Option<String>,
+    pub account_id: Option<String>,
     #[clap(short, long, action = clap::ArgAction::SetTrue)]
-    version: bool,
+    pub version: bool,
 }

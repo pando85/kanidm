@@ -18,18 +18,18 @@ use crate::idprovider::system::{
 };
 use hashbrown::HashMap;
 use kanidm_hsm_crypto::provider::BoxedDynTpm;
-use kubidm_lib_file_permissions::diagnose_path;
-use kubidm_unix_common::constants::{
+use kanidm_lib_file_permissions::diagnose_path;
+use lru::LruCache;
+use sparkle_unix_common::constants::{
     DEFAULT_CACHE_TIMEOUT_JITTER_MS, DEFAULT_CACHE_TIMEOUT_MAXIMUM, DEFAULT_CACHE_TIMEOUT_MINIMUM,
     DEFAULT_SHELL_SEARCH_PATHS, SYSTEM_SHADOW_PATH,
 };
-use kubidm_unix_common::unix_config::{HomeAttr, UidAttr};
-use kubidm_unix_common::unix_passwd::{EtcGroup, EtcShadow, EtcUser};
-use kubidm_unix_common::unix_proto::{
+use sparkle_unix_common::unix_config::{HomeAttr, UidAttr};
+use sparkle_unix_common::unix_passwd::{EtcGroup, EtcShadow, EtcUser};
+use sparkle_unix_common::unix_proto::{
     HomeDirectoryInfo, NssGroup, NssUser, PamAuthRequest, PamAuthResponse, PamServiceInfo,
     ProviderStatus,
 };
-use lru::LruCache;
 use std::fmt::Display;
 use std::num::NonZeroUsize;
 use std::ops::DerefMut;
@@ -1012,7 +1012,7 @@ impl Resolver {
                 debug!(?account_id, "account unknown to system provider, continue.");
             }
             // The provider knows the account, and is unable to proceed,
-            // We return unknown here so that pam_kubidm can be skipped and fall back
+            // We return unknown here so that pam_kanidm can be skipped and fall back
             // to pam_unix.so.
             SystemProviderAuthInit::ShadowMissing => {
                 warn!(
@@ -1369,7 +1369,7 @@ impl Resolver {
         let (_shutdown_tx, shutdown_rx) = broadcast::channel(1);
 
         let pam_info = PamServiceInfo {
-            service: "kubidm-unix-test".to_string(),
+            service: "kanidm-unix-test".to_string(),
             tty: Some("/dev/null".to_string()),
             rhost: None,
         };

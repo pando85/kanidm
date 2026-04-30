@@ -2,22 +2,12 @@ use crate::check::check_nsswitch_has_module;
 use crate::opt::tool::{KanidmUnixOpt, KanidmUnixParser};
 use crate::SparkleFlavour;
 use clap::Parser;
-<<<<<<<< HEAD:unix_integration/resolver_common/src/cli/tool.rs
 use sparkle_unix_common::client::DaemonClient;
 use sparkle_unix_common::constants::DEFAULT_CONFIG_PATH;
 use sparkle_unix_common::unix_config::PamNssConfig;
 use sparkle_unix_common::unix_proto::{
     ClientRequest, ClientResponse, PamAuthRequest, PamAuthResponse, PamServiceInfo,
 };
-========
-use kubidm_unix_common::client::DaemonClient;
-use kubidm_unix_common::constants::DEFAULT_CONFIG_PATH;
-use kubidm_unix_common::unix_config::PamNssConfig;
-use kubidm_unix_common::unix_proto::{
-    ClientRequest, ClientResponse, PamAuthRequest, PamAuthResponse, PamServiceInfo,
-};
-use kubidm_unix_resolver::check_nsswitch_has_kubidm;
->>>>>>>> master:unix_integration/resolver_common/src/cli/kubidm-unix.rs
 use std::path::PathBuf;
 use std::process::ExitCode;
 
@@ -32,11 +22,11 @@ macro_rules! setup_client {
         debug!("Connecting to resolver ...");
 
         debug!(
-            "Using kubidm_unixd socket path: {:?}",
+            "Using kanidm_unixd socket path: {:?}",
             cfg.sock_path.as_str()
         );
 
-        // see if the kubidm_unixd socket exists and quit if not
+        // see if the kanidm_unixd socket exists and quit if not
         if !PathBuf::from(&cfg.sock_path).exists() {
             error!(
                 "Failed to find unix socket at {}, quitting!",
@@ -59,33 +49,27 @@ macro_rules! setup_client {
     }};
 }
 
-<<<<<<<< HEAD:unix_integration/resolver_common/src/cli/tool.rs
 pub async fn main<F: SparkleFlavour>(flavour: F) -> ExitCode {
     let opt = KanidmUnixParser::parse();
-========
-#[tokio::main(flavor = "current_thread")]
-async fn main() -> ExitCode {
-    let opt = KubidmUnixParser::parse();
->>>>>>>> master:unix_integration/resolver_common/src/cli/kubidm-unix.rs
 
     let debug = match opt.commands {
-        KubidmUnixOpt::AuthTest {
+        KanidmUnixOpt::AuthTest {
             debug,
             account_id: _,
         } => debug,
-        KubidmUnixOpt::CacheClear { debug, really: _ } => debug,
-        KubidmUnixOpt::CacheInvalidate { debug } => debug,
-        KubidmUnixOpt::Status { debug } => debug,
-        KubidmUnixOpt::Version { debug } => debug,
+        KanidmUnixOpt::CacheClear { debug, really: _ } => debug,
+        KanidmUnixOpt::CacheInvalidate { debug } => debug,
+        KanidmUnixOpt::Status { debug } => debug,
+        KanidmUnixOpt::Version { debug } => debug,
     };
 
     if debug {
-        ::std::env::set_var("RUST_LOG", "kubidm=debug,kubidm_client=debug");
+        ::std::env::set_var("RUST_LOG", "kanidm=debug,kanidm_client=debug");
     }
     sketching::tracing_subscriber::fmt::init();
 
     match opt.commands {
-        KubidmUnixOpt::AuthTest {
+        KanidmUnixOpt::AuthTest {
             debug: _,
             account_id,
         } => {
@@ -98,7 +82,7 @@ async fn main() -> ExitCode {
             let mut req = ClientRequest::PamAuthenticateInit {
                 account_id: account_id.clone(),
                 info: PamServiceInfo {
-                    service: "kubidm-unix".to_string(),
+                    service: "kanidm-unix".to_string(),
                     tty: None,
                     rhost: None,
                 },
@@ -152,7 +136,7 @@ async fn main() -> ExitCode {
                             continue;
                         }
                         ClientResponse::Error(err) => {
-                            error!("Error from kubidm-unixd: {}", err);
+                            error!("Error from kanidm-unixd: {}", err);
                             break;
                         }
                         ClientResponse::PamAuthenticateStepResponse { .. }
@@ -200,7 +184,7 @@ async fn main() -> ExitCode {
             };
             ExitCode::SUCCESS
         }
-        KubidmUnixOpt::CacheClear { debug: _, really } => {
+        KanidmUnixOpt::CacheClear { debug: _, really } => {
             debug!("Starting cache clear tool ...");
 
             let mut daemon_client = setup_client!();
@@ -226,7 +210,7 @@ async fn main() -> ExitCode {
             println!("success");
             ExitCode::SUCCESS
         }
-        KubidmUnixOpt::CacheInvalidate { debug: _ } => {
+        KanidmUnixOpt::CacheInvalidate { debug: _ } => {
             debug!("Starting cache invalidate tool ...");
 
             let mut daemon_client = setup_client!();
@@ -247,17 +231,13 @@ async fn main() -> ExitCode {
             println!("success");
             ExitCode::SUCCESS
         }
-        KubidmUnixOpt::Status { debug: _ } => {
+        KanidmUnixOpt::Status { debug: _ } => {
             trace!("Starting cache status tool ...");
 
             let mut daemon_client = setup_client!();
             let req = ClientRequest::Status;
 
-<<<<<<<< HEAD:unix_integration/resolver_common/src/cli/tool.rs
             check_nsswitch_has_module(None, flavour.nss_module_name());
-========
-            check_nsswitch_has_kubidm(None);
->>>>>>>> master:unix_integration/resolver_common/src/cli/kubidm-unix.rs
 
             match daemon_client.call(req, None).await {
                 Ok(r) => match r {
@@ -280,8 +260,8 @@ async fn main() -> ExitCode {
             }
             ExitCode::SUCCESS
         }
-        KubidmUnixOpt::Version { debug: _ } => {
-            println!("kubidm-unix {}", env!("KANIDM_PKG_VERSION"));
+        KanidmUnixOpt::Version { debug: _ } => {
+            println!("kanidm-unix {}", env!("KANIDM_PKG_VERSION"));
             ExitCode::SUCCESS
         }
     }

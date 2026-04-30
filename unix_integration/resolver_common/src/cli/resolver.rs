@@ -9,37 +9,15 @@ use crate::{
 };
 use clap::{Arg, ArgAction, Command};
 use futures::{SinkExt, StreamExt};
+use kanidm_client::KanidmClientBuilder;
 use kanidm_hsm_crypto::{
     provider::{BoxedDynTpm, SoftTpm, Tpm},
     AuthValue,
 };
-<<<<<<<< HEAD:unix_integration/resolver_common/src/cli/resolver.rs
 use kanidm_lib_file_permissions::diagnose_path;
 use kanidm_proto::constants::DEFAULT_CLIENT_CONFIG_PATH;
 use kanidm_proto::internal::OperationError;
 use kanidm_utils_users::{get_current_gid, get_current_uid, get_effective_gid, get_effective_uid};
-========
-use kubidm_client::KubidmClientBuilder;
-use kubidm_lib_file_permissions::diagnose_path;
-use kubidm_proto::constants::DEFAULT_CLIENT_CONFIG_PATH;
-use kubidm_proto::internal::OperationError;
-use kubidm_unix_common::constants::DEFAULT_CONFIG_PATH;
-use kubidm_unix_common::json_codec::JsonCodec;
-use kubidm_unix_common::unix_config::{HsmType, UnixdConfig};
-use kubidm_unix_common::unix_passwd::EtcDb;
-use kubidm_unix_common::unix_proto::{
-    ClientRequest, ClientResponse, TaskRequest, TaskRequestFrame, TaskResponse,
-};
-use kubidm_unix_resolver::idprovider::interface::IdProvider;
-use kubidm_unix_resolver::idprovider::kubidm::KubidmProvider;
-use kubidm_unix_resolver::idprovider::system::SystemProvider;
-use kubidm_unix_resolver::resolver::{AuthSession, Resolver};
-use kubidm_unix_resolver::{
-    check_nsswitch_has_kubidm,
-    db::{Cache, Db},
-};
-use kubidm_utils_users::{get_current_gid, get_current_uid, get_effective_gid, get_effective_uid};
->>>>>>>> master:unix_integration/resolver_common/src/cli/kubidm_unixd.rs
 use libc::umask;
 use lru::LruCache;
 use sketching::tracing::span;
@@ -152,7 +130,7 @@ async fn handle_task_client(
                     }
 
                     other => {
-                        let errmsg = format!("Received unexpected message from kubidm-unixd-tasks: {:?}", other);
+                        let errmsg = format!("Received unexpected message from kanidm-unixd-tasks: {:?}", other);
                         error!("{}", errmsg);
                         return Err(Box::new(IoError::other(errmsg)));
                     }
@@ -578,7 +556,7 @@ async fn main_inner<F: SparkleFlavour>(clap_args: clap::ArgMatches, flavour: F) 
                 return ExitCode::FAILURE;
             }
         };
-        if !kubidm_lib_file_permissions::readonly(&cfg_meta) {
+        if !kanidm_lib_file_permissions::readonly(&cfg_meta) {
             warn!("permissions on {} may not be secure. Should be readonly to running uid. This could be a security risk ...",
                         cfg_path_str
                         );
@@ -616,7 +594,7 @@ async fn main_inner<F: SparkleFlavour>(clap_args: clap::ArgMatches, flavour: F) 
                 return ExitCode::FAILURE;
             }
         };
-        if !kubidm_lib_file_permissions::readonly(&unixd_meta) {
+        if !kanidm_lib_file_permissions::readonly(&unixd_meta) {
             warn!("permissions on {} may not be secure. Should be readonly to running uid. This could be a security risk ...",
                         unixd_path_str);
         }
@@ -636,13 +614,13 @@ async fn main_inner<F: SparkleFlavour>(clap_args: clap::ArgMatches, flavour: F) 
         }
     };
 
-    let client_builder = if let Some(kconfig) = &cfg.kubidm_config {
+    let client_builder = if let Some(kconfig) = &cfg.kanidm_config {
         if kconfig.pam_allowed_login_groups.is_empty() {
-            error!("Kubidm is enabled but no pam_allowed_login_groups are set - KUBIDM USERS CANNOT AUTHENTICATE !!!");
+            error!("Kanidm is enabled but no pam_allowed_login_groups are set - KANIDM USERS CANNOT AUTHENTICATE !!!");
         }
 
         // setup
-        let cb = match KubidmClientBuilder::new().read_options_from_optional_config(&cfg_path) {
+        let cb = match KanidmClientBuilder::new().read_options_from_optional_config(&cfg_path) {
             Ok(v) => v,
             Err(_) => {
                 error!("Failed to parse {}", cfg_path_str);
@@ -655,23 +633,19 @@ async fn main_inner<F: SparkleFlavour>(clap_args: clap::ArgMatches, flavour: F) 
         None
     };
 
-<<<<<<<< HEAD:unix_integration/resolver_common/src/cli/resolver.rs
     check_nsswitch_has_module(None, flavour.nss_module_name());
-========
-    check_nsswitch_has_kubidm(None);
->>>>>>>> master:unix_integration/resolver_common/src/cli/kubidm_unixd.rs
 
     if clap_args.get_flag("configtest") {
         eprintln!("###################################");
         eprintln!("Dumping configs:\n###################################");
-        eprintln!("kubidm_unixd config (from {:#?})", &unixd_path);
+        eprintln!("kanidm_unixd config (from {:#?})", &unixd_path);
         eprintln!("{cfg}");
         eprintln!("###################################");
         if let Some((cb, _)) = client_builder.as_ref() {
-            eprintln!("kubidm client config (from {:#?})", &cfg_path);
+            eprintln!("kanidm client config (from {:#?})", &cfg_path);
             eprintln!("{cb}");
         } else {
-            eprintln!("kubidm client: disabled");
+            eprintln!("kanidm client: disabled");
         }
         return ExitCode::SUCCESS;
     }
@@ -722,7 +696,7 @@ async fn main_inner<F: SparkleFlavour>(clap_args: clap::ArgMatches, flavour: F) 
                 );
                 return ExitCode::FAILURE;
             }
-            if kubidm_lib_file_permissions::readonly(&i_meta) {
+            if kanidm_lib_file_permissions::readonly(&i_meta) {
                 warn!("WARNING: DB folder permissions on {} indicate it may not be RW. This could cause the server start up to fail!", db_par_path_buf.to_str()
                         .unwrap_or("<db_par_path_buf invalid>")
                         );
@@ -875,7 +849,7 @@ async fn main_inner<F: SparkleFlavour>(clap_args: clap::ArgMatches, flavour: F) 
 
     let mut clients: Vec<Arc<dyn IdProvider + Send + Sync>> = Vec::with_capacity(1);
 
-    // Setup Kubidm provider if the configuration requests it.
+    // Setup Kanidm provider if the configuration requests it.
     if let Some((cb, kconfig)) = client_builder {
         let cb = cb.connect_timeout(kconfig.conn_timeout);
         let cb = cb.request_timeout(kconfig.request_timeout);
@@ -888,7 +862,7 @@ async fn main_inner<F: SparkleFlavour>(clap_args: clap::ArgMatches, flavour: F) 
             }
         };
 
-        let Ok(idprovider) = KubidmProvider::new(
+        let Ok(idprovider) = KanidmProvider::new(
             rsclient,
             kconfig,
             SystemTime::now(),
@@ -898,13 +872,13 @@ async fn main_inner<F: SparkleFlavour>(clap_args: clap::ArgMatches, flavour: F) 
         )
         .await
         else {
-            error!("Failed to configure Kubidm Provider");
+            error!("Failed to configure Kanidm Provider");
             return ExitCode::FAILURE;
         };
 
         // Now stacked for the resolver.
         clients.push(Arc::new(idprovider));
-        info!("Started kubidm provider");
+        info!("Started kanidm provider");
     }
 
     drop(machine_key);
@@ -1214,15 +1188,15 @@ pub async fn main<F: SparkleFlavour>(flavour: F) -> ExitCode {
     #[cfg(feature = "dhat-heap")]
     let _profiler = dhat::Profiler::builder()
         .file_name(format!(
-            "/var/cache/kubidm-unixd/heap-{}.json",
+            "/var/cache/kanidm-unixd/heap-{}.json",
             std::process::id()
         ))
         .trim_backtraces(Some(40))
         .build();
 
-    let clap_args = Command::new("kubidm_unixd")
+    let clap_args = Command::new("kanidm_unixd")
         .version(env!("CARGO_PKG_VERSION"))
-        .about("Kubidm Unix daemon")
+        .about("Kanidm Unix daemon")
         .arg(
             Arg::new("skip-root-check")
                 .help("Allow running as root. Don't use this in production as it is risky!")
