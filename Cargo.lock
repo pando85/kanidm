@@ -1206,9 +1206,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.2.60"
+version = "1.2.61"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43c5703da9466b66a946814e1adf53ea2c90f10063b86290cc9eb67ce3478a20"
+checksum = "d16d90359e986641506914ba71350897565610e87ce0ad9e6f28569db3dd5c6d"
 dependencies = [
  "find-msvc-tools",
  "jobserver",
@@ -1333,9 +1333,9 @@ dependencies = [
 
 [[package]]
 name = "clap_complete"
-version = "4.6.2"
+version = "4.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ff7a1dccbdd8b078c2bdebff47e404615151534d5043da397ec50286816f9cb"
+checksum = "660c0520455b1013b9bcb0393d5f643d7e4454fb69c915b8d6d2aa0e9a45acc3"
 dependencies = [
  "clap",
 ]
@@ -7582,50 +7582,50 @@ version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3a766e1110788c36f4fa1c2b71b387a7815aa65f88ce0229841826633d93723e"
 dependencies = [
- "libc",
- "windows-sys 0.61.2",
+  "libc",
+  "windows-sys 0.61.2",
 ]
 
 [[package]]
 name = "sparkle_resolver_common"
 version = "1.10.0-alpha.3"
 dependencies = [
- "async-trait",
- "clap",
- "clap_complete",
- "dhat",
- "dialoguer",
- "futures",
- "hashbrown 0.17.0",
- "kanidm-hsm-crypto",
- "kubidm_build_profiles",
- "kubidm_client",
- "kubidm_lib_crypto",
- "kubidm_lib_file_permissions",
- "kubidm_proto",
- "kubidm_unix_common",
- "kubidm_utils_users",
- "kubidmd_core",
- "kubidmd_testkit",
- "libc",
- "lru 0.17.0",
- "nix",
- "notify-debouncer-full",
- "prctl",
- "procfs",
- "rand 0.10.1",
- "rusqlite",
- "sd-notify",
- "serde",
- "serde_json",
- "sketching",
- "tempfile",
- "time",
- "tokio",
- "tokio-util",
- "tracing",
- "uuid",
- "walkdir",
+  "async-trait",
+  "clap",
+  "clap_complete",
+  "dhat",
+  "dialoguer",
+  "futures",
+  "hashbrown 0.17.0",
+  "kanidm-hsm-crypto",
+  "kubidm_build_profiles",
+  "kubidm_client",
+  "kubidm_lib_crypto",
+  "kubidm_lib_file_permissions",
+  "kubidm_proto",
+  "kubidm_unix_common",
+  "kubidm_utils_users",
+  "kubidmd_core",
+  "kubidmd_testkit",
+  "libc",
+  "lru 0.17.0",
+  "nix",
+  "notify-debouncer-full",
+  "prctl",
+  "procfs",
+  "rand 0.10.1",
+  "rusqlite",
+  "sd-notify",
+  "serde",
+  "serde_json",
+  "sketching",
+  "tempfile",
+  "time",
+  "tokio",
+  "tokio-util",
+  "tracing",
+  "uuid",
+  "walkdir",
 ]
 
 [[package]]
