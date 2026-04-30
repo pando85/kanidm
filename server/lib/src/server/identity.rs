@@ -539,7 +539,7 @@ mod tests {
     fn test_identity_from_internal() {
         let ident = Identity::from_internal();
         assert!(ident.is_internal());
-        assert_eq!(ident.get_uuid(), Some(UUID_SYSTEM));
+        assert_eq!(ident.get_uuid(), UUID_SYSTEM);
         assert_eq!(ident.access_scope(), AccessScope::ReadWrite);
         assert!(!ident.can_logout());
         assert_eq!(ident.get_session_id(), UUID_INTERNAL_SESSION_ID);
@@ -549,7 +549,7 @@ mod tests {
     fn test_identity_migration() {
         let ident = Identity::migration();
         assert!(ident.is_internal());
-        assert_eq!(ident.get_uuid(), Some(UUID_INTERNAL_MIGRATION));
+        assert_eq!(ident.get_uuid(), UUID_INTERNAL_MIGRATION);
         assert_eq!(ident.access_scope(), AccessScope::ReadWrite);
     }
 

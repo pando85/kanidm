@@ -185,6 +185,7 @@ mod tests {
     use compact_jwt::JwsCompact;
     use uuid::uuid;
 
+    use webauthn_authenticator_rs::prelude::AuthenticatorBackend;
     use webauthn_authenticator_rs::softpasskey::SoftPasskey;
 
     const TESTPERSON_UUID: Uuid = uuid!("cf231fea-1a8f-4410-a520-fd9b1a379c86");
@@ -239,7 +240,7 @@ mod tests {
         .expect("Unable to access passkey challenge, invalid state");
 
         let passkey_resp = wa
-            .do_registration(origin.clone(), passkey_chal.clone())
+            .perform_register(origin.clone(), passkey_chal.clone(), 60000)
             .expect("Failed to create soft passkey");
 
         // Finish the registration
@@ -363,7 +364,7 @@ mod tests {
         trace!(?rcr);
 
         let resp = wa
-            .do_authentication(origin, rcr)
+            .perform_auth(origin, rcr, 60000)
             .expect("failed to use softtoken to authenticate");
 
         let passkey_step = AuthEvent::cred_step_passkey(sessionid, resp);
@@ -517,7 +518,7 @@ mod tests {
         trace!(?rcr);
 
         let resp = wa
-            .do_authentication(origin, rcr)
+            .perform_auth(origin, rcr, 60000)
             .expect("failed to use softtoken to authenticate");
 
         let passkey_step = AuthEvent::cred_step_passkey(sessionid, resp);
