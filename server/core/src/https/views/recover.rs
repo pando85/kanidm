@@ -9,7 +9,7 @@ use axum::response::{IntoResponse, Response};
 use axum::Extension;
 use axum::Form;
 use axum_extra::extract::CookieJar;
-use kanidmd_lib::prelude::duration_from_epoch_now;
+use kubidmd_lib::prelude::duration_from_epoch_now;
 use serde::Deserialize;
 use tokio::time::{sleep_until, Duration, Instant};
 

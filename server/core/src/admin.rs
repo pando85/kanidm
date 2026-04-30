@@ -20,7 +20,7 @@ pub use kubidm_proto::internal::{
     DomainInfo as ProtoDomainInfo, DomainUpgradeCheckReport as ProtoDomainUpgradeCheckReport,
     DomainUpgradeCheckStatus as ProtoDomainUpgradeCheckStatus,
 };
-use kanidm_utils_users::get_current_uid;
+use kubidm_utils_users::get_current_uid;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::io;

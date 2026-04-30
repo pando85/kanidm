@@ -7,7 +7,7 @@ use crypto_glue::{
     rand::{self, Rng},
     traits::Mac,
 };
-use kanidm_proto::internal::COOKIE_CSRF_NONCE;
+use kubidm_proto::internal::COOKIE_CSRF_NONCE;
 use serde::Deserialize;
 use std::time::Duration;
 
