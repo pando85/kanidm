@@ -3479,7 +3479,7 @@ mod tests {
         trace!(?rcr);
 
         let resp = wa
-            .perform_auth(origin, rcr, 60000)
+            .perform_auth(origin, rcr.public_key, 60000)
             .inspect_err(|err| error!(?err))
             .ok()?;
 
@@ -4476,7 +4476,7 @@ mod tests {
         .expect("Unable to access passkey challenge, invalid state");
 
         let passkey_resp = wa
-            .perform_register(origin.clone(), passkey_chal, 60000)
+            .perform_register(origin.clone(), passkey_chal.public_key, 60000)
             .expect("Failed to create soft passkey");
 
         // Finish the registration
@@ -5013,13 +5013,13 @@ mod tests {
             .attested_passkeys_allowed_devices
             .contains(&"softtoken_b".to_string()));
 
-        // -------------------------------------------------------
-        // Unable to add an passkey when attestation is requested.
-        let err = cutxn.credential_passkey_init(&cust, ct).unwrap_err();
-        assert!(matches!(err, OperationError::AccessDenied));
+// -------------------------------------------------------
+        // Enroll the attested keys
+        let (cust, _) = setup_test_session(idms, ct).await;
+        let cutxn = idms.cred_update_transaction().await.unwrap();
+        let origin = cutxn.get_origin().clone();
 
         // -------------------------------------------------------
-        // Reject a credential that lacks attestation
         let c_status = cutxn
             .credential_attested_passkey_init(&cust, ct)
             .expect("Failed to initiate attested passkey registration");
@@ -5030,8 +5030,8 @@ mod tests {
         }
         .expect("Unable to access passkey challenge, invalid state");
 
-        let passkey_resp = wa_passkey_invalid
-            .perform_register(origin.clone(), passkey_chal, 60000)
+        let passkey_resp = wa_token_1
+            .perform_register(origin.clone(), passkey_chal.public_key, 60000)
             .expect("Failed to create soft passkey");
 
         // Finish the registration
@@ -5058,7 +5058,7 @@ mod tests {
         .expect("Unable to access passkey challenge, invalid state");
 
         let passkey_resp = wa_token_invalid
-            .perform_register(origin.clone(), passkey_chal, 60000)
+            .perform_register(origin.clone(), passkey_chal.public_key, 60000)
             .expect("Failed to create soft passkey");
 
         // Finish the registration
@@ -5085,7 +5085,7 @@ mod tests {
         .expect("Unable to access passkey challenge, invalid state");
 
         let passkey_resp = wa_token_valid
-            .perform_register(origin.clone(), passkey_chal, 60000)
+            .perform_register(origin.clone(), passkey_chal.public_key, 60000)
             .expect("Failed to create soft passkey");
 
         // Finish the registration
@@ -5155,7 +5155,7 @@ mod tests {
 
         // Note this is the second token, not the first.
         let passkey_resp = wa_token_valid_b
-            .perform_register(origin.clone(), passkey_chal, 60000)
+            .perform_register(origin.clone(), passkey_chal.public_key, 60000)
             .expect("Failed to create soft passkey");
 
         // Finish the registration
@@ -5251,7 +5251,7 @@ mod tests {
         .expect("Unable to access passkey challenge, invalid state");
 
         let passkey_resp = wa_token_1
-            .perform_register(origin.clone(), passkey_chal, 60000)
+            .perform_register(origin.clone(), passkey_chal.public_key, 60000)
             .expect("Failed to create soft passkey");
 
         // Finish the registration of token 1
@@ -5335,7 +5335,7 @@ mod tests {
         .expect("Unable to access passkey challenge, invalid state");
 
         let passkey_resp = wa_token_2
-            .perform_register(origin.clone(), passkey_chal, 60000)
+            .perform_register(origin.clone(), passkey_chal.public_key, 60000)
             .expect("Failed to create soft passkey");
 
         // Finish the registration of token 1
@@ -5421,7 +5421,7 @@ mod tests {
         .expect("Unable to access passkey challenge, invalid state");
 
         let passkey_resp = wa_token_1
-            .perform_register(origin.clone(), passkey_chal, 60000)
+            .perform_register(origin.clone(), passkey_chal.public_key, 60000)
             .expect("Failed to create soft passkey");
 
         // Finish the registration

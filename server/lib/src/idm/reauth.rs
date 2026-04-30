@@ -240,7 +240,7 @@ mod tests {
         .expect("Unable to access passkey challenge, invalid state");
 
         let passkey_resp = wa
-            .perform_register(origin.clone(), passkey_chal.clone(), 60000)
+            .perform_register(origin.clone(), passkey_chal.public_key.clone(), 60000)
             .expect("Failed to create soft passkey");
 
         // Finish the registration
@@ -364,7 +364,7 @@ mod tests {
         trace!(?rcr);
 
         let resp = wa
-            .perform_auth(origin, rcr, 60000)
+            .perform_auth(origin, rcr.public_key, 60000)
             .expect("failed to use softtoken to authenticate");
 
         let passkey_step = AuthEvent::cred_step_passkey(sessionid, resp);
@@ -518,7 +518,7 @@ mod tests {
         trace!(?rcr);
 
         let resp = wa
-            .perform_auth(origin, rcr, 60000)
+            .perform_auth(origin, rcr.public_key, 60000)
             .expect("failed to use softtoken to authenticate");
 
         let passkey_step = AuthEvent::cred_step_passkey(sessionid, resp);
