@@ -1691,18 +1691,9 @@ mod tests {
     #[test]
     fn test_endpoint_auth_method_serde() {
         let variants = [
-            (
-                EndpointAuthMethod::ClientSecretPost,
-                "client_secret_post",
-            ),
-            (
-                EndpointAuthMethod::ClientSecretBasic,
-                "client_secret_basic",
-            ),
-            (
-                EndpointAuthMethod::ClientSecretJwt,
-                "client_secret_jwt",
-            ),
+            (EndpointAuthMethod::ClientSecretPost, "client_secret_post"),
+            (EndpointAuthMethod::ClientSecretBasic, "client_secret_basic"),
+            (EndpointAuthMethod::ClientSecretJwt, "client_secret_jwt"),
             (EndpointAuthMethod::PrivateKeyJwt, "private_key_jwt"),
         ];
         for (variant, expected) in variants {
@@ -1753,9 +1744,7 @@ mod tests {
             require_request_uri_registration: false,
             code_challenge_methods_supported: vec![PkceAlg::S256],
             revocation_endpoint: Some(Url::parse("https://id.example.com/oauth2/revoke").unwrap()),
-            revocation_endpoint_auth_methods_supported: vec![
-                EndpointAuthMethod::ClientSecretBasic,
-            ],
+            revocation_endpoint_auth_methods_supported: vec![EndpointAuthMethod::ClientSecretBasic],
             introspection_endpoint: Some(
                 Url::parse("https://id.example.com/oauth2/introspect").unwrap(),
             ),
