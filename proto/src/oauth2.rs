@@ -1043,6 +1043,8 @@ mod tests {
                 acr: None,
             },
             max_age: Some(3600),
+            prompt: vec![],
+            ui_locales: vec![],
             unknown_keys: BTreeMap::new(),
         };
 
@@ -1081,6 +1083,8 @@ mod tests {
             nonce: None,
             oidc_ext: AuthorisationRequestOidc::default(),
             max_age: None,
+            prompt: vec![],
+            ui_locales: vec![],
             unknown_keys: BTreeMap::new(),
         };
 
@@ -1111,6 +1115,8 @@ mod tests {
             nonce: None,
             oidc_ext: AuthorisationRequestOidc::default(),
             max_age: None,
+            prompt: vec![],
+            ui_locales: vec![],
             unknown_keys: BTreeMap::new(),
         };
 
@@ -1683,26 +1689,26 @@ mod tests {
     }
 
     #[test]
-    fn test_token_endpoint_auth_method_serde() {
+    fn test_endpoint_auth_method_serde() {
         let variants = [
             (
-                TokenEndpointAuthMethod::ClientSecretPost,
+                EndpointAuthMethod::ClientSecretPost,
                 "client_secret_post",
             ),
             (
-                TokenEndpointAuthMethod::ClientSecretBasic,
+                EndpointAuthMethod::ClientSecretBasic,
                 "client_secret_basic",
             ),
             (
-                TokenEndpointAuthMethod::ClientSecretJwt,
+                EndpointAuthMethod::ClientSecretJwt,
                 "client_secret_jwt",
             ),
-            (TokenEndpointAuthMethod::PrivateKeyJwt, "private_key_jwt"),
+            (EndpointAuthMethod::PrivateKeyJwt, "private_key_jwt"),
         ];
         for (variant, expected) in variants {
             let json = serde_json::to_string(&variant).unwrap();
             assert_eq!(json, format!("\"{expected}\""));
-            let de: TokenEndpointAuthMethod = serde_json::from_str(&json).unwrap();
+            let de: EndpointAuthMethod = serde_json::from_str(&json).unwrap();
             assert_eq!(variant, de);
         }
     }
@@ -1731,7 +1737,7 @@ mod tests {
             request_object_signing_alg_values_supported: None,
             request_object_encryption_alg_values_supported: None,
             request_object_encryption_enc_values_supported: None,
-            token_endpoint_auth_methods_supported: vec![TokenEndpointAuthMethod::ClientSecretBasic],
+            token_endpoint_auth_methods_supported: vec![EndpointAuthMethod::ClientSecretBasic],
             token_endpoint_auth_signing_alg_values_supported: None,
             display_values_supported: None,
             claim_types_supported: vec![ClaimType::Normal],
@@ -1748,13 +1754,13 @@ mod tests {
             code_challenge_methods_supported: vec![PkceAlg::S256],
             revocation_endpoint: Some(Url::parse("https://id.example.com/oauth2/revoke").unwrap()),
             revocation_endpoint_auth_methods_supported: vec![
-                TokenEndpointAuthMethod::ClientSecretBasic,
+                EndpointAuthMethod::ClientSecretBasic,
             ],
             introspection_endpoint: Some(
                 Url::parse("https://id.example.com/oauth2/introspect").unwrap(),
             ),
             introspection_endpoint_auth_methods_supported: vec![
-                TokenEndpointAuthMethod::ClientSecretBasic,
+                EndpointAuthMethod::ClientSecretBasic,
             ],
             introspection_endpoint_auth_signing_alg_values_supported: None,
             device_authorization_endpoint: Some(
@@ -1815,7 +1821,7 @@ mod tests {
         );
         assert_eq!(
             de.token_endpoint_auth_methods_supported,
-            vec![TokenEndpointAuthMethod::ClientSecretBasic]
+            vec![EndpointAuthMethod::ClientSecretBasic]
         );
         assert_eq!(de.claim_types_supported, vec![ClaimType::Normal]);
         assert!(!de.claims_parameter_supported);
@@ -1994,7 +2000,7 @@ mod tests {
             response_types_supported: vec![ResponseType::Code],
             response_modes_supported: vec![ResponseMode::Query],
             grant_types_supported: vec![GrantType::AuthorisationCode],
-            token_endpoint_auth_methods_supported: vec![TokenEndpointAuthMethod::ClientSecretBasic],
+            token_endpoint_auth_methods_supported: vec![EndpointAuthMethod::ClientSecretBasic],
             token_endpoint_auth_signing_alg_values_supported: None,
             service_documentation: None,
             ui_locales_supported: None,
