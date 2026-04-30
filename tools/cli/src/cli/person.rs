@@ -33,8 +33,6 @@ use uuid::Uuid;
 
 #[cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))]
 use crate::webauthn::get_authenticator;
-#[cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))]
-use webauthn_authenticator_rs::WebauthnAuthenticator;
 
 impl PersonOpt {
     pub async fn exec(&self, opt: KubidmClientParser) {

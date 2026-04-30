@@ -4,8 +4,8 @@ use crate::core::{self, RequestOptions};
 use crate::module::PamResult;
 use crate::pam::ModuleOptions;
 <<<<<<<< HEAD:unix_integration/pam_sparkle_common/src/tests.rs
-use sparkle_unix_common::unix_passwd::{CryptPw, EtcShadow, EtcUser};
-use sparkle_unix_common::unix_proto::{DeviceAuthorizationResponse, PamServiceInfo};
+use kubidm_unix_common::unix_passwd::{CryptPw, EtcShadow, EtcUser};
+use kubidm_unix_common::unix_proto::{DeviceAuthorizationResponse, PamServiceInfo};
 ========
 use kubidm_unix_common::unix_passwd::{CryptPw, EtcShadow, EtcUser};
 use kubidm_unix_common::unix_proto::{DeviceAuthorizationResponse, PamServiceInfo};

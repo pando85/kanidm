@@ -27,6 +27,7 @@ use kubidm_utils_users::{get_current_gid, get_current_uid, get_effective_gid, ge
 #[cfg(target_family = "windows")] // for windows builds
 use whoami;
 
+use fs4::fs_std::FileExt;
 use std::fs::{metadata, File};
 // This works on both unix and windows.
 use clap::{Args, Parser, Subcommand};
@@ -541,6 +542,7 @@ async fn start_daemon(opt: KubidmdParser, config: Configuration) -> ExitCode {
         &opt.commands,
         KubidmdOpt::CertGenerate
             | KubidmdOpt::ShowReplicationCertificate
+            | KubidmdOpt::ShowReplicationCertificateMetadata
             | KubidmdOpt::RenewReplicationCertificate
             | KubidmdOpt::RefreshReplicationConsumer { .. }
             | KubidmdOpt::RecoverAccount { .. }
@@ -600,6 +602,7 @@ async fn start_daemon(opt: KubidmdParser, config: Configuration) -> ExitCode {
         // we aren't going to touch the DB so we can carry on
         KubidmdOpt::CertGenerate
         | KubidmdOpt::ShowReplicationCertificate
+        | KubidmdOpt::ShowReplicationCertificateMetadata
         | KubidmdOpt::RenewReplicationCertificate
         | KubidmdOpt::RefreshReplicationConsumer { .. }
         | KubidmdOpt::RecoverAccount { .. }
@@ -625,10 +628,6 @@ async fn start_daemon(opt: KubidmdParser, config: Configuration) -> ExitCode {
                 }
             };
 
-<<<<<<< HEAD
-            match flock.try_lock() {
-                Ok(_) => debug!("Acquired kanidm exclusive lock"),
-=======
             match flock.try_lock_exclusive() {
                 Ok(true) => debug!("Acquired kubidm exclusive lock"),
                 Ok(false) => {
@@ -639,7 +638,6 @@ async fn start_daemon(opt: KubidmdParser, config: Configuration) -> ExitCode {
                     error!("Is another kubidmd process running?");
                     return ExitCode::FAILURE;
                 }
->>>>>>> master
                 Err(err) => {
                     error!(
                         "ERROR: Refusing to start - unable to lock kubidmd exclusive lock at {}",
@@ -1000,8 +998,7 @@ async fn kubidm_main(config: Configuration, opt: KubidmdParser) -> ExitCode {
             )
             .await;
         }
-<<<<<<< HEAD
-        KanidmdOpt::ShowReplicationCertificateMetadata => {
+        KubidmdOpt::ShowReplicationCertificateMetadata => {
             info!("Running show replication certificate metadata ...");
             submit_admin_req_human(
                 config.adminbindpath.as_str(),
@@ -1009,11 +1006,7 @@ async fn kubidm_main(config: Configuration, opt: KubidmdParser) -> ExitCode {
             )
             .await;
         }
-
-        KanidmdOpt::RenewReplicationCertificate => {
-=======
         KubidmdOpt::RenewReplicationCertificate => {
->>>>>>> master
             info!("Running renew replication certificate ...");
             submit_admin_req_human(
                 config.adminbindpath.as_str(),

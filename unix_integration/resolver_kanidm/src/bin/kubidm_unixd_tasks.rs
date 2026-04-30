@@ -10,7 +10,7 @@
 #![deny(clippy::needless_pass_by_value)]
 #![deny(clippy::trivially_copy_pass_by_ref)]
 
-use kanidm_flavour::Msg;
+use kubidm_unix_resolver::Msg;
 use std::process::ExitCode;
 
 #[tokio::main(flavor = "current_thread")]

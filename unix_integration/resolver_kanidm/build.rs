@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use clap::CommandFactory;
 use clap_complete::{generate_to, Shell};
 
-use sparkle_resolver_common::opt::{KubidmUnixParser, SshAuthorizedOpt};
+use sparkle_resolver_common::opt::{KanidmUnixParser, SshAuthorisedKeysOpt};
 
 fn main() {
     profiles::apply_profile();
@@ -38,7 +38,7 @@ fn main() {
 
         generate_to(
             shell,
-            &mut KubidmUnixParser::command(),
+            &mut KanidmUnixParser::command(),
             "kubidm_unix",
             comp_dir.clone(),
         )

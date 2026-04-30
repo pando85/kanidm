@@ -1,28 +1,18 @@
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 mod u2fhid;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
-use u2fhid::get_authenticator_backend;
+pub(crate) use u2fhid::get_authenticator_backend;
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+use u2fhid::Backend;
 
 #[cfg(target_os = "windows")]
 mod win10;
 #[cfg(target_os = "windows")]
-use win10::get_authenticator_backend;
+pub(crate) use win10::get_authenticator_backend;
+#[cfg(target_os = "windows")]
+use win10::Backend;
 
 #[cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))]
-use webauthn_authenticator_rs::WebauthnAuthenticator;
-
-/// Gets a [WebauthnAuthenticator] with an appropriate backend for the current platform:
-///
-/// * On Windows, this uses the platform WebAuthn API, available on Windows 10
-///   build 1903 and later.
-///
-///   This supports BLE, NFC and USB tokens.
-///
-/// * On other platforms, this uses Mozilla's `authenticator-rs`.
-///
-///   This only supports USB tokens, and doesn't work on Windows systems which
-///   have the platform WebAuthn API available.
-#[cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))]
-pub(crate) fn get_authenticator() -> impl WebauthnAuthenticator {
-    get_authenticator_backend()
+pub(crate) fn get_authenticator() -> webauthn_authenticator_rs::WebauthnAuthenticator<Backend> {
+    webauthn_authenticator_rs::WebauthnAuthenticator::new(get_authenticator_backend())
 }

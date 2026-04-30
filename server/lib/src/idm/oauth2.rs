@@ -31,8 +31,8 @@ pub use kubidm_proto::oauth2::{
     ClientPostAuth, CodeChallengeMethod, DeviceAuthorizationResponse, DisplayValue,
     EndpointAuthMethod, ErrorResponse, GrantType, GrantTypeReq, IdTokenSignAlg, IssuedTokenType,
     OAuth2RFC9068Token, OAuth2RFC9068TokenExtensions, Oauth2Rfc8414MetadataResponse,
-    OidcDiscoveryResponse, OidcWebfingerRel, OidcWebfingerResponse, PkceAlg, PkceRequest,
-    Prompt, ResponseMode, ResponseType, SubjectType, TokenRevokeRequest, OAUTH2_TOKEN_TYPE_ACCESS_TOKEN,
+    OidcDiscoveryResponse, OidcWebfingerRel, OidcWebfingerResponse, PkceAlg, PkceRequest, Prompt,
+    ResponseMode, ResponseType, SubjectType, TokenRevokeRequest, OAUTH2_TOKEN_TYPE_ACCESS_TOKEN,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{formats, serde_as};

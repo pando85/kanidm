@@ -13,8 +13,8 @@ use crate::pam::items::{PamAuthTok, PamRHost, PamService, PamTty};
 
 use crate::core::PamHandler;
 <<<<<<<< HEAD:unix_integration/pam_sparkle_common/src/pam/module.rs
-use sparkle_unix_common::unix_proto::DeviceAuthorizationResponse;
-use sparkle_unix_common::unix_proto::PamServiceInfo;
+use kubidm_unix_common::unix_proto::DeviceAuthorizationResponse;
+use kubidm_unix_common::unix_proto::PamServiceInfo;
 ========
 use kubidm_unix_common::unix_proto::DeviceAuthorizationResponse;
 use kubidm_unix_common::unix_proto::PamServiceInfo;

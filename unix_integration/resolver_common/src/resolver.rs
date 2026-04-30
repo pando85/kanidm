@@ -19,7 +19,6 @@ use crate::idprovider::system::{
 use hashbrown::HashMap;
 use kanidm_hsm_crypto::provider::BoxedDynTpm;
 use kubidm_lib_file_permissions::diagnose_path;
-use lru::LruCache;
 use kubidm_unix_common::constants::{
     DEFAULT_CACHE_TIMEOUT_JITTER_MS, DEFAULT_CACHE_TIMEOUT_MAXIMUM, DEFAULT_CACHE_TIMEOUT_MINIMUM,
     DEFAULT_SHELL_SEARCH_PATHS, SYSTEM_SHADOW_PATH,
@@ -30,6 +29,7 @@ use kubidm_unix_common::unix_proto::{
     HomeDirectoryInfo, NssGroup, NssUser, PamAuthRequest, PamAuthResponse, PamServiceInfo,
     ProviderStatus,
 };
+use lru::LruCache;
 use std::fmt::Display;
 use std::num::NonZeroUsize;
 use std::ops::DerefMut;

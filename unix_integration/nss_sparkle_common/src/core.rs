@@ -1,6 +1,3 @@
-use libnss::group::Group;
-use libnss::interop::Response;
-use libnss::passwd::Passwd;
 use kubidm_unix_common::client_sync::DaemonClientBlocking;
 use kubidm_unix_common::constants::{SYSTEM_GROUP_PATH, SYSTEM_PASSWD_PATH};
 use kubidm_unix_common::unix_config::PamNssConfig;
@@ -8,6 +5,9 @@ use kubidm_unix_common::unix_passwd::{
     read_etc_group_file, read_etc_passwd_file, EtcGroup, EtcUser,
 };
 use kubidm_unix_common::unix_proto::{ClientRequest, ClientResponse, NssGroup, NssUser};
+use libnss::group::Group;
+use libnss::interop::Response;
+use libnss::passwd::Passwd;
 use std::ops::{Deref, DerefMut};
 use std::sync::RwLock;
 

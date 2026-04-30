@@ -6,7 +6,7 @@ use kubidm_unix_common::constants::DEFAULT_CONFIG_PATH;
 use libnss::group::{Group, GroupHooks};
 use libnss::interop::Response;
 use libnss::passwd::{Passwd, PasswdHooks};
-use sparkle_unix_common::constants::DEFAULT_CONFIG_PATH;
+use kubidm_unix_common::constants::DEFAULT_CONFIG_PATH;
 
 <<<<<<<< HEAD:unix_integration/nss_sparkle_common/src/hooks.rs
 pub struct SparklePasswd;

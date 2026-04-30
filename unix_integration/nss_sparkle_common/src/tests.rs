@@ -1,6 +1,6 @@
 use crate::core::{self, RequestOptions};
-use libnss::interop::Response;
 use kubidm_unix_common::unix_passwd::{EtcGroup, EtcUser};
+use libnss::interop::Response;
 
 impl RequestOptions {
     fn fallback_fixture() -> Self {

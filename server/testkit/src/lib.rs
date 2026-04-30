@@ -165,7 +165,7 @@ pub async fn setup_account_passkey(
         .expect("Unable to check credential update status");
 
     // Setup and update the passkey
-    let mut wa = SoftPasskey::new(true);
+    let mut wa = WebauthnAuthenticator::new(SoftPasskey::new(true));
 
     let status = rsclient
         .idm_account_credential_update_passkey_init(&session_token)

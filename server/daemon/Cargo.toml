@@ -29,6 +29,7 @@ kubidmd_core = { workspace = true }
 kubidm_lib_file_permissions = { workspace = true }
 sketching = { workspace = true }
 futures = { workspace = true }
+fs4 = { workspace = true }
 
 dhat = { workspace = true, optional = true }
 clap = { workspace = true, features = ["env"] }

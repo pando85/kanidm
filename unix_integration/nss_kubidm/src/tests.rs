@@ -4,7 +4,7 @@ use crate::core::{self, RequestOptions};
 use kubidm_unix_common::unix_passwd::{EtcGroup, EtcUser};
 >>>>>>>> master:unix_integration/nss_kubidm/src/tests.rs
 use libnss::interop::Response;
-use sparkle_unix_common::unix_passwd::{EtcGroup, EtcUser};
+use kubidm_unix_common::unix_passwd::{EtcGroup, EtcUser};
 
 impl RequestOptions {
     fn fallback_fixture() -> Self {
