@@ -805,7 +805,11 @@ mod tests {
     #[test]
     fn test_modify_protected_attrs_user_nonprotected_ignores() {
         let ident = make_user_ident_rw();
-        let entry = make_sealed_entry("account");
+        let entry = make_sealed_entry_two_classes(
+            "account",
+            "person",
+            uuid::uuid!("00000000-0000-0000-0001-000000000001"),
+        );
         let result = modify_protected_attrs(&ident, &entry);
         assert!(matches!(result, AccessModResult::Ignore));
     }
@@ -815,7 +819,7 @@ mod tests {
         let ident = make_user_ident_rw();
         let entry = make_sealed_entry("account");
         let result = modify_protected_attrs(&ident, &entry);
-        assert!(matches!(result, AccessModResult::Ignore));
+        assert!(matches!(result, AccessModResult::Constrain { .. }));
     }
 
     #[test]
