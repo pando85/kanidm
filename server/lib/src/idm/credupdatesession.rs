@@ -5030,7 +5030,7 @@ mod tests {
         }
         .expect("Unable to access passkey challenge, invalid state");
 
-        let passkey_resp = wa_token_1
+        let passkey_resp = wa_passkey_invalid
             .perform_register(origin.clone(), passkey_chal.public_key, 60000)
             .expect("Failed to create soft passkey");
 

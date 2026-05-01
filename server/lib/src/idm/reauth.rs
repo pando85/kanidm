@@ -185,7 +185,7 @@ mod tests {
     use compact_jwt::JwsCompact;
     use uuid::uuid;
 
-    use webauthn_authenticator_rs::prelude::AuthenticatorBackend;
+    use webauthn_authenticator_rs::AuthenticatorBackend;
     use webauthn_authenticator_rs::softpasskey::SoftPasskey;
 
     const TESTPERSON_UUID: Uuid = uuid!("cf231fea-1a8f-4410-a520-fd9b1a379c86");

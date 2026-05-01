@@ -1777,7 +1777,7 @@ mod tests {
     use std::time::Duration;
     use time::OffsetDateTime;
     use tokio::sync::mpsc::unbounded_channel as unbounded;
-    use webauthn_authenticator_rs::prelude::AuthenticatorBackend;
+    use webauthn_authenticator_rs::AuthenticatorBackend;
     use webauthn_authenticator_rs::softpasskey::SoftPasskey;
     use webauthn_rs::prelude::{RequestChallengeResponse, Webauthn};
 
