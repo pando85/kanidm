@@ -79,6 +79,14 @@
     },
     {
       matchPackageNames: [
+        'askama',
+        'askama_web',
+      ],
+      groupName: 'askama',
+      groupSlug: 'askama',
+    },
+    {
+      matchPackageNames: [
         'renovatebot/pre-commit-hooks',
       ],
       automerge: true,
