@@ -31,16 +31,6 @@ pub mod items;
 pub mod macros;
 pub mod module;
 
-<<<<<<<< HEAD:unix_integration/pam_sparkle_common/src/pam/mod.rs
-========
-use std::collections::BTreeSet;
-use std::convert::TryFrom;
-use std::ffi::CStr;
-
-use kubidm_unix_common::constants::DEFAULT_CONFIG_PATH;
-use kubidm_unix_common::unix_config::PamNssConfig;
-
->>>>>>>> master:unix_integration/pam_kubidm/src/pam/mod.rs
 use crate::core::{self, RequestOptions};
 use crate::pam::constants::*;
 use crate::pam::module::{PamHandle, PamHooks};
@@ -105,17 +95,11 @@ impl TryFrom<&Vec<&CStr>> for ModuleOptions {
     }
 }
 
-<<<<<<<< HEAD:unix_integration/pam_sparkle_common/src/pam/mod.rs
-pub struct PamSparkle;
-
-impl PamHooks for PamSparkle {
-========
 pub struct PamKubidm;
 
 pam_hooks!(PamKubidm);
 
 impl PamHooks for PamKubidm {
->>>>>>>> master:unix_integration/pam_kubidm/src/pam/mod.rs
     fn sm_authenticate(pamh: &PamHandle, args: Vec<&CStr>, _flags: PamFlag) -> PamResultCode {
         let opts = match ModuleOptions::try_from(&args) {
             Ok(o) => o,

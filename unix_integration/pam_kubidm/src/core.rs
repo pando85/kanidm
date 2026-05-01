@@ -1,26 +1,15 @@
 use crate::constants::PamResultCode;
 use crate::module::PamResult;
 use crate::pam::ModuleOptions;
-<<<<<<<< HEAD:unix_integration/pam_sparkle_common/src/core.rs
 use kubidm_unix_common::client_sync::DaemonClientBlocking;
 use kubidm_unix_common::constants::{SYSTEM_PASSWD_PATH, SYSTEM_SHADOW_PATH};
 use kubidm_unix_common::unix_config::PamNssConfig;
 use kubidm_unix_common::unix_passwd::{
     read_etc_passwd_file, read_etc_shadow_file, EtcShadow, EtcUser,
 };
-use kubidm_unix_common::unix_proto::{ClientRequest, ClientResponse};
 use kubidm_unix_common::unix_proto::{
-========
-use kubidm_unix_common::client_sync::DaemonClientBlocking;
-use kubidm_unix_common::constants::{SYSTEM_PASSWD_PATH, SYSTEM_SHADOW_PATH};
-use kubidm_unix_common::unix_config::PamNssConfig;
-use kubidm_unix_common::unix_passwd::{
-    read_etc_passwd_file, read_etc_shadow_file, EtcShadow, EtcUser,
-};
-use kubidm_unix_common::unix_proto::{ClientRequest, ClientResponse};
-use kubidm_unix_common::unix_proto::{
->>>>>>>> master:unix_integration/pam_kubidm/src/core.rs
-    DeviceAuthorizationResponse, PamAuthRequest, PamAuthResponse, PamServiceInfo,
+    ClientRequest, ClientResponse, DeviceAuthorizationResponse, PamAuthRequest, PamAuthResponse,
+    PamServiceInfo,
 };
 use std::cell::RefCell;
 use std::time::Duration;
@@ -28,11 +17,7 @@ use time::OffsetDateTime;
 use tracing::{debug, error};
 
 #[cfg(test)]
-<<<<<<<< HEAD:unix_integration/pam_sparkle_common/src/core.rs
 use kubidm_unix_common::client_sync::UnixStream;
-========
-use kubidm_unix_common::client_sync::UnixStream;
->>>>>>>> master:unix_integration/pam_kubidm/src/core.rs
 
 pub enum RequestOptions {
     Main {

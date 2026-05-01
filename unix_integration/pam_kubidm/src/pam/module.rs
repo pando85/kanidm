@@ -12,13 +12,8 @@ use crate::pam::conv::PamConv;
 use crate::pam::items::{PamAuthTok, PamRHost, PamService, PamTty};
 
 use crate::core::PamHandler;
-<<<<<<<< HEAD:unix_integration/pam_sparkle_common/src/pam/module.rs
 use kubidm_unix_common::unix_proto::DeviceAuthorizationResponse;
 use kubidm_unix_common::unix_proto::PamServiceInfo;
-========
-use kubidm_unix_common::unix_proto::DeviceAuthorizationResponse;
-use kubidm_unix_common::unix_proto::PamServiceInfo;
->>>>>>>> master:unix_integration/pam_kubidm/src/pam/module.rs
 
 /// Opaque type, used as a pointer when making pam API calls.
 ///

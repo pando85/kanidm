@@ -3,13 +3,8 @@ use crate::core::PamHandler;
 use crate::core::{self, RequestOptions};
 use crate::module::PamResult;
 use crate::pam::ModuleOptions;
-<<<<<<<< HEAD:unix_integration/pam_sparkle_common/src/tests.rs
 use kubidm_unix_common::unix_passwd::{CryptPw, EtcShadow, EtcUser};
 use kubidm_unix_common::unix_proto::{DeviceAuthorizationResponse, PamServiceInfo};
-========
-use kubidm_unix_common::unix_passwd::{CryptPw, EtcShadow, EtcUser};
-use kubidm_unix_common::unix_proto::{DeviceAuthorizationResponse, PamServiceInfo};
->>>>>>>> master:unix_integration/pam_kubidm/src/tests.rs
 use std::collections::VecDeque;
 use std::str::FromStr;
 use std::sync::Mutex;
