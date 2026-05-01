@@ -155,9 +155,8 @@ pub fn apply_modify_access<'a>(
                                 .map(|imo| imo.intersection(entry_manager_uuids).next().is_some())
                                 .unwrap_or_default();
 
-                            let user_check = ident_uuid
-                                .map(|u| entry_manager_uuids.contains(&u))
-                                .unwrap_or_default();
+                            let user_check =
+                                entry_manager_uuids.contains(&ident_uuid);
 
                             if !(group_check || user_check) {
                                 // Not the entry manager
@@ -294,6 +293,10 @@ fn modify_ident_test(ident: &Identity) -> AccessBasicResult {
         IdentType::Internal(InternalRole::Migration) => {
             return AccessBasicResult::Grant;
         }
+        IdentType::Internal(InternalRole::MessageQueue)
+        | IdentType::Internal(InternalRole::AccountRequest) => {
+            return AccessBasicResult::Deny;
+        }
         IdentType::Synch(_) => {
             security_critical!("Blocking sync check");
             return AccessBasicResult::Deny;
@@ -405,10 +408,13 @@ fn modify_protected_attrs<'a>(
             // We don't constraint or influence these.
             AccessModResult::Ignore
         }
-        IdentType::Internal(InternalRole::Migration) | IdentType::User(_) => {
+        IdentType::Internal(InternalRole::AccountRequest)
+        | IdentType::Internal(InternalRole::MessageQueue)
+        | IdentType::Internal(InternalRole::Migration)
+        | IdentType::User(_) => {
             if let Some(classes) = entry.get_ava_as_iutf8(Attribute::Class) {
-                if classes.is_disjoint(&PROTECTED_MOD_ENTRY_CLASSES)
-                    || entry.get_uuid() <= UUID_ANONYMOUS
+                if entry.get_uuid() > UUID_ANONYMOUS
+                    && classes.is_disjoint(&PROTECTED_MOD_ENTRY_CLASSES)
                 {
                     // Not protected, go ahead
                     AccessModResult::Ignore
@@ -465,6 +471,8 @@ fn modify_protected_entry_attrs<'a>(classes: &BTreeSet<String>) -> AccessModResu
             Attribute::DeniedName,
             Attribute::DomainDisplayName,
             Attribute::Image,
+            Attribute::DomainAllowEasterEggs,
+            Attribute::DomainAllowAccountRecovery,
         ]);
     }
 
@@ -797,7 +805,11 @@ mod tests {
     #[test]
     fn test_modify_protected_attrs_user_nonprotected_ignores() {
         let ident = make_user_ident_rw();
-        let entry = make_sealed_entry("account");
+        let entry = make_sealed_entry_two_classes(
+            "account",
+            "person",
+            uuid::uuid!("00000000-0000-0000-0001-000000000001"),
+        );
         let result = modify_protected_attrs(&ident, &entry);
         assert!(matches!(result, AccessModResult::Ignore));
     }
@@ -805,9 +817,23 @@ mod tests {
     #[test]
     fn test_modify_protected_attrs_user_protected_constrains() {
         let ident = make_user_ident_rw();
-        let entry = make_sealed_entry("account");
+        let entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, Value::new_iutf8("domain_info")),
+                (
+                    Attribute::Uuid,
+                    Value::Uuid(uuid::uuid!("ffffffff-ffff-ffff-ffff-000000000100"))
+                )
+            )
+            .into_sealed_committed(),
+        );
         let result = modify_protected_attrs(&ident, &entry);
-        assert!(matches!(result, AccessModResult::Ignore));
+        match result {
+            AccessModResult::Constrain { pres_attr, .. } => {
+                assert!(pres_attr.contains(&Attribute::DomainSsid));
+            }
+            _ => panic!("Expected Constrain for protected domain_info entry"),
+        }
     }
 
     #[test]

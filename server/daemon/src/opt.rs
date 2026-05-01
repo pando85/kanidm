@@ -209,6 +209,8 @@ enum KubidmdOpt {
     },
     /// Display this server's replication certificate
     ShowReplicationCertificate,
+    /// Display this server's replication certificate metadata
+    ShowReplicationCertificateMetadata,
     /// Renew this server's replication certificate
     RenewReplicationCertificate,
     /// Refresh this servers database content with the content from a supplier. This means

@@ -61,6 +61,7 @@ sha2 = { workspace = true }
 sketching = { workspace = true }
 smolset = { workspace = true }
 sshkey-attest = { workspace = true }
+subtle = { workspace = true }
 time = { workspace = true, features = ["serde", "std"] }
 tokio = { workspace = true, features = ["net", "sync", "time", "rt"] }
 reqwest = { workspace = true }

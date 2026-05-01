@@ -27,10 +27,10 @@ use kubidm_utils_users::{get_current_gid, get_current_uid, get_effective_gid, ge
 #[cfg(target_family = "windows")] // for windows builds
 use whoami;
 
+use fs4::fs_std::FileExt;
 use std::fs::{metadata, File};
 // This works on both unix and windows.
 use clap::{Args, Parser, Subcommand};
-use fs4::fs_std::FileExt;
 use futures::{SinkExt, StreamExt};
 use kubidmd_core::admin::{
     AdminTaskRequest, AdminTaskResponse, ClientCodec, ProtoDomainInfo,
@@ -192,6 +192,17 @@ async fn submit_admin_req_human(path: &str, req: AdminTaskRequest) -> ExitCode {
         Some(Ok(AdminTaskResponse::RecoverAccount { password })) => info!(new_password = ?password),
         Some(Ok(AdminTaskResponse::ShowReplicationCertificate { cert })) => {
             info!(certificate = ?cert)
+        }
+        Some(Ok(AdminTaskResponse::ShowReplicationCertificateMetadata {
+            not_before,
+            not_after,
+            subject,
+            expired,
+        })) => {
+            info!("not_before : {}", not_before);
+            info!("not_after  : {}", not_after);
+            info!("subject    : {}", subject);
+            info!("expired    : {}", expired);
         }
         Some(Ok(AdminTaskResponse::DomainUpgradeCheck { report })) => {
             let ProtoDomainUpgradeCheckReport {
@@ -531,6 +542,7 @@ async fn start_daemon(opt: KubidmdParser, config: Configuration) -> ExitCode {
         &opt.commands,
         KubidmdOpt::CertGenerate
             | KubidmdOpt::ShowReplicationCertificate
+            | KubidmdOpt::ShowReplicationCertificateMetadata
             | KubidmdOpt::RenewReplicationCertificate
             | KubidmdOpt::RefreshReplicationConsumer { .. }
             | KubidmdOpt::RecoverAccount { .. }
@@ -590,6 +602,7 @@ async fn start_daemon(opt: KubidmdParser, config: Configuration) -> ExitCode {
         // we aren't going to touch the DB so we can carry on
         KubidmdOpt::CertGenerate
         | KubidmdOpt::ShowReplicationCertificate
+        | KubidmdOpt::ShowReplicationCertificateMetadata
         | KubidmdOpt::RenewReplicationCertificate
         | KubidmdOpt::RefreshReplicationConsumer { .. }
         | KubidmdOpt::RecoverAccount { .. }
@@ -982,6 +995,14 @@ async fn kubidm_main(config: Configuration, opt: KubidmdParser) -> ExitCode {
             submit_admin_req_human(
                 config.adminbindpath.as_str(),
                 AdminTaskRequest::ShowReplicationCertificate,
+            )
+            .await;
+        }
+        KubidmdOpt::ShowReplicationCertificateMetadata => {
+            info!("Running show replication certificate metadata ...");
+            submit_admin_req_human(
+                config.adminbindpath.as_str(),
+                AdminTaskRequest::ShowReplicationCertificateMetadata,
             )
             .await;
         }

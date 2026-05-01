@@ -7,9 +7,9 @@ use kubidm_unix_common::unix_config::PamNssConfig;
 use kubidm_unix_common::unix_passwd::{
     read_etc_passwd_file, read_etc_shadow_file, EtcShadow, EtcUser,
 };
-use kubidm_unix_common::unix_proto::{ClientRequest, ClientResponse};
 use kubidm_unix_common::unix_proto::{
-    DeviceAuthorizationResponse, PamAuthRequest, PamAuthResponse, PamServiceInfo,
+    ClientRequest, ClientResponse, DeviceAuthorizationResponse, PamAuthRequest, PamAuthResponse,
+    PamServiceInfo,
 };
 use std::cell::RefCell;
 use std::time::Duration;

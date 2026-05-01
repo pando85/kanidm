@@ -186,7 +186,7 @@ mod tests {
     use uuid::uuid;
 
     use webauthn_authenticator_rs::softpasskey::SoftPasskey;
-    use webauthn_authenticator_rs::WebauthnAuthenticator;
+    use webauthn_authenticator_rs::AuthenticatorBackend;
 
     const TESTPERSON_UUID: Uuid = uuid!("cf231fea-1a8f-4410-a520-fd9b1a379c86");
 
@@ -208,10 +208,7 @@ mod tests {
         assert!(idms_prox_write.commit().is_ok());
     }
 
-    async fn setup_testaccount_passkey(
-        idms: &IdmServer,
-        ct: Duration,
-    ) -> WebauthnAuthenticator<SoftPasskey> {
+    async fn setup_testaccount_passkey(idms: &IdmServer, ct: Duration) -> SoftPasskey {
         let mut idms_prox_write = idms.proxy_write(ct).await.unwrap();
         let testperson = idms_prox_write
             .qs_write
@@ -230,7 +227,7 @@ mod tests {
         let cutxn = idms.cred_update_transaction().await.unwrap();
         let origin = cutxn.get_origin().clone();
 
-        let mut wa = WebauthnAuthenticator::new(SoftPasskey::new(true));
+        let mut wa = SoftPasskey::new(true);
 
         let c_status = cutxn
             .credential_passkey_init(&cust, ct)
@@ -243,7 +240,7 @@ mod tests {
         .expect("Unable to access passkey challenge, invalid state");
 
         let passkey_resp = wa
-            .do_registration(origin.clone(), passkey_chal.clone())
+            .perform_register(origin.clone(), passkey_chal.public_key.clone(), 60000)
             .expect("Failed to create soft passkey");
 
         // Finish the registration
@@ -327,7 +324,7 @@ mod tests {
     async fn auth_passkey(
         idms: &IdmServer,
         ct: Duration,
-        wa: &mut WebauthnAuthenticator<SoftPasskey>,
+        wa: &mut SoftPasskey,
         idms_delayed: &mut IdmServerDelayed,
     ) -> Option<JwsCompact> {
         let mut idms_auth = idms.auth().await.unwrap();
@@ -367,7 +364,7 @@ mod tests {
         trace!(?rcr);
 
         let resp = wa
-            .do_authentication(origin, rcr)
+            .perform_auth(origin, rcr.public_key, 60000)
             .expect("failed to use softtoken to authenticate");
 
         let passkey_step = AuthEvent::cred_step_passkey(sessionid, resp);
@@ -490,7 +487,7 @@ mod tests {
         idms: &IdmServer,
         ct: Duration,
         ident: &Identity,
-        wa: &mut WebauthnAuthenticator<SoftPasskey>,
+        wa: &mut SoftPasskey,
         idms_delayed: &mut IdmServerDelayed,
     ) -> Option<JwsCompact> {
         let mut idms_auth = idms.auth().await.unwrap();
@@ -521,7 +518,7 @@ mod tests {
         trace!(?rcr);
 
         let resp = wa
-            .do_authentication(origin, rcr)
+            .perform_auth(origin, rcr.public_key, 60000)
             .expect("failed to use softtoken to authenticate");
 
         let passkey_step = AuthEvent::cred_step_passkey(sessionid, resp);

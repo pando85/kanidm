@@ -87,6 +87,7 @@ pub struct DomainInfo {
     pub(crate) d_devel_taint: bool,
     pub(crate) d_ldap_allow_unix_pw_bind: bool,
     pub(crate) d_allow_easter_eggs: bool,
+    pub(crate) d_allow_account_recovery: bool,
     // In future this should be image reference instead of the image itself.
     d_image: Option<ImageValue>,
 }
@@ -116,6 +117,10 @@ impl DomainInfo {
         self.d_allow_easter_eggs
     }
 
+    pub fn allow_account_recovery(&self) -> bool {
+        self.d_allow_account_recovery
+    }
+
     #[cfg(feature = "test")]
     pub fn new_test() -> CowCell<Self> {
         concread::cowcell::CowCell::new(Self {
@@ -127,6 +132,7 @@ impl DomainInfo {
             d_devel_taint: false,
             d_ldap_allow_unix_pw_bind: false,
             d_allow_easter_eggs: false,
+            d_allow_account_recovery: false,
             d_image: None,
         })
     }
@@ -276,6 +282,8 @@ pub trait QueryServerTransaction<'a> {
     fn pw_badlist(&self) -> &HashSet<String>;
 
     fn denied_names(&self) -> &HashSet<String>;
+
+    fn domain_info(&self) -> &DomainInfo;
 
     fn get_domain_version(&self) -> DomainVersion;
 
@@ -1453,6 +1461,10 @@ impl<'a> QueryServerTransaction<'a> for QueryServerReadTransaction<'a> {
         &self.system_config.denied_names
     }
 
+    fn domain_info(&self) -> &DomainInfo {
+        &self.d_info
+    }
+
     fn get_domain_version(&self) -> DomainVersion {
         self.d_info.d_vers
     }
@@ -1488,7 +1500,7 @@ impl QueryServerReadTransaction<'_> {
     }
 
     /// Retrieve the domain info of this server
-    pub fn domain_info(&mut self) -> Result<ProtoDomainInfo, OperationError> {
+    pub fn public_domain_info(&mut self) -> Result<ProtoDomainInfo, OperationError> {
         let d_info = &self.d_info;
 
         Ok(ProtoDomainInfo {
@@ -1802,6 +1814,10 @@ impl<'a> QueryServerTransaction<'a> for QueryServerWriteTransaction<'a> {
         &self.system_config.denied_names
     }
 
+    fn domain_info(&self) -> &DomainInfo {
+        &self.d_info
+    }
+
     fn get_domain_version(&self) -> DomainVersion {
         self.d_info.d_vers
     }
@@ -1868,6 +1884,7 @@ impl QueryServer {
             d_devel_taint: option_env!("KANIDM_PRE_RELEASE").is_some(),
             d_ldap_allow_unix_pw_bind: false,
             d_allow_easter_eggs: false,
+            d_allow_account_recovery: false,
             d_image: None,
         }));
 
@@ -2529,6 +2546,10 @@ impl<'a> QueryServerWriteTransaction<'a> {
             // This defaults to false for release versions, and true in development
             .unwrap_or(option_env!("KANIDM_PRE_RELEASE").is_some());
 
+        let domain_allow_account_recovery = domain_info
+            .get_ava_single_bool(Attribute::DomainAllowAccountRecovery)
+            .unwrap_or_default();
+
         // We have to set the domain version here so that features which check for it
         // will now see it's been increased. This also prevents recursion during reloads
         // inside of a domain migration.
@@ -2541,6 +2562,7 @@ impl<'a> QueryServerWriteTransaction<'a> {
         mut_d_info.d_patch_level = domain_info_patch_level;
         mut_d_info.d_devel_taint = domain_info_devel_taint;
         mut_d_info.d_allow_easter_eggs = domain_allow_easter_eggs;
+        mut_d_info.d_allow_account_recovery = domain_allow_account_recovery;
 
         debug!(?mut_d_info);
 

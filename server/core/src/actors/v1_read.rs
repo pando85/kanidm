@@ -113,7 +113,7 @@ impl QueryServerReadV1 {
         // "authenticated" or not.
         let ct = duration_from_epoch_now();
         let mut idm_auth = self.idms.auth().await?;
-        security_info!(?sessionid, ?req, "Begin auth event");
+        debug!(?sessionid, ?req, "Begin auth event");
 
         // Destructure it.
         // Convert the AuthRequest to an AuthEvent that the idm server
@@ -135,7 +135,10 @@ impl QueryServerReadV1 {
             .await
             .and_then(|r| idm_auth.commit().map(|_| r));
 
-        security_info!(?res, "Sending auth result");
+        match &res {
+            Ok(r) => security_info!("Auth result: {}", r),
+            Err(e) => security_error!("Auth result: {:?}", e),
+        }
 
         res
     }
@@ -175,7 +178,10 @@ impl QueryServerReadV1 {
             .await
             .and_then(|r| idm_auth.commit().map(|_| r));
 
-        security_info!(?res, "Sending reauth result");
+        match &res {
+            Ok(r) => security_info!("Reauth result: {}", r),
+            Err(e) => security_error!("Reauth result: {:?}", e),
+        }
 
         res
     }
@@ -780,7 +786,7 @@ impl QueryServerReadV1 {
                     true => "<empty uuid_or_name>",
                     false => &uuid_or_name,
                 };
-                admin_info!(
+                debug!(
                     err = ?e,
                     "Error resolving {} as gidnumber continuing ...",
                     uuid_or_name_val
@@ -803,7 +809,7 @@ impl QueryServerReadV1 {
     }
 
     #[instrument(
-        level = "info",
+        level = "debug",
         skip_all,
         fields(uuid = ?eventid)
     )]
@@ -849,7 +855,7 @@ impl QueryServerReadV1 {
     }
 
     #[instrument(
-        level = "info",
+        level = "debug",
         skip_all,
         fields(uuid = ?eventid)
     )]
@@ -1449,7 +1455,6 @@ impl QueryServerReadV1 {
     )]
     pub async fn handle_oauth2_token_introspect(
         &self,
-        client_auth_info: ClientAuthInfo,
         intr_req: AccessTokenIntrospectRequest,
         eventid: Uuid,
     ) -> Result<AccessTokenIntrospectResponse, Oauth2Error> {
@@ -1460,7 +1465,7 @@ impl QueryServerReadV1 {
             .await
             .map_err(Oauth2Error::ServerError)?;
         // Now we can send to the idm server for introspection checking.
-        idms_prox_read.check_oauth2_token_introspect(&client_auth_info, &intr_req, ct)
+        idms_prox_read.check_oauth2_token_introspect(&intr_req, ct)
     }
 
     #[instrument(

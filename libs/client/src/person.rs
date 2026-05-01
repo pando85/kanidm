@@ -167,7 +167,8 @@ impl KubidmClient {
         tag: &str,
         pubkey: &str,
     ) -> Result<(), ClientError> {
-        let sk = (tag.to_string(), pubkey.to_string());
+        let tag = urlencoding::encode(tag);
+        let sk = (tag, pubkey.to_string());
         self.perform_post_request(format!("/v1/person/{id}/_ssh_pubkeys").as_str(), sk)
             .await
     }
@@ -177,6 +178,7 @@ impl KubidmClient {
         id: &str,
         tag: &str,
     ) -> Result<(), ClientError> {
+        let tag = urlencoding::encode(tag);
         self.perform_delete_request(format!("/v1/person/{id}/_ssh_pubkeys/{tag}").as_str())
             .await
     }

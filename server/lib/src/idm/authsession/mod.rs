@@ -1641,7 +1641,7 @@ impl AuthSession {
                 };
 
                 security_info!(
-                    "Issuing {:?} session ({:?}) {} for {} {}",
+                    "Issuing {} session ({}) {} for {} {}",
                     self.issue,
                     scope,
                     session_id,
@@ -1778,7 +1778,7 @@ mod tests {
     use time::OffsetDateTime;
     use tokio::sync::mpsc::unbounded_channel as unbounded;
     use webauthn_authenticator_rs::softpasskey::SoftPasskey;
-    use webauthn_authenticator_rs::WebauthnAuthenticator;
+    use webauthn_authenticator_rs::AuthenticatorBackend;
     use webauthn_rs::prelude::{RequestChallengeResponse, Webauthn};
 
     fn create_pw_badlist_cache() -> HashSet<String> {
@@ -2450,12 +2450,12 @@ mod tests {
         name: &str,
     ) -> (
         webauthn_rs::prelude::Webauthn,
-        webauthn_authenticator_rs::WebauthnAuthenticator<SoftPasskey>,
+        SoftPasskey,
         webauthn_rs::prelude::Passkey,
     ) {
         let webauthn = create_webauthn();
         // Setup a soft token
-        let mut wa = WebauthnAuthenticator::new(SoftPasskey::new(true));
+        let mut wa = SoftPasskey::new(true);
 
         let uuid = Uuid::new_v4();
 
@@ -2464,7 +2464,11 @@ mod tests {
             .expect("Failed to setup passkey rego challenge");
 
         let r = wa
-            .do_registration(webauthn.get_allowed_origins()[0].clone(), chal)
+            .perform_register(
+                webauthn.get_allowed_origins()[0].clone(),
+                chal.public_key,
+                60000,
+            )
             .expect("Failed to create soft passkey");
 
         let wan_cred = webauthn
@@ -2478,12 +2482,12 @@ mod tests {
         spn: &str,
     ) -> (
         webauthn_rs::prelude::Webauthn,
-        webauthn_authenticator_rs::WebauthnAuthenticator<SoftPasskey>,
+        SoftPasskey,
         webauthn_rs::prelude::SecurityKey,
     ) {
         let webauthn = create_webauthn();
         // Setup a soft token
-        let mut wa = WebauthnAuthenticator::new(SoftPasskey::new(true));
+        let mut wa = SoftPasskey::new(true);
 
         let uuid = Uuid::new_v4();
 
@@ -2492,7 +2496,11 @@ mod tests {
             .expect("Failed to setup passkey rego challenge");
 
         let r = wa
-            .do_registration(webauthn.get_allowed_origins()[0].clone(), chal)
+            .perform_register(
+                webauthn.get_allowed_origins()[0].clone(),
+                chal.public_key,
+                60000,
+            )
             .expect("Failed to create soft securitykey");
 
         let wan_cred = webauthn
@@ -2546,7 +2554,11 @@ mod tests {
             let (mut session, chal) = start_webauthn_only_session!(&mut audit, account, &webauthn);
 
             let resp = wa
-                .do_authentication(webauthn.get_allowed_origins()[0].clone(), chal)
+                .perform_auth(
+                    webauthn.get_allowed_origins()[0].clone(),
+                    chal.public_key,
+                    60000,
+                )
                 .map(Box::new)
                 .expect("failed to use softtoken to authenticate");
 
@@ -2580,7 +2592,11 @@ mod tests {
 
             let resp = wa
                 // HERE -> we use inv_chal instead.
-                .do_authentication(webauthn.get_allowed_origins()[0].clone(), inv_chal)
+                .perform_auth(
+                    webauthn.get_allowed_origins()[0].clone(),
+                    inv_chal.public_key,
+                    60000,
+                )
                 .map(Box::new)
                 .expect("failed to use softtoken to authenticate");
 
@@ -2604,13 +2620,17 @@ mod tests {
 
         // Use an incorrect softtoken.
         {
-            let mut inv_wa = WebauthnAuthenticator::new(SoftPasskey::new(true));
+            let mut inv_wa = SoftPasskey::new(true);
             let (chal, reg_state) = webauthn
                 .start_passkey_registration(account.uuid, account.spn(), &account.displayname, None)
                 .expect("Failed to setup webauthn rego challenge");
 
             let r = inv_wa
-                .do_registration(webauthn.get_allowed_origins()[0].clone(), chal)
+                .perform_register(
+                    webauthn.get_allowed_origins()[0].clone(),
+                    chal.public_key,
+                    60000,
+                )
                 .expect("Failed to create soft token");
 
             let inv_cred = webauthn
@@ -2624,7 +2644,11 @@ mod tests {
 
             // Create the response.
             let resp = inv_wa
-                .do_authentication(webauthn.get_allowed_origins()[0].clone(), chal)
+                .perform_auth(
+                    webauthn.get_allowed_origins()[0].clone(),
+                    chal.public_key,
+                    60000,
+                )
                 .map(Box::new)
                 .expect("Failed to use softtoken for response.");
 
@@ -2732,7 +2756,11 @@ mod tests {
 
             let resp = wa
                 // HERE -> we use inv_chal instead.
-                .do_authentication(webauthn.get_allowed_origins()[0].clone(), inv_chal)
+                .perform_auth(
+                    webauthn.get_allowed_origins()[0].clone(),
+                    inv_chal.public_key,
+                    60000,
+                )
                 .map(Box::new)
                 .expect("failed to use softtoken to authenticate");
 
@@ -2760,7 +2788,11 @@ mod tests {
                 start_password_sk_session(&account, &webauthn);
 
             let resp = wa
-                .do_authentication(webauthn.get_allowed_origins()[0].clone(), chal)
+                .perform_auth(
+                    webauthn.get_allowed_origins()[0].clone(),
+                    chal.public_key,
+                    60000,
+                )
                 .map(Box::new)
                 .expect("failed to use softtoken to authenticate");
 
@@ -2805,7 +2837,11 @@ mod tests {
                 start_password_sk_session(&account, &webauthn);
 
             let resp = wa
-                .do_authentication(webauthn.get_allowed_origins()[0].clone(), chal)
+                .perform_auth(
+                    webauthn.get_allowed_origins()[0].clone(),
+                    chal.public_key,
+                    60000,
+                )
                 .map(Box::new)
                 .expect("failed to use softtoken to authenticate");
 
@@ -2934,7 +2970,11 @@ mod tests {
 
             let resp = wa
                 // HERE -> we use inv_chal instead.
-                .do_authentication(webauthn.get_allowed_origins()[0].clone(), inv_chal)
+                .perform_auth(
+                    webauthn.get_allowed_origins()[0].clone(),
+                    inv_chal.public_key,
+                    60000,
+                )
                 .map(Box::new)
                 .expect("failed to use softtoken to authenticate");
 
@@ -2962,7 +3002,11 @@ mod tests {
                 start_password_sk_session(&account, &webauthn);
 
             let resp = wa
-                .do_authentication(webauthn.get_allowed_origins()[0].clone(), chal)
+                .perform_auth(
+                    webauthn.get_allowed_origins()[0].clone(),
+                    chal.public_key,
+                    60000,
+                )
                 .map(Box::new)
                 .expect("failed to use softtoken to authenticate");
 
@@ -3073,7 +3117,11 @@ mod tests {
                 start_password_sk_session(&account, &webauthn);
 
             let resp = wa
-                .do_authentication(webauthn.get_allowed_origins()[0].clone(), chal)
+                .perform_auth(
+                    webauthn.get_allowed_origins()[0].clone(),
+                    chal.public_key,
+                    60000,
+                )
                 .map(Box::new)
                 .expect("failed to use softtoken to authenticate");
 

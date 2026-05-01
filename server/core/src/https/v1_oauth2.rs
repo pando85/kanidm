@@ -14,8 +14,6 @@ use axum::{Extension, Json};
 use kubidm_proto::internal::{ImageType, ImageValue, Oauth2ClaimMapJoin};
 use kubidm_proto::v1::Entry as ProtoEntry;
 use kubidmd_lib::prelude::*;
-use kubidmd_lib::valueset::image::ImageValueThings;
-use sketching::admin_error;
 
 #[utoipa::path(
     get,
@@ -547,22 +545,13 @@ pub(crate) async fn oauth2_id_image_post(
 
     match image {
         Some(image) => {
-            let image_validation_result = image.validate_image();
-            match image_validation_result {
-                Err(err) => {
-                    admin_error!("Invalid image uploaded: {:?}", err);
-                    Err(WebError::from(OperationError::InvalidRequestState))
-                }
-                Ok(_) => {
-                    let rs_filter = oauth2_id(&rs_name);
-                    state
-                        .qe_w_ref
-                        .handle_image_update(client_auth_info, rs_filter, Some(image))
-                        .await
-                        .map(Json::from)
-                        .map_err(WebError::from)
-                }
-            }
+            let rs_filter = oauth2_id(&rs_name);
+            state
+                .qe_w_ref
+                .handle_image_update(client_auth_info, rs_filter, Some(image))
+                .await
+                .map(Json::from)
+                .map_err(WebError::from)
         }
         None => Err(WebError::from(OperationError::InvalidAttribute(
             "No image included, did you mean to use the DELETE method?".to_string(),

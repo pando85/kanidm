@@ -398,6 +398,7 @@ pub enum AccountCredential {
 
         /// Optionally set how many seconds the reset token should be valid for.
         /// Default: 3600 seconds
+        #[clap(long)]
         ttl: Option<u32>,
     },
     /// Send a reset token to the account's email so that the user may
@@ -408,6 +409,7 @@ pub enum AccountCredential {
 
         /// Optionally set how many seconds the reset token should be valid for.
         /// Default: 3600 seconds
+        #[clap(long)]
         ttl: Option<u64>,
 
         /// Optionally specify the email the token should be sent to. This email address
@@ -628,7 +630,7 @@ pub enum ServiceAccountApiToken {
     #[clap(name = "status")]
     Status(AccountNamedOpt),
     /// Generate a new api token for this service account.
-    #[clap(name = "generate")]
+    #[clap(name = "generate", visible_aliases = &["create"])]
     Generate {
         #[clap(flatten)]
         aopts: AccountCommonOpt,
@@ -1000,6 +1002,13 @@ pub enum Oauth2Opt {
     #[clap(name = "remove-image")]
     RemoveImage(Named),
 
+    /// Set the refresh token expiry in seconds. An empty value will reset the value to default.
+    #[clap(name = "set-refresh-token-expiry")]
+    SetRefreshTokenExpiry {
+        name: String,
+        expiry: Option<u32>,
+    },
+
     /// Add a supplemental URL as a redirection target. For example a phone app
     /// may use a redirect URL such as `app://my-cool-app` to trigger a native
     /// redirection event out of a browser.
@@ -1158,7 +1167,14 @@ pub enum DomainOpt {
         #[clap(name = "allow", action = clap::ArgAction::Set)]
         enable: bool,
     },
-    /// Enable or disable easter eggs in the server. This includes seasonal icons, kubidm
+/// Enable or disable the account recovery feature. If enabled, users who have forgotten
+        /// their credentials can trigger a credential reset link to be sent to them if they are able to prove
+        /// knowledge of one of their own email addresses.
+        SetAllowAccountRecovery {
+            #[clap(name = "allow", action = clap::ArgAction::Set)]
+            enable: bool,
+        },
+        /// Enable or disable easter eggs in the server. This includes seasonal icons, kubidm
     /// birthday surprises and other fun components. Defaults to false for production releases
     /// and true in development builds.
     SetAllowEasterEggs {
