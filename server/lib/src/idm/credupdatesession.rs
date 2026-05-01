@@ -4997,7 +4997,7 @@ mod tests {
 
         let (cust, _) = setup_test_session(idms, ct).await;
         let cutxn = idms.cred_update_transaction().await.unwrap();
-        let origin = cutxn.get_origin().clone();
+        let _origin = cutxn.get_origin().clone();
 
         // Our status needs the correct device names for UI hinting.
         let c_status = cutxn
