@@ -5047,7 +5047,7 @@ mod tests {
 
         // -------------------------------------------------------
         // Enroll the attested keys
-        let (cust, _) = setup_test_session(idms, ct).await;
+        let (cust, _) = renew_test_session(idms, ct).await;
         let cutxn = idms.cred_update_transaction().await.unwrap();
         let origin = cutxn.get_origin().clone();
 
