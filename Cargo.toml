@@ -136,7 +136,7 @@ dyn-clone = "^1.0.20"
 enum-iterator = "2.3.0"
 fantoccini = "0.22.0"
 filetime = "^0.2.27"
-fs4 = "^0.13.1"
+fs4 = "^1.0.0"
 futures = "^0.3.32"
 futures-util = { version = "^0.3.32", features = ["sink"] }
 gethostname = "1.1.0"
