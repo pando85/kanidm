@@ -118,8 +118,6 @@ impl AuthorisationRequest {
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct AuthorisationRequestOidc {
     pub display: Option<String>,
-    pub prompt: Option<String>,
-    pub ui_locales: Option<()>,
     pub claims_locales: Option<()>,
     pub id_token_hint: Option<String>,
     pub login_hint: Option<String>,
@@ -1035,8 +1033,6 @@ mod tests {
             nonce: Some("nonce_val".to_string()),
             oidc_ext: AuthorisationRequestOidc {
                 display: Some("page".to_string()),
-                prompt: Some("login".to_string()),
-                ui_locales: None,
                 claims_locales: None,
                 id_token_hint: None,
                 login_hint: Some("user@example.com".to_string()),
@@ -1146,8 +1142,6 @@ mod tests {
     fn test_authorisation_request_oidc_serde() {
         let oidc = AuthorisationRequestOidc {
             display: Some("popup".to_string()),
-            prompt: Some("consent".to_string()),
-            ui_locales: None,
             claims_locales: None,
             id_token_hint: Some("hint_token".to_string()),
             login_hint: Some("admin@example.com".to_string()),
@@ -1156,14 +1150,12 @@ mod tests {
 
         let json = serde_json::to_string(&oidc).unwrap();
         assert!(json.contains("\"display\":\"popup\""));
-        assert!(json.contains("\"prompt\":\"consent\""));
         assert!(json.contains("\"id_token_hint\":\"hint_token\""));
         assert!(json.contains("\"login_hint\":\"admin@example.com\""));
         assert!(json.contains("\"acr\":\"urn:mace:incommon:iap:silver\""));
 
         let de: AuthorisationRequestOidc = serde_json::from_str(&json).unwrap();
         assert_eq!(de.display, Some("popup".to_string()));
-        assert_eq!(de.prompt, Some("consent".to_string()));
         assert_eq!(de.id_token_hint, Some("hint_token".to_string()));
         assert_eq!(de.login_hint, Some("admin@example.com".to_string()));
         assert_eq!(de.acr, Some("urn:mace:incommon:iap:silver".to_string()));
@@ -1176,7 +1168,6 @@ mod tests {
         assert_eq!(json, "{}");
         let de: AuthorisationRequestOidc = serde_json::from_str(&json).unwrap();
         assert!(de.display.is_none());
-        assert!(de.prompt.is_none());
         assert!(de.id_token_hint.is_none());
         assert!(de.login_hint.is_none());
         assert!(de.acr.is_none());
