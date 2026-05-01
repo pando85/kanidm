@@ -4668,7 +4668,6 @@ dependencies = [
  "serde",
  "serde_json",
  "sketching",
- "sparkle_resolver_common",
  "tempfile",
  "time",
  "tokio",
