@@ -820,7 +820,10 @@ mod tests {
         let entry = Arc::new(
             entry_init!(
                 (Attribute::Class, Value::new_iutf8("domain_info")),
-                (Attribute::Uuid, Value::Uuid(uuid::uuid!("ffffffff-ffff-ffff-ffff-000000000100")))
+                (
+                    Attribute::Uuid,
+                    Value::Uuid(uuid::uuid!("ffffffff-ffff-ffff-ffff-000000000100"))
+                )
             )
             .into_sealed_committed(),
         );
