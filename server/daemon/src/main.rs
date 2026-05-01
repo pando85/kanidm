@@ -27,7 +27,6 @@ use kubidm_utils_users::{get_current_gid, get_current_uid, get_effective_gid, ge
 #[cfg(target_family = "windows")] // for windows builds
 use whoami;
 
-use fs4::FileExt;
 use std::fs::{metadata, File};
 // This works on both unix and windows.
 use clap::{Args, Parser, Subcommand};
