@@ -1271,7 +1271,7 @@ async fn setup_demo_account_passkey(rsclient: &KubidmClient) -> WebauthnAuthenti
         .unwrap();
 
     // Setup and update the passkey
-    let mut wa = SoftPasskey::new(true);
+    let mut wa = WebauthnAuthenticator::new(SoftPasskey::new(true));
 
     let status = rsclient
         .idm_account_credential_update_passkey_init(&session_token)
