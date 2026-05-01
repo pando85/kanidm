@@ -817,9 +817,20 @@ mod tests {
     #[test]
     fn test_modify_protected_attrs_user_protected_constrains() {
         let ident = make_user_ident_rw();
-        let entry = make_sealed_entry("account");
+        let entry = Arc::new(
+            entry_init!(
+                (Attribute::Class, Value::new_iutf8("domain_info")),
+                (Attribute::Uuid, Value::Uuid(uuid::uuid!("ffffffff-ffff-ffff-ffff-000000000100")))
+            )
+            .into_sealed_committed(),
+        );
         let result = modify_protected_attrs(&ident, &entry);
-        assert!(matches!(result, AccessModResult::Constrain { .. }));
+        match result {
+            AccessModResult::Constrain { pres_attr, .. } => {
+                assert!(pres_attr.contains(&Attribute::DomainSsid));
+            }
+            _ => panic!("Expected Constrain for protected domain_info entry"),
+        }
     }
 
     #[test]
