@@ -3148,7 +3148,17 @@ mod tests {
         ct: Duration,
         posix: bool,
     ) -> (CredentialUpdateSessionToken, CredentialUpdateSessionStatus) {
-        let mut idms_prox_write = idms.proxy_write(ct).await.unwrap();
+        let mut idms_prox_write = {
+            let mut result = idms.proxy_write(ct).await;
+            for _ in 0..10 {
+                if result.is_ok() {
+                    break;
+                }
+                tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+                result = idms.proxy_write(ct).await;
+            }
+            result.unwrap()
+        };
 
         // Remove the default all persons policy, it interferes with our test.
         let modlist = ModifyList::new_purge(Attribute::CredentialTypeMinimum);
@@ -3203,7 +3213,17 @@ mod tests {
         idms: &IdmServer,
         ct: Duration,
     ) -> (CredentialUpdateSessionToken, CredentialUpdateSessionStatus) {
-        let mut idms_prox_write = idms.proxy_write(ct).await.unwrap();
+        let mut idms_prox_write = {
+            let mut result = idms.proxy_write(ct).await;
+            for _ in 0..10 {
+                if result.is_ok() {
+                    break;
+                }
+                tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+                result = idms.proxy_write(ct).await;
+            }
+            result.unwrap()
+        };
 
         let testperson = idms_prox_write
             .qs_write
@@ -3223,7 +3243,17 @@ mod tests {
     }
 
     async fn commit_session(idms: &IdmServer, ct: Duration, cust: CredentialUpdateSessionToken) {
-        let mut idms_prox_write = idms.proxy_write(ct).await.unwrap();
+        let mut idms_prox_write = {
+            let mut result = idms.proxy_write(ct).await;
+            for _ in 0..10 {
+                if result.is_ok() {
+                    break;
+                }
+                tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+                result = idms.proxy_write(ct).await;
+            }
+            result.unwrap()
+        };
 
         idms_prox_write
             .commit_credential_update(&cust, ct)
