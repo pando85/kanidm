@@ -5043,6 +5043,8 @@ mod tests {
             .attested_passkeys_allowed_devices
             .contains(&"softtoken_b".to_string()));
 
+        drop(cutxn);
+
         // -------------------------------------------------------
         // Enroll the attested keys
         let (cust, _) = setup_test_session(idms, ct).await;
