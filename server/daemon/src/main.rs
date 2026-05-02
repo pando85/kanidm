@@ -27,7 +27,6 @@ use kubidm_utils_users::{get_current_gid, get_current_uid, get_effective_gid, ge
 #[cfg(target_family = "windows")] // for windows builds
 use whoami;
 
-use fs4::fs_std::FileExt;
 use std::fs::{metadata, File};
 // This works on both unix and windows.
 use clap::{Args, Parser, Subcommand};
@@ -628,21 +627,14 @@ async fn start_daemon(opt: KubidmdParser, config: Configuration) -> ExitCode {
                 }
             };
 
-            match flock.try_lock_exclusive() {
-                Ok(true) => debug!("Acquired kubidm exclusive lock"),
-                Ok(false) => {
-                    error!(
-                        "ERROR: Refusing to start - unable to lock kubidmd exclusive lock at {}",
-                        klock_path.display()
-                    );
-                    error!("Is another kubidmd process running?");
-                    return ExitCode::FAILURE;
-                }
+            match flock.try_lock() {
+                Ok(()) => debug!("Acquired kubidm exclusive lock"),
                 Err(err) => {
                     error!(
                         "ERROR: Refusing to start - unable to lock kubidmd exclusive lock at {}",
                         klock_path.display()
                     );
+                    error!("Is another kubidmd process running?");
                     error!(?err);
                     return ExitCode::FAILURE;
                 }
