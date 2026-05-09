@@ -112,4 +112,17 @@ jobs:
           BUILD_MODE: --release
         run: |
           python -m pip install uv
-          ./scripts/test_run_release_server.sh
+          # Retry build up to 3 times to handle transient sccache/network failures
+          for i in 1 2 3; do
+            if ./scripts/test_run_release_server.sh; then
+              break
+            fi
+            if [ $i -eq 3 ]; then
+              echo "Build failed after 3 attempts"
+              exit 1
+            fi
+            echo "Build attempt $i failed, retrying in 30 seconds..."
+            sleep 30
+            # Clear any stuck sccache and retry
+            sccache --stop-server 2>/dev/null || true
+          done
