@@ -130,7 +130,7 @@ pub fn make_authorization_decision(
                     ModifyResult::Grant => AuthorizationDecision::Allow,
                     ModifyResult::Allow { pres, rem, .. } => {
                         let mut all_attrs: BTreeSet<String> = BTreeSet::new();
-                        for attr in pres.into_iter().chain(rem.into_iter()) {
+                        for attr in pres.into_iter().chain(rem) {
                             all_attrs.insert(attr.to_string());
                         }
 

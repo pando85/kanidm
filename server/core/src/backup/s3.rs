@@ -167,9 +167,8 @@ impl S3ClientWrapper {
         let upload_id = create_output.upload_id().unwrap_or_default();
 
         let mut parts = Vec::new();
-        let mut part_number: i32 = 1;
 
-        for chunk in data.chunks(MULTIPART_CHUNK_SIZE) {
+        for (part_number, chunk) in (1_i32..).zip(data.chunks(MULTIPART_CHUNK_SIZE)) {
             let part = self.upload_part(key, upload_id, part_number, chunk).await?;
             parts.push(
                 CompletedPart::builder()
@@ -177,7 +176,6 @@ impl S3ClientWrapper {
                     .e_tag(part.e_tag().unwrap_or_default())
                     .build(),
             );
-            part_number += 1;
         }
 
         self.complete_multipart_upload(key, upload_id, parts)
