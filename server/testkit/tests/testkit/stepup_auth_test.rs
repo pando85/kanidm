@@ -7,10 +7,7 @@ use std::time::SystemTime;
 use webauthn_authenticator_rs::softpasskey::SoftPasskey;
 use webauthn_authenticator_rs::WebauthnAuthenticator;
 
-async fn setup_passkey_account(
-    rsclient: &KubidmClient,
-    account_name: &str,
-) -> SoftPasskey {
+async fn setup_passkey_account(rsclient: &KubidmClient, account_name: &str) -> SoftPasskey {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
