@@ -232,7 +232,7 @@ test/pykubidm/lint: ## python library linting
 .PHONY: test/pykubidm/typecheck
 test/pykubidm/typecheck: ## python library type checking
 	cd pykubidm && \
-	uv run ty check tests kanidm \
+	uv run ty check tests kubidm \
 		--ignore unused-type-ignore-comment
 
 .PHONY: test/pykubidm
