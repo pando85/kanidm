@@ -14,8 +14,8 @@ repository = { workspace = true }
 [features]
 default = ["unix"]
 unix = []
-selinux = ["kubidm_unix_common/selinux"]
-tpm = ["kanidm-hsm-crypto/tpm", "kubidm_unix_common/tpm"]
+selinux = ["sparkle_unix_common/selinux"]
+tpm = ["kanidm-hsm-crypto/tpm", "sparkle_unix_common/tpm"]
 dhat-heap = ["dep:dhat"]
 dhat-ad-hoc = ["dep:dhat"]
 
@@ -39,7 +39,7 @@ kubidm_proto = { workspace = true }
 kanidm-hsm-crypto = { workspace = true }
 kubidm_lib_crypto = { workspace = true }
 kubidm_lib_file_permissions = { workspace = true }
-kubidm_unix_common = { workspace = true }
+sparkle_unix_common = { workspace = true }
 notify-debouncer-full = { workspace = true }
 rand = { workspace = true }
 rusqlite = { workspace = true }
@@ -78,7 +78,6 @@ tempfile = { workspace = true }
 
 [build-dependencies]
 clap = { workspace = true, features = ["derive"] }
-clap_complete = { workspace = true }
 kubidm_build_profiles = { workspace = true }
 
 [package.metadata.cargo-machete]

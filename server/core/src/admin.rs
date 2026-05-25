@@ -4,6 +4,10 @@ use crate::CoreAction;
 use bytes::{BufMut, BytesMut};
 use crypto_glue::x509::x509b64;
 use futures::{SinkExt, StreamExt};
+pub use kubidm_proto::internal::{
+    DomainInfo as ProtoDomainInfo, DomainUpgradeCheckReport as ProtoDomainUpgradeCheckReport,
+    DomainUpgradeCheckStatus as ProtoDomainUpgradeCheckStatus,
+};
 use kubidm_utils_users::get_current_uid;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
@@ -17,11 +21,6 @@ use tokio::time::timeout;
 use tokio_util::codec::{Decoder, Encoder, Framed};
 use tracing::{span, Instrument, Level};
 use uuid::Uuid;
-
-pub use kubidm_proto::internal::{
-    DomainInfo as ProtoDomainInfo, DomainUpgradeCheckReport as ProtoDomainUpgradeCheckReport,
-    DomainUpgradeCheckStatus as ProtoDomainUpgradeCheckStatus,
-};
 
 /// Don't hang forever waiting for a response
 const REPL_CTRL_TIMEOUT: Duration = Duration::from_secs(15);

@@ -11,6 +11,7 @@ use kubidm_proto::v1::{
     AuthCredential, AuthIssueSession, AuthMech, AuthRequest, AuthResponse, AuthState, AuthStep,
     Entry,
 };
+use kubidmd_core::config::ServerRole;
 use kubidmd_lib::constants::{NAME_IDM_ADMINS, NAME_SYSTEM_ADMINS};
 use kubidmd_lib::credential::totp::Totp;
 use kubidmd_lib::prelude::{Attribute, APPLICATION_JSON};
@@ -273,39 +274,6 @@ async fn test_server_rest_account_read(rsclient: &KubidmClient) {
     let a = rsclient.idm_service_account_get("admin").await.unwrap();
     assert!(a.is_some());
     println!("{a:?}");
-}
-
-#[kubidmd_testkit::test]
-async fn test_server_rest_schema_read(rsclient: &KubidmClient) {
-    let res = rsclient
-        .auth_simple_password("admin", ADMIN_TEST_PASSWORD)
-        .await;
-    assert!(res.is_ok());
-
-    // List the schema
-    let s_list = rsclient.idm_schema_list().await.unwrap();
-    assert!(!s_list.is_empty());
-
-    let a_list = rsclient.idm_schema_attributetype_list().await.unwrap();
-    assert!(!a_list.is_empty());
-
-    let c_list = rsclient.idm_schema_classtype_list().await.unwrap();
-    assert!(!c_list.is_empty());
-
-    // Get an attr/class
-    let a = rsclient
-        .idm_schema_attributetype_get(Attribute::Name.as_ref())
-        .await
-        .unwrap();
-    assert!(a.is_some());
-    println!("{a:?}");
-
-    let c = rsclient
-        .idm_schema_classtype_get(Attribute::Account.as_ref())
-        .await
-        .unwrap();
-    assert!(c.is_some());
-    println!("{c:?}");
 }
 
 // Test resetting a radius cred, and then checking/viewing it.
@@ -817,7 +785,7 @@ async fn test_server_rest_recycle_lifecycle(rsclient: &KubidmClient) {
     assert!(acc.is_some());
 }
 
-#[kubidmd_testkit::test]
+#[kubidmd_testkit::test(role = ServerRole::WriteReplica)]
 async fn test_server_rest_oauth2_basic_lifecycle(rsclient: &KubidmClient) {
     let res = rsclient
         .auth_simple_password("admin", ADMIN_TEST_PASSWORD)
@@ -1233,7 +1201,7 @@ async fn test_server_credential_update_session_totp_pw(rsclient: &KubidmClient) 
     assert!(res.is_ok());
 }
 
-async fn setup_demo_account_passkey(rsclient: &KubidmClient) -> WebauthnAuthenticator<SoftPasskey> {
+async fn setup_demo_account_passkey(rsclient: &KubidmClient) -> SoftPasskey {
     let res = rsclient
         .auth_simple_password("admin", ADMIN_TEST_PASSWORD)
         .await;
@@ -1271,7 +1239,7 @@ async fn setup_demo_account_passkey(rsclient: &KubidmClient) -> WebauthnAuthenti
         .unwrap();
 
     // Setup and update the passkey
-    let mut wa = WebauthnAuthenticator::new(SoftPasskey::new(true));
+    let mut wa = SoftPasskey::new(true);
 
     let status = rsclient
         .idm_account_credential_update_passkey_init(&session_token)

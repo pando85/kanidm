@@ -1,26 +1,25 @@
 #![deny(warnings)]
+use kubidm_client::{KubidmClient, KubidmClientBuilder};
 use kanidm_hsm_crypto::{
     provider::{BoxedDynTpm, SoftTpm, Tpm},
     AuthValue,
 };
-use kubidm_client::{KubidmClient, KubidmClientBuilder};
-use kubidm_proto::config::ServerRole;
 use kubidm_proto::constants::ATTR_ACCOUNT_EXPIRE;
-use kubidm_unix_common::constants::{
-    DEFAULT_CACHE_TIMEOUT, DEFAULT_CACHE_TIMEOUT_JITTER_MS, DEFAULT_GID_ATTR_MAP,
-    DEFAULT_HOME_ALIAS, DEFAULT_HOME_ATTR, DEFAULT_HOME_PREFIX, DEFAULT_SHELL,
-    DEFAULT_UID_ATTR_MAP,
-};
-use kubidm_unix_common::unix_config::{GroupMap, KubidmConfig};
-use kubidm_unix_common::unix_passwd::{CryptPw, EtcGroup, EtcShadow, EtcUser};
-use kubidmd_core::config::{Configuration, IntegrationTestConfig};
+use kubidmd_core::config::{Configuration, IntegrationTestConfig, ServerRole};
 use kubidmd_core::create_server_core;
 use kubidmd_testkit::{is_free_port, PORT_ALLOC};
 use sparkle_resolver_common::db::{Cache, Db};
 use sparkle_resolver_common::idprovider::interface::Id;
-use sparkle_resolver_common::idprovider::kubidm::KubidmProvider;
+use sparkle_resolver_common::idprovider::kubidm::KanidmProvider;
 use sparkle_resolver_common::idprovider::system::SystemProvider;
 use sparkle_resolver_common::resolver::Resolver;
+use sparkle_unix_common::constants::{
+    DEFAULT_CACHE_TIMEOUT, DEFAULT_CACHE_TIMEOUT_JITTER_MS, DEFAULT_GID_ATTR_MAP,
+    DEFAULT_HOME_ALIAS, DEFAULT_HOME_ATTR, DEFAULT_HOME_PREFIX, DEFAULT_SHELL,
+    DEFAULT_UID_ATTR_MAP,
+};
+use sparkle_unix_common::unix_config::{GroupMap, KanidmConfig};
+use sparkle_unix_common::unix_passwd::{CryptPw, EtcGroup, EtcShadow, EtcUser};
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::atomic::Ordering;
@@ -161,9 +160,9 @@ async fn setup_test(fix_fn: Fixture) -> (Resolver, mpsc::Receiver<Id>, KubidmCli
 
     let system_provider = SystemProvider::new().unwrap();
 
-    let idprovider = KubidmProvider::new(
+    let idprovider = KanidmProvider::new(
         rsclient,
-        &KubidmConfig {
+        &KanidmConfig {
             conn_timeout: 1,
             request_timeout: 1,
             pam_allowed_login_groups: vec!["allowed_group".to_string()],

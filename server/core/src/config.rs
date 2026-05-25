@@ -6,7 +6,7 @@
 
 use cidr::IpCidr;
 use kubidm_proto::backup::{BackupCompression, BackupEncryptionConfig, S3Config, WalArchiveConfig};
-use kubidm_proto::config::ServerRole;
+pub use kubidm_proto::config::ServerRole;
 use kubidm_proto::constants::DEFAULT_SERVER_ADDRESS;
 use kubidm_proto::internal::FsType;
 use serde::Deserialize;

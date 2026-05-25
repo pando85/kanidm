@@ -4,16 +4,16 @@ Remote Authentication Dial In User Service (RADIUS) is a network protocol that i
 devices or Virtual Private Networks (VPNs). While it should not be a sole point of trust/authentication to an identity,
 it's still an important control for protecting network resources.
 
-Kubidm has a philosophy that each account can have multiple credentials which are related to their devices, and limited
+Kanidm has a philosophy that each account can have multiple credentials which are related to their devices, and limited
 to specific resources. RADIUS is no exception and has a separate credential for each account to use for RADIUS access.
 
 ## Disclaimer
 
-It's worth noting some disclaimers about Kubidm's RADIUS integration.
+It's worth noting some disclaimers about Kanidm's RADIUS integration.
 
 ### One Credential - One Account
 
-Kubidm normally attempts to have credentials for each _device_ and _application_ rather than the legacy model of one to
+Kanidm normally attempts to have credentials for each _device_ and _application_ rather than the legacy model of one to
 one.
 
 The RADIUS protocol is only able to attest a _single_ password based credential in an authentication attempt, which
@@ -22,7 +22,7 @@ improves the situation by isolating the RADIUS credential from the primary or ap
 This solves many common security concerns around credential loss or disclosure, and prevents rogue devices from locking
 out accounts as they attempt to authenticate to Wi-Fi with expired credentials.
 
-Alternatelly, Kubidm supports mapping users with special configuration of certificates allowing some systems to use
+Alternatelly, Kanidm supports mapping users with special configuration of certificates allowing some systems to use
 EAP-TLS for RADIUS authentication. This returns to the "per device" credential model.
 
 ### Cleartext Credential Storage
@@ -39,7 +39,7 @@ Due to this requirement, we must store the RADIUS material as clear text or NTLM
 NTLM is secure as it relies on the obsolete and deprecated MD4 cryptographic hash, providing only an illusion of
 security.
 
-This means Kubidm stores RADIUS credentials in the database as clear text.
+This means Kanidm stores RADIUS credentials in the database as clear text.
 
 We believe this is a reasonable decision and is a low risk to security because:
 
@@ -67,7 +67,7 @@ kubidm person radius show-secret --name william william
 
 ## Account Group Configuration
 
-In Kubidm, accounts which can authenticate to RADIUS must be a member of an allowed group. This allows you to define
+In Kanidm, accounts which can authenticate to RADIUS must be a member of an allowed group. This allows you to define
 which users or groups may use a Wi-Fi or VPN infrastructure, and provides a path for revoking access to the resources
 through group management. The key point of this is that service accounts should not be part of this group:
 
@@ -79,16 +79,16 @@ kubidm group add-members --name idm_admin radius_access_allowed william
 ## RADIUS Server Service Account
 
 To read these secrets, the RADIUS server requires an account with the correct privileges. This can be created and
-assigned through the group "idm_radius_servers", which is provided by default.
+assigned through the group `idm_radius_servers`, which is provided by default.
 
-First, create the service account and add it to the group:
+First, create the RADIUS server service account and add it to the group:
 
 ```bash
 kubidm service-account create --name idm_admin radius_service_account "Radius Service Account" idm_admin
 kubidm group add-members --name idm_admin idm_radius_servers radius_service_account
 ```
 
-Now reset the account password, using the `admin` account:
+Now generate an api token using the `idm_admin` account:
 
 ```bash
 kubidm service-account api-token generate --name idm_admin radius_service_account radius1
@@ -107,7 +107,7 @@ with the following files mounted in `/data`. (Modifiable in the configuration)
 | radius.toml | The configuration file                     |
 
 The configuration file (which you should mount at `/data/radius.toml`, or specify its path with the environment variable
-`KUBIDM_RLM_CONFIG`) has the following template:
+`KANIDM_RLM_CONFIG`) has the following template:
 
 ```toml
 {{#rustdoc_include ../../../examples/radius.toml}}
@@ -141,7 +141,7 @@ docker run --name radiusd \
     -p 1812:1812 \
     -p 1812:1812/udp \
     --interactive --tty \
-    --mount "type=bind,src=$(pwd)/examples/radius.toml,target=/data/kubidm" \
+    --mount "type=bind,src=$(pwd)/examples/radius.toml,target=/data/radius.toml" \
     --mount "type=bind,src=/tmp/kubidm,target=/data" \
     kubidm/radius:latest
 ```

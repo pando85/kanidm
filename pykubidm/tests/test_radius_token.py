@@ -13,7 +13,7 @@ from kubidm_openapi_client.exceptions import ApiException as OpenApiException
 
 # pylint: disable=unused-import
 from .testutils import client, KANIDM_IDM_ADMIN, openapi_ca_path, openapi_server_url, openapi_verify_tls
-from kubidm import KubidmClient
+from kubidm import KanidmClient
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -26,32 +26,32 @@ async def radius_token_client(
     openapi_server_url: str,
     openapi_verify_tls: bool,
     openapi_ca_path: Optional[str],
-) -> AsyncIterator[KubidmClient]:
+) -> AsyncIterator[KanidmClient]:
     """Client fixture with a usable auth token for radius tests.
 
     Preference order:
     1. Existing valid auth_token from ~/.config/kubidm
     2. Generate a token from IDM_ADMIN_PASS and write a temporary config file
     """
-    cleanup_clients: list[KubidmClient] = []
+    cleanup_clients: list[KanidmClient] = []
     local_config = Path("~/.config/kubidm").expanduser()
 
     if local_config.exists():
-        local_client = KubidmClient(config_file=local_config)
+        local_client = KanidmClient(config_file=local_config)
         cleanup_clients.append(local_client)
         if local_client.config.auth_token is not None and await local_client.check_token_valid():
             try:
                 yield local_client
             finally:
                 for cleanup_client in cleanup_clients:
-                    await cleanup_client.openapi_client.close()  # type: ignore[no-untyped-call]
+                    await cleanup_client.openapi_client.close()
             return
 
     admin_password = os.getenv("IDM_ADMIN_PASS")
     if not admin_password:
-        pytest.skip("Need either a valid ~/.config/kubidm auth_token or IDM_ADMIN_PASS for radius token tests")  # type: ignore[call-non-callable]
+        pytest.skip("Need either a valid ~/.config/kubidm auth_token or IDM_ADMIN_PASS for radius token tests")
 
-    token_source_client = KubidmClient(
+    token_source_client = KanidmClient(
         uri=openapi_server_url,
         verify_hostnames=openapi_verify_tls,
         verify_certificate=openapi_verify_tls,
@@ -67,10 +67,10 @@ async def radius_token_client(
     )
     state = auth_resp.state
     if state is None:
-        pytest.skip("Failed to generate IDM_ADMIN token for radius token test")  # type: ignore[call-non-callable]
+        pytest.skip("Failed to generate IDM_ADMIN token for radius token test")
         raise AssertionError("unreachable after pytest.skip")
     if state.success is None:
-        pytest.skip("Failed to generate IDM_ADMIN token for radius token test")  # type: ignore[call-non-callable]
+        pytest.skip("Failed to generate IDM_ADMIN token for radius token test")
         raise AssertionError("unreachable after pytest.skip")
     auth_token = state.success
 
@@ -88,19 +88,19 @@ async def radius_token_client(
     generated_config = tmp_path / "kubidm.radius.token.toml"
     generated_config.write_text(toml.dumps(config_data), encoding="utf-8")
 
-    token_client = KubidmClient(config_file=generated_config)
+    token_client = KanidmClient(config_file=generated_config)
     cleanup_clients.append(token_client)
 
     try:
         yield token_client
     finally:
         for cleanup_client in cleanup_clients:
-            await cleanup_client.openapi_client.close()  # type: ignore[no-untyped-call]
+            await cleanup_client.openapi_client.close()
 
 
 @pytest.mark.network
 @pytest.mark.asyncio
-async def test_radius_call(radius_token_client: KubidmClient) -> None:
+async def test_radius_call(radius_token_client: KanidmClient) -> None:
     """tests the radius call step"""
     test_user = RADIUS_TEST_USER or radius_token_client.config.username or KANIDM_IDM_ADMIN
     provision_error: Optional[OpenApiException] = None
@@ -120,12 +120,7 @@ async def test_radius_call(radius_token_client: KubidmClient) -> None:
 
     if result.status_code == 500 and result.content is not None and '"missingattribute":"radius_secret"' in result.content:
         if provision_error is not None:
-            pytest.skip(
-                "Radius token test prerequisites not met: unable to provision radius_secret "
-                f"for {test_user} ({provision_error.status})"
-            )  # type: ignore[call-non-callable]
-        pytest.skip(
-            f"Radius token test prerequisites not met: account '{test_user}' is missing radius_secret"
-        )  # type: ignore[call-non-callable]
+            pytest.skip(f"Radius token test prerequisites not met: unable to provision radius_secret for {test_user} ({provision_error.status})")
+        pytest.skip(f"Radius token test prerequisites not met: account '{test_user}' is missing radius_secret")
 
     raise AssertionError(f"Unexpected radius token response status: {result.status_code}")

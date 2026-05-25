@@ -1,21 +1,21 @@
 # Authentication and Credentials
 
-A primary job of a system like Kubidm is to manage credentials for persons. This can involve a range of operations from
+A primary job of a system like Kanidm is to manage credentials for persons. This can involve a range of operations from
 new user onboarding, credential resets, and self service.
 
 ## Types of Credentials
 
 ### Passkeys
 
-This is the preferred method of authentication in Kubidm. Passkeys represent "all possible cryptographic" authenticators
+This is the preferred method of authentication in Kanidm. Passkeys represent "all possible cryptographic" authenticators
 that support Webauthn. Examples of this include Yubikeys, TouchID, Windows Hello, TPM's and more.
 
 These devices are unphishable, self contained multifactor authenticators and are considered the most secure method of
-authentication in Kubidm.
+authentication in Kanidm.
 
 > [!WARNING]
 >
-> Kubidm's definition of Passkeys may differ from that of other systems. This is because we adopted the term very early,
+> Kanidm's definition of Passkeys may differ from that of other systems. This is because we adopted the term very early,
 > before it has changed and evolved.
 
 ### Attested Passkeys
@@ -26,7 +26,7 @@ authenticator. In general only FIDO2 keys or TPM's are capable of meeting attest
 
 ### Password + TOTP
 
-This is a classic Time-based One Time Password combined with a password. Different to other systems Kubidm will prompt
+This is a classic Time-based One Time Password combined with a password. Different to other systems Kanidm will prompt
 for the TOTP _first_ before the password. This is to prevent drive by bruteforce against the password of the account and
 testing if the password is vulnerable.
 
@@ -92,9 +92,9 @@ value.
 If you have [configured outbound email](/email_setup.md) you can send the reset link directly to the user's email with:
 
 ```bash
-kanidm person credential send-reset-token <account_id> [TTL] [ALTERNATE_EMAIL]
-kanidm person credential send-reset-token demo_user
-kanidm person credential send-reset-token demo_user 86400 secondary.address@example.com
+kubidm person credential send-reset-token [OPTIONS] <account_id> [ALTERNATE_EMAIL]
+kubidm person credential send-reset-token demo_user
+kubidm person credential send-reset-token --ttl 86400 demo_user secondary.address@example.com
 ```
 
 Once the credential reset has been committed the token is immediately invalidated and can never be used again. By
@@ -139,7 +139,7 @@ kubidm self whoami --name demo_user
 You can allow users to perform account recovery without support. This is disabled by default.
 
 ```
-kanidm system domain set-allow-account-recovery true
+kubidm system domain set-allow-account-recovery true
 ```
 
 When enabled, users will be able to follow the account recovery link from the login page and have
@@ -158,7 +158,7 @@ invalidated.
 
 ## Reauthentication / Privilege Access Mode
 
-To allow for longer lived sessions in Kubidm, by default sessions are issued in a "privilege capable" but read-only
+To allow for longer lived sessions in Kanidm, by default sessions are issued in a "privilege capable" but read-only
 mode. In order to access privileges for a short time, you must re-authenticate. This re-issues your session with a small
 time limited read-write session internally. You can consider this to be like `sudo` on a unix system or `UAC` on windows
 where you reauthenticate for short periods to access higher levels of privilege.

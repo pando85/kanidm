@@ -1,14 +1,5 @@
 use crate::SparkleFlavour;
 use futures::{SinkExt, StreamExt};
-use kubidm_unix_common::constants::{
-    DEFAULT_CONFIG_PATH, SYSTEM_GROUP_PATH, SYSTEM_PASSWD_PATH, SYSTEM_SHADOW_PATH,
-};
-use kubidm_unix_common::json_codec::JsonCodec;
-use kubidm_unix_common::unix_config::{HomeStrategy, UnixdConfig};
-use kubidm_unix_common::unix_passwd::{parse_etc_group, parse_etc_passwd, parse_etc_shadow, EtcDb};
-use kubidm_unix_common::unix_proto::{
-    HomeDirectoryInfo, TaskRequest, TaskRequestFrame, TaskResponse,
-};
 use kubidm_utils_users::{get_effective_gid, get_effective_uid};
 use libc::{lchown, umask};
 use notify_debouncer_full::notify::RecommendedWatcher;
@@ -18,6 +9,17 @@ use notify_debouncer_full::{new_debouncer, notify::RecursiveMode, DebouncedEvent
 use sketching::tracing_forest::traits::*;
 use sketching::tracing_forest::util::*;
 use sketching::tracing_forest::{self};
+use sparkle_unix_common::constants::{
+    DEFAULT_CONFIG_PATH, SYSTEM_GROUP_PATH, SYSTEM_PASSWD_PATH, SYSTEM_SHADOW_PATH,
+};
+use sparkle_unix_common::json_codec::JsonCodec;
+use sparkle_unix_common::unix_config::{HomeStrategy, UnixdConfig};
+use sparkle_unix_common::unix_passwd::{
+    parse_etc_group, parse_etc_passwd, parse_etc_shadow, EtcDb,
+};
+use sparkle_unix_common::unix_proto::{
+    HomeDirectoryInfo, TaskRequest, TaskRequestFrame, TaskResponse,
+};
 use std::ffi::CString;
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::fs::symlink;
@@ -43,7 +45,7 @@ use procfs::process::Process;
 use std::fs::{create_dir, remove_file};
 
 #[cfg(all(target_family = "unix", feature = "selinux"))]
-use kubidm_unix_common::selinux_util;
+use sparkle_unix_common::selinux_util;
 
 static KANIDM_UNIX_RETRY_SECS: u64 = 5;
 
@@ -51,7 +53,7 @@ fn chown(path: &Path, gid: u32) -> Result<(), String> {
     let path_os = CString::new(path.as_os_str().as_bytes())
         .map_err(|_| "Unable to create c-string".to_string())?;
 
-    // Change the owner to the gid - remember, kanidm ONLY has gid's, the uid is implied.
+    // Change the owner to the gid - remember, kubidm ONLY has gid's, the uid is implied.
     if unsafe { lchown(path_os.as_ptr(), gid, gid) } != 0 {
         return Err("Unable to set ownership".to_string());
     }
@@ -505,7 +507,7 @@ async fn handle_tasks(
         };
 
         if let Err(e) = reqs.send(msg).await {
-            error!(?e, "Error sending response to kanidm_unixd");
+            error!(?e, "Error sending response to kubidm_unixd");
             return;
         }
     }
@@ -630,11 +632,11 @@ pub async fn main<F: SparkleFlavour>(_flavour: F) -> ExitCode {
 
     for arg in std::env::args() {
         if arg.contains("--version") {
-            println!("kanidm_unixd_tasks {}", env!("CARGO_PKG_VERSION"));
+            println!("kubidm_unixd_tasks {}", env!("CARGO_PKG_VERSION"));
             return ExitCode::SUCCESS;
         } else if arg.contains("--help") {
-            println!("kanidm_unixd_tasks {}", env!("CARGO_PKG_VERSION"));
-            println!("Usage: kanidm_unixd_tasks");
+            println!("kubidm_unixd_tasks {}", env!("CARGO_PKG_VERSION"));
+            println!("Usage: kubidm_unixd_tasks");
             println!("  --version");
             println!("  --help");
             return ExitCode::SUCCESS;
@@ -712,7 +714,7 @@ pub async fn main<F: SparkleFlavour>(_flavour: F) -> ExitCode {
 
             let server = tokio::spawn(async move {
                 loop {
-                    info!("Attempting to connect to kanidm_unixd ...");
+                    info!("Attempting to connect to kubidm_unixd ...");
 
                     tokio::select! {
                         _ = broadcast_rx.recv() => {
@@ -721,7 +723,7 @@ pub async fn main<F: SparkleFlavour>(_flavour: F) -> ExitCode {
                         connect_res = UnixStream::connect(&task_sock_path) => {
                             match connect_res {
                                 Ok(stream) => {
-                                    info!("Found kanidm_unixd, waiting for tasks ...");
+                                    info!("Found kubidm_unixd, waiting for tasks ...");
 
                                     // Yep! Now let the main handler do its job.
                                     // If it returns (disconnected, etc, then we loop and try again).
@@ -730,7 +732,7 @@ pub async fn main<F: SparkleFlavour>(_flavour: F) -> ExitCode {
                                 }
                                 Err(e) => {
                                     debug!("\\---> {:?}", e);
-                                    error!("Unable to find kanidm_unixd, sleeping for {} seconds ...", KANIDM_UNIX_RETRY_SECS);
+                                    error!("Unable to find kubidm_unixd, sleeping for {} seconds ...", KANIDM_UNIX_RETRY_SECS);
                                     // Back off.
                                     time::sleep(Duration::from_secs(KANIDM_UNIX_RETRY_SECS)).await;
                                 }

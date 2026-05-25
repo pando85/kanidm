@@ -1,6 +1,6 @@
 [package]
-name = "kubidm_unix_common"
-description = "Kubidm Unix Resolver - Common Libraries"
+name = "sparkle_unix_common"
+description = "Sparkle Unix Resolver - Common Libraries"
 documentation = "https://docs.rs/kubidm/latest/kubidm/"
 
 version = { workspace = true }
@@ -19,7 +19,7 @@ selinux = ["dep:selinux", "dep:kubidm_utils_users"]
 tpm = []
 
 [lib]
-name = "kubidm_unix_common"
+name = "sparkle_unix_common"
 path = "src/lib.rs"
 test = true
 doctest = false

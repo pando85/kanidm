@@ -1,7 +1,7 @@
 use self::extractors::ClientConnInfo;
 use self::javascript::*;
 use crate::actors::{QueryServerReadV1, QueryServerWriteV1};
-use crate::config::{AddressSet, Configuration, TcpAddressInfo};
+use crate::config::{AddressSet, Configuration, ServerRole, TcpAddressInfo};
 use crate::tcp::process_client_addr;
 use crate::CoreAction;
 use axum::{
@@ -22,7 +22,7 @@ use crypto_glue::{
 use futures::pin_mut;
 use hyper::body::Incoming;
 use hyper_util::rt::{TokioExecutor, TokioIo, TokioTimer};
-use kubidm_proto::{config::ServerRole, constants::KSESSIONID, internal::COOKIE_AUTH_SESSION_ID};
+use kubidm_proto::{constants::KSESSIONID, internal::COOKIE_AUTH_SESSION_ID};
 use kubidmd_lib::{idm::authentication::ClientCertInfo, status::StatusActor};
 use serde::de::DeserializeOwned;
 use sketching::*;
@@ -50,7 +50,6 @@ const HTTPS_CLIENT_IO_TIMEOUT: Duration = Duration::from_secs(60);
 const HTTPS_CLIENT_REQUEST_TIMEOUT: Duration = Duration::from_secs(300);
 
 mod apidocs;
-pub(crate) mod authorization;
 pub(crate) mod cache_buster;
 pub(crate) mod errors;
 mod extractors;
@@ -65,6 +64,7 @@ mod v1_domain;
 mod v1_oauth2;
 mod v1_oauth2_federation;
 mod v1_scim;
+pub(crate) mod authorization;
 mod views;
 
 #[derive(Clone, Copy, Eq, PartialEq, Debug)]
@@ -204,23 +204,31 @@ pub async fn create_https_server(
     maybe_tls_acceptor: Option<TlsAcceptor>,
     tls_acceptor_reload_tx: &broadcast::Sender<TlsAcceptor>,
 ) -> Result<Vec<task::JoinHandle<()>>, ()> {
-    let all_js_files = get_js_files(config.role)?;
-    // set up the CSP headers
-    // script-src 'self'
-    //      'sha384-Zao7ExRXVZOJobzS/uMp0P1jtJz3TTqJU4nYXkdmsjpiVD+/wcwCyX7FGqRIqvIz'
-    //      'sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM';
+    let js_checksums = match config.role {
+        ServerRole::WriteReplicaNoUI => String::new(),
+        ServerRole::WriteReplica | ServerRole::ReadOnlyReplica => {
+            let all_js_files = get_js_files(config.role)?;
+            // set up the CSP headers
+            // script-src 'self'
+            //      'sha384-Zao7ExRXVZOJobzS/uMp0P1jtJz3TTqJU4nYXkdmsjpiVD+/wcwCyX7FGqRIqvIz'
+            //      'sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM';
 
-    let js_directives = all_js_files
-        .into_iter()
-        .map(|f| f.hash)
-        .collect::<Vec<String>>();
+            let js_directives = all_js_files
+                .into_iter()
+                .map(|f| f.hash)
+                .collect::<Vec<String>>();
 
-    let js_checksums: String = js_directives
-        .iter()
-        .fold(String::new(), |mut output, value| {
-            let _ = write!(output, " 'sha384-{value}'");
-            output
-        });
+            let js_checksums: String =
+                js_directives
+                    .iter()
+                    .fold(String::new(), |mut output, value| {
+                        let _ = write!(output, " 'sha384-{value}'");
+                        output
+                    });
+
+            js_checksums
+        }
+    };
 
     let csp_header = format!(
         concat!(
@@ -311,9 +319,9 @@ pub async fn create_https_server(
     };
     let app = Router::new()
         .merge(oauth2::route_setup(state.clone()))
-        .merge(authorization::route_setup())
         .merge(v1_scim::route_setup())
         .merge(v1::route_setup(state.clone()))
+        .merge(authorization::route_setup())
         .route("/robots.txt", get(generic::robots_txt))
         .route(
             views::constants::Urls::WellKnownChangePassword.as_ref(),

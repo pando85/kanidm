@@ -331,7 +331,7 @@ pub struct AccountNamedExpireDateTimeOpt {
     /// - An RFC3339 time of the format "YYYY-MM-DDTHH:MM:SS+TZ", "2020-09-25T11:22:02+10:00"
     /// - One of "any", "clear" or "never" to remove account expiry.
     /// - "epoch" to set the expiry to the UNIX epoch
-    /// - "now" to expire immediately (this will affect authentication with Kubidm, but external systems may not be aware of the change until next time it's validated, typically ~15 minutes)
+    /// - "now" to expire immediately (this will affect authentication with Kanidm, but external systems may not be aware of the change until next time it's validated, typically ~15 minutes)
     datetime: String,
 }
 
@@ -425,7 +425,7 @@ pub enum AccountCredential {
         /// - An RFC3339 time of the format "YYYY-MM-DDTHH:MM:SS+TZ", "2020-09-25T11:22:02+10:00"
         /// - "now" to reset immediately
         datetime: String,
-    },
+    }
 }
 
 /// RADIUS secret management
@@ -801,13 +801,21 @@ pub enum SessionOpt {
 #[derive(Debug, Subcommand, Clone)]
 pub enum RawOpt {
     #[clap(name = "search")]
-    Search { filter: ScimFilter },
+    Search {
+        filter: ScimFilter
+    },
     #[clap(name = "create")]
-    Create { file: PathBuf },
+    Create {
+        file: PathBuf
+    },
     #[clap(name = "update")]
-    Update { file: PathBuf },
+    Update {
+        file: PathBuf
+    },
     #[clap(name = "delete")]
-    Delete { id: String },
+    Delete {
+        id: String
+    },
 }
 
 #[derive(Debug, Subcommand, Clone)]
@@ -978,7 +986,7 @@ pub enum Oauth2Opt {
     },
 
     /// The landing URL is the default origin of the OAuth2 client. Additionally, this landing
-    /// URL is the target when Kubidm redirects the user from the apps listing page.
+    /// URL is the target when Kanidm redirects the user from the apps listing page.
     #[clap(name = "set-landing-url")]
     SetLandingUrl {
         #[clap(flatten)]
@@ -986,7 +994,7 @@ pub enum Oauth2Opt {
         #[clap(name = "landing-url")]
         url: Url,
     },
-    /// The image presented on the Kubidm Apps Listing page for an OAuth2 resource server.
+    /// The image presented on the Kanidm Apps Listing page for an OAuth2 resource server.
     #[clap(name = "set-image")]
     SetImage {
         #[clap(flatten)]
@@ -1167,14 +1175,14 @@ pub enum DomainOpt {
         #[clap(name = "allow", action = clap::ArgAction::Set)]
         enable: bool,
     },
-/// Enable or disable the account recovery feature. If enabled, users who have forgotten
-        /// their credentials can trigger a credential reset link to be sent to them if they are able to prove
-        /// knowledge of one of their own email addresses.
-        SetAllowAccountRecovery {
-            #[clap(name = "allow", action = clap::ArgAction::Set)]
-            enable: bool,
-        },
-        /// Enable or disable easter eggs in the server. This includes seasonal icons, kubidm
+    /// Enable or disable the account recovery feature. If enabled, users who have forgotten
+    /// their credentials can trigger a credential reset link to be sent to them if they are able to prove
+    /// knowledge of one of their own email addresses.
+    SetAllowAccountRecovery {
+        #[clap(name = "allow", action = clap::ArgAction::Set)]
+        enable: bool,
+    },
+    /// Enable or disable easter eggs in the server. This includes seasonal icons, kubidm
     /// birthday surprises and other fun components. Defaults to false for production releases
     /// and true in development builds.
     SetAllowEasterEggs {
@@ -1209,18 +1217,22 @@ pub enum MessageOpt {
 
     #[clap(name = "get")]
     /// Display the message identified by its message ID.
-    Get { message_id: Uuid },
+    Get {
+        message_id: Uuid
+    },
 
     #[clap(name = "mark-as-sent")]
     /// Mark the message with this message ID as sent. This will prevent it
     /// being sent by any mail sender.
-    MarkAsSent { message_id: Uuid },
+    MarkAsSent {
+        message_id: Uuid
+    },
 
     #[clap(name = "send-test-message")]
     SendTestMessage {
         /// The account name of the person who this message should be sent to.
         to: String,
-    },
+    }
 }
 
 #[derive(Debug, Subcommand, Clone)]
@@ -1277,7 +1289,7 @@ pub enum SynchOpt {
         attrs: Vec<String>,
     },
     /// Reset the sync cookie of this connector, so that on the next operation of the sync tool
-    /// a full refresh of the provider is requested. Kubidm attributes that have been granted
+    /// a full refresh of the provider is requested. Kanidm attributes that have been granted
     /// authority will *not* be lost or deleted.
     #[clap(name = "force-refresh")]
     ForceRefresh {
@@ -1285,10 +1297,10 @@ pub enum SynchOpt {
         account_id: String,
     },
     /// Finalise and remove this sync account. This will transfer all synchronised entries into
-    /// the authority of Kubidm. This signals the end of a migration from an external IDM into
-    /// Kubidm. ⚠️  This action can NOT be undone. Once complete, it is most likely
+    /// the authority of Kanidm. This signals the end of a migration from an external IDM into
+    /// Kanidm. ⚠️  This action can NOT be undone. Once complete, it is most likely
     /// that attempting to recreate a sync account from the same IDM will fail due to conflicting
-    /// entries that Kubidm now owns.
+    /// entries that Kanidm now owns.
     #[clap(name = "finalise")]
     Finalise {
         #[clap()]
@@ -1449,7 +1461,7 @@ pub struct ApprovalPolicyCreateOpt {
     pub backup_approvers: Vec<String>,
     #[clap(long = "pattern", default_value = "any_one")]
     pub pattern: String,
-    #[clap(long = "timeout", short = 't', default_value = "3600")]
+    #[clap(long = "timeout", short = 'T', default_value = "3600")]
     pub timeout_seconds: u32,
     #[clap(long = "escalation-timeout")]
     pub escalation_timeout_seconds: Option<u32>,
@@ -1523,7 +1535,7 @@ pub enum ApprovalOpt {
 }
 
 #[derive(Debug, Subcommand, Clone)]
-#[clap(about = "Kubidm Client Utility")]
+#[clap(about = "Kanidm Client Utility")]
 pub enum KubidmClientOpt {
     /// Login to an account to use with future cli operations
     Login(LoginOpt),
@@ -1591,7 +1603,7 @@ pub enum KubidmClientOpt {
 }
 
 #[derive(Debug, clap::Parser, Clone)]
-#[clap(about = "Kubidm Client Utility")]
+#[clap(about = "Kanidm Client Utility")]
 pub struct KubidmClientParser {
     #[clap(subcommand)]
     pub commands: KubidmClientOpt,
@@ -1645,6 +1657,7 @@ pub struct KubidmClientParser {
     accept_invalid_certs: bool,
     /// Path to a file to cache tokens in, defaults to ~/.cache/kubidm_tokens
     #[clap(
+        short,
         long,
         env = "KANIDM_TOKEN_CACHE_PATH",
     hide = true,

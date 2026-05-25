@@ -51,11 +51,11 @@ run:
 .PHONY: run_htmx
 run_htmx: ## Run in HTMX mode
 run_htmx:
-	cd server/daemon && KANI_CARGO_OPTS="--features kanidmd_core/ui_htmx" ./run_insecure_dev_server.sh
+	cd server/daemon && KANI_CARGO_OPTS="--features kubidmd_core/ui_htmx" ./run_insecure_dev_server.sh
 
-.PHONY: buildx/kanidmd
-buildx/kanidmd: ## Build multiarch kanidm server images and push to docker hub
-buildx/kanidmd:
+.PHONY: buildx/kubidmd
+buildx/kubidmd: ## Build multiarch kanidm server images and push to docker hub
+buildx/kubidmd:
 	@$(CONTAINER_TOOL) buildx build $(CONTAINER_TOOL_ARGS) \
 		--pull $(CONTAINER_BUILDX_ACTION) --platform $(CONTAINER_IMAGE_ARCH) \
 		-f server/Dockerfile \
@@ -69,9 +69,9 @@ buildx/kanidmd:
 		--label "com.kanidm.version=$(CONTAINER_IMAGE_EXT_VERSION)" \
 		$(CONTAINER_BUILD_ARGS) .
 
-.PHONY: buildx/kubidm_tools
-buildx/kubidm_tools: ## Build multiarch kubidm tool images and push to docker hub
-buildx/kubidm_tools:
+.PHONY: buildx/kanidm_tools
+buildx/kanidm_tools: ## Build multiarch kanidm tool images and push to docker hub
+buildx/kanidm_tools:
 	@$(CONTAINER_TOOL) buildx build $(CONTAINER_TOOL_ARGS) \
 		--pull $(CONTAINER_BUILDX_ACTION) --platform $(CONTAINER_IMAGE_ARCH) \
 		-f tools/Dockerfile \
@@ -85,8 +85,8 @@ buildx/kubidm_tools:
 		$(CONTAINER_BUILD_ARGS) .
 
 .PHONY: buildx/radiusd
-buildx/radiusd: ## Build multi-arch radius docker images and push to docker hub
-buildx/radiusd:
+buildx/radiusd_py: ## Build multi-arch radius docker images and push to docker hub
+buildx/radiusd_py:
 	@$(CONTAINER_TOOL) buildx build $(CONTAINER_TOOL_ARGS) \
 		--pull $(CONTAINER_BUILDX_ACTION) --platform $(CONTAINER_IMAGE_ARCH) \
 		-f rlm_python/Dockerfile \
@@ -96,12 +96,24 @@ buildx/radiusd:
 		-t $(CONTAINER_IMAGE_BASE)/radius:$(CONTAINER_IMAGE_VERSION) \
 		-t $(CONTAINER_IMAGE_BASE)/radius:$(CONTAINER_IMAGE_EXT_VERSION) .
 
-.PHONY: buildx
-buildx: buildx/kanidmd buildx/kubidm_tools buildx/radiusd
+.PHONY: buildx/radiusd_rust
+buildx/radiusd_rust: ## Build multi-arch radius docker images and push to docker hub
+buildx/radiusd_rust:
+	@$(CONTAINER_TOOL) buildx build $(CONTAINER_TOOL_ARGS) \
+		--pull $(CONTAINER_BUILDX_ACTION) --platform $(CONTAINER_IMAGE_ARCH) \
+		-f rlm_kanidm/Dockerfile \
+		--progress $(BUILDKIT_PROGRESS) \
+		--label "com.kanidm.git-commit=$(GIT_COMMIT)" \
+		--label "com.kanidm.version=$(CONTAINER_IMAGE_EXT_VERSION)" \
+		-t $(CONTAINER_IMAGE_BASE)/radius:$(CONTAINER_IMAGE_VERSION) \
+		-t $(CONTAINER_IMAGE_BASE)/radius:$(CONTAINER_IMAGE_EXT_VERSION) .
 
-.PHONY: build/kanidmd
-build/kanidmd:	## Build the kanidmd docker image locally
-build/kanidmd:
+.PHONY: buildx
+buildx: buildx/kubidmd buildx/kanidm_tools buildx/radiusd_rust
+
+.PHONY: build/kubidmd
+build/kubidmd:	## Build the kubidmd docker image locally
+build/kubidmd:
 	@$(CONTAINER_TOOL) build $(CONTAINER_TOOL_ARGS) -f server/Dockerfile \
 		-t $(CONTAINER_IMAGE_BASE)/server:$(CONTAINER_IMAGE_VERSION) \
 		--build-arg "KANIDM_BUILD_PROFILE=container_generic" \
@@ -121,8 +133,10 @@ build/orca:
 		--label "com.kanidm.version=$(CONTAINER_IMAGE_EXT_VERSION)" \
 		$(CONTAINER_BUILD_ARGS) .
 
+
+# TODO remove this once the rust module's confirmed as working
 .PHONY: build/radiusd
-build/radiusd:	## Build the radiusd docker image locally
+build/radiusd:	## Build the radiusd docker image locally - deprecated
 build/radiusd:
 	@$(CONTAINER_TOOL) build $(CONTAINER_TOOL_ARGS) \
 		-f rlm_python/Dockerfile \
@@ -130,12 +144,22 @@ build/radiusd:
 		--label "com.kanidm.version=$(CONTAINER_IMAGE_EXT_VERSION)" \
 		-t $(CONTAINER_IMAGE_BASE)/radius:$(CONTAINER_IMAGE_VERSION) .
 
-.PHONY: build
-build: build/kanidmd build/radiusd
 
-.PHONY: test/kanidmd
-test/kanidmd: ## Run cargo test in docker
-test/kanidmd:
+.PHONY: build/radiusd_rust
+build/radiusd_rust:	## Build the radiusd docker image locally
+build/radiusd_rust:
+	@$(CONTAINER_TOOL) build $(CONTAINER_TOOL_ARGS) \
+		-f rlm_kanidm/Dockerfile \
+		--label "com.kanidm.git-commit=$(GIT_COMMIT)" \
+		--label "com.kanidm.version=$(CONTAINER_IMAGE_EXT_VERSION)" \
+		-t $(CONTAINER_IMAGE_BASE)/radius:$(CONTAINER_IMAGE_VERSION) .
+
+.PHONY: build
+build: build/kubidmd build/radiusd
+
+.PHONY: test/kubidmd
+test/kubidmd: ## Run cargo test in docker
+test/kubidmd:
 	@$(CONTAINER_TOOL) build \
 		$(CONTAINER_TOOL_ARGS) -f server/Dockerfile \
 		--target builder \
@@ -151,13 +175,18 @@ test/radiusd: build/radiusd
 	cd rlm_python && \
 	./run_radius_container.sh
 
+.PHONY: test/radius/e2e
+test/radius/e2e: ## Run end-to-end RADIUS integration tests
+test/radius/e2e:
+	./scripts/test_radius.sh
+
 .PHONY: test
 test:
 	cargo test
 
 .PHONY: precommit
 precommit: ## all the usual test things
-precommit: test codespell test/pykubidm doc/format
+precommit: test codespell test/pykanidm doc/format
 
 .PHONY: vendor
 vendor: ## Vendor required crates
@@ -169,7 +198,7 @@ vendor-prep: vendor
 	tar -cJf vendor.tar.xz vendor
 
 .PHONY: install-tools
-install-tools: ## install kubidm_tools in your local environment
+install-tools: ## install kanidm_tools in your local environment
 install-tools:
 	cargo install --path tools/cli --force
 
@@ -179,7 +208,7 @@ codespell:
 	codespell -c \
 	-D .codespell_dictionary \
 	--ignore-words .codespell_ignore \
-	--skip='./target,./pykubidm/.venv,./pykubidm/.mypy_cache,./.mypy_cache,./pykubidm/uv.lock' \
+	--skip='./target,./pykanidm/.venv,./pykanidm/.mypy_cache,./.mypy_cache,./pykanidm/uv.lock' \
 	--skip='./book/*.js' \
 	--skip='./book/book/*' \
 	--skip='./book/src/images/*' \
@@ -188,32 +217,31 @@ codespell:
 	--skip='*.br' \
 	--skip='./rlm_python/mods-available/eap' \
 	--skip='./server/lib/src/constants/system_config.rs' \
-	--skip='./pykubidm/site'
+	--skip='./pykanidm/site'
 
-.PHONY: test/pykubidm/pytest
-test/pykubidm/pytest: ## python library testing
-	cd pykubidm && \
+.PHONY: test/pykanidm/pytest
+test/pykanidm/pytest: ## python library testing
+	cd pykanidm && \
 	uv run pytest -vv
 
-.PHONY: test/pykubidm/lint
-test/pykubidm/lint: ## python library linting
-	cd pykubidm && \
-	uv run ruff check tests kubidm
+.PHONY: test/pykanidm/lint
+test/pykanidm/lint: ## python library linting
+	cd pykanidm && \
+	uv run ruff check tests kanidm
 
-.PHONY: test/pykubidm/mypy
-test/pykubidm/mypy: ## python library type checking
-	cd pykubidm && \
-	uv run mypy --strict tests kubidm && \
-	uv run ty check tests kubidm \
+.PHONY: test/pykanidm/typecheck
+test/pykanidm/typecheck: ## python library type checking
+	cd pykanidm && \
+	uv run ty check tests kanidm \
 		--ignore unused-type-ignore-comment
 
-.PHONY: test/pykubidm
-test/pykubidm: ## run the kubidm python module test suite (mypy/lint/pytest)
-test/pykubidm: test/pykubidm/pytest test/pykubidm/mypy test/pykubidm/lint
+.PHONY: test/pykanidm
+test/pykanidm: ## run the kanidm python module test suite (typecheck/lint/pytest)
+test/pykanidm: test/pykanidm/pytest test/pykanidm/typecheck test/pykanidm/lint
 
-.PHONY: test/pykubidm/coverage
-test/pykubidm/coverage: ## run the Kubidm Python module test suite with coverage
-	cd pykubidm && \
+.PHONY: test/pykanidm/coverage
+test/pykanidm/coverage: ## run the Kanidm Python module test suite with coverage
+	cd pykanidm && \
 	uv run coverage run -m pytest && \
 	uv run coverage html
 
@@ -272,16 +300,16 @@ book_versioned:
 clean_book:
 	rm -rf ./docs
 
-.PHONY: docs/pykubidm/build
-docs/pykubidm/build: ## Build the mkdocs
-docs/pykubidm/build:
-	cd pykubidm && \
+.PHONY: docs/pykanidm/build
+docs/pykanidm/build: ## Build the mkdocs
+docs/pykanidm/build:
+	cd pykanidm && \
 	uv run --group docs mkdocs build
 
-.PHONY: docs/pykubidm/serve
-docs/pykubidm/serve: ## Run the local mkdocs server
-docs/pykubidm/serve:
-	cd pykubidm && \
+.PHONY: docs/pykanidm/serve
+docs/pykanidm/serve: ## Run the local mkdocs server
+docs/pykanidm/serve:
+	cd pykanidm && \
 	uv run --group docs mkdocs serve
 
 ########################################################################
@@ -291,28 +319,28 @@ prep:
 	cargo outdated -R
 	cargo audit
 
-.PHONY: release/kubidm
-release/kubidm: ## Build the Kubidm CLI - ensure you include the environment variable KANIDM_BUILD_PROFILE
-	cargo build -p kubidm_tools --bin kubidm --release
+.PHONY: release/kanidm
+release/kanidm: ## Build the Kanidm CLI - ensure you include the environment variable KANIDM_BUILD_PROFILE
+	cargo build -p kanidm_tools --bin kanidm --release
 
 .PHONY: release/kubidmd
-release/kubidmd: ## Build the Kubidm daemon - ensure you include the environment variable KANIDM_BUILD_PROFILE
+release/kubidmd: ## Build the Kanidm daemon - ensure you include the environment variable KANIDM_BUILD_PROFILE
 	cargo build -p daemon --bin kubidmd --release
 
 .PHONY: release/kubidm-ssh
-release/kubidm-ssh: ## Build the Kubidm SSH tools - ensure you include the environment variable KANIDM_BUILD_PROFILE
+release/kubidm-ssh: ## Build the Kanidm SSH tools - ensure you include the environment variable KANIDM_BUILD_PROFILE
 	cargo build --release \
-		--bin kubidm_ssh_authorizedkeys \
-		--bin kubidm_ssh_authorizedkeys_direct
+		--bin kanidm_ssh_authorizedkeys \
+		--bin kanidm_ssh_authorizedkeys_direct
 
 .PHONY: release/kubidm-unixd
-release/kubidm-unixd: ## Build the Kubidm UNIX tools - ensure you include the environment variable KANIDM_BUILD_PROFILE
+release/kubidm-unixd: ## Build the Kanidm UNIX tools - ensure you include the environment variable KANIDM_BUILD_PROFILE
 release/kubidm-unixd:
-	cargo build -p pam_kubidm --release
-	cargo build -p nss_kubidm --release
-	cargo build --features unix -p kubidm_unix_int --release \
-		--bin kubidm_unixd \
-		--bin kubidm_unixd_tasks \
+	cargo build -p pam_kanidm --release
+	cargo build -p nss_kanidm --release
+	cargo build --features unix -p kanidm_unix_int --release \
+		--bin kanidm_unixd \
+		--bin kanidm_unixd_tasks \
 		--bin kubidm-unix
 
 # cert things
@@ -323,7 +351,7 @@ cert/clean:
 	rm -f /tmp/kanidm/*.pem
 	rm -f /tmp/kanidm/*.cnf
 	rm -f /tmp/kanidm/*.csr
-	rm -f /tmp/kanidm/*.ca.txt*
+	rm -f /tmp/kanidm/ca.txt*
 	rm -f /tmp/kanidm/ca.{cnf,srl,srl.old}
 
 
@@ -342,30 +370,19 @@ coveralls:
 
 .PHONY: eslint
 eslint: ## Run eslint on the UI javascript things
-eslint: eslint/setup
+eslint:
 	@echo "################################"
 	@echo "   Running eslint..."
 	@echo "################################"
-	cd server/core && find ./static -name '*js' -not -path '*/external/*' -exec eslint "{}" \;
+	cd server/core && find ./static -name '*js' -not -path '*/external/*' -exec pnpm exec eslint "{}" \;
 	@echo "################################"
 	@echo "Done!"
 
-.PHONY: eslint/setup
-eslint/setup: ## Install eslint for the UI javascript things
-	cd server/core && npm ci
-
 .PHONY: prettier
-prettier: ## Run prettier on the UI javascript things
-prettier: eslint/setup
+prettier: ## Run prettier on the UI javascript things and write back changes
+prettier:
 	@echo "   Running prettier..."
-	cd server/core && npm run prettier
-	@echo "Done!"
-
-.PHONY: prettier/fix
-prettier/fix: ## Run prettier on the UI javascript things and write back changes
-prettier/fix: eslint/setup
-	@echo "   Running prettier..."
-	cd server/core && npm run prettier:fix
+	cd server/core && pnpm run prettier:fix
 	@echo "Done!"
 
 .PHONY: publish
@@ -373,13 +390,13 @@ publish: ## Publish to crates.io
 publish:
 	cargo publish -p sketching
 	cargo publish -p scim_proto
-	cargo publish -p kubidm_build_profiles
-	cargo publish -p kubidm_proto
-	cargo publish -p kubidm_utils_users
-	cargo publish -p kubidm_lib_file_permissions
-	cargo publish -p kubidm_lib_crypto
-	cargo publish -p kubidm_client
-	cargo publish -p kubidm_tools
+	cargo publish -p kanidm_build_profiles
+	cargo publish -p kanidm_proto
+	cargo publish -p kanidm_utils_users
+	cargo publish -p kanidm_lib_file_permissions
+	cargo publish -p kanidm_lib_crypto
+	cargo publish -p kanidm_client
+	cargo publish -p kanidm_tools
 
 .PHONY: rust_container
 rust_container: # Build and run a container based on the Linux rust base container, with our requirements included
@@ -389,14 +406,3 @@ rust_container:
 		--rm -it \
 		--name kanidm \
 		--mount type=bind,source=$(PWD),target=/kanidm -w /kanidm kanidm_rust:latest
-
-.PHONY: update-changelog
-update-changelog: ## Update CHANGELOG.md from git history using git-cliff
-update-changelog:
-	git cliff --output CHANGELOG.md
-
-.PHONY: update-version
-update-version: ## Update version across workspace from root Cargo.toml
-update-version:
-	@VERSION=$$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n1); \
-	echo "Workspace version: $$VERSION"

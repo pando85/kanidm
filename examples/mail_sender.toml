@@ -1,5 +1,5 @@
 
-# The token used to identify and authenticate to Kubidm to read the mail queue. This
+# The token used to identify and authenticate to Kanidm to read the mail queue. This
 # token *must* have read-write privileges in order to ensure that queued messages can
 # be marked as sent.
 token = "<service account token>"
@@ -11,13 +11,13 @@ token = "<service account token>"
 #
 # schedule = "*/5 * * * * * *"
 
-# The display name of your Kubidm instance. This is used in subject lines of messages
+# The display name of your Kanidm instance. This is used in subject lines of messages
 # to help identify the content to your users.
-instance_display_name = "Kubidm Localhost"
+instance_display_name = "Kanidm Localhost"
 
-# The url of your Kubidm instance. This is distinct to the client uri that the mail
-# sender uses to connect to Kubidm. This is so that you can configure your mail
-# sender to connect to a *specific* Kubidm instance, while still presenting a
+# The url of your Kanidm instance. This is distinct to the client uri that the mail
+# sender uses to connect to Kanidm. This is so that you can configure your mail
+# sender to connect to a *specific* Kanidm instance, while still presenting a
 # generic uri to users.
 instance_url = "https://localhost:8443"
 
@@ -29,9 +29,11 @@ mail_reply_to_address = "tobias@example.com"
 
 # The hostname/address of the outgoing SMTP relay. This must support TLS.
 # You can specify the port as well if it is not the default (465). For example:
-# mail_relay = "smtp.example.com:12345"
+# mail_relay = "smtps://smtp.example.com" // SMTPS relay
+# mail_relay = "smtp://smtp.example.com" // SMTP with StartTLS
+# mail_relay = "smtps://smtp.example.com:12345" // SMTPS with alternate port
 
-mail_relay = "smtp.example.com"
+mail_relay = "smtps://smtp.example.com"
 
 # The username to authenticate to the SMTP relay as.
 mail_username = "kubidm@example.com"

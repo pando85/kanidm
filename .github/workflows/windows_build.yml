@@ -9,15 +9,15 @@ name: Windows Build and Test
   pull_request:
   workflow_dispatch:  # so you can run it manually
 env:
+  SCCACHE_GHA_ENABLED: "true"
   RUSTC_WRAPPER: "sccache"
-  KANIDM_BUILD_PROFILE: developer
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  windows_build_kubidm:
+  windows_build_kanidm:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6
@@ -30,20 +30,8 @@ jobs:
         with:
           toolchain: stable
 
-      - name: Install sccache
-        run: |
-          $url = "https://github.com/mozilla/sccache/releases/download/v0.15.0/sccache-v0.15.0-x86_64-pc-windows-msvc.tar.gz"
-          Invoke-WebRequest -Uri $url -OutFile sccache.tar.gz
-          tar -xzf sccache.tar.gz
-          Move-Item -Path "sccache-v0.15.0-x86_64-pc-windows-msvc/sccache.exe" -Destination "$env:USERPROFILE\.cargo\bin\sccache.exe"
-          New-Item -ItemType Directory -Force -Path "${{ runner.temp }}\sccache"
-          echo "SCCACHE_DIR=${{ runner.temp }}\sccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-      - name: Setup sccache cache
-        uses: actions/cache@v5
-        with:
-          path: ${{ runner.temp }}\sccache
-          key: sccache-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
-          restore-keys: sccache-${{ runner.os }}-
-      - run: cargo build --locked -p kubidm_client -p kubidm_tools --bin kubidm
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.10
+      - run: cargo build --locked -p kanidm_client -p kanidm_tools --bin kanidm
       # yamllint disable-line rule:line-length
-      - run: cargo test -p kubidm_client -p kubidm_tools
+      - run: cargo test -p kanidm_client -p kanidm_tools

@@ -683,10 +683,12 @@ dependencies = [
 
 [[package]]
 name = "aws-smithy-json"
-version = "0.62.5"
+version = "0.62.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9648b0bb82a2eedd844052c6ad2a1a822d1f8e3adee5fbf668366717e428856a"
+checksum = "517089205f18ab4adc5a3e02888cb139bbbbb2e168eac9f396216925d1fbeaf5"
 dependencies = [
+ "aws-smithy-runtime-api",
+ "aws-smithy-schema",
  "aws-smithy-types",
 ]
 
@@ -711,14 +713,15 @@ dependencies = [
 
 [[package]]
 name = "aws-smithy-runtime"
-version = "1.11.1"
+version = "1.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0504b1ab12debb5959e5165ee5fe97dd387e7aa7ea6a477bfd7635dfe769a4f5"
+checksum = "b8e6f5caf6fea86f8c2206541ab5857cfcda9013426cdbe8fa0098b9e2d32182"
 dependencies = [
  "aws-smithy-async",
  "aws-smithy-http",
  "aws-smithy-observability",
  "aws-smithy-runtime-api",
+ "aws-smithy-schema",
  "aws-smithy-types",
  "bytes",
  "fastrand",
@@ -735,9 +738,9 @@ dependencies = [
 
 [[package]]
 name = "aws-smithy-runtime-api"
-version = "1.12.0"
+version = "1.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b71a13df6ada0aafbf21a73bdfcdf9324cfa9df77d96b8446045be3cde61b42e"
+checksum = "dc117c179ecf39a62a0a3f49f600e9ac26a7ad7dd172177999f83933af776c32"
 dependencies = [
  "aws-smithy-async",
  "aws-smithy-runtime-api-macros",
@@ -763,10 +766,21 @@ dependencies = [
 ]
 
 [[package]]
-name = "aws-smithy-types"
-version = "1.4.7"
+name = "aws-smithy-schema"
+version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9d73dbfbaa8e4bc57b9045137680b958d274823509a360abfd8e1d514d40c95c"
+checksum = "7442cb268338f0eb8278140a107c046756aa01093d8ef5e99628d34ae09c94f5"
+dependencies = [
+ "aws-smithy-runtime-api",
+ "aws-smithy-types",
+ "http 1.4.0",
+]
+
+[[package]]
+name = "aws-smithy-types"
+version = "1.4.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "056b66dbce2f81cc0c1e2b05bb402eb58f8a3530479d650efadd5bbae9a4050b"
 dependencies = [
  "base64-simd",
  "bytes",
@@ -799,13 +813,14 @@ dependencies = [
 
 [[package]]
 name = "aws-types"
-version = "1.3.15"
+version = "1.3.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f4bbcaa9304ea40902d3d5f42a0428d1bd895a2b0f6999436fb279ffddc58ac"
+checksum = "d16bf10b03a3c01e6b3b7d47cd964e873ffe9e7d4e80fad16bd4c077cb068531"
 dependencies = [
  "aws-credential-types",
  "aws-smithy-async",
  "aws-smithy-runtime-api",
+ "aws-smithy-schema",
  "aws-smithy-types",
  "rustc_version",
  "tracing",
@@ -991,9 +1006,9 @@ dependencies = [
 
 [[package]]
 name = "base64urlsafedata"
-version = "0.6.0-dev"
+version = "0.6.1-dev"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "079474127d73fa81d78e0709f88f87535de17a3386f3dc1a721bd33065a88109"
+checksum = "9283b2d58cdc7bb808295ff4cd7063701b13818a2680e1584ba61e948ab83229"
 dependencies = [
  "base64 0.21.7",
  "pastey",
@@ -1781,7 +1796,7 @@ dependencies = [
 
 [[package]]
 name = "daemon"
-version = "1.10.0-alpha.3"
+version = "1.11.0-dev"
 dependencies = [
  "clap",
  "clap_complete",
@@ -4326,6 +4341,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "kanidm_radiusd"
+version = "1.11.0-dev"
+dependencies = [
+ "anyhow",
+ "clap",
+ "rlm_kanidm_shared",
+ "toml",
+]
+
+[[package]]
 name = "kbkdf"
 version = "0.1.0-rc.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4365,7 +4390,7 @@ dependencies = [
 
 [[package]]
 name = "kubidm-ipa-sync"
-version = "1.10.0-alpha.3"
+version = "1.11.0-dev"
 dependencies = [
  "chrono",
  "clap",
@@ -4391,7 +4416,7 @@ dependencies = [
 
 [[package]]
 name = "kubidm-ldap-sync"
-version = "1.10.0-alpha.3"
+version = "1.11.0-dev"
 dependencies = [
  "chrono",
  "clap",
@@ -4418,7 +4443,7 @@ dependencies = [
 
 [[package]]
 name = "kubidm-mail-sender"
-version = "1.10.0-alpha.3"
+version = "1.11.0-dev"
 dependencies = [
  "chrono",
  "clap",
@@ -4442,7 +4467,7 @@ dependencies = [
 
 [[package]]
 name = "kubidm_build_profiles"
-version = "1.10.0-alpha.3"
+version = "1.11.0-dev"
 dependencies = [
  "base64 0.22.1",
  "gix",
@@ -4453,7 +4478,7 @@ dependencies = [
 
 [[package]]
 name = "kubidm_client"
-version = "1.10.0-alpha.3"
+version = "1.11.0-dev"
 dependencies = [
  "compact_jwt",
  "http 1.4.0",
@@ -4476,7 +4501,7 @@ dependencies = [
 
 [[package]]
 name = "kubidm_device_flow"
-version = "1.10.0-alpha.3"
+version = "1.11.0-dev"
 dependencies = [
  "anyhow",
  "kubidm_proto",
@@ -4489,29 +4514,26 @@ dependencies = [
 
 [[package]]
 name = "kubidm_lib_crypto"
-version = "1.10.0-alpha.3"
+version = "1.11.0-dev"
 dependencies = [
  "base64 0.22.1",
- "base64urlsafedata 0.6.0-dev",
+ "base64urlsafedata 0.6.1-dev",
  "crypto-glue",
  "hex",
  "kanidm-hsm-crypto",
  "md-5",
  "md4",
  "rand 0.10.1",
- "rustls",
  "serde",
  "sha-crypt",
  "sha2 0.11.0-rc.5",
  "sketching",
  "tracing",
- "uuid",
- "x509-cert",
 ]
 
 [[package]]
 name = "kubidm_lib_file_permissions"
-version = "1.10.0-alpha.3"
+version = "1.11.0-dev"
 dependencies = [
  "kubidm_utils_users",
  "tempfile",
@@ -4519,7 +4541,7 @@ dependencies = [
 
 [[package]]
 name = "kubidm_proto"
-version = "1.10.0-alpha.3"
+version = "1.11.0-dev"
 dependencies = [
  "base32",
  "base64 0.22.1",
@@ -4549,7 +4571,7 @@ dependencies = [
 
 [[package]]
 name = "kubidm_tools"
-version = "1.10.0-alpha.3"
+version = "1.11.0-dev"
 dependencies = [
  "anyhow",
  "clap",
@@ -4578,81 +4600,26 @@ dependencies = [
 ]
 
 [[package]]
-name = "kubidm_unix_common"
-version = "1.10.0-alpha.3"
-dependencies = [
- "bytes",
- "csv",
- "futures",
- "kubidm_build_profiles",
- "kubidm_proto",
- "kubidm_utils_users",
- "selinux",
- "serde",
- "serde_json",
- "serde_with",
- "sha-crypt",
- "time",
- "tokio",
- "tokio-util",
- "toml",
- "tracing",
- "tracing-subscriber",
- "yescrypt",
-]
-
-[[package]]
 name = "kubidm_unix_int"
-version = "1.10.0-alpha.3"
+version = "1.11.0-dev"
 dependencies = [
- "async-trait",
  "clap",
  "clap_complete",
- "dhat",
- "dialoguer",
- "futures",
- "hashbrown 0.17.1",
- "kanidm-hsm-crypto",
  "kubidm_build_profiles",
- "kubidm_client",
- "kubidm_lib_crypto",
- "kubidm_lib_file_permissions",
- "kubidm_proto",
- "kubidm_unix_common",
- "kubidm_utils_users",
- "kubidmd_core",
- "kubidmd_testkit",
- "libc",
- "lru 0.18.0",
- "nix",
- "notify-debouncer-full",
- "prctl",
- "procfs",
- "rand 0.10.1",
- "rusqlite",
- "sd-notify",
- "serde",
- "serde_json",
- "sketching",
- "tempfile",
- "time",
+ "sparkle_resolver_common",
  "tokio",
- "tokio-util",
- "tracing",
- "uuid",
- "walkdir",
 ]
 
 [[package]]
 name = "kubidm_utils_users"
-version = "1.10.0-alpha.3"
+version = "1.11.0-dev"
 dependencies = [
  "libc",
 ]
 
 [[package]]
 name = "kubidmd_core"
-version = "1.10.0-alpha.3"
+version = "1.11.0-dev"
 dependencies = [
  "argon2",
  "askama",
@@ -4721,11 +4688,11 @@ dependencies = [
 
 [[package]]
 name = "kubidmd_lib"
-version = "1.10.0-alpha.3"
+version = "1.11.0-dev"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
- "base64urlsafedata 0.6.0-dev",
+ "base64urlsafedata 0.6.1-dev",
  "bitflags 2.11.1",
  "chrono",
  "compact_jwt",
@@ -4781,7 +4748,7 @@ dependencies = [
 
 [[package]]
 name = "kubidmd_lib_macros"
-version = "1.10.0-alpha.3"
+version = "1.11.0-dev"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4790,7 +4757,7 @@ dependencies = [
 
 [[package]]
 name = "kubidmd_testkit"
-version = "1.10.0-alpha.3"
+version = "1.11.0-dev"
 dependencies = [
  "cidr",
  "compact_jwt",
@@ -4949,9 +4916,9 @@ checksum = "b6d2cec3eae94f9f509c767b45932f1ada8350c4bdb85af2fcab4a3c14807981"
 
 [[package]]
 name = "libmimalloc-sys"
-version = "0.1.48"
+version = "0.1.49"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2892ae4ea6fa2cb7acb0e236a6880d39523239cd9089de71d220910ccc806790"
+checksum = "6a45a52f43e1c16f667ccfe4dd8c85b7f7c204fd5e3bf46c5b0db9a5c3c0b8e9"
 dependencies = [
  "cc",
 ]
@@ -5201,9 +5168,9 @@ checksum = "c2a86d3146ed3995b5913c414f6664344b9617457320782e64f0bb44afd49d74"
 
 [[package]]
 name = "mimalloc"
-version = "0.1.51"
+version = "0.1.52"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ebca48a43116bc25f18a61360f1be98412f50cc218f5e52c823086b999a4a21a"
+checksum = "2d4139bb28d14ad1facf21d5eb8825051b326e172d216b39f6d31df53cc97862"
 dependencies = [
  "libmimalloc-sys",
 ]
@@ -5366,11 +5333,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "nss_kubidm"
-version = "1.10.0-alpha.3"
+name = "nss_kanidm"
+version = "1.11.0-dev"
 dependencies = [
  "cc",
- "kubidm_unix_common",
  "libc",
  "libnss",
  "nss_sparkle_common",
@@ -5378,7 +5344,7 @@ dependencies = [
 
 [[package]]
 name = "nss_sparkle"
-version = "1.10.0-alpha.3"
+version = "1.11.0-dev"
 dependencies = [
  "cc",
  "libc",
@@ -5388,11 +5354,11 @@ dependencies = [
 
 [[package]]
 name = "nss_sparkle_common"
-version = "1.10.0-alpha.3"
+version = "1.11.0-dev"
 dependencies = [
- "kubidm_unix_common",
  "libc",
  "libnss",
+ "sparkle_unix_common",
 ]
 
 [[package]]
@@ -5564,7 +5530,7 @@ version = "5.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51e219e79014df21a225b1860a479e2dcd7cbd9130f4defd4bd0e191ea31d67d"
 dependencies = [
- "base64 0.21.7",
+ "base64 0.22.1",
  "chrono",
  "getrandom 0.2.17",
  "http 1.4.0",
@@ -5728,7 +5694,7 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 
 [[package]]
 name = "orca"
-version = "1.10.0-alpha.3"
+version = "1.11.0-dev"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5807,21 +5773,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "pam_kubidm"
-version = "1.10.0-alpha.3"
+name = "pam_kanidm"
+version = "1.11.0-dev"
 dependencies = [
- "kubidm_unix_common",
- "libc",
  "pam_sparkle_common",
  "pkg-config",
- "time",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
 name = "pam_sparkle"
-version = "1.10.0-alpha.3"
+version = "1.11.0-dev"
 dependencies = [
  "pam_sparkle_common",
  "pkg-config",
@@ -5829,10 +5790,10 @@ dependencies = [
 
 [[package]]
 name = "pam_sparkle_common"
-version = "1.10.0-alpha.3"
+version = "1.11.0-dev"
 dependencies = [
- "kubidm_unix_common",
  "libc",
+ "sparkle_unix_common",
  "time",
  "tracing",
  "tracing-subscriber",
@@ -6622,7 +6583,7 @@ dependencies = [
  "quinn",
  "rustls",
  "rustls-pki-types",
- "rustls-platform-verifier 0.6.2",
+ "rustls-platform-verifier 0.7.0",
  "serde",
  "serde_json",
  "serde_urlencoded",
@@ -6680,6 +6641,32 @@ dependencies = [
  "libc",
  "untrusted",
  "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "rlm_kanidm"
+version = "1.11.0-dev"
+dependencies = [
+ "anyhow",
+ "bindgen",
+ "cc",
+ "kubidm_client",
+ "kubidm_proto",
+ "kubidmd_core",
+ "kubidmd_testkit",
+ "libc",
+ "rlm_kanidm_shared",
+ "tokio",
+ "tracing",
+ "url",
+]
+
+[[package]]
+name = "rlm_kanidm_shared"
+version = "1.11.0-dev"
+dependencies = [
+ "serde",
+ "toml",
 ]
 
 [[package]]
@@ -6999,9 +6986,9 @@ dependencies = [
 
 [[package]]
 name = "scim_proto"
-version = "1.10.0-alpha.3"
+version = "1.11.0-dev"
 dependencies = [
- "base64urlsafedata 0.6.0-dev",
+ "base64urlsafedata 0.6.1-dev",
  "peg",
  "serde",
  "serde_json",
@@ -7432,7 +7419,7 @@ checksum = "b2aa850e253778c88a04c3d7323b043aeda9d3e30d5971937c1855769763678e"
 
 [[package]]
 name = "sketching"
-version = "1.10.0-alpha.3"
+version = "1.11.0-dev"
 dependencies = [
  "gethostname",
  "num_enum",
@@ -7497,11 +7484,10 @@ dependencies = [
 
 [[package]]
 name = "sparkle_resolver_common"
-version = "1.10.0-alpha.3"
+version = "1.11.0-dev"
 dependencies = [
  "async-trait",
  "clap",
- "clap_complete",
  "dhat",
  "dialoguer",
  "futures",
@@ -7512,7 +7498,6 @@ dependencies = [
  "kubidm_lib_crypto",
  "kubidm_lib_file_permissions",
  "kubidm_proto",
- "kubidm_unix_common",
  "kubidm_utils_users",
  "kubidmd_core",
  "kubidmd_testkit",
@@ -7528,6 +7513,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sketching",
+ "sparkle_unix_common",
  "tempfile",
  "time",
  "tokio",
@@ -7535,6 +7521,30 @@ dependencies = [
  "tracing",
  "uuid",
  "walkdir",
+]
+
+[[package]]
+name = "sparkle_unix_common"
+version = "1.11.0-dev"
+dependencies = [
+ "bytes",
+ "csv",
+ "futures",
+ "kubidm_build_profiles",
+ "kubidm_proto",
+ "kubidm_utils_users",
+ "selinux",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "sha-crypt",
+ "time",
+ "tokio",
+ "tokio-util",
+ "toml",
+ "tracing",
+ "tracing-subscriber",
+ "yescrypt",
 ]
 
 [[package]]
@@ -7589,12 +7599,11 @@ dependencies = [
 
 [[package]]
 name = "sshkey-attest"
-version = "0.6.0-dev"
+version = "0.6.1-dev"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e97e87baabd9b7a96ecbf9bff9d3ca9461dfe8e3dc0e6c8c37d3e14e0ad64841"
+checksum = "0caad261e18adf21f16505e855be6c8f02446208b62cefcbb16735c805891e8b"
 dependencies = [
  "base64 0.21.7",
- "base64urlsafedata 0.6.0-dev",
  "crypto-glue",
  "nom 7.1.3",
  "serde",
@@ -8575,11 +8584,10 @@ dependencies = [
 
 [[package]]
 name = "webauthn-attestation-ca"
-version = "0.6.0-dev"
+version = "0.6.1-dev"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a6bba3f4e2e2cfca832f4eb79dd7b7f6a59a888e7726351e5ab790cb626013f"
+checksum = "f756e22e0d79c05be2c61ce56e8a84062e82bd4039d98c27a6c35ca9bdd126f5"
 dependencies = [
- "base64urlsafedata 0.6.0-dev",
  "crypto-glue",
  "serde",
  "serde_with",
@@ -8589,15 +8597,14 @@ dependencies = [
 
 [[package]]
 name = "webauthn-authenticator-rs"
-version = "0.6.0-dev"
+version = "0.6.1-dev"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb7439d101b5967fc6734941d24a968b70d0c27e1c1a1c2744879a3def6393d0"
+checksum = "cd96e0e791a6748c1fd36bf8e10980ec22023466b10fa0bdb871aeb91be7a750"
 dependencies = [
  "async-stream",
  "async-trait",
  "authenticator",
  "base64 0.21.7",
- "base64urlsafedata 0.6.0-dev",
  "bitflags 1.3.2",
  "crypto-glue",
  "futures",
@@ -8624,11 +8631,10 @@ dependencies = [
 
 [[package]]
 name = "webauthn-rs"
-version = "0.6.0-dev"
+version = "0.6.1-dev"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e379c545d596d28034c6a39282550f87e68338b808f93cc4b92fcbd520848fe"
+checksum = "70fccc5023feca68f60a70e6dc4f3312e65475de272890974dd70f0c0d299ac8"
 dependencies = [
- "base64urlsafedata 0.6.0-dev",
  "serde",
  "tracing",
  "url",
@@ -8638,12 +8644,11 @@ dependencies = [
 
 [[package]]
 name = "webauthn-rs-core"
-version = "0.6.0-dev"
+version = "0.6.1-dev"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ac53e0b6d48f09b8cdc7349d11a01e80c2adb65a88e819bab7e77a3a583cf54"
+checksum = "4df5bb62f5cb2b5653bbdee8529d676b5e9df1b864f5d60fd9ea45b940415d10"
 dependencies = [
  "base64 0.21.7",
- "base64urlsafedata 0.6.0-dev",
  "crypto-glue",
  "der-parser",
  "hex",
@@ -8653,6 +8658,7 @@ dependencies = [
  "serde",
  "serde_cbor_2",
  "serde_json",
+ "serde_with",
  "thiserror 1.0.69",
  "tracing",
  "url",
@@ -8664,14 +8670,14 @@ dependencies = [
 
 [[package]]
 name = "webauthn-rs-proto"
-version = "0.6.0-dev"
+version = "0.6.1-dev"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "03d3b99492f4a00cd24da8b7c88e2fe822b0b415a3fbed0fc11b02c028c89486"
+checksum = "996291533cde7dc8c9b2ac6d1a169d545204cc1a1ea9de2f8c4abb74e4e133ad"
 dependencies = [
  "base64 0.21.7",
- "base64urlsafedata 0.6.0-dev",
  "serde",
  "serde_json",
+ "serde_with",
  "url",
 ]
 

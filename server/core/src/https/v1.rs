@@ -2859,7 +2859,7 @@ pub async fn reauth(
     // This may change in the future ...
     let inter = state
         .qe_r_ref
-        .handle_reauth(client_auth_info, obj, kopid.eventid)
+        .handle_reauth(client_auth_info, obj, Default::default(), kopid.eventid)
         .await;
     debug!("ReAuth result: {:?}", inter);
     auth_session_state_management(&state, jar, inter)

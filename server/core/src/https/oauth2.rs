@@ -25,12 +25,9 @@ use kubidm_proto::constants::uri::{
 };
 use kubidm_proto::constants::APPLICATION_JSON;
 use kubidm_proto::oauth2::AuthorisationResponse;
-
-#[cfg(feature = "dev-oauth2-device-flow")]
-use kubidm_proto::oauth2::DeviceAuthorizationResponse;
 use kubidmd_lib::idm::oauth2::{
-    AccessTokenIntrospectRequest, AccessTokenRequest, AuthorisationRequest, AuthoriseResponse,
-    ErrorResponse, Oauth2Error, TokenRevokeRequest,
+    AccessTokenIntrospectRequest, AccessTokenRequest, AuthorisationRequest,
+    AuthorisationRequestContext, AuthoriseResponse, ErrorResponse, Oauth2Error, TokenRevokeRequest,
 };
 use kubidmd_lib::prelude::f_eq;
 use kubidmd_lib::prelude::*;
@@ -38,6 +35,9 @@ use kubidmd_lib::value::PartialValue;
 use serde::{Deserialize, Serialize};
 use serde_with::formats::CommaSeparator;
 use serde_with::{serde_as, StringWithSeparator};
+
+#[cfg(feature = "dev-oauth2-device-flow")]
+use kubidm_proto::oauth2::DeviceAuthorizationResponse;
 
 #[cfg(feature = "dev-oauth2-device-flow")]
 use uri::OAUTH2_AUTHORISE_DEVICE;
@@ -149,9 +149,9 @@ pub(crate) async fn oauth2_image_get(
 //  These functions appear stateless, but the state is managed through encrypted
 //  tokens transmitted in the responses of this flow. This is because in a HA setup
 //  we can not guarantee that the User-Agent or the Resource Server (client) will
-//  access the same Kubidm instance, and we can not rely on replication in these
+//  access the same Kanidm instance, and we can not rely on replication in these
 //  cases. As a result, we must have our state in localised tokens so that any
-//  valid Kubidm instance in the topology can handle these request.
+//  valid Kanidm instance in the topology can handle these request.
 //
 
 #[instrument(level = "debug", skip(state, kopid))]
@@ -188,9 +188,11 @@ async fn oauth2_authorise(
     kopid: KOpId,
     client_auth_info: ClientAuthInfo,
 ) -> impl IntoResponse {
+    let auth_req_ctx = AuthorisationRequestContext::default();
+
     let res: Result<AuthoriseResponse, Oauth2Error> = state
         .qe_r_ref
-        .handle_oauth2_authorise(client_auth_info, auth_req, kopid.eventid)
+        .handle_oauth2_authorise(client_auth_info, auth_req, auth_req_ctx, kopid.eventid)
         .await;
 
     match res {
@@ -240,9 +242,10 @@ async fn oauth2_authorise(
                 .body(body)
                 .unwrap()
         }
-        Ok(AuthoriseResponse::AuthenticationRequired { .. })
-        | Err(Oauth2Error::AuthenticationRequired) => {
-            // This will trigger our ui to auth and retry.
+        Ok(AuthoriseResponse::ReauthenticationRequired { .. })
+        | Ok(AuthoriseResponse::AuthenticationRequired { .. })
+        | Err(Oauth2Error::AuthenticationRequired) =>
+        {
             #[allow(clippy::unwrap_used)]
             Response::builder()
                 .status(StatusCode::UNAUTHORIZED)

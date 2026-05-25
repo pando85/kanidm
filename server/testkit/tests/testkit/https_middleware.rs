@@ -1,7 +1,8 @@
 use kubidm_client::http::header;
 use kubidm_client::KubidmClient;
+use kubidmd_core::config::ServerRole;
 
-#[kubidmd_testkit::test]
+#[kubidmd_testkit::test(role = ServerRole::WriteReplica)]
 async fn test_https_middleware_headers(rsclient: &KubidmClient) {
     // We need to do manual reqwests here.
     let client = rsclient.client();

@@ -1,11 +1,9 @@
-use std::collections::BTreeMap;
-
+use crate::{ClientError, KubidmClient};
 use kubidm_proto::constants::*;
 use kubidm_proto::internal::{CredentialStatus, IdentifyUserRequest, IdentifyUserResponse};
 use kubidm_proto::v1::{AccountUnixExtend, Entry, SingleStringRequest, UatStatus};
+use std::collections::BTreeMap;
 use uuid::Uuid;
-
-use crate::{ClientError, KubidmClient};
 
 impl KubidmClient {
     pub async fn idm_person_account_list(&self) -> Result<Vec<Entry>, ClientError> {

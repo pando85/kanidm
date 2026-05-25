@@ -1,5 +1,5 @@
 ---
-name: PyKubidm tests
+name: PyKanidm tests
 
 "on":
   push:
@@ -19,14 +19,14 @@ jobs:
       - name: Set up Python 3.12
         uses: actions/setup-python@v6
         with:
-          python-version: "3.14"
+          python-version: "3.12"
       - name: Install uv
         run: pip install --root-user-action=ignore  uv
-      - name: Running mypy
-        run: make test/pykubidm/mypy
+      - name: Running type checks
+        run: make test/pykanidm/typecheck
       - name: Running Linting
-        run: make test/pykubidm/lint
+        run: make test/pykanidm/lint
       - name: Running pytest
         run: |
-          cd pykubidm
+          cd pykanidm
           uv run pytest -v -m 'not network and not openapi'
