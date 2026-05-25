@@ -13,5 +13,3 @@ void rlm_kanidm_rinfo(char const *message, REQUEST *request) {
 void rlm_kanidm_rerror(char const *message, REQUEST *request) {
     RDEBUG("%s", message);
 }
-
-

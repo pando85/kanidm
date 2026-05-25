@@ -18,4 +18,3 @@
 #	undef PACKAGE_URL
 #	undef PACKAGE_VERSION
 #endif
-

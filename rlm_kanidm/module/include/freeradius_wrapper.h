@@ -23,5 +23,3 @@
 enum rlm_kanidm_module {
     INIT = RLM_MODULE_INIT,
 };
-
-

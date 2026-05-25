@@ -208,4 +208,3 @@ typedef struct listen_socket_t {
 	RADCLIENT_LIST	*clients;
 } listen_socket_t;
 #endif /* LISTEN_H */
-

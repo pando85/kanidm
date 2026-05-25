@@ -227,7 +227,7 @@ test/pykubidm/pytest: ## python library testing
 .PHONY: test/pykubidm/lint
 test/pykubidm/lint: ## python library linting
 	cd pykubidm && \
-	uv run ruff check tests kanidm
+	uv run ruff check tests kubidm
 
 .PHONY: test/pykubidm/typecheck
 test/pykubidm/typecheck: ## python library type checking
