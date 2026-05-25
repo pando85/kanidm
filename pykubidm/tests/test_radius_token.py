@@ -13,7 +13,7 @@ from kubidm_openapi_client.exceptions import ApiException as OpenApiException
 
 # pylint: disable=unused-import
 from .testutils import client, KANIDM_IDM_ADMIN, openapi_ca_path, openapi_server_url, openapi_verify_tls
-from kubidm import KanidmClient
+from kubidm import KubidmClient
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -26,18 +26,18 @@ async def radius_token_client(
     openapi_server_url: str,
     openapi_verify_tls: bool,
     openapi_ca_path: Optional[str],
-) -> AsyncIterator[KanidmClient]:
+) -> AsyncIterator[KubidmClient]:
     """Client fixture with a usable auth token for radius tests.
 
     Preference order:
     1. Existing valid auth_token from ~/.config/kubidm
     2. Generate a token from IDM_ADMIN_PASS and write a temporary config file
     """
-    cleanup_clients: list[KanidmClient] = []
+    cleanup_clients: list[KubidmClient] = []
     local_config = Path("~/.config/kubidm").expanduser()
 
     if local_config.exists():
-        local_client = KanidmClient(config_file=local_config)
+        local_client = KubidmClient(config_file=local_config)
         cleanup_clients.append(local_client)
         if local_client.config.auth_token is not None and await local_client.check_token_valid():
             try:
@@ -51,7 +51,7 @@ async def radius_token_client(
     if not admin_password:
         pytest.skip("Need either a valid ~/.config/kubidm auth_token or IDM_ADMIN_PASS for radius token tests")
 
-    token_source_client = KanidmClient(
+    token_source_client = KubidmClient(
         uri=openapi_server_url,
         verify_hostnames=openapi_verify_tls,
         verify_certificate=openapi_verify_tls,
@@ -88,7 +88,7 @@ async def radius_token_client(
     generated_config = tmp_path / "kubidm.radius.token.toml"
     generated_config.write_text(toml.dumps(config_data), encoding="utf-8")
 
-    token_client = KanidmClient(config_file=generated_config)
+    token_client = KubidmClient(config_file=generated_config)
     cleanup_clients.append(token_client)
 
     try:
@@ -100,7 +100,7 @@ async def radius_token_client(
 
 @pytest.mark.network
 @pytest.mark.asyncio
-async def test_radius_call(radius_token_client: KanidmClient) -> None:
+async def test_radius_call(radius_token_client: KubidmClient) -> None:
     """tests the radius call step"""
     test_user = RADIUS_TEST_USER or radius_token_client.config.username or KANIDM_IDM_ADMIN
     provision_error: Optional[OpenApiException] = None

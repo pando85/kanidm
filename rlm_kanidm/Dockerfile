@@ -1,23 +1,22 @@
-ARG BASE_IMAGE=opensuse/tumbleweed:latest
+ARG BASE_IMAGE=debian:bookworm-slim
 
 FROM ${BASE_IMAGE} AS repos
-ADD scripts/zypper_fixing.sh /zypper_fixing.sh
-RUN --mount=type=cache,id=zypp,target=/var/cache/zypp /zypper_fixing.sh
 
 # ======================
 FROM repos AS builder
 
 RUN \
-    --mount=type=cache,id=zypp,target=/var/cache/zypp \
-    zypper install -y \
-    libopenssl-devel \
+    apt-get update && \
+    apt-get install -y \
+    libssl-dev \
     clang \
     make \
     sccache \
     cargo \
-    pkgconf-pkg-config \
-    libtalloc-devel \
-    freeradius-server-devel
+    pkg-config \
+    libtalloc-dev \
+    libfreeradius-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /src/kanidm
 COPY . /src/kanidm/
@@ -53,13 +52,14 @@ EXPOSE 1812 1813
 ENV KANIDM_CONFIG_FILE="/data/radius.toml"
 
 RUN \
-    --mount=type=cache,id=zypp,target=/var/cache/zypp \
-    zypper install -y --no-recommends \
-    freeradius-client \
-    freeradius-server \
-    freeradius-server-utils \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+    freeradius \
+    freeradius-utils \
+    libfreeradius3 \
     openssl && \
-    zypper clean -a
+    rm -rf /var/lib/apt/lists/* && \
+    mkdir -p /var/log/radius /var/lib/nologin
 
 ADD  rlm_kanidm/container/mods-available/ /etc/raddb/mods-available/
 COPY rlm_kanidm/container/sites-available/ /etc/raddb/sites-available/
@@ -68,7 +68,7 @@ COPY rlm_kanidm/container/sites-available/ /etc/raddb/sites-available/
 RUN ln -s /etc/raddb/mods-available/kanidm_rust /etc/raddb/mods-enabled/kanidm && \
     ln -s /etc/raddb/sites-available/check-eap-tls /etc/raddb/sites-enabled/check-eap-tls
 
-COPY --from=builder /src/kanidm/target/release/rlm_kanidm.so /usr/lib64/freeradius/rlm_kanidm.so
+COPY --from=builder /src/kanidm/target/release/rlm_kanidm.so /usr/lib/freeradius/rlm_kanidm.so
 COPY --from=builder /src/kanidm/target/release/kanidm_radiusd /usr/local/bin/kanidm_radiusd
 
 # # disable auth via methods we don't support!
