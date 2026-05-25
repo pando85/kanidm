@@ -10,7 +10,7 @@ use kubidmd_core::create_server_core;
 use kubidmd_testkit::{is_free_port, PORT_ALLOC};
 use sparkle_resolver_common::db::{Cache, Db};
 use sparkle_resolver_common::idprovider::interface::Id;
-use sparkle_resolver_common::idprovider::kubidm::KanidmProvider;
+use sparkle_resolver_common::idprovider::kubidm::KubidmProvider;
 use sparkle_resolver_common::idprovider::system::SystemProvider;
 use sparkle_resolver_common::resolver::Resolver;
 use sparkle_unix_common::constants::{
@@ -18,7 +18,7 @@ use sparkle_unix_common::constants::{
     DEFAULT_HOME_ALIAS, DEFAULT_HOME_ATTR, DEFAULT_HOME_PREFIX, DEFAULT_SHELL,
     DEFAULT_UID_ATTR_MAP,
 };
-use sparkle_unix_common::unix_config::{GroupMap, KanidmConfig};
+use sparkle_unix_common::unix_config::{GroupMap, KubidmConfig};
 use sparkle_unix_common::unix_passwd::{CryptPw, EtcGroup, EtcShadow, EtcUser};
 use std::future::Future;
 use std::pin::Pin;
@@ -160,9 +160,9 @@ async fn setup_test(fix_fn: Fixture) -> (Resolver, mpsc::Receiver<Id>, KubidmCli
 
     let system_provider = SystemProvider::new().unwrap();
 
-    let idprovider = KanidmProvider::new(
+    let idprovider = KubidmProvider::new(
         rsclient,
-        &KanidmConfig {
+        &KubidmConfig {
             conn_timeout: 1,
             request_timeout: 1,
             pam_allowed_login_groups: vec!["allowed_group".to_string()],

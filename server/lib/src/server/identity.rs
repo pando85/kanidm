@@ -639,6 +639,7 @@ mod tests {
             Uuid::new_v4(),
             AccessScope::Synchronise,
             Limits::unlimited(),
+            None,
         );
         assert!(!ident.is_internal());
         assert_eq!(ident.access_scope(), AccessScope::Synchronise);
@@ -653,6 +654,7 @@ mod tests {
             UUID_INTERNAL_SESSION_ID,
             AccessScope::ReadOnly,
             Limits::default(),
+            None,
         );
         assert_eq!(*ident.source(), Source::Internal);
     }

@@ -236,7 +236,7 @@ impl Module {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use kanidmd_testkit::{ADMIN_TEST_PASSWORD, ADMIN_TEST_USER};
+    use kubidmd_testkit::{ADMIN_TEST_PASSWORD, ADMIN_TEST_USER};
     use rlm_kanidm_shared::config::RadiusGroupConfig;
     use std::marker::PhantomData;
     use std::path::PathBuf;
@@ -390,7 +390,7 @@ mod tests {
         secret
     }
 
-    #[kanidmd_testkit::test]
+    #[kubidmd_testkit::test]
     async fn test_authorise_flow(rsclient: &KubidmClient) {
         let (auth_token, uri) = setup_radius_service_account(rsclient).await;
 

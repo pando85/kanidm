@@ -3276,7 +3276,7 @@ mod tests {
             ..Default::default()
         };
 
-        assert!(schema.update_classes(vec![class]).is_ok());
+        assert!(schema.update_classes(vec![class].into_iter()).is_ok());
 
         assert_eq!(schema.validate().len(), 1);
     }
@@ -3334,7 +3334,7 @@ mod tests {
         };
 
         assert!(schema
-            .update_classes(vec![class_account, class_person, class_service])
+            .update_classes(vec![class_account, class_person, class_service].into_iter())
             .is_ok());
 
         // Missing person or service account.
