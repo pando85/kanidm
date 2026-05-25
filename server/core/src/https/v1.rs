@@ -27,7 +27,7 @@ use kubidm_proto::v1::{
     AuthState as ProtoAuthState, Entry as ProtoEntry, GroupUnixExtend, SingleStringRequest,
     UatStatus, UnixGroupToken, UnixUserToken, WhoamiResponse,
 };
-use kubidmd_lib::idm::authentication::{AuthState, AuthStep};
+use kubidmd_lib::idm::authentication::{AuthState, AuthStep, ReauthRequest};
 use kubidmd_lib::idm::event::AuthResult;
 use kubidmd_lib::prelude::*;
 use kubidmd_lib::value::PartialValue;
@@ -2859,7 +2859,12 @@ pub async fn reauth(
     // This may change in the future ...
     let inter = state
         .qe_r_ref
-        .handle_reauth(client_auth_info, obj, Default::default(), kopid.eventid)
+        .handle_reauth(
+            client_auth_info,
+            obj,
+            ReauthRequest::GrantReadWrite,
+            kopid.eventid,
+        )
         .await;
     debug!("ReAuth result: {:?}", inter);
     auth_session_state_management(&state, jar, inter)
