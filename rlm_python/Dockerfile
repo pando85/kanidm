@@ -4,7 +4,7 @@ ARG BASE_IMAGE=opensuse/tumbleweed:latest
 # FROM ${BASE_IMAGE} as repos
 FROM ${BASE_IMAGE}
 
-ADD ../scripts/zypper_fixing.sh /zypper_fixing.sh
+ADD scripts/zypper_fixing.sh /zypper_fixing.sh
 RUN /zypper_fixing.sh
 
 # ======================
