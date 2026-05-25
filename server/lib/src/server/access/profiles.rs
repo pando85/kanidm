@@ -655,7 +655,7 @@ impl AccessControlModify {
     /// ⚠️  - Manually create a modify access profile with delegated receiver.
     /// This is a TEST ONLY method and will never be exposed in production.
     #[cfg(test)]
-    #[allow(dead_code)]
+    #[allow(dead_code, clippy::too_many_arguments)]
     pub(super) fn from_delegated_receiver(
         name: &str,
         uuid: Uuid,
@@ -698,7 +698,7 @@ impl AccessControlModify {
     /// ⚠️  - Manually create a modify access profile with delegated target scope.
     /// This is a TEST ONLY method and will never be exposed in production.
     #[cfg(test)]
-    #[allow(dead_code)]
+    #[allow(dead_code, clippy::too_many_arguments)]
     pub(super) fn from_delegated_target(
         name: &str,
         uuid: Uuid,

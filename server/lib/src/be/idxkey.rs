@@ -165,7 +165,8 @@ pub struct IdxNameKey {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::{BTreeSet, HashMap};
+    use hashbrown::HashMap;
+    use std::collections::BTreeSet;
 
     #[test]
     fn test_idxkey_new_and_accessors() {

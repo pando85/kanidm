@@ -263,8 +263,8 @@ mod tests {
             .with_source_status("hr-api".to_string(), PipSourceStatus::Success);
 
         assert_eq!(response.attributes.len(), 2);
-        assert!(response.attributes.contains_key(&"department".to_string()));
-        assert!(response.attributes.contains_key(&"role".to_string()));
+        assert!(response.attributes.contains_key("department"));
+        assert!(response.attributes.contains_key("role"));
     }
 
     #[test]
@@ -397,7 +397,7 @@ mod tests {
         };
 
         assert_eq!(response.sources.len(), 1);
-        assert!(response.sources.contains_key(&"hr-api".to_string()));
+        assert!(response.sources.contains_key("hr-api"));
     }
 
     #[test]

@@ -536,9 +536,9 @@ mod tests {
 
     #[test]
     fn test_identity_id_hash_eq() {
-        use std::collections::HashSet;
+        use std::collections::BTreeSet;
         let uuid = Uuid::new_v4();
-        let mut set = HashSet::new();
+        let mut set = BTreeSet::new();
         set.insert(IdentityId::User(uuid));
         assert!(set.contains(&IdentityId::User(uuid)));
         assert!(!set.contains(&IdentityId::Internal(uuid)));
