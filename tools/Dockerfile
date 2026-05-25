@@ -53,7 +53,7 @@ RUN \
         --features="${KANIDM_FEATURES}" \
         --release && \
     cargo auditable install \
-        --git https://github.com/kubidm/webauthn-rs.git \
+        --git https://github.com/kanidm/webauthn-rs.git \
         --rev 2ac5ff0e20f323cd904856a38a15899adf13fa5b \
         --force fido-mds-tool \
         --target-dir="/usr/src/kubidm/target/" && \
