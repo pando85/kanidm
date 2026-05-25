@@ -14,24 +14,13 @@
   },
   "homepage": "https://github.com/pando85/kubidm",
   "devDependencies": {
-<<<<<<< HEAD
-    "@eslint/js": "^10.0.0",
-    "eslint": "^10.0.0",
-    "globals": "^17.0.0",
-    "prettier": "^3.4.2"
-=======
     "@eslint/js": "^10.0.1",
     "eslint": "^10.3.0",
     "globals": "^17.6.0",
     "prettier": "^3.8.3"
->>>>>>> upstream/master
   },
   "scripts": {
     "prettier": "pnpx prettier  --ignore-path 'prettier-ignore' ./static --check",
     "prettier:fix": "pnpx prettier --ignore-path 'prettier-ignore' ./static --write"
   }
-<<<<<<< HEAD
-
-=======
->>>>>>> upstream/master
 }

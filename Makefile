@@ -186,7 +186,7 @@ test:
 
 .PHONY: precommit
 precommit: ## all the usual test things
-precommit: test codespell test/pykanidm doc/format
+precommit: test codespell test/pykubidm doc/format
 
 .PHONY: vendor
 vendor: ## Vendor required crates
@@ -208,7 +208,7 @@ codespell:
 	codespell -c \
 	-D .codespell_dictionary \
 	--ignore-words .codespell_ignore \
-	--skip='./target,./pykanidm/.venv,./pykanidm/.mypy_cache,./.mypy_cache,./pykanidm/uv.lock' \
+	--skip='./target,./pykubidm/.venv,./pykubidm/.mypy_cache,./.mypy_cache,./pykubidm/uv.lock' \
 	--skip='./book/*.js' \
 	--skip='./book/book/*' \
 	--skip='./book/src/images/*' \
@@ -217,31 +217,31 @@ codespell:
 	--skip='*.br' \
 	--skip='./rlm_python/mods-available/eap' \
 	--skip='./server/lib/src/constants/system_config.rs' \
-	--skip='./pykanidm/site'
+	--skip='./pykubidm/site'
 
-.PHONY: test/pykanidm/pytest
-test/pykanidm/pytest: ## python library testing
-	cd pykanidm && \
+.PHONY: test/pykubidm/pytest
+test/pykubidm/pytest: ## python library testing
+	cd pykubidm && \
 	uv run pytest -vv
 
-.PHONY: test/pykanidm/lint
-test/pykanidm/lint: ## python library linting
-	cd pykanidm && \
+.PHONY: test/pykubidm/lint
+test/pykubidm/lint: ## python library linting
+	cd pykubidm && \
 	uv run ruff check tests kanidm
 
-.PHONY: test/pykanidm/typecheck
-test/pykanidm/typecheck: ## python library type checking
-	cd pykanidm && \
+.PHONY: test/pykubidm/typecheck
+test/pykubidm/typecheck: ## python library type checking
+	cd pykubidm && \
 	uv run ty check tests kanidm \
 		--ignore unused-type-ignore-comment
 
-.PHONY: test/pykanidm
-test/pykanidm: ## run the kanidm python module test suite (typecheck/lint/pytest)
-test/pykanidm: test/pykanidm/pytest test/pykanidm/typecheck test/pykanidm/lint
+.PHONY: test/pykubidm
+test/pykubidm: ## run the kanidm python module test suite (typecheck/lint/pytest)
+test/pykubidm: test/pykubidm/pytest test/pykubidm/typecheck test/pykubidm/lint
 
-.PHONY: test/pykanidm/coverage
-test/pykanidm/coverage: ## run the Kanidm Python module test suite with coverage
-	cd pykanidm && \
+.PHONY: test/pykubidm/coverage
+test/pykubidm/coverage: ## run the Kanidm Python module test suite with coverage
+	cd pykubidm && \
 	uv run coverage run -m pytest && \
 	uv run coverage html
 
@@ -300,16 +300,16 @@ book_versioned:
 clean_book:
 	rm -rf ./docs
 
-.PHONY: docs/pykanidm/build
-docs/pykanidm/build: ## Build the mkdocs
-docs/pykanidm/build:
-	cd pykanidm && \
+.PHONY: docs/pykubidm/build
+docs/pykubidm/build: ## Build the mkdocs
+docs/pykubidm/build:
+	cd pykubidm && \
 	uv run --group docs mkdocs build
 
-.PHONY: docs/pykanidm/serve
-docs/pykanidm/serve: ## Run the local mkdocs server
-docs/pykanidm/serve:
-	cd pykanidm && \
+.PHONY: docs/pykubidm/serve
+docs/pykubidm/serve: ## Run the local mkdocs server
+docs/pykubidm/serve:
+	cd pykubidm && \
 	uv run --group docs mkdocs serve
 
 ########################################################################

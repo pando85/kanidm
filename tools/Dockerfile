@@ -10,7 +10,6 @@ ENV KANIDM_BUILD_PROFILE=${KANIDM_BUILD_PROFILE:-container_generic}
 ENV RUSTFLAGS="-Clinker=clang"
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
-<<<<<<< HEAD
 RUN apt-get update && apt-get install -y --no-install-recommends \
     sccache \
     clang \
@@ -25,23 +24,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 RUN cargo install cargo-auditable
-=======
-RUN \
-    --mount=type=cache,id=zypp,target=/var/cache/zypp \
-    zypper install -y --no-recommends \
-        sccache \
-        cargo \
-        cargo-auditable \
-        clang \
-        gcc \
-        make \
-        automake \
-        autoconf \
-        pam-devel \
-        libudev-devel \
-        sqlite3-devel \
-        rsync
->>>>>>> upstream/master
 
 COPY . /usr/src/kubidm
 
@@ -54,7 +36,6 @@ RUN \
     export SCCACHE_DIR=/sccache; \
     export RUSTC_WRAPPER=/usr/bin/sccache; \
     export CC="/usr/bin/clang"; \
-<<<<<<< HEAD
     cargo auditable build --locked -p kubidm_tools ${KANIDM_BUILD_OPTIONS} \
         --target-dir="/usr/src/kubidm/target/" \
         --features="${KANIDM_FEATURES}" \
@@ -68,21 +49,6 @@ RUN \
         --features="${KANIDM_FEATURES}" \
         --release && \
     cargo auditable build --locked -p kubidm-mail-sender ${KANIDM_BUILD_OPTIONS} \
-=======
-    cargo auditable build --locked -p kubidm_tools ${KANIDM_BUILD_OPTIONS} \
-        --target-dir="/usr/src/kubidm/target/" \
-        --features="${KANIDM_FEATURES}" \
-        --release && \
-    cargo auditable build --locked -p kubidm-ipa-sync ${KANIDM_BUILD_OPTIONS} \
-        --target-dir="/usr/src/kubidm/target/" \
-        --features="${KANIDM_FEATURES}" \
-        --release && \
-    cargo auditable build --locked -p kubidm-ldap-sync ${KANIDM_BUILD_OPTIONS} \
-        --target-dir="/usr/src/kubidm/target/" \
-        --features="${KANIDM_FEATURES}" \
-        --release && \
-    cargo auditable build --locked -p kubidm-mail-sender ${KANIDM_BUILD_OPTIONS} \
->>>>>>> upstream/master
         --target-dir="/usr/src/kubidm/target/" \
         --features="${KANIDM_FEATURES}" \
         --release && \
@@ -103,23 +69,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tzdata \
     && rm -rf /var/lib/apt/lists/*
 
-<<<<<<< HEAD
 COPY --from=builder --chmod=0755 /usr/src/kubidm/target/release/kubidm /sbin/
 COPY --from=builder --chmod=0755 /usr/src/kubidm/target/release/kubidm-ipa-sync /sbin/
 COPY --from=builder --chmod=0755 /usr/src/kubidm/target/release/kubidm-ldap-sync /sbin/
+COPY --from=builder --chmod=0755 /usr/src/kubidm/target/release/kubidm-mail-sender /sbin/
 COPY --from=builder --chmod=0755 /usr/src/kubidm/target/release/fido-mds-tool /sbin/
-=======
-COPY --from=builder /usr/src/kubidm/target/release/kubidm /sbin/
-COPY --from=builder /usr/src/kubidm/target/release/kubidm-ipa-sync /sbin/
-COPY --from=builder /usr/src/kubidm/target/release/kubidm-ldap-sync /sbin/
-COPY --from=builder /usr/src/kubidm/target/release/kubidm-mail-sender /sbin/
-COPY --from=builder /usr/src/kubidm/target/release/fido-mds-tool /sbin/
-RUN chmod +x /sbin/kubidm
-RUN chmod +x /sbin/kubidm-ipa-sync
-RUN chmod +x /sbin/kubidm-ldap-sync
-RUN chmod +x /sbin/kubidm-mail-sender
-RUN chmod +x /sbin/fido-mds-tool
->>>>>>> upstream/master
 
 RUN mkdir /etc/kubidm && \
     touch /etc/kubidm/config

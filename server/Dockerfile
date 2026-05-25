@@ -10,7 +10,6 @@ ENV KANIDM_BUILD_PROFILE=${KANIDM_BUILD_PROFILE:-container_generic}
 ENV RUSTFLAGS="-Clinker=clang"
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
-<<<<<<< HEAD
 RUN apt-get update && apt-get install -y --no-install-recommends \
     sccache \
     clang \
@@ -27,27 +26,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 RUN cargo install cargo-auditable
-=======
-RUN \
-    --mount=type=cache,id=zypp,target=/var/cache/zypp \
-    zypper install -y --no-recommends \
-        sccache \
-        cargo \
-        cargo-auditable \
-        clang \
-        gcc \
-        cmake \
-        gawk \
-        make \
-        automake \
-        autoconf \
-        pam-devel \
-        sqlite3-devel \
-        systemd-devel \
-        rsync \
-        findutils \
-        which
->>>>>>> upstream/master
 
 COPY . /usr/src/kubidm
 

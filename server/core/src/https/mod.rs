@@ -50,6 +50,7 @@ const HTTPS_CLIENT_IO_TIMEOUT: Duration = Duration::from_secs(60);
 const HTTPS_CLIENT_REQUEST_TIMEOUT: Duration = Duration::from_secs(300);
 
 mod apidocs;
+pub(crate) mod authorization;
 pub(crate) mod cache_buster;
 pub(crate) mod errors;
 mod extractors;
@@ -64,7 +65,6 @@ mod v1_domain;
 mod v1_oauth2;
 mod v1_oauth2_federation;
 mod v1_scim;
-pub(crate) mod authorization;
 mod views;
 
 #[derive(Clone, Copy, Eq, PartialEq, Debug)]

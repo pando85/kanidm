@@ -12,6 +12,7 @@
 //!
 
 use crate::be::IdxKey;
+use crate::migration_data;
 use crate::prelude::*;
 use crate::valueset::ValueSet;
 use concread::cowcell::*;
@@ -19,7 +20,6 @@ use hashbrown::{HashMap, HashSet};
 use std::collections::BTreeSet;
 use tracing::trace;
 use uuid::Uuid;
-use crate::migration_data;
 
 // representations of schema that confines object types, classes
 // and attributes. This ties in deeply with "Entry".

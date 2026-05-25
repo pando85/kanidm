@@ -1,5 +1,5 @@
 ---
-name: PyKanidm tests
+name: PyKubidm tests
 
 "on":
   push:
@@ -23,10 +23,10 @@ jobs:
       - name: Install uv
         run: pip install --root-user-action=ignore  uv
       - name: Running type checks
-        run: make test/pykanidm/typecheck
+        run: make test/pykubidm/typecheck
       - name: Running Linting
-        run: make test/pykanidm/lint
+        run: make test/pykubidm/lint
       - name: Running pytest
         run: |
-          cd pykanidm
+          cd pykubidm
           uv run pytest -v -m 'not network and not openapi'
