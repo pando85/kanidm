@@ -1795,7 +1795,7 @@ dependencies = [
  "kubidmd_core",
  "mimalloc",
  "prctl",
- "reqwest 0.13.3",
+ "reqwest 0.13.4",
  "sd-notify",
  "serde",
  "serde_json",
@@ -4304,7 +4304,7 @@ dependencies = [
  "referencing",
  "regex",
  "regex-syntax",
- "reqwest 0.13.3",
+ "reqwest 0.13.4",
  "rustls",
  "serde",
  "serde_json",
@@ -4460,7 +4460,7 @@ dependencies = [
  "hyper",
  "kubidm_lib_file_permissions",
  "kubidm_proto",
- "reqwest 0.13.3",
+ "reqwest 0.13.4",
  "serde",
  "serde_json",
  "serde_urlencoded",
@@ -4481,7 +4481,7 @@ dependencies = [
  "anyhow",
  "kubidm_proto",
  "oauth2",
- "reqwest 0.13.3",
+ "reqwest 0.13.4",
  "sketching",
  "tokio",
  "tracing",
@@ -4690,7 +4690,7 @@ dependencies = [
  "qrcode",
  "rand 0.10.1",
  "regex",
- "reqwest 0.13.3",
+ "reqwest 0.13.4",
  "rustls",
  "serde",
  "serde-hjson",
@@ -4752,7 +4752,7 @@ dependencies = [
  "num_enum",
  "rand 0.10.1",
  "regex",
- "reqwest 0.13.3",
+ "reqwest 0.13.4",
  "rusqlite",
  "rustls",
  "serde",
@@ -4809,7 +4809,7 @@ dependencies = [
  "kubidmd_lib",
  "ldap3_client",
  "oauth2",
- "reqwest 0.13.3",
+ "reqwest 0.13.4",
  "serde",
  "serde_json",
  "sketching",
@@ -6596,9 +6596,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.13.3"
+version = "0.13.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62e0021ea2c22aed41653bc7e1419abb2c97e038ff2c33d0e1309e49a97deec0"
+checksum = "219c5811de6525e5416c7d5d53bb656d3afdbc6c5af816e0802bcfa42dbdc1c3"
 dependencies = [
  "base64 0.22.1",
  "bytes",
@@ -6622,7 +6622,7 @@ dependencies = [
  "quinn",
  "rustls",
  "rustls-pki-types",
- "rustls-platform-verifier 0.6.2",
+ "rustls-platform-verifier 0.7.0",
  "serde",
  "serde_json",
  "serde_urlencoded",
