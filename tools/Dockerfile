@@ -25,9 +25,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN cargo install cargo-auditable
 
-COPY . /usr/src/kanidm
+COPY . /usr/src/kubidm
 
-WORKDIR /usr/src/kanidm/
+WORKDIR /usr/src/kubidm/
 
 RUN \
     --mount=type=cache,id=cargo,target=/cargo \
@@ -37,26 +37,26 @@ RUN \
     export RUSTC_WRAPPER=/usr/bin/sccache; \
     export CC="/usr/bin/clang"; \
     cargo auditable build --locked -p kubidm_tools ${KANIDM_BUILD_OPTIONS} \
-        --target-dir="/usr/src/kanidm/target/" \
+        --target-dir="/usr/src/kubidm/target/" \
         --features="${KANIDM_FEATURES}" \
         --release && \
     cargo auditable build --locked -p kubidm-ipa-sync ${KANIDM_BUILD_OPTIONS} \
-        --target-dir="/usr/src/kanidm/target/" \
+        --target-dir="/usr/src/kubidm/target/" \
         --features="${KANIDM_FEATURES}" \
         --release && \
     cargo auditable build --locked -p kubidm-ldap-sync ${KANIDM_BUILD_OPTIONS} \
-        --target-dir="/usr/src/kanidm/target/" \
+        --target-dir="/usr/src/kubidm/target/" \
         --features="${KANIDM_FEATURES}" \
         --release && \
     cargo auditable build --locked -p kubidm-mail-sender ${KANIDM_BUILD_OPTIONS} \
-        --target-dir="/usr/src/kanidm/target/" \
+        --target-dir="/usr/src/kubidm/target/" \
         --features="${KANIDM_FEATURES}" \
         --release && \
     cargo auditable install \
         --git https://github.com/kanidm/webauthn-rs.git \
         --rev 2ac5ff0e20f323cd904856a38a15899adf13fa5b \
         --force fido-mds-tool \
-        --target-dir="/usr/src/kanidm/target/" && \
+        --target-dir="/usr/src/kubidm/target/" && \
     sccache -s
 
 FROM ${BASE_IMAGE}
@@ -69,10 +69,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tzdata \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder --chmod=0755 /usr/src/kanidm/target/release/kubidm /sbin/
-COPY --from=builder --chmod=0755 /usr/src/kanidm/target/release/kubidm-ipa-sync /sbin/
-COPY --from=builder --chmod=0755 /usr/src/kanidm/target/release/kubidm-ldap-sync /sbin/
-COPY --from=builder --chmod=0755 /usr/src/kanidm/target/release/fido-mds-tool /sbin/
+COPY --from=builder --chmod=0755 /usr/src/kubidm/target/release/kubidm /sbin/
+COPY --from=builder --chmod=0755 /usr/src/kubidm/target/release/kubidm-ipa-sync /sbin/
+COPY --from=builder --chmod=0755 /usr/src/kubidm/target/release/kubidm-ldap-sync /sbin/
+COPY --from=builder --chmod=0755 /usr/src/kubidm/target/release/kubidm-mail-sender /sbin/
+COPY --from=builder --chmod=0755 /usr/src/kubidm/target/release/fido-mds-tool /sbin/
 
 RUN mkdir /etc/kubidm && \
     touch /etc/kubidm/config

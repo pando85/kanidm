@@ -769,10 +769,14 @@ pub trait AccessControlsTransaction<'a> {
             }
 
             // build two sets of "requested pres" and "requested rem"
+            if modlist.is_empty() {
+                return false;
+            };
+
             let requested_pres: BTreeSet<Attribute> = modlist
                 .iter()
                 .filter_map(|m| match m {
-                    Modify::Present(a, _) => Some(a.clone()),
+                    Modify::Present(a, _) | Modify::Set(a, _) | Modify::Assert(a, _) => Some(a.clone()),
                     _ => None,
                 })
                 .collect();
@@ -780,8 +784,7 @@ pub trait AccessControlsTransaction<'a> {
             let requested_rem: BTreeSet<Attribute> = modlist
                 .iter()
                 .filter_map(|m| match m {
-                    Modify::Removed(a, _) => Some(a.clone()),
-                    Modify::Purged(a) => Some(a.clone()),
+                    Modify::Set(a, _) | Modify::Removed(a, _) | Modify::Purged(a) => Some(a.clone()),
                     _ => None,
                 })
                 .collect();

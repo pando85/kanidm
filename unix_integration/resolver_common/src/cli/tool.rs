@@ -1,11 +1,11 @@
-use crate::check::check_nsswitch_has_kubidm;
+use crate::check::check_nsswitch_has_module;
 use crate::opt::tool::{KanidmUnixOpt, KanidmUnixParser};
 use crate::SparkleFlavour;
 use clap::Parser;
-use kubidm_unix_common::client::DaemonClient;
-use kubidm_unix_common::constants::DEFAULT_CONFIG_PATH;
-use kubidm_unix_common::unix_config::PamNssConfig;
-use kubidm_unix_common::unix_proto::{
+use sparkle_unix_common::client::DaemonClient;
+use sparkle_unix_common::constants::DEFAULT_CONFIG_PATH;
+use sparkle_unix_common::unix_config::PamNssConfig;
+use sparkle_unix_common::unix_proto::{
     ClientRequest, ClientResponse, PamAuthRequest, PamAuthResponse, PamServiceInfo,
 };
 use std::path::PathBuf;
@@ -22,11 +22,11 @@ macro_rules! setup_client {
         debug!("Connecting to resolver ...");
 
         debug!(
-            "Using kanidm_unixd socket path: {:?}",
+            "Using kubidm_unixd socket path: {:?}",
             cfg.sock_path.as_str()
         );
 
-        // see if the kanidm_unixd socket exists and quit if not
+        // see if the kubidm_unixd socket exists and quit if not
         if !PathBuf::from(&cfg.sock_path).exists() {
             error!(
                 "Failed to find unix socket at {}, quitting!",
@@ -49,7 +49,7 @@ macro_rules! setup_client {
     }};
 }
 
-pub async fn main<F: SparkleFlavour>(_flavour: F) -> ExitCode {
+pub async fn main<F: SparkleFlavour>(flavour: F) -> ExitCode {
     let opt = KanidmUnixParser::parse();
 
     let debug = match opt.commands {
@@ -64,7 +64,7 @@ pub async fn main<F: SparkleFlavour>(_flavour: F) -> ExitCode {
     };
 
     if debug {
-        ::std::env::set_var("RUST_LOG", "kanidm=debug,kanidm_client=debug");
+        ::std::env::set_var("RUST_LOG", "kubidm=debug,kubidm_client=debug");
     }
     sketching::tracing_subscriber::fmt::init();
 
@@ -82,7 +82,7 @@ pub async fn main<F: SparkleFlavour>(_flavour: F) -> ExitCode {
             let mut req = ClientRequest::PamAuthenticateInit {
                 account_id: account_id.clone(),
                 info: PamServiceInfo {
-                    service: "kanidm-unix".to_string(),
+                    service: "kubidm-unix".to_string(),
                     tty: None,
                     rhost: None,
                 },
@@ -136,7 +136,7 @@ pub async fn main<F: SparkleFlavour>(_flavour: F) -> ExitCode {
                             continue;
                         }
                         ClientResponse::Error(err) => {
-                            error!("Error from kanidm-unixd: {}", err);
+                            error!("Error from kubidm-unixd: {}", err);
                             break;
                         }
                         ClientResponse::PamAuthenticateStepResponse { .. }
@@ -237,7 +237,7 @@ pub async fn main<F: SparkleFlavour>(_flavour: F) -> ExitCode {
             let mut daemon_client = setup_client!();
             let req = ClientRequest::Status;
 
-            check_nsswitch_has_kubidm(None);
+            check_nsswitch_has_module(None, flavour.nss_module_name());
 
             match daemon_client.call(req, None).await {
                 Ok(r) => match r {
@@ -261,7 +261,7 @@ pub async fn main<F: SparkleFlavour>(_flavour: F) -> ExitCode {
             ExitCode::SUCCESS
         }
         KanidmUnixOpt::Version { debug: _ } => {
-            println!("kanidm-unix {}", env!("KANIDM_PKG_VERSION"));
+            println!("kubidm-unix {}", env!("KANIDM_PKG_VERSION"));
             ExitCode::SUCCESS
         }
     }

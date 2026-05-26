@@ -368,7 +368,7 @@ mod tests {
     #[test]
     fn test_auth_allowed_ordering() {
         // Test that AuthAllowed variants are ordered correctly
-        let mut allowed = vec![
+        let mut allowed = [
             AuthAllowed::Totp,
             AuthAllowed::Anonymous,
             AuthAllowed::Password,

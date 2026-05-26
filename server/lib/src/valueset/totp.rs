@@ -196,7 +196,7 @@ mod tests {
             "primary".to_string(),
             make_totp(),
         ));
-        assert_eq!(result.unwrap(), false);
+        assert!(!result.unwrap());
         assert_eq!(vs.len(), 1);
     }
 
@@ -207,7 +207,7 @@ mod tests {
             "secondary".to_string(),
             make_totp(),
         ));
-        assert_eq!(result.unwrap(), true);
+        assert!(result.unwrap());
         assert_eq!(vs.len(), 2);
     }
 

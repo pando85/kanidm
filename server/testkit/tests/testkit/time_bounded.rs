@@ -111,7 +111,7 @@ async fn test_time_bounded_access_group_delete(rsclient: &KubidmClient) {
         .expect("Failed to get memberof before delete");
 
     assert!(groups_before.is_some());
-    assert!(groups_before.unwrap().len() >= 1);
+    assert!(!groups_before.unwrap().is_empty());
 
     rsclient
         .idm_group_delete("tb_temp_group")

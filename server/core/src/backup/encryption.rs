@@ -605,7 +605,7 @@ mod tests {
 
             let id3 = BackupEncryptor::generate_key_identifier(
                 b"passphrase1",
-                &vec![1u8; BACKUP_ENCRYPTION_SALT_LEN],
+                &[1u8; BACKUP_ENCRYPTION_SALT_LEN],
             );
             assert_ne!(id1, id3);
         }
@@ -615,7 +615,7 @@ mod tests {
             let passphrase = b"test_passphrase";
             let expected_id = BackupEncryptor::generate_key_identifier(
                 passphrase,
-                &vec![0u8; BACKUP_ENCRYPTION_SALT_LEN],
+                &[0u8; BACKUP_ENCRYPTION_SALT_LEN],
             );
 
             let result = BackupEncryptor::validate_key_identifier(passphrase, &expected_id);
@@ -1798,8 +1798,8 @@ mod tests {
 
         assert_ne!(id1, id2);
 
-        let id3 = BackupEncryptor::generate_key_identifier(b"passphrase", &vec![0u8; 16]);
-        let id4 = BackupEncryptor::generate_key_identifier(b"passphrase", &vec![1u8; 16]);
+        let id3 = BackupEncryptor::generate_key_identifier(b"passphrase", &[0u8; 16]);
+        let id4 = BackupEncryptor::generate_key_identifier(b"passphrase", &[1u8; 16]);
 
         assert_ne!(id3, id4);
     }

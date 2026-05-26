@@ -7,10 +7,7 @@ use std::time::SystemTime;
 use webauthn_authenticator_rs::softpasskey::SoftPasskey;
 use webauthn_authenticator_rs::WebauthnAuthenticator;
 
-async fn setup_passkey_account(
-    rsclient: &KubidmClient,
-    account_name: &str,
-) -> WebauthnAuthenticator<SoftPasskey> {
+async fn setup_passkey_account(rsclient: &KubidmClient, account_name: &str) -> SoftPasskey {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -43,7 +40,7 @@ async fn setup_passkey_account(
         _ => panic!("Expected Passkey challenge"),
     };
 
-    let mut wa = WebauthnAuthenticator::new(SoftPasskey::new(true));
+    let mut wa = SoftPasskey::new(true);
     let origin = rsclient.get_origin().clone();
 
     let passkey_resp = wa
@@ -371,7 +368,7 @@ mod security_tests {
         let res = rsclient.auth_passkey_complete(pkc).await;
         assert!(res.is_ok());
 
-        let mut wrong_wa = WebauthnAuthenticator::new(SoftPasskey::new(true));
+        let mut wrong_wa = SoftPasskey::new(true);
 
         let res = rsclient.reauth_passkey_begin().await;
         assert!(res.is_ok());

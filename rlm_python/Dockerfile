@@ -1,57 +1,72 @@
-ARG BASE_IMAGE=debian:trixie-slim
+ARG BASE_IMAGE=opensuse/tumbleweed:latest
+# ARG BASE_IMAGE=opensuse/leap:15.5
 
+# FROM ${BASE_IMAGE} as repos
 FROM ${BASE_IMAGE}
 
-ARG RADIUS_USER=freerad
+ADD scripts/zypper_fixing.sh /zypper_fixing.sh
+RUN /zypper_fixing.sh
+
+# ======================
+# FROM repos
+ARG RADIUS_USER=radiusd
 EXPOSE 1812 1813
-ENV KANIDM_CONFIG_FILE="/data/kanidm"
+ENV KANIDM_CONFIG_FILE="/data/radius.toml"
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    freeradius \
-    freeradius-python3 \
+RUN zypper install -y \
+    freeradius-client \
+    freeradius-server \
+    freeradius-server-python3 \
+    freeradius-server-utils \
+    hostname \
     python3 \
+    python3-devel \
     python3-pip \
-    python3-dev \
-    openssl \
-    curl \
+    timezone \
     iproute2 \
-    iputils-ping \
-    && rm -rf /var/lib/apt/lists/*
+    iputils \
+    openssl \
+    curl
 
-# Debian uses /etc/freeradius, but our configs reference /etc/raddb
-RUN ln -s /etc/freeradius /etc/raddb
+# Don't put in the TZ at build time - it needs to be bind mounted at runtime
+# else we are forcing things on people.
+# RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-ADD rlm_python/mods-available/ /etc/freeradius/mods-available/
-COPY rlm_python/sites-available/ /etc/freeradius/sites-available/
+ADD rlm_python/mods-available/ /etc/raddb/mods-available/
+COPY rlm_python/sites-available/ /etc/raddb/sites-available/
 
-WORKDIR /etc/freeradius
+# Set a working directory of /etc/raddb
+WORKDIR /etc/raddb
 
-RUN mkdir -p /etc/freeradius/mods-enabled /etc/freeradius/sites-enabled && \
-    ln -sf /etc/freeradius/mods-available/python3 /etc/freeradius/mods-enabled/python3 && \
-    ln -sf /etc/freeradius/sites-available/check-eap-tls /etc/freeradius/sites-enabled/check-eap-tls
+# Enable the python and cache module.
+RUN ln -s /etc/raddb/mods-available/python3 /etc/raddb/mods-enabled/python3 && \
+    ln -s /etc/raddb/sites-available/check-eap-tls /etc/raddb/sites-enabled/check-eap-tls
 
-RUN rm -f /etc/freeradius/mods-available/sql && \
-    rm -f /etc/freeradius/mods-enabled/passwd && \
-    rm -f /etc/freeradius/mods-enabled/totp
+# disable auth via methods we don't support!
+RUN rm /etc/raddb/mods-available/sql && \
+    rm /etc/raddb/mods-enabled/{passwd,totp}
 
-RUN chown -R $RADIUS_USER:$RADIUS_USER /etc/freeradius/ && \
-    mkdir -p /etc/freeradius/certs && \
-    chmod 775 /etc/freeradius/certs && \
-    if [ -f /etc/freeradius/clients.conf ]; then chmod 640 /etc/freeradius/clients.conf; fi
+# Allows the radiusd user to write to the directory
+RUN chown -R $RADIUS_USER. /etc/raddb/ && \
+    chmod 775 /etc/raddb/certs && \
+    chmod 640 /etc/raddb/clients.conf
 
 RUN mkdir -p /pkg/pykubidm/
 COPY pykubidm/ /pkg/pykubidm/
 
-RUN apt-get update && apt-get install -y --no-install-recommends gcc libssl-dev && \
-    python3 -m pip install --break-system-packages --no-cache-dir /pkg/pykubidm && \
-    apt-get purge -y gcc libssl-dev && \
-    apt-get autoremove -y && \
-    rm -rf /var/lib/apt/lists/*
+# install the package and its dependencies
+RUN zypper install -y gcc openssl-devel && \
+    python3 -m pip install \
+    --break-system-packages \
+    --no-cache-dir \
+    --no-warn-script-location \
+    /pkg/pykubidm && \
+    zypper remove -y gcc openssl-devel
 
 COPY rlm_python/radius_entrypoint.py /radius_entrypoint.py
 
-RUN mkdir /data && chown $RADIUS_USER /data
-RUN chmod a+r /etc/freeradius/certs/ -R
+RUN mkdir /data && chown radiusd /data
+RUN chmod a+r /etc/raddb/certs/ -R
 USER $RADIUS_USER
 
 CMD [ "/usr/bin/python3", "/radius_entrypoint.py" ]

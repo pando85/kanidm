@@ -6,7 +6,7 @@
 
 use cidr::IpCidr;
 use kubidm_proto::backup::{BackupCompression, BackupEncryptionConfig, S3Config, WalArchiveConfig};
-use kubidm_proto::config::ServerRole;
+pub use kubidm_proto::config::ServerRole;
 use kubidm_proto::constants::DEFAULT_SERVER_ADDRESS;
 use kubidm_proto::internal::FsType;
 use serde::Deserialize;
@@ -534,7 +534,7 @@ impl Configuration {
             origin: Url::from_str("https://idm.example.com")
                 .expect("Failed to parse built-in string as URL"),
             log_level: LogLevel::default(),
-            role: ServerRole::WriteReplica,
+            role: ServerRole::WriteReplicaNoUI,
             repl_config: None,
             integration_repl_config: None,
             otel_grpc_url: None,

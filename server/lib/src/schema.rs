@@ -12,6 +12,7 @@
 //!
 
 use crate::be::IdxKey;
+use crate::migration_data;
 use crate::prelude::*;
 use crate::valueset::ValueSet;
 use concread::cowcell::*;
@@ -702,9 +703,9 @@ impl SchemaWriteTransaction<'_> {
         Ok(())
     }
 
-    pub fn update_attributes(
+    pub fn update_attributes<I: Iterator<Item = SchemaAttribute>>(
         &mut self,
-        attributetypes: Vec<SchemaAttribute>,
+        attributetypes: I,
     ) -> Result<(), OperationError> {
         // purge all old attributes.
         self.attributes.clear();
@@ -714,7 +715,7 @@ impl SchemaWriteTransaction<'_> {
         // Update with new ones.
         // Do we need to check for dups?
         // No, they'll over-write each other ... but we do need name uniqueness.
-        attributetypes.into_iter().for_each(|a| {
+        attributetypes.for_each(|a| {
             // Update the unique and ref caches.
             if a.syntax == SyntaxType::ReferenceUuid ||
                 a.syntax == SyntaxType::OauthScopeMap ||
@@ -738,13 +739,12 @@ impl SchemaWriteTransaction<'_> {
         Ok(())
     }
 
-    pub fn update_classes(&mut self, classtypes: Vec<SchemaClass>) -> Result<(), OperationError> {
-        // purge all old attributes.
+    pub fn update_classes<I: Iterator<Item = SchemaClass>>(
+        &mut self,
+        classtypes: I,
+    ) -> Result<(), OperationError> {
         self.classes.clear();
-        // Update with new ones.
-        // Do we need to check for dups?
-        // No, they'll over-write each other ... but we do need name uniqueness.
-        classtypes.into_iter().for_each(|a| {
+        classtypes.for_each(|a| {
             self.classes.insert(a.name.clone(), a);
         });
         Ok(())
@@ -2490,6 +2490,34 @@ impl SchemaWriteTransaction<'_> {
             ))
         }
     }
+
+    #[instrument(level = "debug", name = "schema::extend_in_memory", skip_all)]
+    pub fn extend_in_memory(
+        &mut self,
+        extra_attrs: Vec<SchemaAttribute>,
+        extra_classes: Vec<SchemaClass>,
+    ) -> Result<(), OperationError> {
+        self.update_attributes(
+            migration_data::system::attributes()
+                .into_iter()
+                .chain(extra_attrs.into_iter()),
+        )?;
+        self.update_classes(
+            migration_data::system::classes()
+                .into_iter()
+                .chain(extra_classes.into_iter()),
+        )?;
+        let r = self.validate();
+        if r.is_empty() {
+            debug!("schema validate -> passed");
+            Ok(())
+        } else {
+            error!(err = ?r, "schema validate -> errors");
+            Err(OperationError::ConsistencyError(
+                r.into_iter().filter_map(|v| v.err()).collect(),
+            ))
+        }
+    }
 }
 
 impl SchemaTransaction for SchemaWriteTransaction<'_> {
@@ -3248,7 +3276,7 @@ mod tests {
             ..Default::default()
         };
 
-        assert!(schema.update_classes(vec![class]).is_ok());
+        assert!(schema.update_classes(vec![class].into_iter()).is_ok());
 
         assert_eq!(schema.validate().len(), 1);
     }
@@ -3306,7 +3334,7 @@ mod tests {
         };
 
         assert!(schema
-            .update_classes(vec![class_account, class_person, class_service])
+            .update_classes(vec![class_account, class_person, class_service].into_iter())
             .is_ok());
 
         // Missing person or service account.

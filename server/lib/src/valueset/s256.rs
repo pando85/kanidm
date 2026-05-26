@@ -161,7 +161,7 @@ mod tests {
     use crypto_glue::s256::Sha256Output;
 
     fn make_hash(val: u8) -> Sha256Output {
-        Sha256Output::from_exact_iter(std::iter::repeat(val).take(32)).expect("exact 32 bytes")
+        Sha256Output::from_exact_iter(std::iter::repeat_n(val, 32)).expect("exact 32 bytes")
     }
 
     #[test]
@@ -185,7 +185,7 @@ mod tests {
     #[test]
     fn test_valueset_sha256_equal() {
         let hash = make_hash(0xAB);
-        let vs1: ValueSet = ValueSetSha256::new(hash.clone());
+        let vs1: ValueSet = ValueSetSha256::new(hash);
         let vs2: ValueSet = ValueSetSha256::new(hash);
         assert!(vs1.equal(&vs2));
     }
@@ -233,7 +233,7 @@ mod tests {
     #[test]
     fn test_valueset_sha256_contains() {
         let hash = make_hash(0xCC);
-        let vs: ValueSet = ValueSetSha256::new(hash.clone());
+        let vs: ValueSet = ValueSetSha256::new(hash);
         assert!(vs.contains(&PartialValue::Sha256(hash)));
         assert!(!vs.contains(&PartialValue::Sha256(make_hash(0xDD))));
     }

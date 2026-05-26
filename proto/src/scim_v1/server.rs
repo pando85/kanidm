@@ -827,7 +827,7 @@ mod tests {
 
     #[test]
     fn scim_value_kubidm_decimal() {
-        let json = serde_json::to_value(ScimValueKubidm::Decimal(3.14)).unwrap();
+        let json = serde_json::to_value(ScimValueKubidm::Decimal(2.5)).unwrap();
         assert!(json.is_number());
     }
 

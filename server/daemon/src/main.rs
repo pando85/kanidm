@@ -524,7 +524,7 @@ async fn start_daemon(opt: KubidmdParser, config: Configuration) -> ExitCode {
     // ************************************************
     // HERE'S WHERE YOU CAN START USING THE LOGGER
     // ************************************************
-    info!(version = %env!("KANIDM_PKG_VERSION"), "Starting Kubidmd");
+    info!(version = %env!("KANIDM_PKG_VERSION"), "Starting Kanidmd");
 
     // guard which shuts down the logging/tracing providers when we close out
     let _otelguard = TracingPipelineGuard(provider);
@@ -537,76 +537,59 @@ async fn start_daemon(opt: KubidmdParser, config: Configuration) -> ExitCode {
         return err;
     };
 
-    let needs_db_check = !matches!(
-        &opt.commands,
-        KubidmdOpt::CertGenerate
-            | KubidmdOpt::ShowReplicationCertificate
-            | KubidmdOpt::ShowReplicationCertificateMetadata
-            | KubidmdOpt::RenewReplicationCertificate
-            | KubidmdOpt::RefreshReplicationConsumer { .. }
-            | KubidmdOpt::RecoverAccount { .. }
-            | KubidmdOpt::DisableAccount { .. }
-            | KubidmdOpt::Version
-    );
+    if let Some(db_path) = config.db_path.as_ref() {
+        let db_pathbuf = db_path.to_path_buf();
+        // We can't check the db_path permissions because it may not exist yet!
+        if let Some(db_parent_path) = db_pathbuf.parent() {
+            if !db_parent_path.exists() {
+                warn!(
+                    "DB folder {} may not exist, server startup may FAIL!",
+                    db_parent_path.to_str().unwrap_or("invalid file path")
+                );
+                let diag = kubidm_lib_file_permissions::diagnose_path(&db_pathbuf);
+                info!(%diag);
+            }
 
-    if needs_db_check {
-        if let Some(db_path) = config.db_path.as_ref() {
-            let db_pathbuf = db_path.to_path_buf();
-            // We can't check the db_path permissions because it may not exist yet!
-            if let Some(db_parent_path) = db_pathbuf.parent() {
-                if !db_parent_path.exists() {
-                    warn!(
-                        "DB folder {} may not exist, server startup may FAIL!",
-                        db_parent_path.to_str().unwrap_or("invalid file path")
-                    );
-                    let diag = kubidm_lib_file_permissions::diagnose_path(&db_pathbuf);
-                    info!(%diag);
-                }
-
-                let db_par_path_buf = db_parent_path.to_path_buf();
-                let i_meta = match metadata(&db_par_path_buf) {
-                    Ok(m) => m,
-                    Err(e) => {
-                        error!(
-                            "Unable to read metadata for database folder '{}' - {:?}",
-                            &db_par_path_buf.to_str().unwrap_or("invalid file path"),
-                            e
-                        );
-                        return ExitCode::FAILURE;
-                    }
-                };
-                if !i_meta.is_dir() {
+            let db_par_path_buf = db_parent_path.to_path_buf();
+            let i_meta = match metadata(&db_par_path_buf) {
+                Ok(m) => m,
+                Err(e) => {
                     error!(
-                        "ERROR: Refusing to run - DB folder {} may not be a directory",
-                        db_par_path_buf.to_str().unwrap_or("invalid file path")
+                        "Unable to read metadata for database folder '{}' - {:?}",
+                        &db_par_path_buf.to_str().unwrap_or("invalid file path"),
+                        e
                     );
                     return ExitCode::FAILURE;
                 }
-
-                if kubidm_lib_file_permissions::readonly(&i_meta) {
-                    warn!("WARNING: DB folder permissions on {} indicate it may not be RW. This could cause the server start up to fail!", db_par_path_buf.to_str().unwrap_or("invalid file path"));
-                }
-                #[cfg(not(target_os = "windows"))]
-                if i_meta.mode() & 0o007 != 0 {
-                    warn!("WARNING: DB folder {} has 'everyone' permission bits in the mode. This could be a security risk ...", db_par_path_buf.to_str().unwrap_or("invalid file path"));
-                }
+            };
+            if !i_meta.is_dir() {
+                error!(
+                    "ERROR: Refusing to run - DB folder {} may not be a directory",
+                    db_par_path_buf.to_str().unwrap_or("invalid file path")
+                );
+                return ExitCode::FAILURE;
             }
-        } else {
-            error!("No db_path set in configuration, server startup will FAIL!");
-            return ExitCode::FAILURE;
+
+            if kubidm_lib_file_permissions::readonly(&i_meta) {
+                warn!("WARNING: DB folder permissions on {} indicate it may not be RW. This could cause the server start up to fail!", db_par_path_buf.to_str().unwrap_or("invalid file path"));
+            }
+            #[cfg(not(target_os = "windows"))]
+            if i_meta.mode() & 0o007 != 0 {
+                warn!("WARNING: DB folder {} has 'everyone' permission bits in the mode. This could be a security risk ...", db_par_path_buf.to_str().unwrap_or("invalid file path"));
+            }
         }
+    } else {
+        error!("No db_path set in configuration, server startup will FAIL!");
+        return ExitCode::FAILURE;
     }
 
     let lock_was_setup = match &opt.commands {
         // we aren't going to touch the DB so we can carry on
-        KubidmdOpt::CertGenerate
-        | KubidmdOpt::ShowReplicationCertificate
-        | KubidmdOpt::ShowReplicationCertificateMetadata
+        KubidmdOpt::ShowReplicationCertificate
         | KubidmdOpt::RenewReplicationCertificate
         | KubidmdOpt::RefreshReplicationConsumer { .. }
         | KubidmdOpt::RecoverAccount { .. }
-        | KubidmdOpt::DisableAccount { .. }
-        | KubidmdOpt::Version => None,
+        | KubidmdOpt::DisableAccount { .. } => None,
         _ => {
             // Okay - Lets now create our lock and go.
             #[allow(clippy::expect_used)]
@@ -628,13 +611,12 @@ async fn start_daemon(opt: KubidmdParser, config: Configuration) -> ExitCode {
             };
 
             match flock.try_lock() {
-                Ok(()) => debug!("Acquired kubidm exclusive lock"),
+                Ok(_) => debug!("Acquired kubidm exclusive lock"),
                 Err(err) => {
                     error!(
                         "ERROR: Refusing to start - unable to lock kubidmd exclusive lock at {}",
                         klock_path.display()
                     );
-                    error!("Is another kubidmd process running?");
                     error!(?err);
                     return ExitCode::FAILURE;
                 }
@@ -684,7 +666,7 @@ fn main() -> ExitCode {
     };
 
     if env!("KANIDM_SERVER_CONFIG_PATH").is_empty() {
-        eprintln!("CRITICAL: Kubidmd was not built correctly and is missing a valid KANIDM_SERVER_CONFIG_PATH value");
+        eprintln!("CRITICAL: Kanidmd was not built correctly and is missing a valid KANIDM_SERVER_CONFIG_PATH value");
         return ExitCode::FAILURE;
     }
 
@@ -875,7 +857,7 @@ async fn kubidm_main(config: Configuration, opt: KubidmdParser) -> ExitCode {
                 unsafe {
                     let _ = sd_notify::notify_and_unset_env(&[sd_notify::NotifyState::Ready]);
                     let _ = sd_notify::notify_and_unset_env(&[sd_notify::NotifyState::Status(
-                        "Started Kubidm 🦀",
+                        "Started Kanidm 🦀",
                     )]);
                 }
 
@@ -998,6 +980,7 @@ async fn kubidm_main(config: Configuration, opt: KubidmdParser) -> ExitCode {
             )
             .await;
         }
+
         KubidmdOpt::RenewReplicationCertificate => {
             info!("Running renew replication certificate ...");
             submit_admin_req_human(
@@ -1148,189 +1131,25 @@ async fn kubidm_main(config: Configuration, opt: KubidmdParser) -> ExitCode {
         }
 
         KubidmdOpt::Database {
-            commands: DbCommands::PitrList,
-        } => {
-            info!("Running PITR list recovery points ...");
-
-            let s3_config = config.online_backup.as_ref().and_then(|b| b.s3.as_ref());
-
-            match s3_config {
-                Some(s3) => {
-                    match kubidmd_core::pitr_list_recoverable_points_core(&config, Some(s3)).await {
-                        Ok(manifest) => {
-                            info!("Available recovery points:");
-                            info!(
-                                "  Base backup: {} ({})",
-                                manifest.base_backup_id, manifest.base_backup_timestamp
-                            );
-                            info!(
-                                "  Recovery window: {} to {}",
-                                manifest.earliest_recoverable_time,
-                                manifest.latest_recoverable_time
-                            );
-                            info!("  WAL segments: {}", manifest.segments.len());
-                            for segment in &manifest.segments {
-                                info!(
-                                    "    - {} ({} bytes)",
-                                    segment.segment_id, segment.size_bytes
-                                );
-                            }
-                        }
-                        Err(e) => {
-                            error!("Failed to list recovery points: {}", e);
-                        }
-                    }
-                }
-                None => {
-                    error!("S3 configuration is required for PITR. Configure online_backup.s3 in server.toml");
-                }
-            }
-        }
-
-        KubidmdOpt::Database {
-            commands: DbCommands::Recover(pitr_opt),
-        } => {
-            info!("Running PITR recovery ...");
-
-            let s3_config = config.online_backup.as_ref().and_then(|b| b.s3.as_ref());
-
-            match s3_config {
-                Some(s3) => {
-                    let target = if pitr_opt.latest {
-                        kubidm_proto::backup::RecoveryTarget::latest()
-                    } else if let Some(time) = &pitr_opt.target_time {
-                        kubidm_proto::backup::RecoveryTarget::to_time(time).unwrap_or_else(|e| {
-                            error!("Invalid target time: {}", e);
-                            std::process::exit(1);
-                        })
-                    } else if let Some(cid) = &pitr_opt.target_cid {
-                        kubidm_proto::backup::RecoveryTarget::to_transaction(cid).unwrap_or_else(
-                            |e| {
-                                error!("Invalid target CID: {}", e);
-                                std::process::exit(1);
-                            },
-                        )
-                    } else {
-                        error!("Must specify --target-time, --target-cid, or --latest");
-                        std::process::exit(1);
-                    };
-
-                    match kubidmd_core::pitr_recover_core(
-                        &config,
-                        Some(s3),
-                        &target,
-                        pitr_opt.dry_run,
-                    )
-                    .await
-                    {
-                        Ok(()) => {
-                            if pitr_opt.dry_run {
-                                info!("PITR dry run completed successfully");
-                            } else {
-                                info!("PITR recovery completed successfully");
-                            }
-                        }
-                        Err(e) => {
-                            error!("PITR recovery failed: {}", e);
-                            std::process::exit(1);
-                        }
-                    }
-                }
-                None => {
-                    error!("S3 configuration is required for PITR. Configure online_backup.s3 in server.toml");
-                }
-            }
-        }
-
-        KubidmdOpt::Database {
             commands: DbCommands::Vacuum,
         } => {
             info!("Running in vacuum mode ...");
             vacuum_server_core(&config);
         }
-
         KubidmdOpt::Database {
-            commands: DbCommands::ReplicateStatus { detailed },
+            commands: DbCommands::Recover(_),
         } => {
-            info!("Checking cross-region backup replication status ...");
-
-            let s3_config = config.online_backup.as_ref().and_then(|b| b.s3.as_ref());
-
-            match s3_config {
-                Some(s3) => match &s3.replication {
-                    Some(replication) if replication.enabled => {
-                        match kubidmd_core::replication_status_core(&config, s3).await {
-                            Ok(health) => {
-                                info!("Replication Health Check:");
-                                info!("  Overall Status: {}", health.overall_status);
-                                info!("  Healthy Regions: {}", health.healthy_regions);
-                                info!("  Unhealthy Regions: {}", health.unhealthy_regions);
-                                info!("  Maximum Lag: {} seconds", health.max_lag_seconds);
-                                info!("  Last Check: {}", health.last_check_timestamp);
-
-                                for region in &health.regions {
-                                    info!(
-                                        "  Region {} (bucket: {}):",
-                                        region.region, region.bucket
-                                    );
-                                    info!("    Status: {}", region.status);
-                                    info!("    Backups Replicated: {}", region.backups_replicated);
-                                    info!("    Bytes Replicated: {}", region.bytes_replicated);
-                                    if let Some(lag) = region.lag_seconds {
-                                        info!("    Lag: {} seconds", lag);
-                                    }
-                                    if let Some(last_sync) = &region.last_sync_timestamp {
-                                        info!("    Last Sync: {}", last_sync);
-                                    }
-                                    if let Some(error) = &region.last_error {
-                                        info!("    Last Error: {}", error);
-                                    }
-                                }
-
-                                if *detailed {
-                                    match kubidmd_core::replication_lag_metrics_core(&config, s3)
-                                        .await
-                                    {
-                                        Ok(metrics) => {
-                                            info!("Detailed Lag Metrics:");
-                                            for metric in &metrics {
-                                                info!("  Region {}:", metric.region);
-                                                info!("    Lag Seconds: {}", metric.lag_seconds);
-                                                info!(
-                                                    "    Pending Backups: {}",
-                                                    metric.pending_backups
-                                                );
-                                                info!(
-                                                    "    Sync Interval: {} seconds",
-                                                    metric.replication_delay_seconds
-                                                );
-                                                if let Some(last_backup) =
-                                                    &metric.last_backup_timestamp
-                                                {
-                                                    info!("    Last Backup: {}", last_backup);
-                                                }
-                                            }
-                                        }
-                                        Err(e) => {
-                                            error!("Failed to get detailed lag metrics: {}", e);
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                error!("Failed to check replication status: {}", e);
-                                std::process::exit(1);
-                            }
-                        }
-                    }
-                    _ => {
-                        info!("Cross-region replication is not enabled. Configure online_backup.s3.replication in server.toml");
-                    }
-                },
-                None => {
-                    error!("S3 configuration is required for replication status. Configure online_backup.s3 in server.toml");
-                }
-            }
+            info!("Running in database recover mode ...");
+        }
+        KubidmdOpt::Database {
+            commands: DbCommands::PitrList,
+        } => {
+            info!("Running in PITR list mode ...");
+        }
+        KubidmdOpt::Database {
+            commands: DbCommands::ReplicateStatus { .. },
+        } => {
+            info!("Running in replicate status mode ...");
         }
         KubidmdOpt::Scripting { .. } | KubidmdOpt::Version => {}
     }

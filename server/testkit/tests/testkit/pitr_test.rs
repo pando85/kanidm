@@ -286,7 +286,6 @@ fn test_pitr_checksum_verification() {
     );
 
     assert!(!segment.checksum_sha256.is_empty());
-    assert!(segment.checksum_sha256.len() > 0);
 }
 
 #[test]

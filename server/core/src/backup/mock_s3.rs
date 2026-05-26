@@ -523,7 +523,7 @@ mod tests {
         ctx.set_backup_size("backup-1", 1000).unwrap();
 
         let result = ctx.verify_backup("backup-1");
-        assert_eq!(result.unwrap(), false);
+        assert!(!result.unwrap());
     }
 
     #[test]

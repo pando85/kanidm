@@ -114,6 +114,7 @@ mod tests {
             session_id,
             scope,
             crate::be::Limits::unlimited(),
+            None,
         )
     }
 
@@ -147,6 +148,7 @@ mod tests {
             session_id,
             scope,
             crate::be::Limits::unlimited(),
+            None,
         )
     }
 
@@ -326,6 +328,7 @@ mod tests {
                 session_id,
                 AccessScope::ReadOnly,
                 crate::be::Limits::unlimited(),
+                None,
             );
 
             let result = evaluate_reauth_requirement(&ident, true, None, ct);
@@ -449,6 +452,7 @@ mod tests {
                 session_id,
                 AccessScope::ReadOnly,
                 crate::be::Limits::unlimited(),
+                None,
             );
 
             let result = evaluate_reauth_requirement(&ident, true, None, ct);

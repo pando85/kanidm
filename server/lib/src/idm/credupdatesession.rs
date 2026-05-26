@@ -162,13 +162,6 @@ pub(crate) struct CredentialUpdateSession {
 
     // Internal reg state of any inprogress totp or webauthn credentials.
     mfaregstate: MfaRegState,
-
-    // Original credentials state for tracking pending changes
-    original_primary: Option<Credential>,
-    original_passkeys: BTreeMap<Uuid, (String, PasskeyV4)>,
-    original_attested_passkeys: BTreeMap<Uuid, (String, AttestedPasskeyV4)>,
-    original_unixcred: Option<Credential>,
-    original_sshkeys: BTreeMap<String, SshPublicKey>,
 }
 
 impl fmt::Debug for CredentialUpdateSession {
@@ -284,35 +277,6 @@ impl CredentialUpdateSession {
 
         (can_commit, warnings)
     }
-
-    fn has_pending_changes(&self) -> (bool, bool, bool, bool, bool, bool) {
-        let primary_changed = self.primary != self.original_primary;
-        let passkeys_changed = self.passkeys != self.original_passkeys;
-        let attested_passkeys_changed = self.attested_passkeys != self.original_attested_passkeys;
-        let unixcred_changed = self.unixcred != self.original_unixcred;
-        let sshkeys_changed = self.sshkeys != self.original_sshkeys;
-
-        let has_any_changes = primary_changed
-            || passkeys_changed
-            || attested_passkeys_changed
-            || unixcred_changed
-            || sshkeys_changed;
-
-        (
-            has_any_changes,
-            primary_changed,
-            passkeys_changed,
-            attested_passkeys_changed,
-            unixcred_changed,
-            sshkeys_changed,
-        )
-    }
-
-    fn had_no_valid_credentials_at_start(&self) -> bool {
-        self.original_attested_passkeys.is_empty()
-            && self.original_passkeys.is_empty()
-            && self.original_primary.is_none()
-    }
 }
 
 pub enum MfaRegStateStatus {
@@ -410,18 +374,6 @@ pub struct CredentialUpdateSessionStatus {
 
     sshkeys: BTreeMap<String, SshPublicKey>,
     sshkeys_state: CredentialState,
-
-    // Pending changes tracking
-    has_pending_changes: bool,
-    primary_has_pending_changes: bool,
-    passkeys_have_pending_changes: bool,
-    attested_passkeys_have_pending_changes: bool,
-    unixcred_has_pending_changes: bool,
-    sshkeys_have_pending_changes: bool,
-
-    // Auto-commit indicators
-    should_auto_commit_first_cred: bool,
-    should_auto_commit_passkey: bool,
 }
 
 impl CredentialUpdateSessionStatus {
@@ -475,14 +427,14 @@ impl Into<CUStatus> for CredentialUpdateSessionStatus {
             unixcred_state: self.unixcred_state.into(),
             sshkeys: self.sshkeys,
             sshkeys_state: self.sshkeys_state.into(),
-            has_pending_changes: self.has_pending_changes,
-            primary_has_pending_changes: self.primary_has_pending_changes,
-            passkeys_have_pending_changes: self.passkeys_have_pending_changes,
-            attested_passkeys_have_pending_changes: self.attested_passkeys_have_pending_changes,
-            unixcred_has_pending_changes: self.unixcred_has_pending_changes,
-            sshkeys_have_pending_changes: self.sshkeys_have_pending_changes,
-            should_auto_commit_first_cred: self.should_auto_commit_first_cred,
-            should_auto_commit_passkey: self.should_auto_commit_passkey,
+            has_pending_changes: false,
+            primary_has_pending_changes: false,
+            passkeys_have_pending_changes: false,
+            attested_passkeys_have_pending_changes: false,
+            unixcred_has_pending_changes: false,
+            sshkeys_have_pending_changes: false,
+            should_auto_commit_first_cred: false,
+            should_auto_commit_passkey: false,
         }
     }
 }
@@ -490,28 +442,6 @@ impl Into<CUStatus> for CredentialUpdateSessionStatus {
 impl From<&CredentialUpdateSession> for CredentialUpdateSessionStatus {
     fn from(session: &CredentialUpdateSession) -> Self {
         let (can_commit, warnings) = session.can_commit();
-
-        let (
-            has_pending_changes,
-            primary_has_pending_changes,
-            passkeys_have_pending_changes,
-            attested_passkeys_have_pending_changes,
-            unixcred_has_pending_changes,
-            sshkeys_have_pending_changes,
-        ) = session.has_pending_changes();
-
-        // Auto-commit for first credential:
-        // User had no valid credentials at start, now has valid credentials, and can commit
-        let should_auto_commit_first_cred = session.had_no_valid_credentials_at_start()
-            && can_commit
-            && (!session.passkeys.is_empty()
-                || !session.attested_passkeys.is_empty()
-                || session.primary.is_some());
-
-        // Auto-commit for passkey:
-        // Passkey was just added (pending changes in passkeys) and can commit
-        let should_auto_commit_passkey =
-            passkeys_have_pending_changes && can_commit && !session.passkeys.is_empty();
 
         let attested_passkeys_allowed_devices: Vec<String> = session
             .resolved_account_policy
@@ -575,14 +505,6 @@ impl From<&CredentialUpdateSession> for CredentialUpdateSessionStatus {
                     MfaRegStateStatus::AttestedPasskey(r.as_ref().clone())
                 }
             },
-            has_pending_changes,
-            primary_has_pending_changes,
-            passkeys_have_pending_changes,
-            attested_passkeys_have_pending_changes,
-            unixcred_has_pending_changes,
-            sshkeys_have_pending_changes,
-            should_auto_commit_first_cred,
-            should_auto_commit_passkey,
         }
     }
 }
@@ -1020,23 +942,17 @@ impl IdmServerProxyWriteTransaction<'_> {
             issuer,
             intent_token_id,
             ext_cred_portal,
-            primary: primary.clone(),
+            primary,
             primary_state,
-            unixcred: unixcred.clone(),
+            unixcred,
             unixcred_state,
-            sshkeys: sshkeys.clone(),
+            sshkeys,
             sshkeys_state,
-            passkeys: passkeys.clone(),
+            passkeys,
             passkeys_state,
-            attested_passkeys: attested_passkeys.clone(),
+            attested_passkeys,
             attested_passkeys_state,
             mfaregstate: MfaRegState::None,
-            // Store original state for pending changes tracking
-            original_primary: primary,
-            original_passkeys: passkeys,
-            original_attested_passkeys: attested_passkeys,
-            original_unixcred: unixcred,
-            original_sshkeys: sshkeys,
         };
 
         let max_ttl = ct + MAXIMUM_CRED_UPDATE_TTL;
@@ -2970,7 +2886,7 @@ mod tests {
     use uuid::uuid;
     use webauthn_authenticator_rs::softpasskey::SoftPasskey;
     use webauthn_authenticator_rs::softtoken::{self, SoftToken};
-    use webauthn_authenticator_rs::AuthenticatorBackend;
+    use webauthn_authenticator_rs::WebauthnAuthenticator;
     use webauthn_rs::prelude::AttestationCaListBuilder;
 
     const TEST_CURRENT_TIME: u64 = 6000;
@@ -3148,17 +3064,7 @@ mod tests {
         ct: Duration,
         posix: bool,
     ) -> (CredentialUpdateSessionToken, CredentialUpdateSessionStatus) {
-        let mut idms_prox_write = {
-            let mut result = idms.proxy_write(ct).await;
-            for _ in 0..10 {
-                if result.is_ok() {
-                    break;
-                }
-                tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
-                result = idms.proxy_write(ct).await;
-            }
-            result.unwrap()
-        };
+        let mut idms_prox_write = idms.proxy_write(ct).await.unwrap();
 
         // Remove the default all persons policy, it interferes with our test.
         let modlist = ModifyList::new_purge(Attribute::CredentialTypeMinimum);
@@ -3213,17 +3119,7 @@ mod tests {
         idms: &IdmServer,
         ct: Duration,
     ) -> (CredentialUpdateSessionToken, CredentialUpdateSessionStatus) {
-        let mut idms_prox_write = {
-            let mut result = idms.proxy_write(ct).await;
-            for _ in 0..10 {
-                if result.is_ok() {
-                    break;
-                }
-                tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
-                result = idms.proxy_write(ct).await;
-            }
-            result.unwrap()
-        };
+        let mut idms_prox_write = idms.proxy_write(ct).await.unwrap();
 
         let testperson = idms_prox_write
             .qs_write
@@ -3243,17 +3139,7 @@ mod tests {
     }
 
     async fn commit_session(idms: &IdmServer, ct: Duration, cust: CredentialUpdateSessionToken) {
-        let mut idms_prox_write = {
-            let mut result = idms.proxy_write(ct).await;
-            for _ in 0..10 {
-                if result.is_ok() {
-                    break;
-                }
-                tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
-                result = idms.proxy_write(ct).await;
-            }
-            result.unwrap()
-        };
+        let mut idms_prox_write = idms.proxy_write(ct).await.unwrap();
 
         idms_prox_write
             .commit_credential_update(&cust, ct)
@@ -3465,7 +3351,7 @@ mod tests {
         }
     }
 
-    async fn check_testperson_passkey<T: AuthenticatorBackend>(
+    async fn check_testperson_passkey<T: WebauthnAuthenticator>(
         idms: &IdmServer,
         idms_delayed: &mut IdmServerDelayed,
         wa: &mut T,
@@ -3509,7 +3395,7 @@ mod tests {
         trace!(?rcr);
 
         let resp = wa
-            .perform_auth(origin, rcr.public_key, 60000)
+            .do_authentication(origin, rcr)
             .inspect_err(|err| error!(?err))
             .ok()?;
 
@@ -4506,7 +4392,7 @@ mod tests {
         .expect("Unable to access passkey challenge, invalid state");
 
         let passkey_resp = wa
-            .perform_register(origin.clone(), passkey_chal.public_key, 60000)
+            .do_registration(origin.clone(), passkey_chal)
             .expect("Failed to create soft passkey");
 
         // Finish the registration
@@ -4677,14 +4563,6 @@ mod tests {
             unixcred: _,
             sshkeys: _,
             sshkeys_state,
-            has_pending_changes: _,
-            primary_has_pending_changes: _,
-            passkeys_have_pending_changes: _,
-            attested_passkeys_have_pending_changes: _,
-            unixcred_has_pending_changes: _,
-            sshkeys_have_pending_changes: _,
-            should_auto_commit_first_cred: _,
-            should_auto_commit_passkey: _,
         } = custatus;
 
         assert!(matches!(ext_cred_portal, CUExtPortal::Hidden));
@@ -5027,7 +4905,7 @@ mod tests {
 
         let (cust, _) = setup_test_session(idms, ct).await;
         let cutxn = idms.cred_update_transaction().await.unwrap();
-        let _origin = cutxn.get_origin().clone();
+        let origin = cutxn.get_origin().clone();
 
         // Our status needs the correct device names for UI hinting.
         let c_status = cutxn
@@ -5043,15 +4921,13 @@ mod tests {
             .attested_passkeys_allowed_devices
             .contains(&"softtoken_b".to_string()));
 
-        drop(cutxn);
+        // -------------------------------------------------------
+        // Unable to add an passkey when attestation is requested.
+        let err = cutxn.credential_passkey_init(&cust, ct).unwrap_err();
+        assert!(matches!(err, OperationError::AccessDenied));
 
         // -------------------------------------------------------
-        // Enroll the attested keys
-        let (cust, _) = renew_test_session(idms, ct).await;
-        let cutxn = idms.cred_update_transaction().await.unwrap();
-        let origin = cutxn.get_origin().clone();
-
-        // -------------------------------------------------------
+        // Reject a credential that lacks attestation
         let c_status = cutxn
             .credential_attested_passkey_init(&cust, ct)
             .expect("Failed to initiate attested passkey registration");
@@ -5063,7 +4939,7 @@ mod tests {
         .expect("Unable to access passkey challenge, invalid state");
 
         let passkey_resp = wa_passkey_invalid
-            .perform_register(origin.clone(), passkey_chal.public_key, 60000)
+            .do_registration(origin.clone(), passkey_chal)
             .expect("Failed to create soft passkey");
 
         // Finish the registration
@@ -5090,7 +4966,7 @@ mod tests {
         .expect("Unable to access passkey challenge, invalid state");
 
         let passkey_resp = wa_token_invalid
-            .perform_register(origin.clone(), passkey_chal.public_key, 60000)
+            .do_registration(origin.clone(), passkey_chal)
             .expect("Failed to create soft passkey");
 
         // Finish the registration
@@ -5117,7 +4993,7 @@ mod tests {
         .expect("Unable to access passkey challenge, invalid state");
 
         let passkey_resp = wa_token_valid
-            .perform_register(origin.clone(), passkey_chal.public_key, 60000)
+            .do_registration(origin.clone(), passkey_chal)
             .expect("Failed to create soft passkey");
 
         // Finish the registration
@@ -5187,7 +5063,7 @@ mod tests {
 
         // Note this is the second token, not the first.
         let passkey_resp = wa_token_valid_b
-            .perform_register(origin.clone(), passkey_chal.public_key, 60000)
+            .do_registration(origin.clone(), passkey_chal)
             .expect("Failed to create soft passkey");
 
         // Finish the registration
@@ -5283,7 +5159,7 @@ mod tests {
         .expect("Unable to access passkey challenge, invalid state");
 
         let passkey_resp = wa_token_1
-            .perform_register(origin.clone(), passkey_chal.public_key, 60000)
+            .do_registration(origin.clone(), passkey_chal)
             .expect("Failed to create soft passkey");
 
         // Finish the registration of token 1
@@ -5367,7 +5243,7 @@ mod tests {
         .expect("Unable to access passkey challenge, invalid state");
 
         let passkey_resp = wa_token_2
-            .perform_register(origin.clone(), passkey_chal.public_key, 60000)
+            .do_registration(origin.clone(), passkey_chal)
             .expect("Failed to create soft passkey");
 
         // Finish the registration of token 1
@@ -5453,7 +5329,7 @@ mod tests {
         .expect("Unable to access passkey challenge, invalid state");
 
         let passkey_resp = wa_token_1
-            .perform_register(origin.clone(), passkey_chal.public_key, 60000)
+            .do_registration(origin.clone(), passkey_chal)
             .expect("Failed to create soft passkey");
 
         // Finish the registration

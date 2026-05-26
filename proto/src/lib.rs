@@ -19,7 +19,6 @@
 
 pub mod backup;
 pub mod cli;
-pub mod config;
 pub mod constants;
 pub mod internal;
 pub mod messages;
@@ -30,3 +29,4 @@ pub mod v1;
 pub mod attribute;
 
 pub use webauthn_rs_proto as webauthn;
+pub mod config;
