@@ -534,7 +534,7 @@ impl Configuration {
             origin: Url::from_str("https://idm.example.com")
                 .expect("Failed to parse built-in string as URL"),
             log_level: LogLevel::default(),
-            role: ServerRole::WriteReplica,
+            role: ServerRole::WriteReplicaNoUI,
             repl_config: None,
             integration_repl_config: None,
             otel_grpc_url: None,
