@@ -35,7 +35,7 @@ for i in $(seq 1 $MAX_RETRIES); do
         echo "Repository refresh succeeded"
         break
     fi
-    if [ $i -lt $MAX_RETRIES ]; then
+    if [ "$i" -lt $MAX_RETRIES ]; then
         echo "Repository refresh failed, waiting ${RETRY_DELAY}s before retry..."
         sleep $RETRY_DELAY
     else
