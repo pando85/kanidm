@@ -239,6 +239,8 @@ pub async fn create_https_server(
             "img-src 'self' data:; ",
             "worker-src 'none'; ",
             "script-src 'self' 'unsafe-eval'{};",
+            // https://datatracker.ietf.org/doc/html/rfc9700#name-clickjacking
+            "frame-ancestors 'none'; ",
         ),
         js_checksums
     );
@@ -262,6 +264,8 @@ pub async fn create_https_server(
             "img-src 'self' data:; ",
             "worker-src 'none'; ",
             "script-src 'self' 'unsafe-eval'{};",
+            // https://datatracker.ietf.org/doc/html/rfc9700#name-clickjacking
+            "frame-ancestors 'none'; ",
         ),
         js_checksums
     );
