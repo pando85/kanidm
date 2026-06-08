@@ -1,0 +1,23 @@
+{
+  "name": "Kubidm",
+  "description": "Identity management core service for Kaniop",
+  "colors": {
+    "navy": "#0D1A30",
+    "deep_navy": "#071228",
+    "orange": "#CB4F32",
+    "white": "#FFFFFF",
+    "warm_gray": "#CCABA5"
+  },
+  "recommended_usage": {
+    "favicon": "web/favicon.ico",
+    "apple_touch_icon": "web/apple-touch-icon.png",
+    "pwa_manifest": "web/site.webmanifest",
+    "github_social_preview": "social/kubidm-github-social-preview-1280x640.png",
+    "readme_logo": "logo/png/kubidm-logo-full-white-bg.png",
+    "app_icon": "icons/png/kubidm-icon-512x512.png"
+  },
+  "notes": [
+    "SVG files named *embedded.svg contain raster PNG data embedded in SVG, not cleaned vector paths.",
+    "For production-grade print/vector usage, redraw the selected logo as native SVG paths from the generated concept."
+  ]
+}

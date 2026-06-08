@@ -1196,7 +1196,7 @@ pub async fn main<F: SparkleFlavour>(flavour: F) -> ExitCode {
 
     let clap_args = Command::new("kubidm_unixd")
         .version(env!("CARGO_PKG_VERSION"))
-        .about("Kanidm Unix daemon")
+        .about("Kubidm Unix daemon")
         .arg(
             Arg::new("skip-root-check")
                 .help("Allow running as root. Don't use this in production as it is risky!")

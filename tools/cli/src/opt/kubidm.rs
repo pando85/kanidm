@@ -1535,7 +1535,7 @@ pub enum ApprovalOpt {
 }
 
 #[derive(Debug, Subcommand, Clone)]
-#[clap(about = "Kanidm Client Utility")]
+#[clap(about = "Kubidm Client Utility")]
 pub enum KubidmClientOpt {
     /// Login to an account to use with future cli operations
     Login(LoginOpt),
@@ -1603,7 +1603,7 @@ pub enum KubidmClientOpt {
 }
 
 #[derive(Debug, clap::Parser, Clone)]
-#[clap(about = "Kanidm Client Utility")]
+#[clap(about = "Kubidm Client Utility")]
 pub struct KubidmClientParser {
     #[clap(subcommand)]
     pub commands: KubidmClientOpt,

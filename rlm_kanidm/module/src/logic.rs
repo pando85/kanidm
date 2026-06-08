@@ -189,7 +189,7 @@ impl Module {
 
         let reply = ResponseReplyAttributes {
             user_name: token.name.clone(),
-            message: format!("Kanidm-Uuid: {}", token.uuid),
+            message: format!("Kubidm-Uuid: {}", token.uuid),
             tunnel_type: TUNNEL_TYPE_VLAN,
             tunnel_medium_type: TUNNEL_MEDIUM_TYPE_IEEE_802,
             tunnel_private_group_id: selected_vlan.to_string(),
