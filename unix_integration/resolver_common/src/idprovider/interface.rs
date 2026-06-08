@@ -89,7 +89,7 @@ impl fmt::Display for ProviderOrigin {
                 write!(f, "System")
             }
             ProviderOrigin::Kanidm => {
-                write!(f, "Kanidm")
+                write!(f, "Kubidm")
             }
         }
     }

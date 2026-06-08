@@ -487,7 +487,7 @@ async fn driver_main(opt: Opt) -> Result<(), ()> {
 
     if let Some(to_address) = opt.test_email {
         let ob_msg_template = OutboundMessage::TestMessageV1 {
-            display_name: "KANIDM MAIL SENDER TEST".into(),
+            display_name: "KUBIDM MAIL SENDER TEST".into(),
         };
 
         let queue_message = QueuedMessage {

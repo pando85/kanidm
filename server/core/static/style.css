@@ -1,6 +1,11 @@
 :root {
   --totp-width-and-height: 30px;
   --totp-stroke-width: 60px;
+  --kubidm-navy: #0D1A30;
+  --kubidm-deep-navy: #071228;
+  --kubidm-orange: #CB4F32;
+  --kubidm-white: #FFFFFF;
+  --kubidm-warm-gray: #CCABA5;
   --navbar-colors-transition:
     color 0.15s ease-in-out, background-color 0.15s ease-in-out,
     border-color 0.15s ease-in-out;
