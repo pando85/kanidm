@@ -1,6 +1,6 @@
-# Kanidm Release Notes
+# Kubidm Release Notes
 
-![Kanidm Logo](artwork/logo-small.png)
+![Kubidm Logo](artwork/logo-small.png)
 
 ## Getting Started
 
