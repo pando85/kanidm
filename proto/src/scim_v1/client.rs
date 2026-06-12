@@ -72,14 +72,20 @@ pub struct ScimReference {
     pub value: Option<String>,
 }
 
-impl<T> From<T> for ScimReference
-where
-    T: AsRef<str>,
-{
-    fn from(value: T) -> Self {
+impl From<&str> for ScimReference {
+    fn from(value: &str) -> Self {
         ScimReference {
             uuid: None,
-            value: Some(value.as_ref().to_string()),
+            value: Some(value.to_string()),
+        }
+    }
+}
+
+impl From<String> for ScimReference {
+    fn from(value: String) -> Self {
+        ScimReference {
+            uuid: None,
+            value: Some(value),
         }
     }
 }
