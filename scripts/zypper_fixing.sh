@@ -4,9 +4,9 @@
 
 set -e
 
-# Increase curl timeout for slow mirrors (10 minutes)
-export ZYPP_LIBCURL_CURLTIMEOUT=600
-export ZYPP_LIBCURL_CONNECTTIMEOUT=120
+# Increase curl timeout for slow mirrors (15 minutes total, 3 min connect)
+export ZYPP_LIBCURL_CURLTIMEOUT=900
+export ZYPP_LIBCURL_CONNECTTIMEOUT=180
 
 #disable the openh264 repo
 if [ "$(zypper lr | grep -ci 'repo-openh264')" -eq 1 ]; then
@@ -26,13 +26,23 @@ zypper mr -k repo-non-oss
 zypper mr -k repo-update
 
 # force the refresh because zypper is too silly to work out it needs to do it itself
-# retry up to 5 times with a 30 second delay for transient network issues
-MAX_RETRIES=5
-RETRY_DELAY=30
+# retry up to 10 times with a 60 second delay for transient network issues
+# also use zypper's internal download retries
+MAX_RETRIES=10
+RETRY_DELAY=60
+ZYPPER_RETRY_OPTS="--download-retries-limit 5 --download-retry-delay 30"
+
 for i in $(seq 1 $MAX_RETRIES); do
     echo "Repository refresh attempt $i of $MAX_RETRIES"
-    if zypper ref --force; then
-        echo "Repository refresh succeeded"
+    # Try without --force first (uses cached metadata if available)
+    if zypper ref $ZYPPER_RETRY_OPTS; then
+        echo "Repository refresh succeeded (using cache)"
+        break
+    fi
+    # If cached refresh fails, try with --force
+    echo "Cached refresh failed, trying with --force..."
+    if zypper ref --force $ZYPPER_RETRY_OPTS; then
+        echo "Repository refresh succeeded (forced)"
         break
     fi
     if [ "$i" -lt $MAX_RETRIES ]; then
