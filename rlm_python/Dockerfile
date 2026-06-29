@@ -29,8 +29,8 @@ RUN mkdir -p /etc/raddb/mods-enabled /etc/raddb/sites-enabled && \
     ln -s /etc/raddb/mods-available/python3 /etc/raddb/mods-enabled/python3 && \
     ln -s /etc/raddb/sites-available/check-eap-tls /etc/raddb/sites-enabled/check-eap-tls
 
-RUN rm /etc/raddb/mods-available/sql && \
-    rm /etc/raddb/mods-enabled/{passwd,totp}
+RUN rm -f /etc/raddb/mods-available/sql && \
+    rm -f /etc/raddb/mods-enabled/{passwd,totp}
 
 RUN chown -R $RADIUS_USER:$RADIUS_USER /etc/raddb/ && \
     chmod 775 /etc/raddb/certs && \
