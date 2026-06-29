@@ -65,7 +65,8 @@ ADD  rlm_kanidm/container/mods-available/ /etc/raddb/mods-available/
 COPY rlm_kanidm/container/sites-available/ /etc/raddb/sites-available/
 
 # Enable the native kanidm module and check-eap-tls virtual server.
-RUN ln -s /etc/raddb/mods-available/kanidm_rust /etc/raddb/mods-enabled/kanidm && \
+RUN mkdir -p /etc/raddb/mods-enabled /etc/raddb/sites-enabled && \
+    ln -s /etc/raddb/mods-available/kanidm_rust /etc/raddb/mods-enabled/kanidm && \
     ln -s /etc/raddb/sites-available/check-eap-tls /etc/raddb/sites-enabled/check-eap-tls
 
 COPY --from=builder /src/kanidm/target/release/rlm_kanidm.so /usr/lib/freeradius/rlm_kanidm.so
