@@ -26,9 +26,9 @@ zypper mr -k repo-non-oss
 zypper mr -k repo-update
 
 # force the refresh because zypper is too silly to work out it needs to do it itself
-# retry up to 3 times with a 10 second delay for transient network issues
-MAX_RETRIES=3
-RETRY_DELAY=10
+# retry up to 5 times with exponential backoff for transient network issues
+MAX_RETRIES=5
+BASE_DELAY=15
 for i in $(seq 1 $MAX_RETRIES); do
     echo "Repository refresh attempt $i of $MAX_RETRIES"
     if zypper ref --force; then
@@ -36,8 +36,13 @@ for i in $(seq 1 $MAX_RETRIES); do
         break
     fi
     if [ "$i" -lt $MAX_RETRIES ]; then
-        echo "Repository refresh failed, waiting ${RETRY_DELAY}s before retry..."
-        sleep $RETRY_DELAY
+        DELAY=$((BASE_DELAY * (2 ** (i - 1))))
+        echo "Repository refresh failed, waiting ${DELAY}s before retry..."
+        sleep $DELAY
+        if [ "$i" -ge 2 ]; then
+            echo "Trying alternate mirror..."
+            zypper mr -f -U "http://download.opensuse.org/tumbleweed/repo/oss/" repo-oss 2>/dev/null || true
+        fi
     else
         echo "Repository refresh failed after $MAX_RETRIES attempts"
         exit 1
