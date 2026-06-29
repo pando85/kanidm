@@ -6,8 +6,8 @@ dev_install:
 	@ read
 	@ echo "LAST CHANCE"
 	@ sleep 5
-	ln -s -f $(current_dir)/../platform/opensuse/kubidm-unixd.service /etc/systemd/system/kubidm-unixd.service
-	ln -s -f $(current_dir)/../platform/opensuse/kubidm-unixd-tasks.service /etc/systemd/system/kubidm-unixd-tasks.service
+	ln -s -f $(current_dir)/../platform/linux/kubidm-unixd.service /etc/systemd/system/kubidm-unixd.service
+	ln -s -f $(current_dir)/../platform/linux/kubidm-unixd-tasks.service /etc/systemd/system/kubidm-unixd-tasks.service
 	ln -s -f $(current_dir)/../target/debug/kubidm-unix /usr/sbin/kubidm-unix
 	ln -s -f $(current_dir)/../target/debug/kubidm_ssh_authorizedkeys /usr/sbin/kubidm_ssh_authorizedkeys
 	ln -s -f $(current_dir)/../target/debug/kubidm_unixd_tasks /usr/sbin/kubidm_unixd_tasks
