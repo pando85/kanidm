@@ -75,7 +75,6 @@ tower = { workspace = true, features = ["tokio-stream", "tracing"] }
 tower-http = { workspace = true, features = [
     "compression-gzip",
     "fs",
-    "tokio",
     "trace",
     "tracing",
     "timeout",
