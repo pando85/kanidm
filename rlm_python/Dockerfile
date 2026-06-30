@@ -33,6 +33,7 @@ RUN rm -f /etc/raddb/mods-available/sql && \
     rm -f /etc/raddb/mods-enabled/{passwd,totp}
 
 RUN chown -R $RADIUS_USER:$RADIUS_USER /etc/raddb/ && \
+    mkdir -p /etc/raddb/certs && \
     chmod 775 /etc/raddb/certs && \
     chmod 640 /etc/raddb/clients.conf
 
