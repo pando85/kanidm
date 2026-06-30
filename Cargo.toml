@@ -128,6 +128,8 @@ codegen-units = 256
 # webauthn-rs-proto = { path = "../webauthn-rs/webauthn-rs-proto" }
 # sshkey-attest = { path = "../webauthn-rs/sshkey-attest" }
 
+aws-runtime = { path = "patches/aws-runtime-1.7.2" }
+
 [workspace.dependencies]
 kubidmd_core = { path = "./server/core", version = "=1.11.0-dev" }
 kubidmd_lib = { path = "./server/lib", version = "=1.11.0-dev" }
@@ -293,7 +295,7 @@ svg = "0.18.0"
 syn = { version = "2.0.117", features = ["full"] }
 tempfile = "3.26.0"
 testkit-macros = { path = "./server/testkit-macros" }
-time = { version = "^0.3.47", features = ["formatting", "local-offset"] }
+time = { version = ">=0.3.47, <0.3.52", features = ["formatting", "local-offset"] }
 tokio = { version = "^1.52.3", default-features = false }
 tokio-rustls = { version = "0.26.4" }
 tokio-util = "^0.7.18"
