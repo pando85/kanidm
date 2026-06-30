@@ -1,0 +1,47 @@
+{
+  "$schema": "https://raw.githubusercontent.com/actions/dependency-review-action/main/schema.json",
+  "fail_on_severity": "critical",
+  "allow_licenses": ["MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC", "MPL-2.0", "Unicode-3.0", "Unlicense", "CC0-1.0"],
+  "allow_dependencies": [
+    {
+      "name": "assert-json-diff",
+      "ecosystem": "cargo",
+      "reason": "Patched dependency with low scorecard score"
+    },
+    {
+      "name": "convert_case",
+      "ecosystem": "cargo",
+      "reason": "Patched dependency with low scorecard score"
+    },
+    {
+      "name": "id-arena",
+      "ecosystem": "cargo",
+      "reason": "Patched dependency with low scorecard score"
+    },
+    {
+      "name": "quick-error",
+      "ecosystem": "cargo",
+      "reason": "Patched dependency with low scorecard score"
+    },
+    {
+      "name": "roxmltree",
+      "ecosystem": "cargo",
+      "reason": "Patched dependency with low scorecard score"
+    },
+    {
+      "name": "separator",
+      "ecosystem": "cargo",
+      "reason": "Patched dependency with low scorecard score"
+    },
+    {
+      "name": "version_check",
+      "ecosystem": "cargo",
+      "reason": "Patched dependency with low scorecard score"
+    },
+    {
+      "name": "yansi",
+      "ecosystem": "cargo",
+      "reason": "Patched dependency with low scorecard score"
+    }
+  ]
+}
