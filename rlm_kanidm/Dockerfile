@@ -73,8 +73,8 @@ COPY --from=builder /src/kanidm/target/release/rlm_kanidm.so /usr/lib/freeradius
 COPY --from=builder /src/kanidm/target/release/kanidm_radiusd /usr/local/bin/kanidm_radiusd
 
 # # disable auth via methods we don't support!
-RUN rm /etc/raddb/mods-available/sql && \
-    rm /etc/raddb/mods-enabled/{passwd,totp}
+RUN rm -f /etc/raddb/mods-available/sql && \
+    rm -f /etc/raddb/mods-enabled/{passwd,totp}
 
 # Allows the radiusd user to write to the directory
 RUN chown -R $RADIUS_USER:$RADIUS_USER /etc/raddb/ && \
