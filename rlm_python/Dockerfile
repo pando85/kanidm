@@ -34,8 +34,7 @@ RUN rm -f /etc/raddb/mods-available/sql && \
 
 RUN chown -R $RADIUS_USER:$RADIUS_USER /etc/raddb/ && \
     mkdir -p /etc/raddb/certs && \
-    chmod 775 /etc/raddb/certs && \
-    chmod 640 /etc/raddb/clients.conf
+    chmod 775 /etc/raddb/certs
 
 RUN mkdir -p /pkg/pykubidm/
 COPY pykubidm/ /pkg/pykubidm/
