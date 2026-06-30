@@ -2,7 +2,7 @@
 [project]
 authors = [{ name = "James Hodgkinson", email = "james@terminaloutcomes.com" }]
 license = { text = "MPL-2.0" }
-requires-python = "<4.0,>=3.12"
+requires-python = "<4.0,>=3.11"
 dependencies = [
     "toml>=0.10.2",
     "pydantic>=2.12.5",
@@ -22,6 +22,7 @@ keywords = ["kubidm", "idm", "api"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Operating System :: OS Independent",
 ]

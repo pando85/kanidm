@@ -11,11 +11,11 @@ pub struct KubidmdCli {
     pub log_level: Option<sketching::LogLevel>,
 
     #[clap(
-        env = "KANIDM_OTEL_GRPC_URL",
+        env = "KANIDM_OTEL_GRPC_ENDPOINT",
         global = true,
-        help = "Specify the OpenTelemetry gRPC URL"
+        help = "Specify the OpenTelemetry gRPC endpoint (ip/hostname:port)"
     )]
-    pub otel_grpc_url: Option<String>,
+    pub otel_grpc_endpoint: Option<String>,
 
     #[clap(env = "KANIDM_DOMAIN", global = true, help = "Specify the domain")]
     pub domain: Option<String>,
@@ -153,7 +153,7 @@ mod tests {
     fn empty_cli() -> KubidmdCli {
         KubidmdCli {
             log_level: None,
-            otel_grpc_url: None,
+            otel_grpc_endpoint: None,
             domain: None,
             origin: None,
             role: None,
@@ -180,7 +180,7 @@ mod tests {
     fn test_kubidmd_cli_default_fields() {
         let cli = empty_cli();
         assert!(cli.log_level.is_none());
-        assert!(cli.otel_grpc_url.is_none());
+        assert!(cli.otel_grpc_endpoint.is_none());
         assert!(cli.domain.is_none());
         assert!(cli.origin.is_none());
         assert!(cli.role.is_none());

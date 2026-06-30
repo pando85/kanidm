@@ -33,7 +33,7 @@ impl Default for CpuOptLevel {
         /*
         } else if cfg!(target_arch = "aarch64") && cfg!(target_os = "linux") {
             // Disable neon_v8 on linux - this has issues on non-apple hardware and on
-            // opensuse/distro builds.
+            // distro builds.
             CpuOptLevel::neon_v8
         */
         } else {
