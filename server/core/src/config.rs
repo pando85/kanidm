@@ -331,8 +331,8 @@ pub struct ServerConfig {
     #[serde(rename = "replication")]
     /// Replication configuration, this is a development feature and not yet ready for production use.
     repl_config: Option<ReplicationConfiguration>,
-    /// An optional OpenTelemetry collector (GRPC) url to send trace and log data to, eg `http://localhost:4317`. If not set, disables the feature.
-    otel_grpc_url: Option<String>,
+    /// An optional OpenTelemetry collector (GRPC) url to send trace and log data to, eg `localhost:4317`. If not set, disables the feature.
+    otel_grpc_endpoint: Option<String>,
     /// Policy Information Point (PIP) configuration for external attribute retrieval.
     /// See [kubidmd_lib::idm::pip::config::PipConfig] for details.
     #[serde(default)]
@@ -423,7 +423,7 @@ pub struct ServerConfigV2 {
     #[serde(default)]
     #[serde(rename = "replication")]
     repl_config: Option<ReplicationConfiguration>,
-    otel_grpc_url: Option<String>,
+    otel_grpc_endpoint: Option<String>,
     /// Policy Information Point (PIP) configuration for external attribute retrieval.
     #[serde(default)]
     pip_config: Option<kubidmd_lib::idm::pip::config::PipConfig>,
@@ -475,7 +475,7 @@ pub struct Configuration {
     pub repl_config: Option<ReplicationConfiguration>,
     /// This allows internally setting some unsafe options for replication.
     pub integration_repl_config: Option<Box<IntegrationReplConfig>>,
-    pub otel_grpc_url: Option<String>,
+    pub otel_grpc_endpoint: Option<String>,
     /// Policy Information Point (PIP) configuration for external attribute retrieval.
     pub pip_config: Option<kubidmd_lib::idm::pip::config::PipConfig>,
 }
@@ -508,7 +508,7 @@ impl Configuration {
             log_level: None,
             role: None,
             repl_config: None,
-            otel_grpc_url: None,
+            otel_grpc_endpoint: None,
             pip_config: None,
         }
     }
@@ -537,7 +537,7 @@ impl Configuration {
             role: ServerRole::WriteReplicaNoUI,
             repl_config: None,
             integration_repl_config: None,
-            otel_grpc_url: None,
+            otel_grpc_endpoint: None,
             pip_config: None,
         }
     }
@@ -627,7 +627,7 @@ impl fmt::Display for Configuration {
                 write!(f, "replication: disabled, ")?;
             }
         }
-        write!(f, "otel_grpc_url: {:?}", self.otel_grpc_url)?;
+        write!(f, "otel_grpc_endpoint: {:?}", self.otel_grpc_endpoint)?;
         Ok(())
     }
 }
@@ -655,7 +655,7 @@ pub struct ConfigurationBuilder {
     role: Option<ServerRole>,
     log_level: Option<LogLevel>,
     repl_config: Option<ReplicationConfiguration>,
-    otel_grpc_url: Option<String>,
+    otel_grpc_endpoint: Option<String>,
     pip_config: Option<kubidmd_lib::idm::pip::config::PipConfig>,
 }
 
@@ -667,8 +667,8 @@ impl ConfigurationBuilder {
             self.log_level = Some(*log_level);
         }
 
-        if let Some(otel_grpc_url) = &cli_config.otel_grpc_url {
-            self.otel_grpc_url = Some(otel_grpc_url.clone());
+        if let Some(otel_grpc_endpoint) = &cli_config.otel_grpc_endpoint {
+            self.otel_grpc_endpoint = Some(otel_grpc_endpoint.clone());
         }
 
         // core domainy things
@@ -895,8 +895,8 @@ impl ConfigurationBuilder {
             self.repl_config = config.repl_config;
         }
 
-        if config.otel_grpc_url.is_some() {
-            self.otel_grpc_url = config.otel_grpc_url;
+        if config.otel_grpc_endpoint.is_some() {
+            self.otel_grpc_endpoint = config.otel_grpc_endpoint;
         }
 
         if config.pip_config.is_some() {
@@ -987,8 +987,8 @@ impl ConfigurationBuilder {
             self.repl_config = config.repl_config;
         }
 
-        if config.otel_grpc_url.is_some() {
-            self.otel_grpc_url = config.otel_grpc_url;
+        if config.otel_grpc_endpoint.is_some() {
+            self.otel_grpc_endpoint = config.otel_grpc_endpoint;
         }
 
         if config.pip_config.is_some() {
@@ -1028,7 +1028,7 @@ impl ConfigurationBuilder {
             role,
             log_level,
             repl_config,
-            otel_grpc_url,
+            otel_grpc_endpoint,
             pip_config,
         } = self;
 
@@ -1094,7 +1094,7 @@ impl ConfigurationBuilder {
             role,
             log_level,
             repl_config,
-            otel_grpc_url,
+            otel_grpc_endpoint,
             integration_repl_config: None,
             integration_test_config: None,
             pip_config,
