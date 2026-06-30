@@ -21,4 +21,4 @@ jobs:
         uses: actions/dependency-review-action@v5
         with:
           config-file: '.github/dependency-review-config.json'
-          fail-on-score: '0'
+          ossf-scorecard-threshold: 2
