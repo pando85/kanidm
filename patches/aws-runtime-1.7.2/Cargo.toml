@@ -103,7 +103,7 @@ version = "0.1.2"
 version = "2.3.0"
 
 [dependencies.http-02x]
-version = "0.2.12"
+version = "1.0.0"
 optional = true
 package = "http"
 
