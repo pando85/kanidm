@@ -44,6 +44,17 @@
       ],
     },
     {
+      description: 'Ignore aliased dependencies in patches that must stay on old versions',
+      matchFileNames: [
+        'patches/**',
+      ],
+      matchPackageNames: [
+        'http-body',
+        'http',
+      ],
+      enabled: false,
+    },
+    {
       matchUpdateTypes: [
         'patch',
       ],
