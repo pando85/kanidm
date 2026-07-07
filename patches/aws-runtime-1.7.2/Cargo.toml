@@ -73,7 +73,7 @@ version = "0.60.20"
 optional = true
 
 [dependencies.aws-smithy-http]
-version = "0.63.6"
+version = "0.64.0"
 
 [dependencies.aws-smithy-runtime]
 version = "1.10.3"
