@@ -2,9 +2,9 @@
   "fail_on_severity": "critical",
   "allow_licenses": ["MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC", "MPL-2.0", "Unicode-3.0", "Unlicense", "CC0-1.0", "Zlib"],
   "allow_dependencies_licenses": [
-    "console",
-    "jiff-tzdb",
-    "rustc-hash",
-    "selinux"
+    "pkg:cargo/console",
+    "pkg:cargo/jiff-tzdb",
+    "pkg:cargo/rustc-hash",
+    "pkg:cargo/selinux"
   ]
 }
