@@ -148,7 +148,7 @@ version = "1.2.14"
 features = ["test-util"]
 
 [dev-dependencies.aws-smithy-protocol-test]
-version = "0.63.14"
+version = "0.64.0"
 
 [dev-dependencies.aws-smithy-runtime-api]
 version = "1.11.6"
