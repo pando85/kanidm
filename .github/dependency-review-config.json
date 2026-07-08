@@ -1,4 +1,11 @@
 {
   "fail_on_severity": "critical",
-  "allow_licenses": ["MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC", "MPL-2.0", "Unicode-3.0", "Unlicense", "CC0-1.0"]
+  "allow_licenses": ["MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC", "MPL-2.0", "Unicode-3.0", "Unlicense", "CC0-1.0", "Zlib"],
+  "allow_dependencies": [
+    {"name": "console", "ecosystem": "cargo"},
+    {"name": "inotify", "ecosystem": "cargo"},
+    {"name": "jiff-tzdb", "ecosystem": "cargo"},
+    {"name": "num-iter", "ecosystem": "cargo"},
+    {"name": "aws-smithy-http", "ecosystem": "cargo"}
+  ]
 }
