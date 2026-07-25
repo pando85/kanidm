@@ -388,7 +388,7 @@ async fn driver_main(opt: Opt) -> Result<(), ()> {
         Err(e) => {
             error!(
                 "Unable to open mail sender config from '{}' [{:?}] 🥺",
-                &opt.mail_sender_config.display(),
+                opt.mail_sender_config.display(),
                 e
             );
             return Err(());
@@ -399,7 +399,7 @@ async fn driver_main(opt: Opt) -> Result<(), ()> {
     if let Err(e) = f.read_to_string(&mut contents) {
         error!(
             "unable to read file '{}': {:?}",
-            &opt.mail_sender_config.display(),
+            opt.mail_sender_config.display(),
             e
         );
         return Err(());
@@ -410,7 +410,7 @@ async fn driver_main(opt: Opt) -> Result<(), ()> {
         Err(e) => {
             eprintln!(
                 "Unable to parse config from '{}' error: {:?}",
-                &opt.mail_sender_config.display(),
+                opt.mail_sender_config.display(),
                 e
             );
             return Err(());
