@@ -3087,8 +3087,8 @@ impl<VALID, STATE> Entry<VALID, STATE> {
         let mut pairs: Vec<(Attribute, PartialValue)> = Vec::with_capacity(0);
 
         for attr in attrs {
-            let values = self.attrs.get(attr)?;
-            values
+            self.attrs
+                .get(attr)?
                 .to_partialvalue_iter()
                 .for_each(|pv| pairs.push((attr.clone(), pv)));
         }
