@@ -273,7 +273,7 @@ fn home_alias_update_bind_mount(alias_path: &Path, hd_mount_path: &Path) -> Resu
         nix::mount::umount(&m.mount_point).map_err(|e| {
             format!(
                 "Unable to remove conflicting mount at {:?}: {e}",
-                &m.mount_point
+                m.mount_point
             )
         })?;
     }
