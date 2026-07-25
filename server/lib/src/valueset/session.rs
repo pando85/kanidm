@@ -274,28 +274,18 @@ impl ValueSetT for ValueSetSession {
     }
 
     fn purge(&mut self, cid: &Cid) -> bool {
-        for (_uuid, session) in self.map.iter_mut() {
-            // Send them all to the shadow realm
+        for session in self.map.values_mut() {
             if !matches!(session.state, SessionState::RevokedAt(_)) {
                 session.state = SessionState::RevokedAt(cid.clone())
             }
         }
-        // Can't be purged since we need the cid's of revoked to persist.
         false
     }
 
     fn trim(&mut self, trim_cid: &Cid) {
-        // There might be a neater way to do this with less iterations. The problem
-        // is we can't just check on what was in b/older, because then we miss
-        // trimmable content from the local map. So once the merge is complete we
-        // do a pass for trim.
         self.map.retain(|_, session| {
             match &session.state {
-                SessionState::RevokedAt(cid) if cid < trim_cid => {
-                    // This value is past the replication trim window and can now safely
-                    // be removed
-                    false
-                }
+                SessionState::RevokedAt(cid) if cid < trim_cid => false,
                 // Retain all else
                 _ => true,
             }
@@ -778,7 +768,6 @@ impl ValueSetT for ValueSetOauth2Session {
                         });
                         removed
                     } else {
-                        // It's not in the rs_filter or the map, false.
                         false
                     }
                 }
@@ -788,28 +777,18 @@ impl ValueSetT for ValueSetOauth2Session {
     }
 
     fn purge(&mut self, cid: &Cid) -> bool {
-        for (_uuid, session) in self.map.iter_mut() {
-            // Send them all to the shadow realm
+        for session in self.map.values_mut() {
             if !matches!(session.state, SessionState::RevokedAt(_)) {
                 session.state = SessionState::RevokedAt(cid.clone())
             }
         }
-        // Can't be purged since we need the cid's of revoked to persist.
         false
     }
 
     fn trim(&mut self, trim_cid: &Cid) {
-        // There might be a neater way to do this with less iterations. The problem
-        // is we can't just check on what was in b/older, because then we miss
-        // trimmable content from the local map. So once the merge is complete we
-        // do a pass for trim.
         self.map.retain(|_, session| {
             match &session.state {
-                SessionState::RevokedAt(cid) if cid < trim_cid => {
-                    // This value is past the replication trim window and can now safely
-                    // be removed
-                    false
-                }
+                SessionState::RevokedAt(cid) if cid < trim_cid => false,
                 // Retain all else
                 _ => true,
             }

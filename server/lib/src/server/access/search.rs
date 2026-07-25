@@ -189,15 +189,9 @@ fn search_filter_entry(
                     // that result, and continue.
                 }
                 AccessControlReceiverCondition::EntryManager => {
-                    // This condition relies on the entry we are looking at to have a back-ref
-                    // to our uuid or a group we are in as an entry manager.
-
-                    // Note, while schema has this as single value, we currently
-                    // fetch it as a multivalue btreeset for future in case we allow
-                    // multiple entry manager by in future.
-                    if let Some(entry_manager_uuids) = entry.get_ava_refer(Attribute::EntryManagedBy) {
+                    {
+                        let entry_manager_uuids = entry.get_ava_refer(Attribute::EntryManagedBy)?;
                         let group_check = ident_memberof
-                            // Have at least one group allowed.
                             .map(|imo| imo.intersection(entry_manager_uuids).next().is_some())
                             .unwrap_or_default();
 
@@ -205,12 +199,8 @@ fn search_filter_entry(
                             entry_manager_uuids.contains(&ident_uuid);
 
                         if !(group_check || user_check) {
-                            // Not the entry manager
                             return None
                         }
-                    } else {
-                        // Can not satisfy.
-                        return None
                     }
                 }
                 AccessControlReceiverCondition::Delegated { scope_filter_resolved } => {
