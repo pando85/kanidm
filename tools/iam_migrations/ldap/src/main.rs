@@ -66,7 +66,7 @@ async fn driver_main(opt: Opt) -> Result<(), ()> {
         Err(e) => {
             error!(
                 "Unable to open ldap sync config from '{}' [{:?}] 🥺",
-                &opt.ldap_sync_config.display(),
+                opt.ldap_sync_config.display(),
                 e
             );
             return Err(());
@@ -77,7 +77,7 @@ async fn driver_main(opt: Opt) -> Result<(), ()> {
     if let Err(e) = f.read_to_string(&mut contents) {
         error!(
             "unable to read file '{}': {:?}",
-            &opt.ldap_sync_config.display(),
+            opt.ldap_sync_config.display(),
             e
         );
         return Err(());
