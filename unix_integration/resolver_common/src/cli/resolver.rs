@@ -638,11 +638,11 @@ async fn main_inner<F: SparkleFlavour>(clap_args: clap::ArgMatches, flavour: F) 
     if clap_args.get_flag("configtest") {
         eprintln!("###################################");
         eprintln!("Dumping configs:\n###################################");
-        eprintln!("kubidm_unixd config (from {:#?})", &unixd_path);
+        eprintln!("kubidm_unixd config (from {:#?})", unixd_path);
         eprintln!("{cfg}");
         eprintln!("###################################");
         if let Some((cb, _)) = client_builder.as_ref() {
-            eprintln!("kubidm client config (from {:#?})", &cfg_path);
+            eprintln!("kubidm client config (from {:#?})", cfg_path);
             eprintln!("{cb}");
         } else {
             eprintln!("kubidm client: disabled");
