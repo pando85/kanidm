@@ -145,7 +145,6 @@ nss_sparkle_common = { path = "./unix_integration/nss_sparkle_common", version =
 pam_sparkle_common = { path = "./unix_integration/pam_sparkle_common", version = "=1.11.0-dev" }
 rlm_kanidm_shared = { path = "./rlm_kanidm/shared", version = "=1.11.0-dev" }
 sparkle_unix_common = { path = "./unix_integration/common", version = "=1.11.0-dev" }
-kubidm_unix_common = { path = "./unix_integration/common", version = "=1.11.0-dev" }
 sparkle_resolver_common = { path = "./unix_integration/resolver_common", version = "=1.11.0-dev" }
 scim_proto = { path = "./libs/scim_proto", version = "=1.11.0-dev" }
 sketching = { path = "./libs/sketching", version = "=1.11.0-dev" }
