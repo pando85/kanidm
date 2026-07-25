@@ -28,7 +28,7 @@ pub enum KanidmUnixOpt {
         #[clap(short, long)]
         debug: bool,
     },
-    /// Check that the unixd daemon is online and able to connect correctly to the kanidmd server.
+    /// Check that the unixd daemon is online and able to connect correctly to the kubidmd server.
     Status {
         #[clap(short, long)]
         debug: bool,

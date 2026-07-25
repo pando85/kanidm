@@ -36,7 +36,7 @@ KANIDM_TMP_DIR="${KANIDM_TMP_DIR:-/tmp/kanidm}"
 KANIDM_STARTED=0
 KANIDMD_PID=""
 RADIUS_CONFIG_FILE=""
-KANIDMD_LOG_FILE="${KANIDM_TMP_DIR}/test_radius_kanidmd.log"
+KANIDMD_LOG_FILE="${KANIDM_TMP_DIR}/test_radius_kubidmd.log"
 TESTS_PASSED=0
 TESTS_FAILED=0
 
@@ -80,7 +80,7 @@ on_error() {
         docker logs --tail 120 "${RADIUS_CONTAINER_NAME}" >&2 || true
     fi
     if [[ -f "${KANIDMD_LOG_FILE}" ]]; then
-        echo "[test_radius] Last kanidmd logs:" >&2
+        echo "[test_radius] Last kubidmd logs:" >&2
         tail -n 120 "${KANIDMD_LOG_FILE}" >&2 || true
     fi
 }
@@ -124,12 +124,12 @@ build_kanidm_cmd() {
     KANIDM_CMD+=(--bin kanidm --)
 }
 
-build_kanidmd_cmd() {
+build_kubidmd_cmd() {
     KANIDMD_CMD=(cargo run --manifest-path "${REPO_ROOT}/Cargo.toml")
     if [[ -n "${BUILD_MODE}" ]]; then
         KANIDMD_CMD+=("${BUILD_MODE}")
     fi
-    KANIDMD_CMD+=(-p daemon --bin kanidmd --)
+    KANIDMD_CMD+=(-p daemon --bin kubidmd --)
 }
 
 verify_rust_image_has_module() {
@@ -307,7 +307,7 @@ if ! command -v radtest >/dev/null 2>&1; then
 fi
 
 build_kanidm_cmd
-build_kanidmd_cmd
+build_kubidmd_cmd
 ensure_kanidm_tmp_dir
 
 case "${RADIUS_MODULE_IMPL}" in
@@ -342,10 +342,10 @@ if ! curl --cacert "${KANIDM_CA_PATH}" -fs "${KANIDM_URL%/}/status" >/dev/null 2
         export KANIDM_CONFIG="./insecure_server.toml"
         "${KANIDMD_CMD[@]}" cert-generate >/dev/null
         "${KANIDMD_CMD[@]}" server >"${KANIDMD_LOG_FILE}" 2>&1 &
-        echo $! > "${KANIDM_TMP_DIR}/test_radius_kanidmd.pid"
+        echo $! > "${KANIDM_TMP_DIR}/test_radius_kubidmd.pid"
     )
-    KANIDMD_PID="$(cat "${KANIDM_TMP_DIR}/test_radius_kanidmd.pid")"
-    rm -f "${KANIDM_TMP_DIR}/test_radius_kanidmd.pid"
+    KANIDMD_PID="$(cat "${KANIDM_TMP_DIR}/test_radius_kubidmd.pid")"
+    rm -f "${KANIDM_TMP_DIR}/test_radius_kubidmd.pid"
     KANIDM_STARTED=1
 fi
 

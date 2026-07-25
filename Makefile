@@ -390,12 +390,12 @@ publish: ## Publish to crates.io
 publish:
 	cargo publish -p sketching
 	cargo publish -p scim_proto
-	cargo publish -p kanidm_build_profiles
-	cargo publish -p kanidm_proto
-	cargo publish -p kanidm_utils_users
-	cargo publish -p kanidm_lib_file_permissions
-	cargo publish -p kanidm_lib_crypto
-	cargo publish -p kanidm_client
+	cargo publish -p kubidm_build_profiles
+	cargo publish -p kubidm_proto
+	cargo publish -p kubidm_utils_users
+	cargo publish -p kubidm_lib_file_permissions
+	cargo publish -p kubidm_lib_crypto
+	cargo publish -p kubidm_client
 	cargo publish -p kanidm_tools
 
 .PHONY: rust_container

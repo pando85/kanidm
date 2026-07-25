@@ -97,7 +97,7 @@ Before upgrading you should review [our upgrade documentation]
 - Add a truncated service account token format.
 - Raise the maximum number of default queryable attributes in LDAP to support SSSD.
 - Add support for RADIUS certificates to identify a user with the subjectAltName-DN type.
-- Add a kanidmd command line scripting interface.
+- Add a kubidmd command line scripting interface.
 - Harden against errors when `libnss_kanidm.so` is used by a forking process.
 - Allow overrides of CSS via a default file that can be overridden.
 - Add an LDAP homeDirectory virtualAttribute for some RFC2307Bis Clients.
@@ -137,8 +137,8 @@ Before upgrading you should review [our upgrade documentation]
 #### 1.8.0 Important Changes
 
 For distribution package users, systemd-notify reload has been removed due to ongoing bugs with the feature from the
-systemd side which would cause kanidmd to be killed ungracefully. If you rely on this to perform "systemctl reload
-kanidmd" actions, you should instead use "systemctl restart" or send a SIGHUP directly to the kanidmd process.
+systemd side which would cause kubidmd to be killed ungracefully. If you rely on this to perform "systemctl reload
+kubidmd" actions, you should instead use "systemctl restart" or send a SIGHUP directly to the kubidmd process.
 
 #### 1.8.0 Release Highlights
 
@@ -211,7 +211,7 @@ Before upgrading you should review [our upgrade documentation]
 
 #### 1.6.0 Important Changes
 
-- The kanidmd server configuration now supports versions. You should review the example server configuration and update
+- The kubidmd server configuration now supports versions. You should review the example server configuration and update
   to `version = "2"`.
 
 #### 1.6.0 Release Highlights
@@ -574,7 +574,7 @@ change there. Otherwise the server is stable and reliable.
 - LDAP support for mail primary and alternate address selectors in queries
 - Fix handling of virtual attrs with '\*' searches in ldap
 - Support multiple TOTP on accounts
-- Add kanidmd healthcheck for containers
+- Add kubidmd healthcheck for containers
 - Improve the access control module to evaluate access in a clearer way
 - Allow synced users to correct modify their local sessions
 
