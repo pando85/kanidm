@@ -275,6 +275,7 @@ impl ValueSetT for ValueSetSession {
 
     fn purge(&mut self, cid: &Cid) -> bool {
         for session in self.map.values_mut() {
+            // Send them all to the shadow realm
             if !matches!(session.state, SessionState::RevokedAt(_)) {
                 session.state = SessionState::RevokedAt(cid.clone())
             }
@@ -778,6 +779,7 @@ impl ValueSetT for ValueSetOauth2Session {
 
     fn purge(&mut self, cid: &Cid) -> bool {
         for session in self.map.values_mut() {
+            // Send them all to the shadow realm
             if !matches!(session.state, SessionState::RevokedAt(_)) {
                 session.state = SessionState::RevokedAt(cid.clone())
             }

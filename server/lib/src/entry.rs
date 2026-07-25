@@ -3087,8 +3087,8 @@ impl<VALID, STATE> Entry<VALID, STATE> {
         let mut pairs: Vec<(Attribute, PartialValue)> = Vec::with_capacity(0);
 
         for attr in attrs {
-            let values = self.attrs.get(attr)?;
-            values
+            self.attrs
+                .get(attr)?
                 .to_partialvalue_iter()
                 .for_each(|pv| pairs.push((attr.clone(), pv)));
         }
@@ -3132,21 +3132,21 @@ impl<VALID, STATE> Entry<VALID, STATE> {
             }
             // Get the schema attribute type out.
             let r = schema.is_multivalue(k)?;
+            // As this is single value, purge then present to maintain this
+            // invariant.
+            if !r ||
+                // we need to be able to express REMOVAL of attributes, so we
+                // purge here for migrations of certain system attributes.
+                *k == Attribute::AcpReceiverGroup ||
+                *k == Attribute::AcpCreateAttr ||
+                *k == Attribute::AcpCreateClass ||
+                *k == Attribute::AcpModifyPresentAttr ||
+                *k == Attribute::AcpModifyRemovedAttr ||
+                *k == Attribute::AcpModifyClass ||
+                *k == Attribute::SystemMust ||
+                *k == Attribute::SystemMay
             {
-                if !r ||
-                    // we need to be able to express REMOVAL of attributes, so we
-                    // purge here for migrations of certain system attributes.
-                    *k == Attribute::AcpReceiverGroup ||
-                    *k == Attribute::AcpCreateAttr ||
-                    *k == Attribute::AcpCreateClass ||
-                    *k == Attribute::AcpModifyPresentAttr ||
-                    *k == Attribute::AcpModifyRemovedAttr ||
-                    *k == Attribute::AcpModifyClass ||
-                    *k == Attribute::SystemMust ||
-                    *k == Attribute::SystemMay
-                {
-                    mods.push_mod(Modify::Purged(k.clone()));
-                }
+                mods.push_mod(Modify::Purged(k.clone()));
             }
             for v in vs.to_value_iter() {
                 mods.push_mod(Modify::Present(k.clone(), v.clone()));
