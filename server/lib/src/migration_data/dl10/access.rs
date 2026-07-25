@@ -135,7 +135,7 @@ impl From<BuiltinAcp> for EntryInitNew {
         match &value.target {
             #[allow(clippy::panic)]
             BuiltinAcpTarget::None => {
-                panic!("Builtin ACP has no target! {:?}", &value);
+                panic!("Builtin ACP has no target! {:?}", value);
             }
             BuiltinAcpTarget::Filter(proto_filter) => {
                 entry.add_ava(
