@@ -241,16 +241,16 @@ impl AwsUserAgent {
         let mut ua_value = String::new();
         use std::fmt::Write;
         // unwrap calls should never fail because string formatting will always succeed.
-        write!(ua_value, "{} ", &self.sdk_metadata).unwrap();
-        write!(ua_value, "{} ", &self.ua_metadata).unwrap();
-        write!(ua_value, "{} ", &self.api_metadata).unwrap();
-        write!(ua_value, "{} ", &self.os_metadata).unwrap();
-        write!(ua_value, "{} ", &self.language_metadata).unwrap();
+        write!(ua_value, "{} ", self.sdk_metadata).unwrap();
+        write!(ua_value, "{} ", self.ua_metadata).unwrap();
+        write!(ua_value, "{} ", self.api_metadata).unwrap();
+        write!(ua_value, "{} ", self.os_metadata).unwrap();
+        write!(ua_value, "{} ", self.language_metadata).unwrap();
         if let Some(ref env_meta) = self.exec_env_metadata {
             write!(ua_value, "{env_meta} ").unwrap();
         }
         if !self.business_metrics.is_empty() {
-            write!(ua_value, "{} ", &self.business_metrics).unwrap()
+            write!(ua_value, "{} ", self.business_metrics).unwrap()
         }
         for framework in &self.framework_metadata {
             write!(ua_value, "{framework} ").unwrap();
@@ -276,9 +276,9 @@ impl AwsUserAgent {
     pub fn ua_header(&self) -> String {
         let mut ua_value = String::new();
         use std::fmt::Write;
-        write!(ua_value, "{} ", &self.sdk_metadata).unwrap();
-        write!(ua_value, "{} ", &self.os_metadata).unwrap();
-        write!(ua_value, "{}", &self.language_metadata).unwrap();
+        write!(ua_value, "{} ", self.sdk_metadata).unwrap();
+        write!(ua_value, "{} ", self.os_metadata).unwrap();
+        write!(ua_value, "{}", self.language_metadata).unwrap();
         ua_value
     }
 }
@@ -606,7 +606,7 @@ struct ExecEnvMetadata {
 }
 impl fmt::Display for ExecEnvMetadata {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "exec-env/{}", &self.name)
+        write!(f, "exec-env/{}", self.name)
     }
 }
 
