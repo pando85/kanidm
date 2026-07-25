@@ -1,20 +1,26 @@
 # Kubidm - Simple and Secure Identity Management
 
 > **This repository is an independent fork of [Kanidm](https://github.com/kanidm/kanidm).**
-> 
+>
 > We started this fork because our product direction and development priorities have diverged from the upstream project.
-> 
+>
 > Our focus is on:
-> 
-> - **Cloud-native and Kubernetes-friendly operations**: including modern deployment patterns, object-store backups, and tighter Kubernetes integration.
+>
+> - **Cloud-native and Kubernetes-friendly operations**: including modern deployment patterns, object-store backups, and
+>   tighter Kubernetes integration.
 > - **Contemporary development practices**: including LLM-assisted workflows and tooling that support faster iteration.
 > - **Enterprise-ready Workforce IAM**: extending the platform toward the requirements of larger production deployments.
-> 
-> This fork reflects a different roadmap, not a lack of appreciation for upstream. We are grateful to the original maintainers for building and sustaining Kanidm, and this work would not exist without that foundation.
-> 
-> If you are using this fork, please report bugs, request features, and seek support through this repository and its associated community channels. As our implementation and priorities differ from upstream, fork-specific issues are best handled here rather than in the upstream Kanidm project. We aim to respond to feedback as quickly as possible and to keep our release cycle fast so fixes and improvements can reach users sooner.
-> 
-> **Special thanks to** [@firstyear](https://github.com/firstyear) and [@yaleman](https://github.com/yaleman) for creating and maintaining Kanidm.
+>
+> This fork reflects a different roadmap, not a lack of appreciation for upstream. We are grateful to the original
+> maintainers for building and sustaining Kanidm, and this work would not exist without that foundation.
+>
+> If you are using this fork, please report bugs, request features, and seek support through this repository and its
+> associated community channels. As our implementation and priorities differ from upstream, fork-specific issues are
+> best handled here rather than in the upstream Kanidm project. We aim to respond to feedback as quickly as possible and
+> to keep our release cycle fast so fixes and improvements can reach users sooner.
+>
+> **Special thanks to** [@firstyear](https://github.com/firstyear) and [@yaleman](https://github.com/yaleman) for
+> creating and maintaining Kanidm.
 
 ![Kubidm Logo](artwork/logo-small.png)
 
@@ -81,9 +87,9 @@ Alternately you can open a new [GitHub discussion].
 
 ## What does Kubidm mean?
 
-Kubidm is a portmanteau of 'Kubi' and 'idm'. Kubi refers to Kubernetes, reflecting this fork's focus on cloud-native
-and Kubernetes-friendly operations. Identity management is often abbreviated to 'idm', and is a common industry term
-for authentication providers.
+Kubidm is a portmanteau of 'Kubi' and 'idm'. Kubi refers to Kubernetes, reflecting this fork's focus on cloud-native and
+Kubernetes-friendly operations. Identity management is often abbreviated to 'idm', and is a common industry term for
+authentication providers.
 
 Kubidm is pronounced as "koo - bee - dee - em".
 

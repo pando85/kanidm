@@ -20,8 +20,8 @@ Rive will be evaluated and adopted as the preferred character-animation runtime,
 into Rive state-machine inputs. Static SVG artwork will remain the mandatory fallback and reduced-motion experience.
 
 The feature will be delivered incrementally. The first production pilot will replace the existing logout illustration,
-followed by authentication and application selection. Profile and credential workflows will only be integrated after
-the state model, accessibility, performance, and security behaviour have been validated.
+followed by authentication and application selection. Profile and credential workflows will only be integrated after the
+state model, accessibility, performance, and security behaviour have been validated.
 
 ## Context
 
@@ -117,8 +117,8 @@ The chosen approach must:
 Askama remains the source of rendered workflow state. HTMX remains responsible for partial updates. Bootstrap and the
 existing CSS custom properties remain the basis of the layout and theme.
 
-The mascot is added as an isolated enhancement. The Web UI must remain complete and usable without the guide runtime.
-No application route, credential action, or authentication flow will depend on Rive being available.
+The mascot is added as an isolated enhancement. The Web UI must remain complete and usable without the guide runtime. No
+application route, credential action, or authentication flow will depend on Rive being available.
 
 ### 2. Use Rive for the rigged character
 
@@ -205,25 +205,27 @@ Full pages and HTMX partials may declare their guide state through data attribut
 
 ```html
 <main
-    data-guide-scene="profile"
-    data-guide-action="present"
-    data-guide-status="editing"
-    data-guide-severity="neutral">
+  data-guide-scene="profile"
+  data-guide-action="present"
+  data-guide-status="editing"
+  data-guide-severity="neutral">
 ```
 
 Dynamic browser-only operations, such as a WebAuthn prompt beginning or failing before a server response, may emit a
 custom event:
 
 ```javascript
-document.dispatchEvent(new CustomEvent("kubidm:guide", {
+document.dispatchEvent(
+  new CustomEvent("kubidm:guide", {
     detail: {
-        scene: "credentials",
-        operation: "add-passkey",
-        action: "inspect",
-        status: "pending",
-        severity: "neutral",
+      scene: "credentials",
+      operation: "add-passkey",
+      action: "inspect",
+      status: "pending",
+      severity: "neutral",
     },
-}));
+  }),
+);
 ```
 
 The payload is a presentation signal only. It must not include usernames, credential material, relying-party challenges,
@@ -248,12 +250,12 @@ The public adapter is expected to remain small:
 
 ```javascript
 class KubidmGuide {
-    sync(root = document) {}
-    setState(state) {}
-    setBusy(isBusy) {}
-    trigger(action) {}
-    setMotionMode(mode) {}
-    destroy() {}
+  sync(root = document) {}
+  setState(state) {}
+  setBusy(isBusy) {}
+  trigger(action) {}
+  setMotionMode(mode) {}
+  destroy() {}
 }
 ```
 
@@ -265,14 +267,14 @@ The guide controller will use the existing HTMX lifecycle rather than observing 
 
 Initial event mapping:
 
-| HTMX event | Guide behaviour |
-| --- | --- |
-| `htmx:beforeRequest` | Enter a quiet pending state when the initiating element opts in. |
-| `htmx:beforeSwap` | Preserve current state and inspect response classification where needed. |
-| `htmx:afterSwap` | Read semantic state from the new fragment. |
-| `htmx:afterSettle` | Transition from waiting to the resolved fragment state. |
-| `htmx:afterRequest` | Handle transport failure without guessing the business error. |
-| `htmx:beforeTransition` | Disable decorative transition when reduced motion is active. |
+| HTMX event              | Guide behaviour                                                          |
+| ----------------------- | ------------------------------------------------------------------------ |
+| `htmx:beforeRequest`    | Enter a quiet pending state when the initiating element opts in.         |
+| `htmx:beforeSwap`       | Preserve current state and inspect response classification where needed. |
+| `htmx:afterSwap`        | Read semantic state from the new fragment.                               |
+| `htmx:afterSettle`      | Transition from waiting to the resolved fragment state.                  |
+| `htmx:afterRequest`     | Handle transport failure without guessing the business error.            |
+| `htmx:beforeTransition` | Disable decorative transition when reduced motion is active.             |
 
 A generic HTTP failure must not be translated directly into a specific mascot expression. Server-rendered semantic
 severity takes precedence because a validation error, policy conflict, access denial, and server failure have different
@@ -356,11 +358,11 @@ Tenant configuration may select visibility and motion policy, but it may not upl
 
 The guide may be expressive in neutral and successful states. Its behaviour becomes quieter as severity increases.
 
-| Severity | Permitted behaviour |
-| --- | --- |
-| Neutral | Walk, point, inspect, or present an object. |
-| Positive | Brief nod, check, shield glow, or wave. |
-| Caution | Mostly static, direct attention to the warning, hold a shield. |
+| Severity | Permitted behaviour                                                           |
+| -------- | ----------------------------------------------------------------------------- |
+| Neutral  | Walk, point, inspect, or present an object.                                   |
+| Positive | Brief nod, check, shield glow, or wave.                                       |
+| Caution  | Mostly static, direct attention to the warning, hold a shield.                |
 | Critical | Static serious posture; no jokes, celebration, shaking, crying, or slapstick. |
 
 The authoritative error message remains normal HTML. The guide must never infer whether authentication succeeded from a
@@ -432,8 +434,8 @@ Relevant substates include:
 - policy or access failure; and
 - confirmed success.
 
-The guide may present or inspect a credential symbol. It must not imply that a passkey is validated before the server has
-confirmed the assertion.
+The guide may present or inspect a credential symbol. It must not imply that a passkey is validated before the server
+has confirmed the assertion.
 
 ### Application selection
 
@@ -455,8 +457,8 @@ Relevant substates include:
 - validation error; and
 - confirmed save.
 
-The guide may use an identity-card or pencil prop in neutral states and a brief confirmation pose after a server-confirmed
-save.
+The guide may use an identity-card or pencil prop in neutral states and a brief confirmation pose after a
+server-confirmed save.
 
 ### Credentials
 

@@ -4,11 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Kubidm is a simple, secure, and fast identity management platform. It provides an LDAP-compatible directory service, OAuth2/OIDC authentication, RADIUS integration, and Unix integration for PAM/NSS.
+Kubidm is a simple, secure, and fast identity management platform. It provides an LDAP-compatible directory service,
+OAuth2/OIDC authentication, RADIUS integration, and Unix integration for PAM/NSS.
 
-**Tech Stack**: Rust (stable channel), Cargo workspace, Python (pykubidm), JavaScript (Web UI), Docker multi-arch builds, mdBook documentation.
+**Tech Stack**: Rust (stable channel), Cargo workspace, Python (pykubidm), JavaScript (Web UI), Docker multi-arch
+builds, mdBook documentation.
 
 **Components**:
+
 - `server/daemon` - Main Kubidm server (kubidmd)
 - `server/core` - Web UI and HTTP API
 - `server/lib` - Core library
@@ -104,6 +107,7 @@ make prep
 ### Workspace Structure
 
 **Libraries** (`libs/`):
+
 - `client` - Kubidm client SDK for connecting to servers
 - `crypto` - Cryptographic operations (password hashing, encryption)
 - `proto` - SCIM and internal protocol definitions
@@ -114,6 +118,7 @@ make prep
 - `profiles` - Build profile configuration
 
 **Server** (`server/`):
+
 - `daemon` - Main server binary (kubidmd)
 - `core` - HTTP API, Web UI, OAuth2 endpoints
 - `lib` - Core server logic (authentication, identity management)
@@ -122,6 +127,7 @@ make prep
 - `testkit-macros` - Test macros
 
 **Tools** (`tools/`):
+
 - `cli` - Kubidm CLI (kubidm command)
 - `orca` - Load testing tool
 - `iam_migrations/ldap` - LDAP migration tool
@@ -130,12 +136,14 @@ make prep
 - `mail_sender` - Email notification sender
 
 **Unix Integration** (`unix_integration/`):
+
 - `resolver` - Unix resolver daemon
 - `pam_kubidm` - PAM module
 - `nss_kubidm` - NSS module
 - `common` - Shared Unix integration code
 
 **Python** (`pykubidm/`):
+
 - Kubidm Python SDK with async support
 - Uses uv for dependency management
 - Strict mypy type checking

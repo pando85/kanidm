@@ -133,6 +133,7 @@ kubidmd database replicate-status -c /data/server.toml --detailed
 ```
 
 The output shows:
+
 - Overall replication status
 - Per-region status (Completed, In Progress, Degraded, Failed)
 - Number of backups replicated
@@ -169,6 +170,7 @@ Replication lag metrics can be integrated with monitoring systems:
 - `unhealthy_regions`: Count of regions with issues
 
 Set up alerts for:
+
 - `max_lag_seconds > threshold` (e.g., 3600 for 1 hour lag)
 - `unhealthy_regions > 0`
 - Overall status changing to `Failed` or `Degraded`
@@ -207,8 +209,8 @@ Set up alerts for:
 
 #### Backup Verification
 
-Each S3 backup includes a SHA-256 checksum that is verified automatically on restore. You can verify backups
-without restoring using:
+Each S3 backup includes a SHA-256 checksum that is verified automatically on restore. You can verify backups without
+restoring using:
 
 ```bash
 kubidmd database verify-s3 -c /data/server.toml backup-2024-01-01T22:00:00Z.json.gz
