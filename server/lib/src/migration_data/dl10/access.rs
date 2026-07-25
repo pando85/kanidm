@@ -113,7 +113,7 @@ impl From<BuiltinAcp> for EntryInitNew {
         match &value.receiver {
             #[allow(clippy::panic)]
             BuiltinAcpReceiver::None => {
-                panic!("Builtin ACP has no receiver! {:?}", &value);
+                panic!("Builtin ACP has no receiver! {:?}", value);
             }
             BuiltinAcpReceiver::Group(list) => {
                 entry.add_ava(
