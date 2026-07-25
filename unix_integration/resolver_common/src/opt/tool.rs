@@ -42,7 +42,7 @@ pub enum KanidmUnixOpt {
 
 #[derive(Debug, Parser)]
 #[clap(about = "Kubidm Unixd Management Utility")]
-#[command(name = "kanidm_unixd")]
+#[command(name = "kubidm_unixd")]
 pub struct KanidmUnixParser {
     #[clap(subcommand)]
     pub commands: KanidmUnixOpt,

@@ -46,8 +46,8 @@ struct EnvConfig {
     #[arg(default_value = "oauth2_test", env = "CLIENT_ID")]
     client_id: String,
 
-    #[arg(default_value = "https://localhost:8443/", env = "KANIDM_URL")]
-    kanidm_url: Url,
+    #[arg(default_value = "https://localhost:8443/", env = "KUBIDM_URL")]
+    kubidm_url: Url,
 
     #[structopt(
         default_value = "127.0.0.1:8843",
@@ -60,14 +60,14 @@ struct EnvConfig {
     #[structopt(
         env = "TLS_PEM_KEY",
         long = "tlskey",
-        default_value = "/tmp/kanidm/key.pem"
+        default_value = "/tmp/kubidm/key.pem"
     )]
     /// Path to the TLS Key file in PEM format.
     tls_pem_key: String,
     #[structopt(
         env = "TLS_PEM_CHAIN",
         long = "tlschain",
-        default_value = "/tmp/kanidm/chain.pem"
+        default_value = "/tmp/kubidm/chain.pem"
     )]
     /// Path to the TLS Chain file in PEM format.
     tls_pem_chain: String,
@@ -119,7 +119,7 @@ async fn main() {
         &env_config.client_id,
         env_config.client_secret.as_deref(),
         &format!("https://{}", env_config.tls_bind_addr),
-        &env_config.kanidm_url,
+        &env_config.kubidm_url,
         &async_http_client,
     )
     .await;

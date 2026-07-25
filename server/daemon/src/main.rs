@@ -524,7 +524,7 @@ async fn start_daemon(opt: KubidmdParser, config: Configuration) -> ExitCode {
     // ************************************************
     // HERE'S WHERE YOU CAN START USING THE LOGGER
     // ************************************************
-    info!(version = %env!("KANIDM_PKG_VERSION"), "Starting Kanidmd");
+    info!(version = %env!("KANIDM_PKG_VERSION"), "Starting Kubidmd");
 
     // guard which shuts down the logging/tracing providers when we close out
     let _otelguard = TracingPipelineGuard(provider);
@@ -666,7 +666,7 @@ fn main() -> ExitCode {
     };
 
     if env!("KANIDM_SERVER_CONFIG_PATH").is_empty() {
-        eprintln!("CRITICAL: Kanidmd was not built correctly and is missing a valid KANIDM_SERVER_CONFIG_PATH value");
+        eprintln!("CRITICAL: Kubidmd was not built correctly and is missing a valid KANIDM_SERVER_CONFIG_PATH value");
         return ExitCode::FAILURE;
     }
 
@@ -857,7 +857,7 @@ async fn kubidm_main(config: Configuration, opt: KubidmdParser) -> ExitCode {
                 unsafe {
                     let _ = sd_notify::notify_and_unset_env(&[sd_notify::NotifyState::Ready]);
                     let _ = sd_notify::notify_and_unset_env(&[sd_notify::NotifyState::Status(
-                        "Started Kanidm 🦀",
+                        "Started Kubidm 🦀",
                     )]);
                 }
 

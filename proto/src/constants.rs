@@ -340,11 +340,11 @@ pub const TEST_ATTR_NOTALLOWED: &str = "notallowed";
 pub const TEST_ENTRYCLASS_TEST_CLASS: &str = "testclass";
 
 /// HTTP Header containing an auth session ID for when you're going through an auth flow
-pub const KSESSIONID: &str = "X-KANIDM-AUTH-SESSION-ID";
+pub const KSESSIONID: &str = "X-KUBIDM-AUTH-SESSION-ID";
 /// HTTP Header containing the backend operation ID
-pub const KOPID: &str = "X-KANIDM-OPID";
+pub const KOPID: &str = "X-KUBIDM-OPID";
 /// HTTP Header containing the Kubidm server version
-pub const KVERSION: &str = "X-KANIDM-VERSION";
+pub const KVERSION: &str = "X-KUBIDM-VERSION";
 
 /// X-Forwarded-For header
 pub const X_FORWARDED_FOR: &str = "x-forwarded-for";

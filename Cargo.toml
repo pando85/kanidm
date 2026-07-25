@@ -7,8 +7,8 @@ authors = [
 rust-version = "1.93"
 edition = "2021"
 license = "MPL-2.0"
-homepage = "https://github.com/kanidm/kanidm/"
-repository = "https://github.com/kanidm/kanidm/"
+homepage = "https://github.com/pando85/kubidm/"
+repository = "https://github.com/pando85/kubidm/"
 
 [workspace]
 resolver = "2"
@@ -24,7 +24,7 @@ members = [
     "unix_integration/nss_kanidm",
     "unix_integration/nss_sparkle",
     "unix_integration/pam_sparkle_common",
-    "unix_integration/pam_kanidm",
+    "unix_integration/pam_kubidm",
     "unix_integration/pam_sparkle",
     "unix_integration/resolver_common",
     "unix_integration/resolver_kanidm",
@@ -107,7 +107,7 @@ opt-level = 0
 codegen-units = 256
 
 [patch.crates-io]
-## As Kanidm maintains a number of libraries, sometimes during development we need to override them
+## As Kubidm maintains a number of libraries, sometimes during development we need to override them
 ## with local or git versions. This patch table allows quick uncommenting to achieve that.
 
 # compact_jwt = { path = "../compact-jwt" }

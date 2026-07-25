@@ -348,10 +348,10 @@ pub async fn configure(
     client_id: &str,
     client_secret: Option<&str>,
     client_url: &str,
-    kanidm_url: &Url,
+    kubidm_url: &Url,
     async_http_client: &reqwest::Client,
 ) -> ConfiguredClient {
-    let mut discovery_url = kanidm_url.clone();
+    let mut discovery_url = kubidm_url.clone();
     discovery_url
         .path_segments_mut()
         .unwrap()

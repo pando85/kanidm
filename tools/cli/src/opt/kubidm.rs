@@ -24,7 +24,7 @@ pub struct Named {
 #[derive(Debug, Args, Clone)]
 pub struct DebugOpt {
     /// Enable debugging of the kubidm tool
-    #[clap(short, long, env = "KANIDM_DEBUG")]
+    #[clap(short, long, env = "KUBIDM_DEBUG")]
     pub debug: bool,
 }
 
@@ -1609,21 +1609,21 @@ pub struct KubidmClientParser {
     pub commands: KubidmClientOpt,
 
     /// Enable debugging of the kubidm tool
-    #[clap(short, long, env = "KANIDM_DEBUG", global = true)]
+    #[clap(short, long, env = "KUBIDM_DEBUG", global = true)]
     pub debug: bool,
     /// Select the instance name you wish to connect to
-    #[clap(short = 'I', long = "instance", env = "KANIDM_INSTANCE", global = true,
+    #[clap(short = 'I', long = "instance", env = "KUBIDM_INSTANCE", global = true,
     value_parser = clap::builder::NonEmptyStringValueParser::new())]
     pub instance: Option<String>,
     /// The URL of the kubidm instance
-    #[clap(short = 'H', long = "url", env = "KANIDM_URL", global = true,
+    #[clap(short = 'H', long = "url", env = "KUBIDM_URL", global = true,
     value_parser = clap::builder::NonEmptyStringValueParser::new())]
     pub addr: Option<String>,
     /// User which will initiate requests
     #[clap(
         short = 'D',
         long = "name",
-        env = "KANIDM_NAME",
+        env = "KUBIDM_NAME",
         value_parser = clap::builder::NonEmptyStringValueParser::new(), global=true
     )]
     pub username: Option<String>,
@@ -1632,17 +1632,17 @@ pub struct KubidmClientParser {
         value_parser,
         short = 'C',
         long = "ca",
-        env = "KANIDM_CA_PATH",
+        env = "KUBIDM_CA_PATH",
         global = true
     )]
     pub ca_path: Option<PathBuf>,
     /// Log format
-    #[clap(short, long = "output", env = "KANIDM_OUTPUT", global = true, default_value=OutputMode::default())]
+    #[clap(short, long = "output", env = "KUBIDM_OUTPUT", global = true, default_value=OutputMode::default())]
     output_mode: OutputMode,
     /// Skip hostname verification
     #[clap(
         long = "skip-hostname-verification",
-        env = "KANIDM_SKIP_HOSTNAME_VERIFICATION",
+        env = "KUBIDM_SKIP_HOSTNAME_VERIFICATION",
         default_value_t = false,
         global = true
     )]
@@ -1650,7 +1650,7 @@ pub struct KubidmClientParser {
     /// Don't verify CA
     #[clap(
         long = "accept-invalid-certs",
-        env = "KANIDM_ACCEPT_INVALID_CERTS",
+        env = "KUBIDM_ACCEPT_INVALID_CERTS",
         default_value_t = false,
         global = true
     )]
@@ -1659,7 +1659,7 @@ pub struct KubidmClientParser {
     #[clap(
         short,
         long,
-        env = "KANIDM_TOKEN_CACHE_PATH",
+        env = "KUBIDM_TOKEN_CACHE_PATH",
     hide = true,
      default_value = None,
     global=true,
@@ -1669,7 +1669,7 @@ pub struct KubidmClientParser {
     #[clap(
         short,
         long,
-        env = "KANIDM_PASSWORD",
+        env = "KUBIDM_PASSWORD",
         hide = true,
         global = true,
         value_parser = clap::builder::NonEmptyStringValueParser::new())]

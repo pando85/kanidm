@@ -688,9 +688,9 @@ impl KubidmClient {
         }
 
         #[cfg(any(test, debug_assertions))]
-        if !matching && std::env::var("KANIDM_DEV_YOLO").is_err() {
+        if !matching && std::env::var("KUBIDM_DEV_YOLO").is_err() {
             eprintln!("⚠️  You're in debug/dev mode, so we're going to quit here.");
-            eprintln!("If you really must do this, set KANIDM_DEV_YOLO=1");
+            eprintln!("If you really must do this, set KUBIDM_DEV_YOLO=1");
             std::process::exit(1);
         }
 

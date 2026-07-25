@@ -1,5 +1,5 @@
 [package]
-name = "kanidm_oauth2_tester"
+name = "kubidm_oauth2_tester"
 description = "Kanidm OAuth2 Client Tester"
 version = "0.0.1"
 rust-version = "1.93"
