@@ -3130,27 +3130,22 @@ impl<VALID, STATE> Entry<VALID, STATE> {
                 continue;
             }
             // Get the schema attribute type out.
-            match schema.is_multivalue(k) {
-                Ok(r) => {
-                    // As this is single value, purge then present to maintain this
-                    // invariant.
-                    if !r ||
-                        // we need to be able to express REMOVAL of attributes, so we
-                        // purge here for migrations of certain system attributes.
-                        *k == Attribute::AcpReceiverGroup ||
-                        *k == Attribute::AcpCreateAttr ||
-                        *k == Attribute::AcpCreateClass ||
-                        *k == Attribute::AcpModifyPresentAttr ||
-                        *k == Attribute::AcpModifyRemovedAttr ||
-                        *k == Attribute::AcpModifyClass ||
-                        *k == Attribute::SystemMust ||
-                        *k == Attribute::SystemMay
-                    {
-                        mods.push_mod(Modify::Purged(k.clone()));
-                    }
-                }
-                // A schema error happened, fail the whole operation.
-                Err(e) => return Err(e),
+            let r = schema.is_multivalue(k)?;
+            // As this is single value, purge then present to maintain this
+            // invariant.
+            if !r ||
+                // we need to be able to express REMOVAL of attributes, so we
+                // purge here for migrations of certain system attributes.
+                *k == Attribute::AcpReceiverGroup ||
+                *k == Attribute::AcpCreateAttr ||
+                *k == Attribute::AcpCreateClass ||
+                *k == Attribute::AcpModifyPresentAttr ||
+                *k == Attribute::AcpModifyRemovedAttr ||
+                *k == Attribute::AcpModifyClass ||
+                *k == Attribute::SystemMust ||
+                *k == Attribute::SystemMay
+            {
+                mods.push_mod(Modify::Purged(k.clone()));
             }
             for v in vs.to_value_iter() {
                 mods.push_mod(Modify::Present(k.clone(), v.clone()));
