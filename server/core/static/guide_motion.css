@@ -41,13 +41,11 @@
     animation: guide-goodbye 700ms cubic-bezier(.2,.7,.2,1) both;
 }
 
-[data-guide-scene="applications"][data-guide-state="travel"] [data-guide-slot][data-motion="full"] img,
-[data-guide-scene="applications"][data-guide-state="travel"] [data-guide-slot] img {
+[data-guide-scene="applications"][data-guide-state="travel"] [data-guide-slot][data-motion="full"] img {
     animation: guide-travel-arrival 900ms cubic-bezier(.2,.8,.3,1) both;
 }
 
-[data-guide-scene="auth"][data-guide-state="travel"] [data-guide-slot][data-motion="full"] img,
-[data-guide-scene="auth"][data-guide-state="travel"] [data-guide-slot] img {
+[data-guide-scene="auth"][data-guide-state="travel"] [data-guide-slot][data-motion="full"] img {
     animation: guide-travel-exit 800ms cubic-bezier(.2,.8,.3,1) both;
 }
 
@@ -102,11 +100,6 @@
 [data-guide-mode="subtle"] .crab-dialog[data-variant="teach"],
 [data-guide-mode="subtle"] .guide-story {
     display: none;
-}
-
-[data-guide-mode="subtle"] [data-guide-slot] {
-    transform: scale(.84);
-    transform-origin: bottom center;
 }
 
 [data-motion="reduced"] img,
