@@ -14,9 +14,59 @@
 (% endblock %)
 
 (% block body %)
+(% if crate::https::views::guide::guided_ui_enabled() %)
 <main id="main"
-      class="form-signin m-auto align-items-center d-flex flex-column(% if crate::https::views::guide::guided_ui_enabled() %) guide-auth-shell(% endif %)"
-      (% if crate::https::views::guide::guided_ui_enabled() %)data-guide-scene="auth"(% endif %)>
+      class="form-signin m-auto guide-auth-shell"
+      data-guide-scene="auth">
+    <aside class="guide-auth-product-zone" aria-label="Kubidm">
+        <div class="guide-auth-product-brand">
+            <img class="guide-auth-product-mark"
+                 src="/pkg/img/logo-square.svg?v=((crate::https::cache_buster::get_cache_buster_key()))"
+                 alt="" />
+            <span>Kubidm</span>
+        </div>
+
+        <div class="guide-auth-product-copy">
+            <h1>Identity that guides every step.</h1>
+            <p>Secure sign-in and identity setup, with clear recommendations when there is a choice to make.</p>
+        </div>
+
+        <div class="guide-mascot-slot"
+             data-guide-slot
+             aria-hidden="true"
+             hidden></div>
+    </aside>
+
+    <section class="guide-auth-task-zone">
+        <div class="guide-auth-card">
+            <header class="guide-auth-tenant-brand">
+                (% if display_ctx.domain_info.image().is_some() %)
+                <img src="/ui/images/domain"
+                     alt="(( display_ctx.domain_info.display_name() ))"
+                     class="kubidm_logo" />
+                (% endif %)
+                <h2>(( display_ctx.domain_info.display_name() ))</h2>
+            </header>
+
+            (% if let Some(reauth) = display_ctx.reauth %)
+            <div class="guide-auth-context alert alert-info" role="status">
+                Confirm your identity as (( reauth.username )) to access (( reauth.purpose )).
+            </div>
+            (% else if let Some(oauth2) = display_ctx.oauth2 %)
+            <div class="guide-auth-context alert alert-info" role="status">
+                Sign in to continue to (( oauth2.client_name )).
+            </div>
+            (% endif %)
+
+            <div class="guide-auth-content">
+                (% block logincontainer %)
+                (% endblock %)
+            </div>
+        </div>
+    </section>
+</main>
+(% else %)
+<main id="main" class="form-signin m-auto align-items-center d-flex flex-column">
 	(% if display_ctx.domain_info.image().is_some() %)
 	<img src="/ui/images/domain"
 		alt="(( display_ctx.domain_info.display_name() ))" class="kubidm_logo" />
@@ -39,12 +89,6 @@
 		(% block logincontainer %)
 		(% endblock %)
 	</div>
-
-	(% if crate::https::views::guide::guided_ui_enabled() %)
-	<div class="guide-mascot-slot"
-	     data-guide-slot
-	     aria-hidden="true"
-	     hidden></div>
-	(% endif %)
 </main>
+(% endif %)
 (% endblock %)
