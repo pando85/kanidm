@@ -22,6 +22,7 @@ mod cookies;
 mod csrf;
 mod enrol;
 mod errors;
+pub(crate) mod guide;
 mod login;
 mod navbar;
 mod oauth2;
@@ -137,7 +138,7 @@ pub fn view_router(state: ServerState) -> Router<ServerState> {
         unguarded_router
     };
 
-    // The webauthn post is unguarded because it's not a htmx event.
+    // The webauthn post is unguarded because it's not an htmx event.
 
     // Anything that is a partial only works if triggered from htmx
     let guarded_router = Router::new()
