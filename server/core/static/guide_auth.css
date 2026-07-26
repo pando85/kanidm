@@ -1,13 +1,112 @@
 .guide-auth-shell {
+    width: min(72rem, calc(100% - 2rem));
+    max-width: none;
+    min-height: clamp(34rem, 72vh, 48rem);
+    display: grid !important;
+    grid-template-columns: minmax(18rem, 0.8fr) minmax(25rem, 1.2fr);
+    align-items: stretch !important;
+    overflow: hidden;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 1.5rem;
+    background: var(--bs-body-bg);
+    box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 10%);
+}
+
+.guide-auth-product-zone {
     position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: clamp(1.5rem, 4vw, 3.25rem);
+    overflow: hidden;
+    background: var(--kubidm-deep-navy);
+    color: var(--kubidm-white);
+}
+
+.guide-auth-product-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    color: inherit;
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+
+.guide-auth-product-mark {
+    width: 2.25rem;
+    height: 2.25rem;
+}
+
+.guide-auth-product-copy {
+    max-width: 24rem;
+    margin-top: clamp(2.75rem, 9vh, 6rem);
+    padding-bottom: 11rem;
+}
+
+.guide-auth-product-copy h1 {
+    margin: 0 0 0.8rem;
+    font-size: clamp(2rem, 4vw, 3.4rem);
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+}
+
+.guide-auth-product-copy p {
+    max-width: 20rem;
+    margin: 0;
+    color: rgb(255 255 255 / 72%);
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.guide-auth-task-zone {
+    display: grid;
+    place-items: center;
+    min-width: 0;
+    padding: clamp(1.5rem, 5vw, 4rem);
+    background: var(--bs-body-bg);
+}
+
+.guide-auth-card {
+    width: min(100%, 31rem);
+}
+
+.guide-auth-tenant-brand {
+    margin-bottom: 1.75rem;
+    text-align: center;
+}
+
+.guide-auth-tenant-brand .kubidm_logo {
+    width: 5.5rem;
+    height: 5.5rem;
+    object-fit: contain;
+}
+
+.guide-auth-tenant-brand h2 {
+    margin: 0.75rem 0 0;
+    font-size: 1.25rem;
+}
+
+.guide-auth-context {
+    margin-bottom: 1.25rem;
+}
+
+.guide-auth-context .alert {
+    margin-bottom: 0;
+}
+
+.guide-auth-content > :last-child {
+    margin-bottom: 0;
 }
 
 .guide-mascot-slot {
-    width: min(13rem, 35vw);
-    min-height: 7rem;
-    margin: 1rem auto 0;
+    position: absolute;
+    right: clamp(1rem, 3vw, 2.25rem);
+    bottom: clamp(1rem, 3vw, 2.25rem);
+    width: min(15rem, 75%);
+    min-height: 8rem;
     display: grid;
-    place-items: center;
+    place-items: end center;
     pointer-events: none;
 }
 
@@ -18,7 +117,7 @@
 .guide-mascot-slot img {
     display: block;
     max-width: 100%;
-    max-height: 9rem;
+    max-height: 11rem;
 }
 
 .guide-mascot-slot[data-motion="reduced"] img,
@@ -26,18 +125,93 @@
     transition: none;
 }
 
-@media (min-width: 62rem) {
+@media (max-width: 62rem) {
+    .guide-auth-shell {
+        width: min(58rem, calc(100% - 1.5rem));
+        grid-template-columns: minmax(13rem, 0.55fr) minmax(23rem, 1.45fr);
+    }
+
+    .guide-auth-product-zone {
+        padding: 1.75rem;
+    }
+
+    .guide-auth-product-copy {
+        margin-top: 3rem;
+        padding-bottom: 8rem;
+    }
+
+    .guide-auth-product-copy h1 {
+        font-size: clamp(1.7rem, 3.7vw, 2.4rem);
+    }
+
+    .guide-auth-product-copy p {
+        font-size: 0.85rem;
+    }
+
     .guide-mascot-slot {
-        position: fixed;
-        right: max(1.5rem, calc((100vw - 70rem) / 2));
-        bottom: 1.5rem;
-        margin: 0;
+        width: min(10rem, 70%);
     }
 }
 
-@media (max-width: 36rem) {
+@media (max-width: 44rem) {
+    .guide-auth-shell {
+        width: min(34rem, calc(100% - 1rem));
+        min-height: 0;
+        grid-template-columns: 1fr;
+        border-radius: 1.1rem;
+    }
+
+    .guide-auth-product-zone {
+        min-height: 8rem;
+        padding: 1.25rem 1.5rem;
+    }
+
+    .guide-auth-product-copy {
+        margin-top: 1.4rem;
+        padding: 0;
+    }
+
+    .guide-auth-product-copy h1 {
+        max-width: 17rem;
+        margin-bottom: 0;
+        font-size: 1.65rem;
+    }
+
+    .guide-auth-product-copy p {
+        display: none;
+    }
+
+    .guide-auth-task-zone {
+        padding: 1.75rem 1.25rem 2rem;
+    }
+
+    .guide-auth-tenant-brand {
+        margin-bottom: 1.25rem;
+    }
+
+    .guide-auth-tenant-brand .kubidm_logo {
+        width: 4.5rem;
+        height: 4.5rem;
+    }
+
     .guide-mascot-slot {
-        width: min(8rem, 30vw);
-        min-height: 4.5rem;
+        right: 1rem;
+        bottom: 0.6rem;
+        width: 6.25rem;
+        min-height: 4rem;
+    }
+
+    .guide-mascot-slot img {
+        max-height: 5.5rem;
+    }
+}
+
+@media (max-width: 26rem) {
+    .guide-auth-product-copy h1 {
+        font-size: 1.4rem;
+    }
+
+    .guide-auth-task-zone {
+        padding-inline: 1rem;
     }
 }
