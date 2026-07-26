@@ -7,10 +7,14 @@
     (% if crate::https::views::guide::guided_ui_enabled() %)
         (% if passkey %)
         <h3>Use your passkey</h3>
-        <section class="crab-dialog" data-variant="teach">
+        <section class="crab-dialog"
+                 data-variant="teach"
+                 data-guide-story-id="passkey-basics">
             <p>Your browser or device will ask you to approve this sign-in. The private key is not sent to Kubidm, and the credential is bound to the correct site.</p>
         </section>
-        <details class="guide-story">
+        <details class="guide-story"
+                 data-guide-story-id="passkey-phishing"
+                 data-guide-repeat="always">
             <summary>Why is this harder to phish?</summary>
             <div class="guide-story-body">
                 <p>Kubidm and your authenticator prove the sign-in with a cryptographic challenge tied to this site. There is no reusable passkey secret for a fake page to ask you to type.</p>
@@ -18,10 +22,14 @@
         </details>
         (% else %)
         <h3>Use your security key</h3>
-        <section class="crab-dialog" data-variant="teach">
+        <section class="crab-dialog"
+                 data-variant="teach"
+                 data-guide-story-id="security-key-basics">
             <p>Your browser will ask you to approve this sign-in with your hardware security key. The key proves possession without sending its private key to Kubidm.</p>
         </section>
-        <details class="guide-story">
+        <details class="guide-story"
+                 data-guide-story-id="security-key-flow"
+                 data-guide-repeat="always">
             <summary>What happens when I continue?</summary>
             <div class="guide-story-body">
                 <p>The browser asks the security key to answer a challenge for this site. You may need to touch the key or complete its local verification step.</p>
