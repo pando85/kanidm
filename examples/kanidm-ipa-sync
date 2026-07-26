@@ -16,7 +16,7 @@ sync_token = "eyJhb..."
 # The LDAP URI to FreeIPA. This MUST be LDAPS. You should connect to a unique single
 # server in the IPA topology rather than via a load balancer or dns srv records. This
 # is to prevent replication conflicts and issues due to how 389-ds content sync works.
-ipa_uri = "ldaps://specific-server.ipa.dev.kanidm.com"
+ipa_uri = "ldaps://specific-server.ipa.dev.kubidm.com"
 # Path to the IPA CA certificate in PEM format. This can be found on an IPA server
 # in the file `/etc/ipa/ca.crt`
 ipa_ca = "/path/to/ipa-ca.pem"

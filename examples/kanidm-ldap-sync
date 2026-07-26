@@ -19,7 +19,7 @@ sync_token = "eyJhb..."
 # The LDAP URI to the server. This MUST be LDAPS. You should connect to a unique single
 # server in the LDAP topology rather than via a load balancer or dns srv records. This
 # is to prevent replication conflicts and issues due to how 389-ds and openldap sync works.
-ldap_uri = "ldaps://specific-server.ldap.kanidm.com"
+ldap_uri = "ldaps://specific-server.ldap.kubidm.com"
 # Path to the LDAP CA certificate in PEM format.
 ldap_ca = "/path/to/kubidm-ldap-ca.pem"
 
