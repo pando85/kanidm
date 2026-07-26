@@ -1,11 +1,17 @@
 <main class="container-lg(% if crate::https::views::guide::guided_ui_enabled() %) guide-applications-scene(% endif %)"
-      (% if crate::https::views::guide::guided_ui_enabled() %)data-guide-scene="applications" data-guide-state="idle" data-guide-action="applications" data-guide-severity="neutral"(% endif %)>
+      (% if crate::https::views::guide::guided_ui_enabled() %)data-guide-scene="applications" data-guide-mode="(% if crate::https::views::guide::guided_ui_subtle() %)subtle(% else %)full(% endif %)" data-guide-state="(% if apps.is_empty() %)guide(% else %)idle(% endif %)" data-guide-action="(% if apps.is_empty() %)applications_empty(% else %)applications(% endif %)" data-guide-severity="neutral"(% endif %)>
 	<div>
 		<h2>Applications</h2>
 	</div>
 	<hr />
 	(% if apps.is_empty() %)
 	<p>No linked applications available</p>
+    (% if crate::https::views::guide::guided_ui_full() %)
+    <section class="crab-dialog" data-variant="orient" data-guide-story-id="applications-empty">
+        <strong class="crab-dialog-title">You are signed in</strong>
+        <p>There simply aren’t any applications linked to this account right now. That is different from an authentication problem.</p>
+    </section>
+    (% endif %)
 	(% else %)
 	<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
 		(% for app in apps %)
