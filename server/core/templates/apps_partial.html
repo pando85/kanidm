@@ -1,4 +1,5 @@
-<main class="container-lg">
+<main class="container-lg(% if crate::https::views::guide::guided_ui_enabled() %) guide-applications-scene(% endif %)"
+      (% if crate::https::views::guide::guided_ui_enabled() %)data-guide-scene="applications" data-guide-state="idle" data-guide-action="applications" data-guide-severity="neutral"(% endif %)>
 	<div>
 		<h2>Applications</h2>
 	</div>
@@ -29,5 +30,12 @@
 		</div>
 		(% endfor %)
 	</div>
+	(% endif %)
+
+	(% if crate::https::views::guide::guided_ui_enabled() %)
+	<div class="guide-applications-slot"
+	     data-guide-slot
+	     aria-hidden="true"
+	     hidden></div>
 	(% endif %)
 </main>
