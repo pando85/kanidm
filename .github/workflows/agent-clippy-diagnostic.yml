@@ -1,0 +1,48 @@
+---
+name: Agent clippy diagnostic
+
+"on":
+  push:
+    branches:
+      - agent/adr-mascot-guided-experience
+
+permissions:
+  contents: write
+
+env:
+  KUBIDM_BUILD_PROFILE: developer
+
+jobs:
+  diagnose:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: agent/adr-mascot-guided-experience
+          fetch-depth: 0
+      - uses: mozilla-actions/sccache-action@v0.0.10
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpam0g-dev libselinux1-dev libssl-dev libsystemd-dev libtss2-dev libudev-dev pkg-config libtalloc-dev tpm-udev
+      - name: Capture clippy output
+        shell: bash
+        run: |
+          rustup component add clippy
+          set +e
+          cargo clippy --quiet --lib --bins --examples > /tmp/clippy.log 2>&1
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ]; then
+            printf '%s\n' 'clippy passed' > CLIPPY_FAILURE.txt
+          else
+            tail -n 240 /tmp/clippy.log > CLIPPY_FAILURE.txt
+          fi
+      - name: Commit diagnostic
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CLIPPY_FAILURE.txt
+          git commit -m "ci: capture clippy diagnostic"
+          git push origin HEAD:agent/adr-mascot-guided-experience
