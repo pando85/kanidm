@@ -5,13 +5,15 @@
 (% block head %)
 <link rel="stylesheet"
       href="/pkg/guide.css?v=((crate::https::cache_buster::get_cache_buster_key()))" />
+<link rel="stylesheet"
+      href="/pkg/guide_auth.css?v=((crate::https::cache_buster::get_cache_buster_key()))" />
 <script type="module"
         src="/pkg/modules/guide_controller.mjs?v=((crate::https::cache_buster::get_cache_buster_key()))"></script>
 (% endblock %)
 
 (% block body %)
 <main id="main"
-      class="form-signin m-auto align-items-center d-flex flex-column"
+      class="form-signin m-auto align-items-center d-flex flex-column guide-auth-shell"
       data-guide-scene="auth">
 	(% if display_ctx.domain_info.image().is_some() %)
 	<img src="/ui/images/domain"
@@ -35,5 +37,10 @@
 		(% block logincontainer %)
 		(% endblock %)
 	</div>
+
+	<div class="guide-mascot-slot"
+	     data-guide-slot
+	     aria-hidden="true"
+	     hidden></div>
 </main>
 (% endblock %)
