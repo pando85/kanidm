@@ -1029,6 +1029,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
+name = "base64"
+version = "0.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b25655df2c3cdd83c5e5b293b88acd880332b2ddadd7c30ac43144fdc0033da9"
+
+[[package]]
 name = "base64-simd"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4300,7 +4306,7 @@ dependencies = [
 name = "kubidm_build_profiles"
 version = "1.11.0-dev"
 dependencies = [
- "base64 0.22.1",
+ "base64 0.23.0",
  "gix",
  "serde",
  "sha2 0.11.0-rc.5",
@@ -4347,7 +4353,7 @@ dependencies = [
 name = "kubidm_lib_crypto"
 version = "1.11.0-dev"
 dependencies = [
- "base64 0.22.1",
+ "base64 0.23.0",
  "base64urlsafedata 0.6.1-dev",
  "crypto-glue",
  "hex",
@@ -4375,7 +4381,7 @@ name = "kubidm_proto"
 version = "1.11.0-dev"
 dependencies = [
  "base32",
- "base64 0.22.1",
+ "base64 0.23.0",
  "chrono",
  "clap",
  "crypto-glue",
@@ -4462,7 +4468,7 @@ dependencies = [
  "axum-extra",
  "axum-htmx",
  "axum-macros",
- "base64 0.22.1",
+ "base64 0.23.0",
  "bytes",
  "chrono",
  "cidr",
@@ -4522,7 +4528,7 @@ name = "kubidmd_lib"
 version = "1.11.0-dev"
 dependencies = [
  "async-trait",
- "base64 0.22.1",
+ "base64 0.23.0",
  "base64urlsafedata 0.6.1-dev",
  "bitflags 2.13.1",
  "chrono",
