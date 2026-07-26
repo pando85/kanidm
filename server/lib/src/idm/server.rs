@@ -37,7 +37,7 @@ use compact_jwt::{Jwk, JwsCompact};
 use concread::bptree::{BptreeMap, BptreeMapReadTxn, BptreeMapWriteTxn};
 use concread::cowcell::CowCellReadTxn;
 use concread::hashmap::{HashMap, HashMapReadTxn, HashMapWriteTxn};
-use kubidm_lib_crypto::{PW_MAX_LENGTH_NIST, PW_MFA_MIN_LENGTH, CryptoPolicy};
+use kubidm_lib_crypto::{CryptoPolicy, PW_MAX_LENGTH_NIST, PW_MFA_MIN_LENGTH};
 use kubidm_proto::internal::{
     ApiToken, CredentialStatus, PasswordFeedback, RadiusAuthToken, ScimSyncToken, UatPurpose,
     UserAuthToken,
