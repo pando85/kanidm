@@ -54,10 +54,22 @@
             <div class="guide-auth-context alert alert-info" role="status">
                 Confirm your identity as (( reauth.username )) to access (( reauth.purpose )).
             </div>
+            (% if crate::https::views::guide::guided_ui_full() %)
+            <section class="crab-dialog" data-variant="orient" data-guide-story-id="reauth-context">
+                <strong class="crab-dialog-title">Why another check?</strong>
+                <p>You’re already signed in, but this action is sensitive enough to verify your identity again. The requested action remains blocked until Kubidm confirms it.</p>
+            </section>
+            (% endif %)
             (% else if let Some(oauth2) = display_ctx.oauth2 %)
             <div class="guide-auth-context alert alert-info" role="status">
                 Sign in to continue to (( oauth2.client_name )).
             </div>
+            (% if crate::https::views::guide::guided_ui_full() %)
+            <section class="crab-dialog" data-variant="orient" data-guide-story-id="oauth-context">
+                <strong class="crab-dialog-title">Two identities, one hand-off</strong>
+                <p>(( display_ctx.domain_info.display_name() )) verifies who you are here. After that, Kubidm returns the result to (( oauth2.client_name )) so the application can decide what you may access.</p>
+            </section>
+            (% endif %)
             (% endif %)
 
             <div class="guide-auth-content">
