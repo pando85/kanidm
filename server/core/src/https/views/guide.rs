@@ -280,10 +280,19 @@ mod tests {
     #[test]
     fn motion_mode_parser_is_bounded_and_safe_by_default() {
         assert_eq!(GuidedMotionMode::from_value("full"), GuidedMotionMode::Full);
-        assert_eq!(GuidedMotionMode::from_value("REDUCED"), GuidedMotionMode::Reduced);
-        assert_eq!(GuidedMotionMode::from_value("static"), GuidedMotionMode::Static);
+        assert_eq!(
+            GuidedMotionMode::from_value("REDUCED"),
+            GuidedMotionMode::Reduced
+        );
+        assert_eq!(
+            GuidedMotionMode::from_value("static"),
+            GuidedMotionMode::Static
+        );
         assert_eq!(GuidedMotionMode::from_value("auto"), GuidedMotionMode::Auto);
-        assert_eq!(GuidedMotionMode::from_value("unexpected"), GuidedMotionMode::Auto);
+        assert_eq!(
+            GuidedMotionMode::from_value("unexpected"),
+            GuidedMotionMode::Auto
+        );
     }
 
     #[test]
