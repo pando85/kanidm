@@ -1,0 +1,43 @@
+.guide-auth-shell {
+    position: relative;
+}
+
+.guide-mascot-slot {
+    width: min(13rem, 35vw);
+    min-height: 7rem;
+    margin: 1rem auto 0;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+}
+
+.guide-mascot-slot[hidden] {
+    display: none;
+}
+
+.guide-mascot-slot img {
+    display: block;
+    max-width: 100%;
+    max-height: 9rem;
+}
+
+.guide-mascot-slot[data-motion="reduced"] img,
+.guide-mascot-slot[data-motion="static"] img {
+    transition: none;
+}
+
+@media (min-width: 62rem) {
+    .guide-mascot-slot {
+        position: fixed;
+        right: max(1.5rem, calc((100vw - 70rem) / 2));
+        bottom: 1.5rem;
+        margin: 0;
+    }
+}
+
+@media (max-width: 36rem) {
+    .guide-mascot-slot {
+        width: min(8rem, 30vw);
+        min-height: 4.5rem;
+    }
+}
