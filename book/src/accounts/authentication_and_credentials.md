@@ -1,21 +1,21 @@
 # Authentication and Credentials
 
-A primary job of a system like Kanidm is to manage credentials for persons. This can involve a range of operations from
+A primary job of a system like Kubidm is to manage credentials for persons. This can involve a range of operations from
 new user onboarding, credential resets, and self service.
 
 ## Types of Credentials
 
 ### Passkeys
 
-This is the preferred method of authentication in Kanidm. Passkeys represent "all possible cryptographic" authenticators
+This is the preferred method of authentication in Kubidm. Passkeys represent "all possible cryptographic" authenticators
 that support Webauthn. Examples of this include Yubikeys, TouchID, Windows Hello, TPM's and more.
 
 These devices are unphishable, self contained multifactor authenticators and are considered the most secure method of
-authentication in Kanidm.
+authentication in Kubidm.
 
 > [!WARNING]
 >
-> Kanidm's definition of Passkeys may differ from that of other systems. This is because we adopted the term very early,
+> Kubidm's definition of Passkeys may differ from that of other systems. This is because we adopted the term very early,
 > before it has changed and evolved.
 
 ### Attested Passkeys
@@ -26,7 +26,7 @@ authenticator. In general only FIDO2 keys or TPM's are capable of meeting attest
 
 ### Password + TOTP
 
-This is a classic Time-based One Time Password combined with a password. Different to other systems Kanidm will prompt
+This is a classic Time-based One Time Password combined with a password. Different to other systems Kubidm will prompt
 for the TOTP _first_ before the password. This is to prevent drive by bruteforce against the password of the account and
 testing if the password is vulnerable.
 
@@ -158,7 +158,7 @@ invalidated.
 
 ## Reauthentication / Privilege Access Mode
 
-To allow for longer lived sessions in Kanidm, by default sessions are issued in a "privilege capable" but read-only
+To allow for longer lived sessions in Kubidm, by default sessions are issued in a "privilege capable" but read-only
 mode. In order to access privileges for a short time, you must re-authenticate. This re-issues your session with a small
 time limited read-write session internally. You can consider this to be like `sudo` on a unix system or `UAC` on windows
 where you reauthenticate for short periods to access higher levels of privilege.

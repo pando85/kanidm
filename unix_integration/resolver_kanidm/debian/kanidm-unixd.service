@@ -2,7 +2,7 @@
 #   systemctl edit kanidm-unixd.service
 
 [Unit]
-Description=Kanidm Local Client Resolver
+Description=Kubidm Local Client Resolver
 After=chronyd.service nscd.service ntpd.service network-online.target suspend.target
 Before=systemd-user-sessions.service sshd.service nss-user-lookup.target
 Wants=nss-user-lookup.target
@@ -30,11 +30,11 @@ ExecStart=/usr/sbin/kanidm_unixd
 
 ## If you wish to setup an external HSM pin you should set:
 # LoadCredential=hsmpin:/etc/kanidm/kanidm-unixd-hsm-pin
-# Environment=KANIDM_HSM_PIN_PATH=%d/hsmpin
+# Environment=KUBIDM_HSM_PIN_PATH=%d/hsmpin
 
 ## If you use a service account token, you can provide it with:
 # LoadCredential=unixd_token:/etc/kanidm/unixd-token
-# Environment=KANIDM_SERVICE_ACCOUNT_TOKEN_PATH=%d/unixd_token
+# Environment=KUBIDM_SERVICE_ACCOUNT_TOKEN_PATH=%d/unixd_token
 
 # auth going down is bad, but infinite speedlooping is worse
 Restart=always

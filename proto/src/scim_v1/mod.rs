@@ -482,17 +482,17 @@ mod tests {
     }
 
     #[test]
-    fn scim_kani_to_generic() {
+    fn scim_kubidm_to_generic() {
         // Assert that a kubidm strong entry can convert to generic.
     }
 
     #[test]
-    fn scim_kani_to_rfc() {
+    fn scim_kubidm_to_rfc() {
         // Assert that a kubidm strong entry can convert to rfc.
     }
 
     #[test]
-    fn scim_sync_kani_to_rfc() {
+    fn scim_sync_kubidm_to_rfc() {
         use super::*;
 
         // Group

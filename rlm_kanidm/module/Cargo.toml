@@ -1,6 +1,6 @@
 [package]
 name = "rlm_kanidm"
-description = "Kanidm FreeRADIUS module core and FFI surface"
+description = "Kubidm FreeRADIUS module core and FFI surface"
 
 version = { workspace = true }
 authors = { workspace = true }

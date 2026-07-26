@@ -1,7 +1,7 @@
 Trust Design and Thoughts
 -------------------------
 
-Trust is a process where users and groups of a separate kanidm instance may be granted access
+Trust is a process where users and groups of a separate kubidm instance may be granted access
 to resources through this system. Trust is a one way concept, but of course, could be implemented
 twice in each direction to achieve bidirectional trust.
 
@@ -85,7 +85,7 @@ So with a lot of though, I'm going to go with fractional replication.
 * Cred Silo - I want this because it means you have defined boundaries of where security material is stored by who.
 * PII limit - I want this as you can control who-has-what PII on the system side.
 * Group Mgmt - I want this as it enables rbac and familiar group management locally for remote and local entries.
-* Invite Ext - On the fence - cool idea, but not sure how it fits into kanidm with trusts.
+* Invite Ext - On the fence - cool idea, but not sure how it fits into kubidm with trusts.
 * Distributed - I don't want this because its model is really different to what kani is trying to be
 * Client Switched - I don't want this because clients should only know they trust an IDM silo, and that does the rest.
 
@@ -121,7 +121,7 @@ Possible Design
 ---------------
 
 As trust is a relationship where groups and accounts from domain B are trusted into domain A, this
-is a very similar scenario to replication. As Kanidm plans to implement a push based replication
+is a very similar scenario to replication. As Kubidm plans to implement a push based replication
 system, this may work very well for our needs.
 
 More formally - domain A trusting domain B is the establishment of a one directional fractional replication
@@ -204,7 +204,7 @@ Auth Scenarios
 
 We assume a 1 way trust where B trusts A.
 
-Kanidm portal: user@domain_a logs into kanidm portal on domain B
+Kubidm portal: user@domain_a logs into kubidm portal on domain B
 
 Oauth: user@domain_a logs into oauth portal on domain B
 

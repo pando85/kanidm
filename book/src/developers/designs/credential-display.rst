@@ -17,7 +17,7 @@ An example of this display for the CLI:
 
 ::
 
-    kanidm account credential list <account> [-D account]
+    kubidm account credential list <account> [-D account]
     - account_metadata
     locked: true|false
     valid_from: <date>

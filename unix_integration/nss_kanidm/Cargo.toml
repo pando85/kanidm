@@ -1,6 +1,6 @@
 [package]
 name = "nss_kanidm"
-description = "Kanidm NSS module"
+description = "Kubidm NSS module"
 
 version = { workspace = true }
 authors = { workspace = true }

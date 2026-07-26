@@ -1,6 +1,6 @@
 [package]
 name = "kanidm_radiusd"
-description = "Kanidm FreeRADIUS container entrypoint"
+description = "Kubidm FreeRADIUS container entrypoint"
 
 version = { workspace = true }
 authors = { workspace = true }

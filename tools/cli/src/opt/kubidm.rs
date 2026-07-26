@@ -331,7 +331,7 @@ pub struct AccountNamedExpireDateTimeOpt {
     /// - An RFC3339 time of the format "YYYY-MM-DDTHH:MM:SS+TZ", "2020-09-25T11:22:02+10:00"
     /// - One of "any", "clear" or "never" to remove account expiry.
     /// - "epoch" to set the expiry to the UNIX epoch
-    /// - "now" to expire immediately (this will affect authentication with Kanidm, but external systems may not be aware of the change until next time it's validated, typically ~15 minutes)
+    /// - "now" to expire immediately (this will affect authentication with Kubidm, but external systems may not be aware of the change until next time it's validated, typically ~15 minutes)
     datetime: String,
 }
 
@@ -986,7 +986,7 @@ pub enum Oauth2Opt {
     },
 
     /// The landing URL is the default origin of the OAuth2 client. Additionally, this landing
-    /// URL is the target when Kanidm redirects the user from the apps listing page.
+    /// URL is the target when Kubidm redirects the user from the apps listing page.
     #[clap(name = "set-landing-url")]
     SetLandingUrl {
         #[clap(flatten)]
@@ -994,7 +994,7 @@ pub enum Oauth2Opt {
         #[clap(name = "landing-url")]
         url: Url,
     },
-    /// The image presented on the Kanidm Apps Listing page for an OAuth2 resource server.
+    /// The image presented on the Kubidm Apps Listing page for an OAuth2 resource server.
     #[clap(name = "set-image")]
     SetImage {
         #[clap(flatten)]
@@ -1289,7 +1289,7 @@ pub enum SynchOpt {
         attrs: Vec<String>,
     },
     /// Reset the sync cookie of this connector, so that on the next operation of the sync tool
-    /// a full refresh of the provider is requested. Kanidm attributes that have been granted
+    /// a full refresh of the provider is requested. Kubidm attributes that have been granted
     /// authority will *not* be lost or deleted.
     #[clap(name = "force-refresh")]
     ForceRefresh {
@@ -1297,10 +1297,10 @@ pub enum SynchOpt {
         account_id: String,
     },
     /// Finalise and remove this sync account. This will transfer all synchronised entries into
-    /// the authority of Kanidm. This signals the end of a migration from an external IDM into
-    /// Kanidm. ⚠️  This action can NOT be undone. Once complete, it is most likely
+    /// the authority of Kubidm. This signals the end of a migration from an external IDM into
+    /// Kubidm. ⚠️  This action can NOT be undone. Once complete, it is most likely
     /// that attempting to recreate a sync account from the same IDM will fail due to conflicting
-    /// entries that Kanidm now owns.
+    /// entries that Kubidm now owns.
     #[clap(name = "finalise")]
     Finalise {
         #[clap()]

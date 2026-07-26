@@ -3,7 +3,7 @@ set -x
 
 
 if [ -z "${IMAGE}" ]; then
-    IMAGE="kanidm/radius:devel"
+    IMAGE="kubidm/radius:devel"
 fi
 echo "Running docker container: ${IMAGE}"
 
@@ -16,8 +16,8 @@ if [ -z "${CONFIG_FILE}" ]; then
 fi
 echo "Using config file: ${CONFIG_FILE}"
 
-if [ ! -d "/tmp/kanidm/" ]; then
-	echo "Can't find /tmp/kanidm - you may need to run run_insecure_dev_server"
+if [ ! -d "/tmp/kubidm/" ]; then
+	echo "Can't find /tmp/kubidm - you may need to run run_insecure_dev_server"
 fi
 
 echo "Starting the dev container..."
@@ -26,8 +26,8 @@ docker run --rm -it \
     "${IMAGE_ARCH}" \
     --network host \
     --name radiusd \
-    -v /tmp/kanidm/:/data/ \
-    -v /tmp/kanidm/:/tmp/kanidm/ \
-    -v /tmp/kanidm/:/certs/ \
+    -v /tmp/kubidm/:/data/ \
+    -v /tmp/kubidm/:/tmp/kubidm/ \
+    -v /tmp/kubidm/:/certs/ \
     -v "${CONFIG_FILE}:/data/radius.toml" \
     "${IMAGE}" $@

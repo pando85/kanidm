@@ -16,7 +16,7 @@ pub struct RadiusClientConfig {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct KanidmRadiusConfig {
+pub struct KubidmRadiusConfig {
     pub uri: String,
     pub auth_token: String,
     #[serde(default = "default_bool_true")]
@@ -49,7 +49,7 @@ pub struct KanidmRadiusConfig {
     pub connect_timeout_secs: u64,
 }
 
-impl Default for KanidmRadiusConfig {
+impl Default for KubidmRadiusConfig {
     fn default() -> Self {
         Self {
             uri: String::new(),
@@ -90,7 +90,7 @@ fn default_radius_key_path() -> String {
     "/data/key.pem".to_string()
 }
 
-impl TryFrom<&Path> for KanidmRadiusConfig {
+impl TryFrom<&Path> for KubidmRadiusConfig {
     type Error = String;
 
     fn try_from(path: &Path) -> Result<Self, Self::Error> {

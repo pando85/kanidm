@@ -29,10 +29,10 @@ async def test_oauth2_rs_list(client: KubidmClient) -> None:
 
     username = "idm_admin"
     # change this to be the password.
-    password = os.getenv("KANIDM_PASSWORD")
+    password = os.getenv("KUBIDM_PASSWORD")
     if password is None:
-        print("No KANIDM_PASSWORD env var set for testing")
-        pytest.skip("No KANIDM_PASSWORD env var set for testing")
+        print("No KUBIDM_PASSWORD env var set for testing")
+        pytest.skip("No KUBIDM_PASSWORD env var set for testing")
 
     auth_resp = await client.authenticate_password(username, password, update_internal_auth_token=True)
     if auth_resp.state is None:

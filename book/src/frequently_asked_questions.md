@@ -119,7 +119,7 @@ time too. Cryptography and security is not stangnant, it requires continual revi
 No, it is not possible swap out the SQLite database for any other type of SQL server, nor will it be considered as an
 option.
 
-**_ATTEMPTING THIS WILL BREAK YOUR KANIDM INSTANCE IRREPARABLY_**
+**_ATTEMPTING THIS WILL BREAK YOUR KUBIDM INSTANCE IRREPARABLY_**
 
 This question is normally asked because people want to setup multiple Kubidm servers connected to a single database.
 

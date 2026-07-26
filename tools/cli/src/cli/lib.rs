@@ -182,7 +182,7 @@ impl KubidmClientParser {
             KubidmClientOpt::Recycle { commands } => commands.exec(self).await,
             KubidmClientOpt::Version => {
                 self.output_mode
-                    .print_message(format!("kubidm {}", env!("KANIDM_PKG_VERSION")));
+                    .print_message(format!("kubidm {}", env!("KUBIDM_PKG_VERSION")));
             }
         }
     }

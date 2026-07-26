@@ -38,10 +38,10 @@ verify the correctness of the information you share with us.
 ### LLM-assisted vulnerability reporting
 
 We accept reports of vulnerabilities found with LLMs. To comply with this policy, after the LLM finds an issue, you as
-the human contributor verify the issue and the estimated severity. Then, when you send a report to the Kanidm project
+the human contributor verify the issue and the estimated severity. Then, when you send a report to the Kubidm project
 you must disclose the use of an LLM.
 
-See the [security page](https://github.com/kanidm/kanidm/security/policy) for more information on reporting
+See the [security page](https://github.com/kanidm/kubidm/security/policy) for more information on reporting
 vulnerabilities to us.
 
 ### PR creation

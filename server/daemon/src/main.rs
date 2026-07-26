@@ -524,7 +524,7 @@ async fn start_daemon(opt: KubidmdParser, config: Configuration) -> ExitCode {
     // ************************************************
     // HERE'S WHERE YOU CAN START USING THE LOGGER
     // ************************************************
-    info!(version = %env!("KANIDM_PKG_VERSION"), "Starting Kubidmd");
+    info!(version = %env!("KUBIDM_PKG_VERSION"), "Starting Kubidmd");
 
     // guard which shuts down the logging/tracing providers when we close out
     let _otelguard = TracingPipelineGuard(provider);
@@ -661,16 +661,16 @@ fn main() -> ExitCode {
 
     // print the app version and bail
     if let KubidmdOpt::Version = &opt.commands {
-        println!("kubidmd {}", env!("KANIDM_PKG_VERSION"));
+        println!("kubidmd {}", env!("KUBIDM_PKG_VERSION"));
         return ExitCode::SUCCESS;
     };
 
-    if env!("KANIDM_SERVER_CONFIG_PATH").is_empty() {
-        eprintln!("CRITICAL: Kubidmd was not built correctly and is missing a valid KANIDM_SERVER_CONFIG_PATH value");
+    if env!("KUBIDM_SERVER_CONFIG_PATH").is_empty() {
+        eprintln!("CRITICAL: Kubidmd was not built correctly and is missing a valid KUBIDM_SERVER_CONFIG_PATH value");
         return ExitCode::FAILURE;
     }
 
-    let default_config_path = PathBuf::from(env!("KANIDM_SERVER_CONFIG_PATH"));
+    let default_config_path = PathBuf::from(env!("KUBIDM_SERVER_CONFIG_PATH"));
 
     let maybe_config_path = if let Some(p) = &opt.config_path {
         Some(p.clone())

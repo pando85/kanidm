@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 
 #[derive(Debug, Subcommand)]
 #[clap(about = "Kubidm Unixd Management Utility")]
-pub enum KanidmUnixOpt {
+pub enum KubidmUnixOpt {
     /// Test authentication of a user via the unixd resolver "pam" channel. This does not
     /// test that your pam configuration is correct - only that unixd is correctly processing
     /// and validating authentications.
@@ -43,7 +43,7 @@ pub enum KanidmUnixOpt {
 #[derive(Debug, Parser)]
 #[clap(about = "Kubidm Unixd Management Utility")]
 #[command(name = "kubidm_unixd")]
-pub struct KanidmUnixParser {
+pub struct KubidmUnixParser {
     #[clap(subcommand)]
-    pub commands: KanidmUnixOpt,
+    pub commands: KubidmUnixOpt,
 }

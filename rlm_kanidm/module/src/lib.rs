@@ -1,4 +1,4 @@
-//! A FreeRADIUS module for Kanidm authentication and authorization.
+//! A FreeRADIUS module for Kubidm authentication and authorization.
 //!
 //! Here be unsafe dragons.
 

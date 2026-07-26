@@ -1,8 +1,8 @@
 # You should not need to edit this file. Instead, use a drop-in file as described in:
-#   /usr/lib/systemd/system/kanidmd.service.d/custom.conf
+#   /usr/lib/systemd/system/kubidmd.service.d/custom.conf
 
 [Unit]
-Description=Kanidm Identity Server
+Description=Kubidm Identity Server
 After=time-sync.target network-online.target
 Wants=time-sync.target network-online.target
 Before=radiusd.service
@@ -10,14 +10,14 @@ Before=radiusd.service
 [Service]
 Type=notify
 DynamicUser=yes
-StateDirectory=kanidm
+StateDirectory=kubidm
 StateDirectoryMode=0750
-CacheDirectory=kanidmd
+CacheDirectory=kubidmd
 CacheDirectoryMode=0750
-RuntimeDirectory=kanidmd
+RuntimeDirectory=kubidmd
 RuntimeDirectoryMode=0755
-ExecStart=/usr/sbin/kanidmd server -c /etc/kanidm/server.toml
-ExecReload=/usr/sbin/kanidmd scripting reload -c /etc/kanidm/server.toml
+ExecStart=/usr/sbin/kubidmd server -c /etc/kubidm/server.toml
+ExecReload=/usr/sbin/kubidmd scripting reload -c /etc/kubidm/server.toml
 
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 CapabilityBoundingSet=CAP_NET_BIND_SERVICE

@@ -1,29 +1,29 @@
 #!/bin/sh
 # shellcheck disable=SC1091,SC2034
 
-# PROVIDE: kanidm_unixd
+# PROVIDE: kubidm_unixd
 # REQUIRE: LOGIN
 # KEYWORD: shutdown
 #
 # Add these lines to /etc/rc.conf.local or /etc/rc.conf
 # to enable this service:
 #
-# kanidm_unixd_enable (bool):	Set to NO by default.
-#				Set it to YES to enable kanidm_unixd.
+# kubidm_unixd_enable (bool):	Set to NO by default.
+#				Set it to YES to enable kubidm_unixd.
 
 . /etc/rc.subr
 
-name=kanidm_unixd
-rcvar=kanidm_unixd_enable
+name=kubidm_unixd
+rcvar=kubidm_unixd_enable
 
 load_rc_config $name
 
 # shellcheck disable=SC2223
-: ${kanidm_unixd_enable:="NO"}
+: ${kubidm_unixd_enable:="NO"}
 
-pidfile="/var/run/kanidm-unixd.pid"
+pidfile="/var/run/kubidm-unixd.pid"
 command=/usr/sbin/daemon
-command_args="-u _kanidm_unixd -p /var/run/kanidm-unixd.pid -T kanidm_unixd /usr/local/libexec/${name}"
+command_args="-u _kubidm_unixd -p /var/run/kubidm-unixd.pid -T kubidm_unixd /usr/local/libexec/${name}"
 procname=/usr/local/libexec/${name}
 
 run_rc_command "$1"

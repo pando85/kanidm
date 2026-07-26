@@ -21,7 +21,7 @@ CONTAINER_CONFIG_FILE_PATH = "/data/radius.toml"
 
 # the list of places to try
 CONFIG_PATHS = [
-    os.getenv("KANIDM_RLM_CONFIG", CONTAINER_CONFIG_FILE_PATH),  # container goodness
+    os.getenv("KUBIDM_RLM_CONFIG", CONTAINER_CONFIG_FILE_PATH),  # container goodness
     "~/.config/radius.toml",  # for a user
     "/etc/kubidm/radius.toml",  # system-wide
     "../examples/radius.toml",  # test mode
@@ -54,8 +54,8 @@ def instantiate(_: Any) -> Any:
         if kubidm_client.config.auth_token is None:
             logging.error("You need to specify auth_token in the configuration file!")
             sys.exit(1)
-        os.environ["KANIDM_CONFIG_FILE"] = config_path.as_posix()
-        logging.info("Config file: %s", os.environ["KANIDM_CONFIG_FILE"])
+        os.environ["KUBIDM_CONFIG_FILE"] = config_path.as_posix()
+        logging.info("Config file: %s", os.environ["KUBIDM_CONFIG_FILE"])
     return radiusd.RLM_MODULE_OK
 
 
@@ -63,7 +63,7 @@ async def _get_radius_token(
     username: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
     """pulls the radius token for a client username"""
-    kubidm_client = KubidmClient(config_file=os.environ["KANIDM_CONFIG_FILE"])
+    kubidm_client = KubidmClient(config_file=os.environ["KUBIDM_CONFIG_FILE"])
     if username is None:
         raise ValueError("Didn't get a username for _get_radius_token")
     # authenticate as the radius service account
@@ -86,7 +86,7 @@ def authorize(
 ) -> Any:
     """does the kubidm authorize step"""
     logging.info("kubidm python module called")
-    kubidm_client = KubidmClient(config_file=os.environ["KANIDM_CONFIG_FILE"])
+    kubidm_client = KubidmClient(config_file=os.environ["KUBIDM_CONFIG_FILE"])
     # args comes in like this
     # (
     #   ('User-Name', '<username>'),
@@ -184,7 +184,7 @@ def authenticate(
     password: str,
 ) -> Union[int, AuthState]:
     """authenticate the RADIUS service account to kubidm"""
-    kubidm_client = KubidmClient(config_file=os.environ["KANIDM_CONFIG_FILE"])
+    kubidm_client = KubidmClient(config_file=os.environ["KUBIDM_CONFIG_FILE"])
     logging.error("authenticate - %s:%s", acct, password)
 
     try:

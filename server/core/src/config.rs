@@ -269,7 +269,7 @@ impl Display for HttpAddressInfo {
 ///
 /// Fields noted as "REQUIRED" are required for the server to start, even if they show as optional due to how file parsing works.
 ///
-/// If you want to set these as environment variables, prefix them with `KANIDM_` and they will be picked up. This does not include replication peer config.
+/// If you want to set these as environment variables, prefix them with `KUBIDM_` and they will be picked up. This does not include replication peer config.
 ///
 /// NOTE: not all flags or values from the internal [Configuration] object are exposed via this structure
 /// to prevent certain settings being set (e.g. integration test modes)
@@ -340,7 +340,7 @@ pub struct ServerConfig {
 }
 
 impl ServerConfigUntagged {
-    /// loads the configuration file from the path specified, then overlays fields from environment variables starting with `KANIDM_``
+    /// loads the configuration file from the path specified, then overlays fields from environment variables starting with `KUBIDM_``
     pub fn new<P: AsRef<Path>>(config_path: P) -> Result<Self, std::io::Error> {
         // see if we can load it from the config file you asked for
         let mut f: File = File::open(config_path.as_ref()).inspect_err(|e| {
@@ -485,7 +485,7 @@ impl Configuration {
         ConfigurationBuilder {
             bindaddress: None,
             ldapbindaddress: None,
-            adminbindpath: env!("KANIDM_SERVER_ADMIN_BIND_PATH").to_string(),
+            adminbindpath: env!("KUBIDM_SERVER_ADMIN_BIND_PATH").to_string(),
             threads: std::thread::available_parallelism()
                 .map(|t| t.get())
                 .unwrap_or_else(|_e| {
@@ -518,7 +518,7 @@ impl Configuration {
         Configuration {
             address: vec![DEFAULT_SERVER_ADDRESS.to_string()],
             ldapbindaddress: None,
-            adminbindpath: env!("KANIDM_SERVER_ADMIN_BIND_PATH").to_string(),
+            adminbindpath: env!("KUBIDM_SERVER_ADMIN_BIND_PATH").to_string(),
             threads: 1,
             db_path: None,
             db_fs_type: None,

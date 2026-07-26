@@ -1,5 +1,5 @@
 #!/bin/sh
-# postinst script for kanidmd
+# postinst script for kubidmd
 #
 # see: dh_installdeb(1)
 
@@ -8,17 +8,17 @@ set -e
 
 case "$1" in
     configure)
-        echo "Creating the kanidmd group for config & cert ownership..."
+        echo "Creating the kubidmd group for config & cert ownership..."
         systemd-sysusers
         echo "Fixing ownership of server configuration ..."
-        chown :kanidmd /etc/kanidmd/server.toml*
+        chown :kubidmd /etc/kubidmd/server.toml*
 
         echo "============================="
-        echo "Thanks for installing Kanidm!"
+        echo "Thanks for installing Kubidm!"
         echo "============================="
-        echo "Please ensure you modify the configuration file at /etc/kanidmd/server.toml"
-        echo "Only then: systemctl enable kanidmd.service"
-        echo "Full examples are in /usr/share/kanidmd/"
+        echo "Please ensure you modify the configuration file at /etc/kubidmd/server.toml"
+        echo "Only then: systemctl enable kubidmd.service"
+        echo "Full examples are in /usr/share/kubidmd/"
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

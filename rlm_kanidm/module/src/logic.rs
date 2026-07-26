@@ -1,7 +1,7 @@
 use crate::error::ModuleError;
 use kubidm_client::{ClientError, KubidmClient, KubidmClientBuilder, StatusCode};
 use kubidm_proto::internal::{Group, RadiusAuthToken};
-use rlm_kanidm_shared::config::KanidmRadiusConfig;
+use rlm_kanidm_shared::config::KubidmRadiusConfig;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::marker::PhantomData;
@@ -99,14 +99,14 @@ impl<'a> AuthRequest<'a> {
 }
 
 pub struct Module {
-    cfg: KanidmRadiusConfig,
+    cfg: KubidmRadiusConfig,
     required_groups: BTreeSet<String>,
     vlan_by_spn: BTreeMap<String, u32>,
     client: KubidmClient,
 }
 
 impl Module {
-    pub async fn from_config(cfg: KanidmRadiusConfig) -> Result<Self, ModuleError> {
+    pub async fn from_config(cfg: KubidmRadiusConfig) -> Result<Self, ModuleError> {
         if cfg.uri.trim().is_empty() {
             return Err(ModuleError::Config("uri must not be empty".to_string()));
         }
@@ -254,7 +254,7 @@ mod tests {
 
     #[tokio::test]
     async fn vlan_last_match_wins() {
-        let cfg = KanidmRadiusConfig {
+        let cfg = KubidmRadiusConfig {
             uri: "https://localhost:8443".to_string(),
             auth_token: "token".to_string(),
             ca_path: None,
@@ -271,7 +271,7 @@ mod tests {
                 },
             ],
             radius_clients: Vec::new(),
-            ..KanidmRadiusConfig::default()
+            ..KubidmRadiusConfig::default()
         };
 
         let module = Module::from_config(cfg).await.expect("module");
@@ -290,12 +290,12 @@ mod tests {
 
     #[tokio::test]
     async fn required_group_by_spn_or_uuid() {
-        let cfg = KanidmRadiusConfig {
+        let cfg = KubidmRadiusConfig {
             uri: "https://localhost:8443".to_string(),
             auth_token: "token".to_string(),
             ca_path: None,
             radius_required_groups: vec!["required-spn".to_string(), "required-uuid".to_string()],
-            ..KanidmRadiusConfig::default()
+            ..KubidmRadiusConfig::default()
         };
         let module = Module::from_config(cfg).await.expect("module");
 
@@ -325,7 +325,7 @@ mod tests {
                 panic!("example config file not found: {}", config_path.display());
             }
 
-            KanidmRadiusConfig::try_from(config_path.as_ref()).expect("failed to parse config!");
+            KubidmRadiusConfig::try_from(config_path.as_ref()).expect("failed to parse config!");
         }
     }
 
@@ -396,11 +396,11 @@ mod tests {
 
         let secret = setup_radius_user_secret(rsclient, "testuser").await;
 
-        let cfg = KanidmRadiusConfig {
+        let cfg = KubidmRadiusConfig {
             uri: uri.to_string(),
             auth_token,
             radius_required_groups: vec!["radius_access_allowed@localhost".to_string()],
-            ..KanidmRadiusConfig::default()
+            ..KubidmRadiusConfig::default()
         };
         let module = Module::from_config(cfg).await.expect("module");
 

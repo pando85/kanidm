@@ -30,11 +30,11 @@ ExecStart=/usr/sbin/kubidm_unixd
 
 ## If you wish to setup an external HSM pin you should set:
 # LoadCredential=hsmpin:/etc/kubidm/kubidm-unixd-hsm-pin
-# Environment=KANIDM_HSM_PIN_PATH=%d/hsmpin
+# Environment=KUBIDM_HSM_PIN_PATH=%d/hsmpin
 
 ## If you use a service account token, you can provide it with:
 # LoadCredential=unixd_token:/etc/kubidm/unixd-token
-# Environment=KANIDM_SERVICE_ACCOUNT_TOKEN_PATH=%d/unixd_token
+# Environment=KUBIDM_SERVICE_ACCOUNT_TOKEN_PATH=%d/unixd_token
 
 # auth going down is bad, but infinite speedlooping is worse
 Restart=always

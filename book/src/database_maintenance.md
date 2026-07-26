@@ -2,7 +2,7 @@
 
 ## Server Migration
 
-There are three methods available to migrate your Kanidm instance between servers.
+There are three methods available to migrate your Kubidm instance between servers.
 
 ### Backup/Restore
 

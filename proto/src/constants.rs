@@ -30,7 +30,7 @@ pub const VALID_IMAGE_UPLOAD_CONTENT_TYPES: [&str; 5] = [
 pub const APPLICATION_JSON: &str = "application/json";
 
 /// The "system" path for Kubidm client config
-pub const DEFAULT_CLIENT_CONFIG_PATH: &str = env!("KANIDM_CLIENT_CONFIG_PATH");
+pub const DEFAULT_CLIENT_CONFIG_PATH: &str = env!("KUBIDM_CLIENT_CONFIG_PATH");
 /// The user-owned path for Kubidm client config
 pub const DEFAULT_CLIENT_CONFIG_PATH_HOME: &str = "~/.config/kubidm";
 

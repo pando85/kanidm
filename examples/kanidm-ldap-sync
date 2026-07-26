@@ -21,7 +21,7 @@ sync_token = "eyJhb..."
 # is to prevent replication conflicts and issues due to how 389-ds and openldap sync works.
 ldap_uri = "ldaps://specific-server.ldap.kanidm.com"
 # Path to the LDAP CA certificate in PEM format.
-ldap_ca = "/path/to/kanidm-ldap-ca.pem"
+ldap_ca = "/path/to/kubidm-ldap-ca.pem"
 
 # In some cases you may need to disable TLS certificate validation. This is not secure
 # and you should always opt to have certificate validation if possible.
@@ -33,13 +33,13 @@ ldap_sync_dn = "cn=Directory Manager"
 ldap_sync_pw = "directory manager password"
 
 # The basedn to search
-ldap_sync_base_dn = "dc=ldap,dc=dev,dc=kanidm,dc=com"
+ldap_sync_base_dn = "dc=ldap,dc=dev,dc=kubidm,dc=com"
 # Filter the entries that are synchronised with this filter
 # NOTE: attribute-value-assertions with spaces require quoting!
 ldap_filter = "(|(objectclass=person)(objectclass=posixgroup))"
 # ldap_filter = "(cn=\"my value\")"
 
-# By default Kanidm separates the primary account password and credentials from
+# By default Kubidm separates the primary account password and credentials from
 # the unix credential. This allows the unix password to be isolated from the
 # account password so that compromise of one doesn't compromise the other. However
 # this can be surprising for new users during a migration. This boolean allows the
@@ -48,13 +48,13 @@ ldap_filter = "(|(objectclass=person)(objectclass=posixgroup))"
 #
 # sync_password_as_unix_password = false
 
-# The objectclass used to identify persons to import to Kanidm.
+# The objectclass used to identify persons to import to Kubidm.
 #
 # If not set, defaults to "person"
 # person_objectclass = ""
 
 # Attribute mappings. These allow you to bind values from your directory server
-# to the values that Kanidm will import.
+# to the values that Kubidm will import.
 #
 # person_attr_user_name = "uid"
 # person_attr_display_name = "cn"
@@ -62,18 +62,18 @@ ldap_filter = "(|(objectclass=person)(objectclass=posixgroup))"
 # person_attr_login_shell = "loginshell"
 # person_attr_password = "userpassword"
 
-# If the password value requires a prefix for Kanidm to import it, this can be optionally
+# If the password value requires a prefix for Kubidm to import it, this can be optionally
 # provided here.
 #
 # person_password_prefix = ""
 
-# The objectclass used to identify groups to import to Kanidm.
+# The objectclass used to identify groups to import to Kubidm.
 #
 # If not set, defaults to "groupofnames"
 # group_objectclass = ""
 
 # Attribute mappings. These allow you to bind values from your directory server
-# to the values that Kanidm will import.
+# to the values that Kubidm will import.
 #
 # group_attr_name = "cn"
 # group_attr_description = "description"
@@ -90,11 +90,11 @@ ldap_filter = "(|(objectclass=person)(objectclass=posixgroup))"
 # my-problematic-entry
 exclude = true
 
-# Remap the uuid of this entry to a new uuid on Kanidm
+# Remap the uuid of this entry to a new uuid on Kubidm
 #
 # map_uuid = <uuid>
 
-# Remap the name of this entry to a new name on Kanidm
+# Remap the name of this entry to a new name on Kubidm
 #
 # map_name = <name>
 

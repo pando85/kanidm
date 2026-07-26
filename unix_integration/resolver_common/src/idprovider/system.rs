@@ -9,7 +9,7 @@ use std::sync::Arc;
 use time::OffsetDateTime;
 use tokio::sync::Mutex;
 
-// The minimum GID that Kanidm will consider for creating a UPG
+// The minimum GID that Kubidm will consider for creating a UPG
 const SYSTEM_GID_BOUNDARY: u32 = 1000;
 
 pub struct SystemProviderInternal {

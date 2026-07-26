@@ -998,7 +998,7 @@ pub trait BackendTransaction {
 
         let bak = DbBackup::V5 {
             // remember env is evaled at compile time.
-            version: env!("KANIDM_PKG_SERIES").to_string(),
+            version: env!("KUBIDM_PKG_SERIES").to_string(),
             db_s_uuid,
             db_d_uuid,
             db_ts_max,
@@ -1957,8 +1957,8 @@ impl<'a> BackendWriteTransaction<'a> {
         };
 
         if let Some(version) = maybe_version {
-            if version != env!("KANIDM_PKG_SERIES") {
-                error!("The provided backup data is from server version {} and is unable to be restored on this instance ({})", version, env!("KANIDM_PKG_SERIES"));
+            if version != env!("KUBIDM_PKG_SERIES") {
+                error!("The provided backup data is from server version {} and is unable to be restored on this instance ({})", version, env!("KUBIDM_PKG_SERIES"));
                 return Err(OperationError::DB0001MismatchedRestoreVersion);
             }
         } else {
@@ -2183,7 +2183,7 @@ impl Backend {
         idxkeys: Vec<IdxKey>,
         vacuum: bool,
     ) -> Result<Self, OperationError> {
-        debug!(db_tickets = ?cfg.pool_size, profile = %env!("KANIDM_PROFILE_NAME"), cpu_flags = %env!("KANIDM_CPU_FLAGS"));
+        debug!(db_tickets = ?cfg.pool_size, profile = %env!("KUBIDM_PROFILE_NAME"), cpu_flags = %env!("KUBIDM_CPU_FLAGS"));
 
         // If in memory, reduce pool to 1
         if cfg.path.as_os_str().is_empty() {

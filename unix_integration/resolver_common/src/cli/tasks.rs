@@ -47,7 +47,7 @@ use std::fs::{create_dir, remove_file};
 #[cfg(all(target_family = "unix", feature = "selinux"))]
 use sparkle_unix_common::selinux_util;
 
-static KANIDM_UNIX_RETRY_SECS: u64 = 5;
+static KUBIDM_UNIX_RETRY_SECS: u64 = 5;
 
 fn chown(path: &Path, gid: u32) -> Result<(), String> {
     let path_os = CString::new(path.as_os_str().as_bytes())
@@ -732,9 +732,9 @@ pub async fn main<F: SparkleFlavour>(_flavour: F) -> ExitCode {
                                 }
                                 Err(e) => {
                                     debug!("\\---> {:?}", e);
-                                    error!("Unable to find kubidm_unixd, sleeping for {} seconds ...", KANIDM_UNIX_RETRY_SECS);
+                                    error!("Unable to find kubidm_unixd, sleeping for {} seconds ...", KUBIDM_UNIX_RETRY_SECS);
                                     // Back off.
-                                    time::sleep(Duration::from_secs(KANIDM_UNIX_RETRY_SECS)).await;
+                                    time::sleep(Duration::from_secs(KUBIDM_UNIX_RETRY_SECS)).await;
                                 }
                             }
                         }

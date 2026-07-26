@@ -1,5 +1,5 @@
 
-PORTNAME=	kanidm
+PORTNAME=	kubidm
 # DISTVERSION=    1.5.0-dev
 # DISTVERSIONPREFIX=	v
 
@@ -13,14 +13,14 @@ LICENSE=        MPL20
 LICENSE_FILE=   ${WRKSRC}/LICENSE.md
 MAINTAINER=	william@blackhats.net.au
 COMMENT=	Simple and secure identity management platform
-WWW=		https://github.com/kanidm/kanidm/
+WWW=		https://github.com/kanidm/kubidm/
 
 USES=		cargo ssl
 USE_GITHUB=	yes
 
 ONLY_FOR_ARCHS=	aarch64 amd64
 
-CARGO_ENV=      KANIDM_BUILD_PROFILE=release_freebsd
+CARGO_ENV=      KUBIDM_BUILD_PROFILE=release_freebsd
 
 CARGO_BUILD_ARGS = -p kubidm_tools -p kubidm_unix_int -p nss_kubidm -p pam_kubidm
 

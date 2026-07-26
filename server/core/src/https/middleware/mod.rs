@@ -22,14 +22,14 @@ pub(crate) mod hsts_header;
 pub(crate) mod security_headers;
 
 // the version middleware injects
-const KANIDM_VERSION: &str = env!("CARGO_PKG_VERSION");
+const KUBIDM_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-/// Injects a header into the response with "X-KANIDM-VERSION" matching the version of the package.
+/// Injects a header into the response with "X-KUBIDM-VERSION" matching the version of the package.
 pub async fn version_middleware(request: Request<Body>, next: Next) -> Response {
     let mut response = next.run(request).await;
     response
         .headers_mut()
-        .insert(KVERSION, HeaderValue::from_static(KANIDM_VERSION));
+        .insert(KVERSION, HeaderValue::from_static(KUBIDM_VERSION));
     response
 }
 

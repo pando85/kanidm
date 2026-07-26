@@ -10,11 +10,11 @@ fi
 
 # also where the files are stored
 if [ -z "$KANI_TMP" ]; then
-    KANI_TMP=/tmp/kanidm/
+    KANI_TMP=/tmp/kubidm/
 fi
 
 if [ ! -d "${KANI_TMP}" ]; then
-    echo "Creating temp kanidm dir: ${KANI_TMP}"
+    echo "Creating temp kubidm dir: ${KANI_TMP}"
     mkdir -p "${KANI_TMP}"
 fi
 

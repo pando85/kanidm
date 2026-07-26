@@ -1,16 +1,16 @@
 # You should not need to edit this file. Instead, use a drop-in file:
-#   systemctl edit kanidm-unixd-tasks.service
+#   systemctl edit kubidm-unixd-tasks.service
 
 [Unit]
-Description=Kanidm Local Tasks
-After=chronyd.service ntpd.service network-online.target kanidm-unixd.service
+Description=Kubidm Local Tasks
+After=chronyd.service ntpd.service network-online.target kubidm-unixd.service
 
 [Service]
 User=root
 Type=notify
-ExecStart=/usr/local/sbin/kanidm_unixd_tasks
+ExecStart=/usr/local/sbin/kubidm_unixd_tasks
 
-ReadWritePaths=/home /var/run/kanidm-unixd
+ReadWritePaths=/home /var/run/kubidm-unixd
 
 CapabilityBoundingSet=CAP_CHOWN CAP_FOWNER CAP_DAC_OVERRIDE CAP_DAC_READ_SEARCH
 MemoryDenyWriteExecute=true

@@ -528,8 +528,8 @@ async fn main_inner<F: SparkleFlavour>(clap_args: clap::ArgMatches, flavour: F) 
         return ExitCode::FAILURE;
     };
 
-    debug!("Profile -> {}", env!("KANIDM_PROFILE_NAME"));
-    debug!("CPU Flags -> {}", env!("KANIDM_CPU_FLAGS"));
+    debug!("Profile -> {}", env!("KUBIDM_PROFILE_NAME"));
+    debug!("CPU Flags -> {}", env!("KUBIDM_CPU_FLAGS"));
 
     let Some(cfg_path_str) = clap_args.get_one::<String>("client-config") else {
         error!("Failed to pull the client config path");
@@ -849,7 +849,7 @@ async fn main_inner<F: SparkleFlavour>(clap_args: clap::ArgMatches, flavour: F) 
 
     let mut clients: Vec<Arc<dyn IdProvider + Send + Sync>> = Vec::with_capacity(1);
 
-    // Setup Kanidm provider if the configuration requests it.
+    // Setup Kubidm provider if the configuration requests it.
     if let Some((cb, kconfig)) = client_builder {
         let cb = cb.connect_timeout(kconfig.conn_timeout);
         let cb = cb.request_timeout(kconfig.request_timeout);
@@ -872,7 +872,7 @@ async fn main_inner<F: SparkleFlavour>(clap_args: clap::ArgMatches, flavour: F) 
         )
         .await
         else {
-            error!("Failed to configure Kanidm Provider");
+            error!("Failed to configure Kubidm Provider");
             return ExitCode::FAILURE;
         };
 

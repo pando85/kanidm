@@ -76,7 +76,7 @@ async fn test_all_persons_has_builtin_class(rsclient: &KubidmClient) {
 //         cmd.join(" ")
 //     );
 //     let res = cli_kubidm!()
-//         .env("KANIDM_PASSWORD", ADMIN_TEST_PASSWORD)
+//         .env("KUBIDM_PASSWORD", ADMIN_TEST_PASSWORD)
 //         .args(cmd)
 //         .output()
 //         .unwrap();
@@ -93,7 +93,7 @@ async fn test_all_persons_has_builtin_class(rsclient: &KubidmClient) {
 // fn test_cmd_idm_admin(token_cache_path: &str, rsclient: &KubidmClient, cmd: &str) -> Output {
 //     println!("##############################\nrunning {}", cmd);
 //     let res = cli_kubidm!()
-//         .env("KANIDM_PASSWORD", IDM_ADMIN_TEST_PASSWORD)
+//         .env("KUBIDM_PASSWORD", IDM_ADMIN_TEST_PASSWORD)
 //         .args(cmd.split(" "))
 //         .output()
 //         .unwrap();

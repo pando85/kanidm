@@ -112,11 +112,11 @@ ${KUBIDM} group add-members idm_ui_enable_experimental_features "${IDM_ADMIN_USE
 
 # create oauth2 rp for kanidm.com
 echo "Creating the kanidm.com OAuth2 RP"
-${KUBIDM} system oauth2 create "kanidm_com" "Kanidm.com" "https://kanidm.com" -D "${IDM_ADMIN_USER}"
+${KUBIDM} system oauth2 create "kanidm.com" "Kubidm.com" "https://kanidm.com" -D "${IDM_ADMIN_USER}"
 echo "Creating the kanidm.com OAuth2 RP Scope Map"
-${KUBIDM} system oauth2 update-scope-map "kanidm_com" "${TEST_GROUP}" openid -D "${IDM_ADMIN_USER}"
+${KUBIDM} system oauth2 update-scope-map "kanidm.com" "${TEST_GROUP}" openid -D "${IDM_ADMIN_USER}"
 echo "Creating the kanidm.com OAuth2 RP Supplemental Scope Map"
-${KUBIDM} system oauth2 update-sup-scope-map "kanidm_com" "${TEST_GROUP}" admin -D "${IDM_ADMIN_USER}"
+${KUBIDM} system oauth2 update-sup-scope-map "kanidm.com" "${TEST_GROUP}" admin -D "${IDM_ADMIN_USER}"
 
 
 # create oauth2 rp for localhost:10443 - for oauth2 proxy testing

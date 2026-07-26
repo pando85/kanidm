@@ -1,4 +1,4 @@
-# Kanidm server minimal configuration - /etc/kubidm/server.toml
+# Kubidm server minimal configuration - /etc/kubidm/server.toml
 # For a full example and documentation, see /usr/share/kubidmd/server.toml
 # or `example/server.toml` in the source repository
 

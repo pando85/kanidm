@@ -1212,7 +1212,7 @@ pub async fn create_server_core(
     let migration_path = config
         .migration_path
         .clone()
-        .unwrap_or(PathBuf::from(env!("KANIDM_SERVER_MIGRATION_PATH")));
+        .unwrap_or(PathBuf::from(env!("KUBIDM_SERVER_MIGRATION_PATH")));
 
     if config.integration_test_config.is_none() {
         let eventid = Uuid::new_v4();

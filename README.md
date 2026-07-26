@@ -1,6 +1,6 @@
 # Kubidm - Simple and Secure Identity Management
 
-> **This repository is an independent fork of [Kanidm](https://github.com/kanidm/kanidm).**
+> **This repository is an independent fork of [Kubidm](https://github.com/kanidm/kubidm).**
 > 
 > We started this fork because our product direction and development priorities have diverged from the upstream project.
 > 
@@ -10,11 +10,11 @@
 > - **Contemporary development practices**: including LLM-assisted workflows and tooling that support faster iteration.
 > - **Enterprise-ready Workforce IAM**: extending the platform toward the requirements of larger production deployments.
 > 
-> This fork reflects a different roadmap, not a lack of appreciation for upstream. We are grateful to the original maintainers for building and sustaining Kanidm, and this work would not exist without that foundation.
+> This fork reflects a different roadmap, not a lack of appreciation for upstream. We are grateful to the original maintainers for building and sustaining Kubidm, and this work would not exist without that foundation.
 > 
-> If you are using this fork, please report bugs, request features, and seek support through this repository and its associated community channels. As our implementation and priorities differ from upstream, fork-specific issues are best handled here rather than in the upstream Kanidm project. We aim to respond to feedback as quickly as possible and to keep our release cycle fast so fixes and improvements can reach users sooner.
+> If you are using this fork, please report bugs, request features, and seek support through this repository and its associated community channels. As our implementation and priorities differ from upstream, fork-specific issues are best handled here rather than in the upstream Kubidm project. We aim to respond to feedback as quickly as possible and to keep our release cycle fast so fixes and improvements can reach users sooner.
 > 
-> **Special thanks to** [@firstyear](https://github.com/firstyear) and [@yaleman](https://github.com/yaleman) for creating and maintaining Kanidm.
+> **Special thanks to** [@firstyear](https://github.com/firstyear) and [@yaleman](https://github.com/yaleman) for creating and maintaining Kubidm.
 
 ![Kubidm Logo](artwork/logo-small.png)
 
@@ -100,7 +100,7 @@ The Kubidm anthem is [Crab Rave - Noisestorm](https://www.youtube.com/watch?v=LD
 
 [LLDAP](https://github.com/nitnelave/lldap) is a similar project focused on providing a small, easy-to-administer LDAP
 server with a web administration portal. Both LLDAP and Kubidm use the
-[Kanidm LDAP bindings](https://github.com/kanidm/ldap3) and share many common design ideas.
+[Kubidm LDAP bindings](https://github.com/kanidm/ldap3) and share many common design ideas.
 
 The primary advantage of Kubidm over LLDAP is its broader built-in feature set, including native support for OAuth2 and
 OIDC. In contrast, LLDAP requires integration with an external portal like Keycloak to provide these features. However,

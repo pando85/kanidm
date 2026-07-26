@@ -1881,7 +1881,7 @@ impl QueryServer {
             // here because the database is not started, so we cannot pull it from there.
             d_display: domain_name,
             // Automatically derive our current taint mode based on the PRERELEASE setting.
-            d_devel_taint: option_env!("KANIDM_PRE_RELEASE").is_some(),
+            d_devel_taint: option_env!("KUBIDM_PRE_RELEASE").is_some(),
             d_ldap_allow_unix_pw_bind: false,
             d_allow_easter_eggs: false,
             d_allow_account_recovery: false,
@@ -2549,7 +2549,7 @@ impl<'a> QueryServerWriteTransaction<'a> {
         // If we have moved from stable to dev, this triggers the taint. If we
         // are moving from dev to stable, the db will be true triggering the
         // taint flag. If we are stable to stable this will be false.
-        let current_devel_flag = option_env!("KANIDM_PRE_RELEASE").is_some();
+        let current_devel_flag = option_env!("KUBIDM_PRE_RELEASE").is_some();
         let domain_info_devel_taint = current_devel_flag
             || domain_info
                 .get_ava_single_bool(Attribute::DomainDevelopmentTaint)
@@ -2558,7 +2558,7 @@ impl<'a> QueryServerWriteTransaction<'a> {
         let domain_allow_easter_eggs = domain_info
             .get_ava_single_bool(Attribute::DomainAllowEasterEggs)
             // This defaults to false for release versions, and true in development
-            .unwrap_or(option_env!("KANIDM_PRE_RELEASE").is_some());
+            .unwrap_or(option_env!("KUBIDM_PRE_RELEASE").is_some());
 
         let domain_allow_account_recovery = domain_info
             .get_ava_single_bool(Attribute::DomainAllowAccountRecovery)

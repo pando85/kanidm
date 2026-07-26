@@ -167,12 +167,12 @@ async def test_authenticate_with_token(client_configfile: KubidmClient) -> None:
 
     logging.basicConfig(level=logging.DEBUG)
 
-    if "KANIDM_TEST_USERNAME" in os.environ:
-        test_username: str = os.environ["KANIDM_TEST_USERNAME"]
-        print(f"Using username {test_username} from KANIDM_TEST_USERNAME env var")
+    if "KUBIDM_TEST_USERNAME" in os.environ:
+        test_username: str = os.environ["KUBIDM_TEST_USERNAME"]
+        print(f"Using username {test_username} from KUBIDM_TEST_USERNAME env var")
     else:
         test_username = "idm_admin"
-        print(f"Using username {test_username} by default - set KANIDM_TEST_USERNAME env var if you want to change this.")
+        print(f"Using username {test_username} by default - set KUBIDM_TEST_USERNAME env var if you want to change this.")
 
     tokens = TokenStore.model_validate({})
     tokens.load()

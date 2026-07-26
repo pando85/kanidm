@@ -1,5 +1,5 @@
 use anyhow::{anyhow, bail, Context, Result};
-use rlm_kanidm_shared::config::KanidmRadiusConfig;
+use rlm_kanidm_shared::config::KubidmRadiusConfig;
 use std::ffi::OsString;
 use std::fs;
 use std::io::{Read, Write};
@@ -34,7 +34,7 @@ impl Default for BootstrapLayout {
     }
 }
 
-pub fn load_radius_config(config_path: &Path) -> Result<KanidmRadiusConfig> {
+pub fn load_radius_config(config_path: &Path) -> Result<KubidmRadiusConfig> {
     let config_text = fs::read_to_string(config_path).with_context(|| {
         format!(
             "failed to read configuration file {}",
@@ -50,7 +50,7 @@ pub fn load_radius_config(config_path: &Path) -> Result<KanidmRadiusConfig> {
 }
 
 pub fn write_clients_conf<O: Write>(
-    config: &KanidmRadiusConfig,
+    config: &KubidmRadiusConfig,
     output: &mut O,
 ) -> std::io::Result<()> {
     let mut rendered = String::new();
@@ -67,7 +67,7 @@ pub fn write_clients_conf<O: Write>(
     output.write_all(rendered.as_bytes())
 }
 
-pub fn prepare_certs(config: &KanidmRadiusConfig, layout: &BootstrapLayout) -> Result<()> {
+pub fn prepare_certs(config: &KubidmRadiusConfig, layout: &BootstrapLayout) -> Result<()> {
     fs::create_dir_all(&layout.ca_dir_dest).with_context(|| {
         format!(
             "failed to create certificate directory {}",
@@ -235,20 +235,20 @@ pub fn run(config_override: Option<&Path>, debug: bool) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rlm_kanidm_shared::config::{KanidmRadiusConfig, RadiusClientConfig};
+    use rlm_kanidm_shared::config::{KubidmRadiusConfig, RadiusClientConfig};
     use std::io::Cursor;
 
     #[test]
     fn write_clients_conf_renders_message_authenticator_and_proto() {
         let mut clients_conf = Vec::new();
 
-        let config = KanidmRadiusConfig {
+        let config = KubidmRadiusConfig {
             radius_clients: vec![RadiusClientConfig {
                 name: "localhost".to_string(),
                 ipaddr: "127.0.0.1".to_string(),
                 secret: "radius-secret".to_string(),
             }],
-            ..KanidmRadiusConfig::default()
+            ..KubidmRadiusConfig::default()
         };
 
         write_clients_conf(&config, &mut clients_conf).expect("failed to write clients.conf");

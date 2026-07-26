@@ -1210,7 +1210,7 @@ impl IdmServerProxyWriteTransaction<'_> {
         // Cleaning up old attributes is weirder though. I'm not sure it's trivial or easy. Because we need to know if some attr X
         // is solely owned by that sync_class before we remove it, but it may not be. There could be two classes that allow it
         // and the other supporting class remains, so we shouldn't touch it. But then it has to be asked, where did it come from?
-        // who owned it? Was it the sync side or kani? I think in general removal will be challenging.
+        // who owned it? Was it the sync side or kubidm? I think in general removal will be challenging.
 
         debug!(?requested_classes);
 
@@ -1299,7 +1299,7 @@ impl IdmServerProxyWriteTransaction<'_> {
         //
 
         // The sync_allow_attr_set is what the sync connect *can* change. Authority is what the user
-        // wants kani to control. As a result:
+        // wants kubidm to control. As a result:
         //   sync_allow_attr = set of attrs from classes subtract attrs from authority.
 
         let schema = self.qs_write.get_schema();

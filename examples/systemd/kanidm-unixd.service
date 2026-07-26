@@ -1,17 +1,17 @@
 # You should not need to edit this file. Instead, use a drop-in file by running:
-#   systemctl edit kanidm-unixd.service
+#   systemctl edit kubidm-unixd.service
 
 [Unit]
-Description=Kanidm Local Client Resolver
+Description=Kubidm Local Client Resolver
 After=chronyd.service ntpd.service network-online.target
 
 [Service]
 DynamicUser=yes
 Type=notify-reload
-ExecStart=/usr/local/sbin/kanidm_unixd
+ExecStart=/usr/local/sbin/kubidm_unixd
 
-CacheDirectory=kanidm-unixd
-RuntimeDirectory=kanidm-unixd
+CacheDirectory=kubidm-unixd
+RuntimeDirectory=kubidm-unixd
 UMask=0027
 
 [Install]
