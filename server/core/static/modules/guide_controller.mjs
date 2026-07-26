@@ -13,6 +13,7 @@ import { createGuideRenderer } from "./guide_renderer.mjs";
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 const AUTH_CREDENTIAL_PATHS = new Set([
+    "/ui/login/begin",
     "/ui/login/passkey",
     "/ui/login/seckey",
     "/ui/login/pw",
@@ -91,7 +92,7 @@ function publish(overrides = {}) {
     const state = readState(overrides);
     if (!state || !sceneRoot) return null;
 
-    if (state.productState === "authentication_denied") {
+    if (state.productState === "authentication_denied" || state.productState === "identify") {
         clearAuthenticationAttempt();
     }
 
