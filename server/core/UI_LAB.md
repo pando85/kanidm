@@ -65,6 +65,20 @@ motion:   full | reduced | static
 
 The current story and controls are encoded in the URL fragment, so a particular state can be linked directly during review.
 
+## Canonical scenarios
+
+Stories can be reviewed individually or as complete canonical journeys through the scenario navigator.
+
+The current scenario catalogue is defined in `static/modules/guide_scenarios.mjs`:
+
+- **Scenario A — new user, passkey recommended**;
+- **Scenario B — valid password alternative**;
+- **Scenario C — returning configured user**;
+- **Scenario D — WebAuthn cancellation**; and
+- **Scenario E — policy-required action**.
+
+The navigator exposes Previous, Restart, and Next controls and shows the current semantic journey stage. Scenario definitions contain product meaning and expected guide state; they do not contain renderer animation names.
+
 ## Fixture semantics
 
 Every story exposes the semantic state under the preview:
@@ -74,6 +88,16 @@ product state
 recommendation
 mascot state
 severity
+```
+
+The shared semantic vocabulary is defined in `static/modules/guide_contract.mjs` and includes:
+
+```text
+recommendation
+severity
+mascot state
+motion level
+journey stage
 ```
 
 These are intentionally close to the renderer-independent contracts in the mascot ADR and Guided Identity Journey.
@@ -95,6 +119,36 @@ crab_animation_07
 bounce_success
 claw_left_variant
 ```
+
+## Renderer boundary
+
+`static/modules/guide_renderer.mjs` owns mascot rendering.
+
+The initial implementation provides a static-SVG renderer and lifecycle-compatible controller. The lab adapter in `static/modules/ui_lab_renderer.mjs` translates story state and selected motion level into this renderer contract.
+
+The intended layering is:
+
+```text
+product / policy state
+        -> guidance semantics
+        -> renderer controller
+        -> static SVG | Rive
+```
+
+Adding Rive must not require changing story definitions or embedding authentication policy in animation files.
+
+## Reusable Askama primitives
+
+The first production-oriented guide primitives live in `src/https/views/guide.rs` with templates under `templates/guide/`:
+
+- `CrabDialogView`;
+- `RecommendationOptionView`;
+- `SecurityNoticeView`; and
+- `JourneyProgressView`.
+
+These primitives are typed on the Rust side and have render tests. Their reusable styles live in `static/guide.css` rather than in the UI Lab chrome stylesheet.
+
+The lab can continue using fixture markup while these components stabilise, but approved production surfaces should progressively move to the shared Askama views.
 
 ## Mascot assets
 
@@ -122,12 +176,13 @@ For a new UI state:
 
 1. identify the authoritative product state and policy meaning;
 2. add or update the semantic story fixture in `static/modules/ui_lab.mjs`;
-3. validate the story in light and dark themes;
-4. validate desktop, tablet, and mobile layouts;
-5. validate full, reduced, and static motion modes;
-6. verify all required text and controls remain understandable without a mascot asset;
-7. once the design is approved, extract/reuse the corresponding Askama partial in the production route; and
-8. keep the lab fixture as the regression/demo state for that component.
+3. add it to a canonical scenario when it belongs to a repeatable journey;
+4. validate the story in light and dark themes;
+5. validate desktop, tablet, and mobile layouts;
+6. validate full, reduced, and static motion modes;
+7. verify all required text and controls remain understandable without a mascot asset;
+8. once the design is approved, extract/reuse the corresponding Askama primitive in the production route; and
+9. keep the lab fixture as the regression/demo state for that component.
 
 The long-term target is for production Askama partials and the UI Lab to share the same component markup. The initial harness keeps fixture rendering isolated so the first prototype does not require a broad authentication-template refactor.
 
@@ -147,6 +202,8 @@ A story is ready to become production UI when:
 
 ## Validation
 
-The Askama view has a render smoke test in `src/https/views/ui_lab.rs`.
+The Askama lab view has a render smoke test in `src/https/views/ui_lab.rs`.
 
-JavaScript is covered by the repository's existing ESLint workflow because the story module lives below `server/core/static/` and is not vendored under `external/`.
+The reusable Askama guide primitives have render tests in `src/https/views/guide.rs`.
+
+JavaScript is covered by the repository's existing ESLint workflow because the lab and guide modules live below `server/core/static/` and are not vendored under `external/`.
