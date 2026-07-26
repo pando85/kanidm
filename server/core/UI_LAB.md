@@ -1,29 +1,21 @@
 # Kubidm UI Lab
 
-The Kubidm UI Lab is a development-only, Storybook-style harness for the mascot-guided authentication and credential experience.
-
-It deliberately uses the same server, Askama base template, Bootstrap bundle, Kubidm CSS, and vanilla JavaScript environment as the real UI. It does not introduce React, Vue, Web Components, or a second production frontend model.
+The Kubidm UI Lab is a development-only, Storybook-style harness for the mascot-guided identity experience. It deliberately uses the same Askama, HTMX, Bootstrap, CSS, vanilla-JavaScript, routing, and CSP environment as the real Kubidm UI instead of introducing a second frontend framework.
 
 ## Safety
 
-The route has two independent gates:
+The lab route has two independent gates:
 
 1. it is compiled only when Rust `debug_assertions` are enabled; and
-2. the route is registered only when `KUBIDM_UI_LAB` is present in the environment.
+2. it is registered only when `KUBIDM_UI_LAB` is present.
 
-Release builds do not contain the route.
-
-The lab contains fixture identities and simulated outcomes. It is not an authentication endpoint and must not be enabled on a production deployment.
+Release builds do not contain the route. The lab uses fixture identities and simulated outcomes; it is not an authentication endpoint and must not be enabled in production.
 
 ## Run the UI Lab
-
-From the repository root:
 
 ```bash
 KUBIDM_UI_LAB=1 make run
 ```
-
-The insecure development configuration listens on `https://localhost:8443`.
 
 Open:
 
@@ -31,197 +23,124 @@ Open:
 https://localhost:8443/ui/_lab
 ```
 
-The development server uses a locally generated certificate, so the browser may require accepting the development certificate before the lab is reachable.
+The development certificate may need to be accepted by the browser.
 
-## Run the guided real authentication prototype
+## Run the guided product UI
 
-The real authentication templates have an independent experimental presentation switch:
-
-```bash
-KUBIDM_GUIDED_UI=1 make run
-```
-
-Accepted enabled values are `1`, `true`, `yes`, and `on`, case-insensitively. With the variable unset or set to any other value, Kubidm keeps the legacy login presentation.
-
-This switch changes presentation and guide lifecycle integration only. It does not change authentication policy, mechanism ordering, credential validation, session issuance, or form endpoints.
-
-For side-by-side development of the real flow and the fixture catalogue, both switches may be enabled:
+The product experience has an independent deployment-level presentation switch:
 
 ```bash
-KUBIDM_GUIDED_UI=1 KUBIDM_UI_LAB=1 make run
+KUBIDM_GUIDED_UI=full make run
 ```
 
-## What the lab is for
+Supported values are:
 
-Use the lab to iterate on states that are slow, awkward, or unsafe to reproduce through a real authentication session:
+- `off` — legacy product presentation, no guide integration;
+- `subtle` — compact mascot/state feedback with teaching surfaces reduced;
+- `full` — proactive teaching, stories, recommendations, and mascot presence.
 
-- first encounter / account identification;
-- authentication-method recommendation;
+For backward compatibility, `1`, `true`, `yes`, and `on` map to `full`; `0`, `false`, and `no` map to `off`. Unknown values fail closed to `off`.
+
+The switch changes presentation and guide lifecycle integration only. It does **not** change authentication policy, mechanism ordering, credential validation, session issuance, endpoint behavior, or form payloads.
+
+Both development modes may run together:
+
+```bash
+KUBIDM_GUIDED_UI=full KUBIDM_UI_LAB=1 make run
+```
+
+## What the lab covers
+
+The lab contains deterministic stories for:
+
+- first encounter and account identification;
+- method recommendation and valid alternatives;
 - passkey teaching;
-- WebAuthn pending state;
-- confirmed success;
-- valid password alternative;
+- native WebAuthn pending state;
+- confirmed authentication;
+- Applications travel and settled arrival;
+- password as **Works OK**;
 - WebAuthn cancellation;
 - OAuth destination context;
 - reauthentication;
 - policy-required action;
-- returning configured user;
-- resilience recommendation;
-- credential-journey progress;
+- returning experienced user;
+- resilience suggestion;
+- credential progress;
 - journey completion;
 - Crab Dialog variants;
 - recommendation taxonomy; and
 - authoritative security notices.
 
-The toolbar can switch:
+The canonical Scenario A-E journeys live in `static/modules/guide_scenarios.mjs`. Scenario A now follows the real product order:
 
 ```text
-theme:    light | dark
-viewport: desktop | tablet | mobile
-motion:   full | reduced | static
+identify
+  -> choose
+  -> teach passkey
+  -> native WebAuthn
+  -> server-confirmed success
+  -> Applications travel
+  -> Applications idle
+  -> optional credential improvement
 ```
 
-The current story and controls are encoded in the URL fragment, so a particular state can be linked directly during review.
+## Review controls
 
-The lab also records the last semantic `kubidm:guide-state` and WebAuthn lifecycle events in a visible runtime-contract panel. This makes renderer integration and browser automation reviewable without inspecting animation internals.
+The lab separates four independent concerns:
 
-## Canonical scenarios
+```text
+theme:       light | dark
+viewport:    desktop | tablet | mobile
+motion:      full | reduced | static
+guide mode:  full | subtle | off
+```
 
-Stories can be reviewed individually or as complete canonical journeys through the scenario navigator.
+Theme, viewport, motion, and story remain linkable through the URL fragment. Guide presentation mode is an additional local review control.
 
-The current scenario catalogue is defined in `static/modules/guide_scenarios.mjs`:
+A runtime panel records semantic `kubidm:guide-state` and WebAuthn lifecycle events. Renderer integration and browser automation can therefore assert product semantics without inspecting animation internals.
 
-- **Scenario A — new user, passkey recommended**;
-- **Scenario B — valid password alternative**;
-- **Scenario C — returning configured user**;
-- **Scenario D — WebAuthn cancellation**; and
-- **Scenario E — policy-required action**.
+## Semantic contract
 
-The navigator exposes Previous, Restart, and Next controls and shows the current semantic journey stage. Scenario definitions contain product meaning and expected guide state; they do not contain renderer animation names.
-
-## Fixture semantics
-
-Every story exposes the semantic state under the preview:
+Every story exposes:
 
 ```text
 product state
 recommendation
 mascot state
 severity
-```
-
-The shared semantic vocabulary is defined in `static/modules/guide_contract.mjs` and includes:
-
-```text
-recommendation
-severity
-mascot state
 motion level
 journey stage
 ```
 
-`travel` is a semantic mascot state even though static rendering uses the idle pose for that phase. The future Rive renderer owns the actual walking cycle.
+The bounded vocabulary lives in `static/modules/guide_contract.mjs`.
 
-These values intentionally match the renderer-independent contracts in the mascot ADR and Guided Identity Journey.
-
-Stories should describe product meaning first. Do not create stories named after Rive animation clips.
-
-Good:
-
-```text
-webauthn-cancel
-policy-required
-resilience
-```
-
-Bad:
-
-```text
-crab_animation_07
-bounce_success
-claw_left_variant
-```
+Stories and product code describe meaning, not animation clips. Prefer names such as `webauthn_cancelled`, `credential_policy_conflict`, and `applications_arrival`; never make policy depend on names such as `bounce_success` or `claw_left_variant`.
 
 ## Renderer boundary
 
 `static/modules/guide_renderer.mjs` owns mascot rendering.
 
-The initial implementation provides a static-SVG renderer and lifecycle-compatible controller. The lab adapter in `static/modules/ui_lab_renderer.mjs` translates story state and selected motion level into this renderer contract.
-
-The intended layering is:
+The v1 renderer is a self-hosted native SVG renderer with CSS/SMIL motion:
 
 ```text
 product / policy state
         -> guidance semantics
-        -> renderer controller
-        -> static SVG | Rive
+        -> guide controller
+        -> native SVG renderer
 ```
 
-Adding Rive must not require changing story definitions or embedding authentication policy in animation files.
+Canonical still poses are used for idle, welcome, guide, protect, working, success, warning, and goodbye. Full-motion `travel` uses an animated `crab-travel.svg` with a leg cycle, body movement, and Identity Band tail secondary motion. Reduced/static travel uses the still idle pose, so unavoidable motion is never embedded in accessibility modes.
 
-In the UI Lab, a missing canonical SVG is represented by a labelled development placeholder. In real guided product surfaces, missing artwork is hidden entirely so forms and controls remain clean and usable.
+Rive remains an enhancement boundary rather than a v1 dependency. A future self-hosted Rive renderer must consume the same semantic state and fall back to the native renderer without changing authentication or product rules.
 
-## Real authentication integration
+In the UI Lab, missing artwork may use a labelled development placeholder. Real product surfaces hide a missing asset completely, preserving forms and navigation.
 
-The production-facing prototype uses semantic `data-guide-*` hooks on existing login states. `static/modules/guide_controller.mjs` translates those hooks and WebAuthn lifecycle events into renderer-independent guide state.
-
-The controller is HTMX-safe: it can attach to scenes that appear after a partial swap, release a scene when it disappears, and attach again without reloading the page.
-
-The multi-mechanism chooser continues to use the order returned by the authentication server. Kubidm already sorts available mechanisms strongest-first; the guided presentation exposes the first server-ranked mechanism as **Recommended** and presents the remaining allowed choices as **Works OK** rather than inventing a client-side security ranking.
-
-`static/pkhtml.js` emits data-free WebAuthn lifecycle events for start, assertion submission, interruption, and error. Obtaining a browser assertion never produces a success state: authentication success remains server-authoritative.
-
-Guided normal login uses a privacy-minimal handoff marker in `sessionStorage`. The marker contains only a timestamp, expires after two minutes, and is created only for a normal login whose intended destination is Applications. OAuth and reauthentication explicitly clear/exclude this marker.
-
-The Applications page may consume the marker only after it has rendered as an authenticated destination. That arrival can therefore emit:
-
-```text
-success -> travel -> idle
-```
-
-without changing `login.rs`, session issuance, or authentication protocol behavior. The marker is one-shot and is cleared on authentication denial, interrupted WebAuthn, errors, or a return to the identify step.
-
-## Credential guidance
-
-Guided credential surfaces use the existing credential editor rather than a separate wizard.
-
-`static/modules/credential_guide.mjs` reads already-rendered authoritative editor state and translates it into guide posture and copy:
-
-- blocking `.alert-danger` policy conflict -> critical / warning posture;
-- `.alert-warning` requirement -> caution / protect posture;
-- enabled existing Discard Changes control -> pending-change guidance;
-- otherwise -> calm idle orientation.
-
-The adapter is also HTMX-safe, so Profile -> Credentials navigation works without a full reload.
-
-The setup summary is deliberately non-scoring and limited to facts visible in the current editor:
-
-- a visible sign-in method;
-- a visible configured passkey;
-- whether the editor currently reports unresolved policy warnings; and
-- whether changes are currently pending.
-
-A missing passkey is described as optional unless the authoritative policy warning says otherwise. Recovery/resilience completion is not inferred until Kubidm exposes authoritative state for it.
-
-## Reusable Askama primitives
-
-The first production-oriented guide primitives live in `src/https/views/guide.rs` with templates under `templates/guide/`:
-
-- `CrabDialogView`;
-- `RecommendationOptionView`;
-- `SecurityNoticeView`; and
-- `JourneyProgressView`.
-
-These primitives are typed on the Rust side and have render tests. Their reusable styles live in `static/guide.css` rather than in the UI Lab chrome stylesheet.
-
-The lab can continue using fixture markup while these components stabilise, but approved production surfaces should progressively move to the shared Askama views.
-
-## Mascot assets
-
-The lab expects canonical static fallback assets at:
+## Canonical mascot assets
 
 ```text
 server/core/static/img/guide/
+├── kubidm-identity-glyph.svg
 ├── crab-idle.svg
 ├── crab-welcome.svg
 ├── crab-guide.svg
@@ -229,50 +148,129 @@ server/core/static/img/guide/
 ├── crab-working.svg
 ├── crab-success.svg
 ├── crab-warning.svg
-└── crab-goodbye.svg
+├── crab-goodbye.svg
+└── crab-travel.svg
 ```
 
-`travel` intentionally reuses `crab-idle.svg` in the static renderer; it becomes a true walking animation only in the motion renderer.
+The v1 character is the locked shell-less B1-derived crab: coral body, six walking legs, asymmetric Guide/Guardian claws, teal Identity Band, and the Kubidm identity glyph. Do not reintroduce a secondary/back shell.
 
-Until an asset exists, the lab renders a labelled mascot-state placeholder. This allows layout, copy, recommendation, responsive, and accessibility work to proceed before the final artwork is integrated.
+## Real product integration
 
-When the Rive runtime is introduced, the same stories should gain a renderer switch rather than replacing the static fixture model.
+### Authentication
+
+`static/modules/guide_controller.mjs` consumes semantic `data-guide-*` hooks and data-free WebAuthn lifecycle events. It is HTMX-safe and can attach/detach as scenes are swapped.
+
+The server-provided mechanism order remains authoritative. The first strongest-ranked allowed mechanism is presented as **Recommended**; remaining allowed mechanisms are **Works OK** rather than errors.
+
+Guided WebAuthn teaches before opening native browser/device UI. Once the native UI is active, the crab becomes quiet. A browser assertion is never treated as authentication success.
+
+### Confirmed Auth -> Applications
+
+Normal login may create a one-shot `sessionStorage` handoff containing only a timestamp. It expires after two minutes and contains no username, credential, token, mechanism secret, or server result.
+
+OAuth and reauthentication do not create this handoff. Denial, errors, interruption, and return to identify clear it.
+
+Only an already-authenticated Applications render may consume the marker and emit:
+
+```text
+success -> travel -> idle
+```
+
+This preserves the server as the success authority without modifying authentication protocol behavior.
+
+### OAuth and reauthentication
+
+Full mode explains the context in short accessible HTML. OAuth identifies the tenant as identity verifier and the OAuth client as destination. Reauthentication explains that an already-signed-in user is being verified again for a sensitive action. The normal UI remains authoritative.
+
+### Applications
+
+The guide has reserved non-overlapping space. A successful normal login gets the one-shot travel/arrival sequence; direct visits are quiet. An empty application list explains that authentication succeeded and that there are simply no linked applications.
+
+### Profile
+
+Profile editing has semantic read-only/edit/review states. Full mode explains why edit may require reauthentication and tells the user to review the server-rendered difference before confirmation. The crab remains in a reserved settings safe zone.
+
+### Credentials
+
+The existing credential editor is still the source of truth. `static/modules/credential_guide.mjs` translates already-rendered policy state into guide posture:
+
+- blocking `alert-danger` -> critical warning posture;
+- `alert-warning` requirement -> caution/protect;
+- active passkey enrollment -> protect;
+- active TOTP/password setup -> guide;
+- pending edits -> guide/review;
+- otherwise -> quiet idle.
+
+Credential progress is deliberately non-scoring and limited to facts the current editor can establish: visible sign-in method, visible passkey, unresolved warnings, and pending/saved changes.
+
+Passkey, TOTP, and password creation each have short contextual teaching. A missing passkey may produce a dismissible recommendation only when no authoritative policy warning is present. The copy explicitly states that existing policy-valid methods remain valid.
+
+### Settings and logout
+
+Profile/Credentials share a reserved guide safe zone so the crab remains physically present across HTMX navigation. Logout switches an active scene to `goodbye` as soon as the confirmation modal appears; navigation is never delayed for animation. The modal also has the static canonical goodbye asset.
+
+## Teaching decay and privacy
+
+Teaching familiarity is presentation state, not identity/security state.
+
+`static/modules/guide_preferences.mjs` stores only a small local browser preference object:
+
+- story identifiers already seen;
+- optional-suggestion dismissal counts/timestamps; and
+- whether onboarding teaching has been completed.
+
+It stores no username, account identifier, credential information, token, policy result, or authentication result.
+
+Stories decay after being seen; explicit Learn More stories can remain available. Optional suggestions stop after repeated dismissal and are spaced by a minimum reminder interval. This state can never satisfy policy or mark recovery/security configuration complete.
+
+## Reusable Askama primitives
+
+Typed components live in `src/https/views/guide.rs` with templates under `templates/guide/`:
+
+- `CrabDialogView`;
+- `RecommendationOptionView`;
+- `SecurityNoticeView`; and
+- `JourneyProgressView`.
+
+The rollout parser and guide primitives have Rust render/unit tests. Shared styles live in `static/guide.css`; surface-specific layout is separated into auth, applications, settings, and UI-Lab stylesheets.
 
 ## Development workflow
 
-For a new UI state:
+For a new state:
 
-1. identify the authoritative product state and policy meaning;
-2. add or update the semantic story fixture in `static/modules/ui_lab.mjs`;
-3. add it to a canonical scenario when it belongs to a repeatable journey;
-4. validate the story in light and dark themes;
-5. validate desktop, tablet, and mobile layouts;
-6. validate full, reduced, and static motion modes;
-7. inspect the semantic event trace;
-8. verify all required text and controls remain understandable without a mascot asset;
-9. once the design is approved, extract/reuse the corresponding Askama primitive in the production route; and
-10. keep the lab fixture as the regression/demo state for that component.
+1. identify the authoritative product/policy state;
+2. define renderer-independent semantics;
+3. create/update a deterministic UI Lab story;
+4. add it to a canonical journey if applicable;
+5. test light/dark;
+6. test desktop/tablet/mobile;
+7. test full/reduced/static motion;
+8. test full/subtle/off presentation;
+9. inspect the semantic event trace;
+10. verify that all critical information remains available with no mascot/runtime; and
+11. reuse/extract the production Askama primitive rather than embedding security rules in animation code.
 
-The long-term target is for production Askama partials and the UI Lab to share the same component markup. The initial harness keeps fixture rendering isolated so the first prototype does not require a broad authentication-template refactor.
+## Acceptance checklist
 
-## Story acceptance checklist
-
-A story is ready to become production UI when:
+A guided state is ready when:
 
 - the primary task is obvious without animation;
-- recommendation labels match authoritative policy semantics;
-- a valid alternative is not styled as an error;
+- recommendation labels match authoritative server/product semantics;
+- valid alternatives are not styled or narrated as failures;
 - mascot/dialog content is supplementary and accessible;
 - security warnings remain authoritative normal UI;
+- serious states reduce motion and personality;
 - mobile does not require the mascot to understand or complete the task;
-- reduced/static modes preserve all information;
+- reduced/static preserve all information;
+- full/subtle/off preserve workflow behavior;
+- the mascot never covers actionable controls;
 - no action waits for animation to finish; and
-- success appears only after a simulated or real confirmed product result.
+- success appears only after a confirmed product/server outcome.
 
 ## Validation
 
-The Askama lab view has a render smoke test in `src/https/views/ui_lab.rs`.
-
-The reusable Askama guide primitives have render tests in `src/https/views/guide.rs`.
-
-JavaScript is covered by the repository's existing ESLint workflow because the lab and guide modules live below `server/core/static/` and are not vendored under `external/`.
+- Askama UI Lab has a render smoke test in `src/https/views/ui_lab.rs`.
+- Typed guide primitives and rollout parsing have tests in `src/https/views/guide.rs`.
+- JavaScript is covered by the repository ESLint workflow.
+- Static assets and styles are exercised by the normal pre-commit/build/container workflows.
+- The UI Lab semantic trace is the contract surface for future browser/E2E automation and a Rive renderer.
