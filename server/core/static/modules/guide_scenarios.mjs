@@ -22,10 +22,26 @@ export const ScenarioId = Object.freeze({
     POLICY_REQUIRED: "policy-required",
 });
 
+const applicationsArrival = () =>
+    step("applications-arrival", JourneyStage.CONFIRM, {
+        productState: "applications_arrival",
+        recommendation: Recommendation.NONE,
+        mascotState: MascotState.TRAVEL,
+        severity: Severity.NEUTRAL,
+    });
+
+const applicationsSettled = () =>
+    step("applications", JourneyStage.CONFIRM, {
+        productState: "applications",
+        recommendation: Recommendation.NONE,
+        mascotState: MascotState.IDLE,
+        severity: Severity.NEUTRAL,
+    });
+
 export const scenarios = Object.freeze({
     [ScenarioId.PASSKEY_FIRST_RUN]: Object.freeze({
         title: "Scenario A — new user, passkey recommended",
-        description: "First-run teaching path from identification through resilience guidance.",
+        description: "First-run teaching path through confirmed sign-in, Applications arrival, then optional resilience guidance.",
         steps: Object.freeze([
             step("first-login", JourneyStage.IDENTIFY, {
                 productState: "identify",
@@ -57,6 +73,8 @@ export const scenarios = Object.freeze({
                 mascotState: MascotState.SUCCESS,
                 severity: Severity.POSITIVE,
             }),
+            applicationsArrival(),
+            applicationsSettled(),
             step("resilience", JourneyStage.RESILIENCE, {
                 productState: "resilience_available",
                 recommendation: Recommendation.RECOMMENDED,
@@ -105,6 +123,8 @@ export const scenarios = Object.freeze({
                 mascotState: MascotState.SUCCESS,
                 severity: Severity.POSITIVE,
             }),
+            applicationsArrival(),
+            applicationsSettled(),
         ]),
     }),
     [ScenarioId.RETURNING_USER]: Object.freeze({
@@ -129,6 +149,8 @@ export const scenarios = Object.freeze({
                 mascotState: MascotState.SUCCESS,
                 severity: Severity.POSITIVE,
             }),
+            applicationsArrival(),
+            applicationsSettled(),
         ]),
     }),
     [ScenarioId.WEBAUTHN_CANCEL]: Object.freeze({
