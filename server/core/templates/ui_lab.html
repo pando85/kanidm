@@ -11,10 +11,14 @@
       href="/pkg/ui_lab_journey.css?v=((crate::https::cache_buster::get_cache_buster_key()))" />
 <link rel="stylesheet"
       href="/pkg/ui_lab_apps.css?v=((crate::https::cache_buster::get_cache_buster_key()))" />
+<link rel="stylesheet"
+      href="/pkg/ui_lab_modes.css?v=((crate::https::cache_buster::get_cache_buster_key()))" />
 <script type="module"
         src="/pkg/modules/ui_lab_events.mjs?v=((crate::https::cache_buster::get_cache_buster_key()))"></script>
 <script type="module"
         src="/pkg/modules/ui_lab.mjs?v=((crate::https::cache_buster::get_cache_buster_key()))"></script>
+<script type="module"
+        src="/pkg/modules/ui_lab_mode.mjs?v=((crate::https::cache_buster::get_cache_buster_key()))"></script>
 <script type="module"
         src="/pkg/modules/ui_lab_applications.mjs?v=((crate::https::cache_buster::get_cache_buster_key()))"></script>
 <script type="module"
@@ -101,39 +105,23 @@
                      class="ui-lab-preview"
                      data-viewport="desktop"
                      data-motion="full"
+                     data-guide-mode="full"
                      aria-live="polite">
                 <div id="ui-lab-canvas" class="ui-lab-canvas"></div>
             </section>
         </div>
 
         <section class="ui-lab-inspector" aria-label="Story semantics">
-            <div>
-                <span class="ui-lab-kicker">Product state</span>
-                <code id="ui-lab-product-state">identify</code>
-            </div>
-            <div>
-                <span class="ui-lab-kicker">Recommendation</span>
-                <code id="ui-lab-recommendation">none</code>
-            </div>
-            <div>
-                <span class="ui-lab-kicker">Mascot state</span>
-                <code id="ui-lab-mascot-state">welcome</code>
-            </div>
-            <div>
-                <span class="ui-lab-kicker">Severity</span>
-                <code id="ui-lab-severity">neutral</code>
-            </div>
+            <div><span class="ui-lab-kicker">Product state</span><code id="ui-lab-product-state">identify</code></div>
+            <div><span class="ui-lab-kicker">Recommendation</span><code id="ui-lab-recommendation">none</code></div>
+            <div><span class="ui-lab-kicker">Mascot state</span><code id="ui-lab-mascot-state">welcome</code></div>
+            <div><span class="ui-lab-kicker">Severity</span><code id="ui-lab-severity">neutral</code></div>
         </section>
 
         <section class="ui-lab-event-panel" aria-label="Guide semantic event log">
             <header>
-                <div>
-                    <span class="ui-lab-kicker">Runtime contract</span>
-                    <strong>Semantic events</strong>
-                </div>
-                <button type="button"
-                        class="btn btn-sm btn-outline-secondary"
-                        data-ui-lab-clear-events>Clear</button>
+                <div><span class="ui-lab-kicker">Runtime contract</span><strong>Semantic events</strong></div>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-ui-lab-clear-events>Clear</button>
             </header>
             <ol data-ui-lab-event-log></ol>
         </section>
