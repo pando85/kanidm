@@ -83,6 +83,8 @@ motion:   full | reduced | static
 
 The current story and controls are encoded in the URL fragment, so a particular state can be linked directly during review.
 
+The lab also records the last semantic `kubidm:guide-state` and WebAuthn lifecycle events in a visible runtime-contract panel. This makes renderer integration and browser automation reviewable without inspecting animation internals.
+
 ## Canonical scenarios
 
 Stories can be reviewed individually or as complete canonical journeys through the scenario navigator.
@@ -118,7 +120,9 @@ motion level
 journey stage
 ```
 
-These are intentionally close to the renderer-independent contracts in the mascot ADR and Guided Identity Journey.
+`travel` is a semantic mascot state even though static rendering uses the idle pose for that phase. The future Rive renderer owns the actual walking cycle.
+
+These values intentionally match the renderer-independent contracts in the mascot ADR and Guided Identity Journey.
 
 Stories should describe product meaning first. Do not create stories named after Rive animation clips.
 
@@ -155,15 +159,49 @@ product / policy state
 
 Adding Rive must not require changing story definitions or embedding authentication policy in animation files.
 
-In the UI Lab, a missing canonical SVG is represented by a labelled development placeholder. In the real guided authentication flow, missing artwork is hidden entirely so the form remains clean and fully usable.
+In the UI Lab, a missing canonical SVG is represented by a labelled development placeholder. In real guided product surfaces, missing artwork is hidden entirely so forms and controls remain clean and usable.
 
 ## Real authentication integration
 
-The production-facing prototype now uses semantic `data-guide-*` hooks on existing login states. `static/modules/guide_controller.mjs` translates those hooks and WebAuthn lifecycle events into renderer-independent guide state.
+The production-facing prototype uses semantic `data-guide-*` hooks on existing login states. `static/modules/guide_controller.mjs` translates those hooks and WebAuthn lifecycle events into renderer-independent guide state.
+
+The controller is HTMX-safe: it can attach to scenes that appear after a partial swap, release a scene when it disappears, and attach again without reloading the page.
 
 The multi-mechanism chooser continues to use the order returned by the authentication server. Kubidm already sorts available mechanisms strongest-first; the guided presentation exposes the first server-ranked mechanism as **Recommended** and presents the remaining allowed choices as **Works OK** rather than inventing a client-side security ranking.
 
 `static/pkhtml.js` emits data-free WebAuthn lifecycle events for start, assertion submission, interruption, and error. Obtaining a browser assertion never produces a success state: authentication success remains server-authoritative.
+
+Guided normal login uses a privacy-minimal handoff marker in `sessionStorage`. The marker contains only a timestamp, expires after two minutes, and is created only for a normal login whose intended destination is Applications. OAuth and reauthentication explicitly clear/exclude this marker.
+
+The Applications page may consume the marker only after it has rendered as an authenticated destination. That arrival can therefore emit:
+
+```text
+success -> travel -> idle
+```
+
+without changing `login.rs`, session issuance, or authentication protocol behavior. The marker is one-shot and is cleared on authentication denial, interrupted WebAuthn, errors, or a return to the identify step.
+
+## Credential guidance
+
+Guided credential surfaces use the existing credential editor rather than a separate wizard.
+
+`static/modules/credential_guide.mjs` reads already-rendered authoritative editor state and translates it into guide posture and copy:
+
+- blocking `.alert-danger` policy conflict -> critical / warning posture;
+- `.alert-warning` requirement -> caution / protect posture;
+- enabled existing Discard Changes control -> pending-change guidance;
+- otherwise -> calm idle orientation.
+
+The adapter is also HTMX-safe, so Profile -> Credentials navigation works without a full reload.
+
+The setup summary is deliberately non-scoring and limited to facts visible in the current editor:
+
+- a visible sign-in method;
+- a visible configured passkey;
+- whether the editor currently reports unresolved policy warnings; and
+- whether changes are currently pending.
+
+A missing passkey is described as optional unless the authoritative policy warning says otherwise. Recovery/resilience completion is not inferred until Kubidm exposes authoritative state for it.
 
 ## Reusable Askama primitives
 
@@ -194,6 +232,8 @@ server/core/static/img/guide/
 └── crab-goodbye.svg
 ```
 
+`travel` intentionally reuses `crab-idle.svg` in the static renderer; it becomes a true walking animation only in the motion renderer.
+
 Until an asset exists, the lab renders a labelled mascot-state placeholder. This allows layout, copy, recommendation, responsive, and accessibility work to proceed before the final artwork is integrated.
 
 When the Rive runtime is introduced, the same stories should gain a renderer switch rather than replacing the static fixture model.
@@ -208,9 +248,10 @@ For a new UI state:
 4. validate the story in light and dark themes;
 5. validate desktop, tablet, and mobile layouts;
 6. validate full, reduced, and static motion modes;
-7. verify all required text and controls remain understandable without a mascot asset;
-8. once the design is approved, extract/reuse the corresponding Askama primitive in the production route; and
-9. keep the lab fixture as the regression/demo state for that component.
+7. inspect the semantic event trace;
+8. verify all required text and controls remain understandable without a mascot asset;
+9. once the design is approved, extract/reuse the corresponding Askama primitive in the production route; and
+10. keep the lab fixture as the regression/demo state for that component.
 
 The long-term target is for production Askama partials and the UI Lab to share the same component markup. The initial harness keeps fixture rendering isolated so the first prototype does not require a broad authentication-template refactor.
 
