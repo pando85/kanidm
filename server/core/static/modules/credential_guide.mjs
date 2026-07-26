@@ -1,4 +1,5 @@
 import { MascotState, Severity } from "./guide_contract.mjs";
+import { syncGuideExperience } from "./guide_experience.mjs";
 
 let scene = null;
 let stateNode = null;
@@ -86,6 +87,13 @@ function syncMilestones(dynamicSection) {
             ? "There are pending edits that have not been committed yet."
             : "The editor currently reports no pending changes.",
     );
+
+    const suggestion = stateNode?.querySelector('[data-guide-suggestion-id="consider-passkey"]');
+    if (suggestion) {
+        // A recommendation is eligible only when it is genuinely optional here:
+        // no passkey is visible and the authoritative editor reports no warning.
+        suggestion.dataset.guideSuggestionEligible = String(!hasPasskey && !hasWarnings);
+    }
 }
 
 function setDialog({ variant = "orient", heading, text }) {
@@ -151,6 +159,10 @@ function syncCredentialStep(dynamicSection) {
     return false;
 }
 
+function finishSync() {
+    if (scene) syncGuideExperience(scene);
+}
+
 function syncCredentialGuide() {
     if (!bindScene() || !stateNode) return;
 
@@ -159,9 +171,6 @@ function syncCredentialGuide() {
 
     syncMilestones(dynamicSection);
 
-    // These Bootstrap alerts are rendered from server-provided CURegWarning
-    // values. JavaScript only translates their already-authoritative severity
-    // into guide posture; it never decides whether policy is satisfied.
     if (dynamicSection.querySelector(".alert-danger")) {
         setDialog({
             heading: "Policy needs attention",
@@ -172,6 +181,7 @@ function syncCredentialGuide() {
             mascotState: MascotState.WARNING,
             severity: Severity.CRITICAL,
         });
+        finishSync();
         return;
     }
 
@@ -186,10 +196,14 @@ function syncCredentialGuide() {
             mascotState: MascotState.PROTECT,
             severity: Severity.CAUTION,
         });
+        finishSync();
         return;
     }
 
-    if (syncCredentialStep(dynamicSection)) return;
+    if (syncCredentialStep(dynamicSection)) {
+        finishSync();
+        return;
+    }
 
     if (hasPendingChanges(dynamicSection)) {
         setDialog({
@@ -202,6 +216,7 @@ function syncCredentialGuide() {
             mascotState: MascotState.GUIDE,
             severity: Severity.NEUTRAL,
         });
+        finishSync();
         return;
     }
 
@@ -214,6 +229,7 @@ function syncCredentialGuide() {
         mascotState: MascotState.IDLE,
         severity: Severity.NEUTRAL,
     });
+    finishSync();
 }
 
 document.body.addEventListener("htmx:afterSettle", syncCredentialGuide);
