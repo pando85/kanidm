@@ -3,6 +3,8 @@
 - **Status:** Design baseline
 - **Date:** 2026-07-26
 - **Related ADR:** [Mascot-Guided Product Experience](mascot_guided_product_experience.md)
+- **Related product journey:** [Guided Identity Journey](guided_identity_journey.md)
+- **Related UI system:** [Authentication and Credential-Setup UI](authentication_credential_ui.md)
 - **Scope:** Kubidm mascot identity, character construction, pose language, motion grammar, authentication storyboard, and Rive-facing motion contract
 
 ## Purpose
@@ -259,133 +261,106 @@ These poses should be reusable across workflows rather than duplicated as route-
 
 Idle is the default long-lived pose and therefore should be the least demanding visually.
 
-Characteristics:
+The body is stable, claws relaxed, eyes attentive, and mouth in a small neutral-friendly expression. The band tail hangs naturally.
 
-- stable body;
-- relaxed claws;
-- guide claw slightly more open than the guardian claw;
-- attentive eyes;
-- small smile;
-- relaxed band tail.
-
-The intended message is:
+Idle communicates:
 
 > I am here if you need me.
 
-It should not demand attention.
+It must not communicate:
+
+> Look at me.
 
 ### Welcome
 
-Welcome indicates invitation rather than farewell.
-
-Characteristics:
+Welcome is an invitation into a journey rather than a repeated wave.
 
 - guide claw opens outward;
-- guardian claw remains closer to the body;
-- slight upward body movement;
-- friendly gaze;
-- small secondary tail motion.
+- guardian claw stays closer to the body;
+- eyes look toward the user/task;
+- body may rise slightly;
+- band tail follows softly.
 
-Do not use the goodbye wave as the welcome gesture.
+The wave gesture is reserved primarily for Goodbye.
 
 ### Guide / Point
 
-The guide pose directs attention to a real UI target.
+Guide/Point is a signature pose.
 
-The claw should not grow a literal pointing finger. The natural claw rotates and opens toward the target.
+The guide claw rotates or narrows toward a UI target without becoming a literal finger.
 
-Canonical attention order:
+The gaze and guide claw must agree about the target.
+
+Motion order:
 
 ```text
 eyes -> body -> guide claw
 ```
 
-The eyes and guide claw must agree about the target.
-
-The character should point once and then relax rather than repeatedly calling for attention.
-
 ### Working / Inspect
 
-Working indicates processing or waiting.
+Working does not use frantic spinner behaviour.
 
-The mascot remains calm. Activity is represented primarily through a restrained cyan identity/system signal while the character watches or inspects it.
+The crab focuses on a small cyan identity/system signal while the body remains relatively calm.
 
-Avoid generic frantic spinner behaviour.
-
-During native WebAuthn or OS dialogs, the mascot becomes quieter because the operating-system interface is the user's primary focus.
+The activity indicator may animate more than the mascot.
 
 ### Protect
 
-Protect exposes the 30% Guardian side of the personality.
+Protect reveals the Guardian side.
 
-Characteristics:
-
-- guardian claw moves toward the front/centre;
-- focused eyes;
-- slightly more stable/wide stance;
-- reduced tail movement;
-- cyan identity/security feedback may appear;
-- smile becomes neutral or restrained where appropriate.
-
-Typical uses include:
-
-- passkey operations;
-- credential changes;
-- MFA;
-- reauthentication; and
-- security-sensitive confirmation.
+- guardian claw moves forward/central;
+- eyes become focused;
+- stance becomes more stable;
+- mouth becomes neutral;
+- band tail movement reduces;
+- identity badge may illuminate cyan when Kubidm is actively processing identity state.
 
 ### Success
 
-Success is confirmation, not celebration by default.
+Success is brief and proportional to the importance of the operation.
 
-Common characteristics:
-
-- short cyan badge pulse;
-- eyes soften or become happy;
-- guide claw opens;
-- small upward body movement and settle.
-
-The animation must only begin after product/server confirmation of success.
-
-Two levels exist:
+Two levels are defined:
 
 ```text
 success.small
 success.major
 ```
 
-`success.small` is used for common operations such as profile saves.
+`success.small` is suitable for ordinary saved changes.
 
-`success.major` is reserved for meaningful milestones such as completed authentication or first passkey enrolment.
+`success.major` is suitable for authentication completion, first passkey setup, or other meaningful milestones.
+
+Success must only follow an authoritative product confirmation.
 
 ### Warning
 
-Warning communicates that attention is required without panic.
+Warning is controlled attention rather than panic.
 
-Characteristics:
-
-- body largely still;
-- smile neutralises;
-- gaze moves toward the warning;
-- claws reduce expressive movement;
-- guardian claw may move slightly toward centre.
-
-Do not use slapstick, crying, violent shaking, or exaggerated fear.
+- eyes focus on the relevant warning;
+- smile disappears;
+- guide claw lowers;
+- guardian claw moves closer to centre;
+- body remains mostly stable.
 
 ### Goodbye
 
-Goodbye is the canonical farewell sequence.
+Goodbye uses the signature wave and sideways exit.
 
-The guide claw performs one short wave, then the character looks toward the exit and travels sideways out of the scene.
+Sequence:
 
-The band tail should be the last part of the character to settle/leave, reinforcing secondary-motion continuity.
+```text
+look at user
+-> raise guide claw
+-> one wave
+-> look toward exit
+-> sideways travel
+-> band tail exits last
+```
 
-## Expression system
+## Expression vocabulary
 
-The expression system remains intentionally small.
-
-### Eye states
+### Eyes
 
 ```text
 open
@@ -397,7 +372,7 @@ closed-happy
 concerned
 ```
 
-### Brow states
+### Brows
 
 ```text
 neutral
@@ -406,7 +381,7 @@ focused
 concerned
 ```
 
-### Mouth states
+### Mouth
 
 ```text
 neutral
@@ -415,110 +390,49 @@ happy
 serious
 ```
 
-These states can be combined, but implementations should avoid inventing large numbers of bespoke emotions.
+The vocabulary is intentionally bounded. Kubidm is not an animated-film character.
 
-## Personality modes
+## Signature interaction principles
 
-### Guide mode
+### Sideways movement communicates journey
 
-- curious;
-- energetic but controlled;
-- smooth movement;
-- normal secondary band-tail motion;
-- attention-oriented gaze.
+The crab's natural lateral walk becomes Kubidm's progress metaphor.
 
-### Guardian mode
+It may appear to travel between workflow contexts, including across page navigation, by matching exit and entrance direction/velocity.
 
-- calm;
-- confident;
-- protective;
-- more stable posture;
-- controlled movement;
-- reduced secondary motion.
-
-### Security mode
-
-- serious;
-- minimal;
-- focused eyes;
-- neutral/serious mouth;
-- reduced or zero idle motion;
-- still tail.
-
-A global design principle follows:
-
-> **The more serious the security state, the less the mascot moves.**
-
-## Signature motion language
-
-### Sideways movement means journey
-
-The crab moves laterally between workflows.
-
-This is a signature brand behaviour, not merely anatomically appropriate movement.
-
-Examples:
-
-```text
-Login -> Applications -> Profile -> Credentials -> Logout
-```
-
-Sideways travel visually communicates progression from one identity context to another.
-
-Cross-page scenes should be choreographed so an exit on one page and entry on the next feel like the same character continuing its journey.
-
-### Gaze means attention
+### Gaze communicates attention
 
 Gaze is a first-class interaction primitive.
 
-The mascot uses eyes before stronger body gestures whenever it needs to direct the user toward an action or object.
+The crab can visually connect itself to a real UI target without speech or repeated pointing.
 
-Typical ordering:
+### Cyan communicates identity-system activity
 
-```text
-eyes -> body -> guide claw
-```
+Cyan appears when Kubidm is actively performing identity-related work.
 
-This allows the mascot to guide without constantly pointing or displaying instructional text.
+### Stillness communicates seriousness
 
-### Cyan illumination means system activity
+The more serious the security state, the less the mascot moves.
 
-Cyan indicates active Kubidm identity-system behaviour.
+This is a locked design rule.
 
-Examples:
+## Timing system
 
-- authentication pending;
-- passkey operation active;
-- identity verification processing;
-- server-confirmed identity result.
+Motion uses a small timing vocabulary.
 
-The glow should be restrained and semantic.
-
-### Guardian claw forward means protection
-
-The guardian claw moving toward centre/front represents a security/protection posture.
-
-### Stillness means importance
-
-Reduced movement communicates seriousness. Warning and security-critical states deliberately remove animation rather than adding more dramatic motion.
-
-## Motion timing system
-
-Five timing classes are defined.
-
-| Token | Duration | Intended use |
+| Token | Duration | Typical use |
 | --- | ---: | --- |
-| `instant` | 120 ms | Eye direction, tiny reactions |
-| `quick` | 220 ms | State acknowledgements |
-| `normal` | 350 ms | Pose changes |
-| `expressive` | 600 ms | Welcome, success |
-| `journey` | 800-1200 ms | Enter, exit, travel |
+| `instant` | 120 ms | eye direction, tiny reaction |
+| `quick` | 220 ms | acknowledgement |
+| `normal` | 350 ms | pose transition |
+| `expressive` | 600 ms | welcome or significant success |
+| `journey` | 800-1200 ms | enter, exit, or travel |
 
-These durations are initial production targets and may be tuned during the Rive prototype, but changes should preserve their relative hierarchy.
+Animation must never block an operation until a timing token completes.
 
-### Easing families
+## Easing families
 
-Initial motion curves:
+Conceptual easing families:
 
 ```text
 enter      cubic-bezier(.20,.80,.30,1)
@@ -526,231 +440,147 @@ settle     cubic-bezier(.20,.70,.20,1)
 attention  cubic-bezier(.30,0,.20,1)
 ```
 
-Core workflow motion should avoid elastic/springy cartoon physics.
+These may be tuned in the final Rive rig while preserving the intended character: responsive starts, soft landing, controlled security motion.
 
-## Choreography contract
+## Core transition choreography
 
-### `enter -> welcome`
+### Enter -> Welcome
 
-Purpose: Kubidm joins the user.
+Approximate total: 850 ms.
 
-Sequence:
+1. sideways walk into the mascot safe zone;
+2. approximately 1.5-2 walking cycles;
+3. small vertical oscillation only;
+4. tail trails body movement;
+5. stop and settle;
+6. guide claw opens;
+7. eyes orient toward the task/user.
 
-1. character travels sideways into its safe area;
-2. legs complete approximately 1.5-2 walking cycles;
-3. body vertical movement remains subtle, around 3% or less;
-4. eyes already look toward the destination;
-5. band tail lags slightly behind body motion;
-6. character decelerates and settles;
-7. guide claw opens into the Welcome pose.
+The UI is usable from the start of the animation.
 
-Target total duration: approximately **850 ms**.
+### Welcome -> Guide
 
-The UI must be interactive from the start; the entrance never blocks the page.
+Approximate total: 450 ms.
 
-Reduced-motion mode replaces walking with a short opacity/scale transition.
+Order:
 
-Static mode renders the approved Welcome SVG immediately.
+```text
+eyes
+-> small body orientation
+-> guide claw
+-> tail settle
+```
 
-### `welcome -> guide`
+The guide gesture happens once, then relaxes while gaze may remain on the target.
 
-Purpose: direct attention to an actionable UI target.
+### Guide -> Protect
 
-Sequence:
-
-1. eyes move toward the target, approximately 0-120 ms;
-2. body rotates slightly toward target, approximately 120-300 ms;
-3. guide claw follows and opens, approximately 180-350 ms;
-4. band tail settles by approximately 450 ms.
-
-Target total duration: approximately **450 ms**.
-
-The pose may hold for approximately 700-1000 ms before partially relaxing. It should not repeat the pointing gesture continuously.
-
-### `guide -> protect`
-
-Purpose: show that a user has entered a security-sensitive operation.
-
-Sequence:
+Approximate total: 500 ms.
 
 1. guide claw retracts;
 2. eyes become focused;
-3. guardian claw moves toward centre/front;
-4. badge/identity signal ramps into restrained cyan illumination;
-5. body lowers slightly and stance becomes more stable;
-6. tail motion decreases.
+3. guardian claw moves forward;
+4. badge receives controlled cyan illumination;
+5. stance becomes slightly lower/stabler;
+6. tail movement reduces.
 
-Target total duration: approximately **500 ms**.
+No bouncing.
 
-### `protect -> working`
+### Protect -> Working
 
-Purpose: show that Kubidm is processing or waiting securely.
+Working is an indefinite-capable state.
 
-This state must support indefinite duration.
+- guardian posture remains;
+- badge/activity pulse is slow;
+- body breathing is minimal;
+- eyes focus on the active system signal;
+- tail nearly still.
 
-Characteristics:
+The loop must look natural whether the operation takes 300 ms or 20 seconds.
 
-- guardian stance remains;
-- cyan activity pulse is slow, approximately every 1.8-2.4 seconds;
-- eyes observe the identity/system indicator;
-- body breathing is extremely subtle, around 0.5-1% vertical scale variation;
-- tail is almost static;
-- no obvious short loop.
+### Working -> Success
 
-During native WebAuthn dialogs, motion should be especially restrained.
+Approximate total: 650 ms for major success.
 
-### `working -> success`
+1. activity signal resolves into the badge;
+2. one cyan pulse;
+3. eyes soften;
+4. guardian claw relaxes;
+5. body rises slightly and settles;
+6. guide claw opens.
 
-Purpose: represent a confirmed successful result.
-
-The transition starts only after the application/server confirms success.
-
-Sequence:
-
-1. working indicator converges toward the identity badge;
-2. badge emits one short cyan pulse;
-3. eyes soften/change to happy state;
-4. guardian claw returns from protection position;
-5. guide claw opens;
-6. body rises approximately 3-4% and settles.
-
-Target total duration for major success: approximately **650 ms**.
-
-Optional cyan accents are limited to a small number of subtle sparks. Do not use confetti for standard identity operations.
-
-### `success.small`
-
-For frequent confirmations such as profile save:
-
-- badge pulse;
-- softened eyes;
-- small nod/settle.
-
-Target duration: approximately **300-450 ms**.
-
-### `success.major`
-
-For meaningful milestones such as completed authentication:
-
-- badge pulse;
-- happy eyes;
-- controlled body rise and settle;
-- guide claw opens.
-
-Target duration: approximately **600-750 ms**.
-
-### `success -> travel`
-
-Purpose: carry the user into the next product context.
-
-Sequence:
+### Success -> Travel
 
 1. eyes look toward travel direction;
-2. body subtly prepares for lateral movement;
-3. first leg initiates;
-4. sideways walking begins;
-5. body oscillation remains at or below approximately 3%;
-6. claws remain comparatively stable;
-7. band tail follows with approximately 100-150 ms of natural lag.
+2. body prepares laterally;
+3. legs enter walking cycle;
+4. body travels sideways;
+5. tail lags approximately 100-150 ms.
 
-Target cadence: approximately **2.5-3.5 leg cycles per second**.
+Walking should feel competent and energetic, not like cartoon running.
 
-Typical local travel: **600-900 ms**.
+### Travel -> Idle
 
-Typical scene exit: **700-1000 ms**.
+1. horizontal movement decelerates;
+2. complete the final step;
+3. body settles;
+4. tail catches up;
+5. brief gaze scan of the new context;
+6. enter Idle.
 
-### Cross-page travel illusion
+### Idle -> Goodbye -> Exit
 
-The outgoing page and incoming page should match travel direction and approximate velocity.
+Approximate goodbye sequence: around 1 second before/while non-blocking exit begins.
 
-Conceptual sequence:
+1. look at user;
+2. raise guide claw;
+3. one wave;
+4. look toward exit;
+5. walk sideways out;
+6. tail disappears last.
 
-```text
-outgoing page: target position -> off-screen edge
-incoming page: opposite edge -> target position
-```
+Logout/navigation does not wait for the animation.
 
-The page may change, but the user should perceive that the same crab continued travelling.
+## Idle behaviour
 
-This continuity is a signature Kubidm experience.
+Idle is mostly static.
 
-### `travel -> idle`
-
-Purpose: arrive naturally without snapping to a stop.
-
-Sequence:
-
-1. horizontal velocity reduces during the final ~200 ms;
-2. final step completes;
-3. body may overshoot target by approximately 1-2%;
-4. tail catches up approximately 100 ms later;
-5. eyes briefly inspect the new context;
-6. character settles into Idle.
-
-Settling should complete approximately **400 ms** after travel ends.
-
-### Idle micro-behaviour
-
-Idle is not a continuously animated loop.
-
-Possible bounded micro-events include:
+Occasional micro-events may occur on a randomised bounded interval, approximately 8-15 seconds in the full-motion baseline:
 
 - blink;
-- small gaze movement;
-- tiny guide-claw adjustment;
+- slight eye glance;
+- small claw adjustment;
 - subtle tail twitch;
 - minimal body shift.
 
-A single micro-event may occur at a random interval of approximately **8-15 seconds**.
+Only one idle event should occur at a time.
 
-Only one idle event should be active at a time.
+Deterministic repetitive loops are discouraged because they feel robotic and become distracting during daily use.
 
-### `idle -> goodbye -> exit`
+## Warning and critical security motion
 
-Purpose: end the session journey.
+### Warning
 
-Sequence:
+- fast gaze toward the relevant UI;
+- expression becomes neutral/concerned;
+- guide claw lowers;
+- guardian claw comes closer to centre;
+- movement stops quickly.
 
-1. eyes look toward user;
-2. guide claw rises;
-3. character performs one wave;
-4. eyes look toward exit direction;
-5. sideways walking begins;
-6. body leaves;
-7. band tail is the final secondary element to disappear.
-
-The wave should not loop repeatedly.
-
-### Warning transition
-
-A normal state may enter Warning quickly but without drama.
-
-Sequence:
-
-1. eyes move to warning target;
-2. smile neutralises;
-3. guide claw lowers;
-4. guardian claw moves slightly toward centre;
-5. character becomes mostly still.
-
-Do not use red flashing, shaking, crying, or exaggerated fear.
-
-### Security-critical mode
-
-Security-critical states deliberately remove motion.
+### Security-critical
 
 ```text
-idle motion     off
-tail            still
-eyes            focused
-mouth           neutral/serious
-body movement   none
-cyan pulse      none or static
+idle motion:   off
+tail:          still
+eyes:          focused
+mouth:         serious/neutral
+body motion:   none
+cyan pulse:    none or static when semantically useful
 ```
 
-Examples include account lock, serious policy conflict, attestation failure, or a security-sensitive session state.
+The authoritative product message remains the primary communication.
 
-## Motion hierarchy by semantic purpose
+## Body-part motion hierarchy
 
 ### Attention
 
@@ -776,153 +606,57 @@ badge -> eyes -> body -> guide claw
 eyes -> body -> legs -> band tail
 ```
 
-This hierarchy should guide both rig authoring and animation review.
+These hierarchies guide rig choreography and transition blending.
 
-## Authentication-to-applications storyboard
+## Rive state-machine baseline
 
-The first approved end-to-end journey is the passkey authentication happy path.
-
-### Frame 1: Arrival
-
-State: **Welcome**.
-
-The login UI appears and remains immediately usable. Kubidm enters laterally and settles beside the authentication area.
-
-Optional supporting copy belongs in the normal UI, not in a speech bubble.
-
-### Frame 2: Guide to action
-
-State: **Guide / Point**.
-
-The crab looks at the primary passkey action, then uses the guide claw to reinforce the target.
-
-The gesture occurs once and relaxes.
-
-### Frame 3: Authentication started
-
-State: **Protect**.
-
-After the user starts the passkey operation:
-
-- the guide claw retracts;
-- guardian posture becomes active;
-- cyan identity energy appears;
-- the native passkey/WebAuthn interface remains the visual priority.
-
-### Frame 4: Authenticating
-
-State: **Working + Guardian**.
-
-The mascot waits calmly while authentication is pending.
-
-The badge/system signal may pulse slowly. Body and tail motion remain minimal.
-
-### Frame 5: Confirmed success
-
-State: **Success Major**.
-
-After confirmed authentication:
-
-- identity signal converges into the badge;
-- badge pulses once;
-- expression becomes happy;
-- guide claw opens;
-- body performs a small controlled rise and settle.
-
-### Frame 6: Travel to Applications
-
-State: **Travel -> Idle**.
-
-The crab looks toward the direction of the next context, walks sideways out of the authentication scene, enters the application portal with matching movement, looks briefly toward the application grid, and settles into Idle.
-
-The intended illusion is that the character travelled with the user rather than disappearing and being replaced by another animation.
-
-## Rive state-machine design baseline
-
-The approved conceptual graph is:
+Conceptual states:
 
 ```text
-                         +-----------+
-                         |  WARNING  |
-                         +-----^-----+
-                               |
-ENTER                          |
-  |                            |
-  v                            |
-WELCOME                        |
-  |                            |
-  v                            |
- IDLE <------------------------+
-  |
-  +----> GUIDE
-  |        |
-  |        v
-  |     PROTECT
-  |        |
-  |        v
-  |     WORKING
-  |       /   \
-  |      /     \
-  | WARNING   SUCCESS
-  |             |
-  |             v
-  |           TRAVEL ---------> IDLE
-  |
-  +----> GOODBYE
-             |
-             v
-            EXIT
-```
+ENTER
+  -> WELCOME
+  -> IDLE
+      -> GUIDE
+      -> PROTECT
+          -> WORKING
+              -> SUCCESS
+              -> WARNING
+      -> GOODBYE
+          -> EXIT
 
-Global transitions also exist conceptually for:
-
-```text
+ANY -> WARNING
 ANY -> SECURITY_CRITICAL
-ANY -> STATIC
-ANY -> EXIT
+ANY -> STATIC/FALLBACK
 ```
 
-The exact Rive implementation may use nested state machines or blend logic, but the browser-facing semantic contract should preserve these meanings.
+Product-specific semantics remain outside Rive.
 
-## Proposed Rive-facing inputs
+## Rive-facing inputs
 
-The implementation should expose semantic values rather than raw animation clip names.
-
-### Scene
+Conceptual inputs include:
 
 ```text
-auth
-applications
-profile
-credentials
-logout
+scene:
+  auth | applications | profile | credentials | logout
+
+mode:
+  guide | guardian | security
+
+state:
+  enter | welcome | idle | guide | protect | working |
+  success | warning | travel | goodbye | exit
+
+look_x: -1.0 .. 1.0
+look_y: -1.0 .. 1.0
+
+travel_direction:
+  left | right
+
+motion_level:
+  full | reduced | static
 ```
 
-### Mode
-
-```text
-guide
-guardian
-security
-```
-
-### State
-
-```text
-enter
-welcome
-idle
-guide
-protect
-working
-success
-warning
-travel
-goodbye
-exit
-```
-
-### Triggers
+Possible triggers:
 
 ```text
 attention
@@ -933,195 +667,80 @@ start_travel
 goodbye
 ```
 
-### Continuous values
+Names may change during implementation, but the separation between semantic product state and renderer input is mandatory.
 
-```text
-look_x: -1.0 .. 1.0
-look_y: -1.0 .. 1.0
-```
-
-### Travel direction
-
-```text
-left
-right
-```
-
-### Motion level
-
-```text
-full
-reduced
-static
-```
-
-The application-facing API remains renderer-independent as defined in the related ADR.
-
-## Motion accessibility modes
-
-Every major scene must support three presentation levels.
+## Motion modes
 
 ### Full
 
-Uses the complete approved motion language.
+Full character motion as defined above.
 
 ### Reduced
 
-Keeps only low-motion semantic feedback such as:
+Keep:
 
 - gaze changes;
 - expression changes;
-- restrained badge illumination; and
-- short cross-fades.
+- controlled badge illumination;
+- cross-fades or minimal pose transitions.
 
-Removes:
+Remove or minimise:
 
-- sideways walking;
-- body bounce;
-- tail secondary motion;
-- continuous idle movement; and
-- expressive celebration.
+- walking;
+- bounce;
+- tail physics;
+- repeated idle gestures;
+- decorative travel.
 
 ### Static
 
-Uses canonical SVG poses with no animation.
-
-Expected fallback set:
+Use canonical SVG states such as:
 
 ```text
-idle.svg
-welcome.svg
-guide.svg
-protect.svg
-working.svg
-success.svg
-warning.svg
-goodbye.svg
+idle
+guide
+protect
+working
+success
+warning
+goodbye
 ```
 
-The normal HTML UI always communicates the actual workflow state regardless of motion mode.
+All essential information remains in normal UI.
 
-## Security tone
+## First authentication storyboard
 
-Security tone is a visual system, not just a copy-writing rule.
+The first approved happy-path storyboard is:
 
-### Neutral
+```text
+Arrival
+-> Guide to action
+-> Authentication started
+-> Working / native WebAuthn pending
+-> Confirmed success
+-> Sideways travel
+-> Applications idle
+```
 
-Permitted:
+The complete product and teaching hierarchy for this journey is defined in [Authentication and Credential-Setup UI](authentication_credential_ui.md).
 
-- walking;
-- pointing;
-- gaze guidance;
-- presenting;
-- restrained idle behaviour.
+## Design-system relationship
 
-### Positive
+The documents have distinct responsibilities:
 
-Permitted:
+- [Mascot-Guided Product Experience](mascot_guided_product_experience.md) defines architecture and integration boundaries;
+- this document defines canonical character and motion behaviour;
+- [Guided Identity Journey](guided_identity_journey.md) defines proactive teaching, recommendations, progression, and guidance decay;
+- [Authentication and Credential-Setup UI](authentication_credential_ui.md) defines the concrete screen/component hierarchy for the first implementation prototype.
 
-- short badge pulse;
-- happy eyes;
-- small controlled body rise;
-- single wave where contextually appropriate.
+## Open design work
 
-### Caution
-
-Behaviour:
-
-- mostly static;
-- focused gaze;
-- reduced smile;
-- guardian claw closer to centre;
-- normal UI warning remains primary.
-
-### Critical
-
-Behaviour:
-
-- static or nearly static;
-- focused eyes;
-- neutral/serious mouth;
-- no idle gestures;
-- no playful cyan pulse;
-- no joke, celebration, crying, or slapstick reaction.
-
-## Repetition and familiarity
-
-The mascot should remain pleasant after repeated daily use.
-
-Design rules:
-
-- do not point repeatedly;
-- do not celebrate every successful action;
-- use small success for frequent operations;
-- keep idle activity infrequent and bounded;
-- allow high-frequency users to experience mostly ambient feedback;
-- do not delay real actions to complete animation.
-
-A future product decision may introduce familiarity levels, but the underlying motion system should already work when most expressive animations are suppressed.
-
-## Placement principles already established
-
-The mascot is supplementary and must live in a safe visual area.
-
-It must never:
-
-- cover primary controls;
-- cover validation messages;
-- cover authoritative security alerts;
-- change content layout while travelling;
-- sit above native browser/WebAuthn dialogs;
-- make a form inaccessible at narrow widths; or
-- create meaningful layout shift when the runtime loads.
-
-Exact desktop, tablet, and mobile placement remains part of the forthcoming product UI design phase.
-
-## Brand distinctness
-
-The character may share the high-level idea of a friendly crab with Rust community culture, but the Kubidm mascot must remain an original design.
-
-Distinctive Kubidm elements include:
-
-- Kubidm Identity Band;
-- central identity badge;
-- guide/guardian claw roles;
-- 70/30 Guide/Guardian personality model;
-- cyan identity-energy semantics;
-- sideways workflow-travel language;
-- gaze-driven attention language; and
-- security seriousness represented through stillness.
-
-Do not reproduce Ferris artwork, exact proportions, silhouette, facial construction, claw geometry, or branding.
-
-## Decisions still open
-
-The following items are intentionally not locked by this document:
-
-- final Kubidm identity glyph inside the badge;
-- mascot name, if any;
-- final application-wide teal/cyan token values after accessibility validation;
-- canonical desktop/tablet/mobile mascot placement;
-- final authentication UI visual design;
-- complete failure-path storyboard catalogue;
-- exact prominence/familiarity behaviour for frequent users;
-- final Rive rig topology and bone structure;
-- final compressed `.riv` and runtime performance budgets; and
-- tenant-visible mascot configuration UI.
-
-## Next design phase
-
-The next design phase is the **Kubidm Product UI Design System**, beginning with the authentication interface.
-
-The first UI design set should cover:
-
-- desktop, tablet, and mobile;
-- light and dark themes;
-- passkey-first authentication;
-- password or other sign-in alternatives;
-- reauthentication;
-- OAuth application authentication context;
-- full-motion mascot placement;
-- reduced-motion placement; and
-- mascot-disabled/static presentation.
-
-This phase must design the actual product around the mascot rather than altering the mascot again without a specific product requirement.
+- final identity glyph;
+- final vector construction/model sheet source;
+- final Rive rig topology and control names;
+- precise leg cycle and deformation limits after rig testing;
+- final eye/brow shapes at small sizes;
+- final theme-specific edge/shadow treatment;
+- measured CPU/main-thread behaviour of idle animation;
+- final static SVG production assets;
+- whether the mascot receives a formal name.
