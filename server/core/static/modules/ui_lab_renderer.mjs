@@ -1,5 +1,8 @@
 import { MotionLevel } from "./guide_contract.mjs";
-import { createGuideRenderer } from "./guide_renderer.mjs";
+import {
+    GuideFallback,
+    createGuideRenderer,
+} from "./guide_renderer.mjs";
 
 const canvas = document.querySelector("#ui-lab-canvas");
 const preview = document.querySelector("#ui-lab-preview");
@@ -18,7 +21,10 @@ function motionLevel() {
 function syncSlot(slot) {
     let renderer = renderers.get(slot);
     if (!renderer) {
-        renderer = createGuideRenderer(slot, { renderer: "static" });
+        renderer = createGuideRenderer(slot, {
+            renderer: "static",
+            fallback: GuideFallback.LABEL,
+        });
         renderers.set(slot, renderer);
     }
 
