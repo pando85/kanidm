@@ -184,6 +184,10 @@
     color: var(--bs-warning-text-emphasis);
 }
 
+.guide-credential-intro {
+    max-width: 42rem;
+}
+
 .guide-progress {
     display: grid;
     gap: 0.7rem;
