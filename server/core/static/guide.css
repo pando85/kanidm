@@ -143,6 +143,47 @@
     color: var(--bs-danger-text-emphasis);
 }
 
+.guide-story {
+    margin: 1rem 0 1.25rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.8rem;
+    background: var(--bs-tertiary-bg);
+}
+
+.guide-story summary {
+    padding: 0.75rem 0.9rem;
+    cursor: pointer;
+    color: var(--kubidm-guide-teal);
+    font-weight: 700;
+}
+
+.guide-story[open] summary {
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.guide-story-body {
+    padding: 0.85rem 0.9rem;
+    color: var(--bs-secondary-color);
+    font-size: 0.88rem;
+    line-height: 1.55;
+}
+
+.guide-story-body > :last-child {
+    margin-bottom: 0;
+}
+
+.guide-status {
+    min-height: 1.5rem;
+    margin-top: 0.8rem;
+    color: var(--bs-secondary-color);
+    font-size: 0.82rem;
+    text-align: center;
+}
+
+.guide-status[data-severity="caution"] {
+    color: var(--bs-warning-text-emphasis);
+}
+
 .guide-progress {
     display: grid;
     gap: 0.7rem;
