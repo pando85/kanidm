@@ -457,7 +457,7 @@ pub trait QueryServerTransaction<'a> {
         // There are some contexts where we will be passed an rdn or dn. We need
         // to remove these elements if they exist.
         //
-        // Why is it okay to ignore the attr and dn here? In Kani spn and name are
+        // Why is it okay to ignore the attr and dn here? In Kubidm spn and name are
         // always unique and absolutes, so even if the dn/rdn are not expected, there
         // is only a single correct answer that *can* match these values. This also
         // hugely simplifies the process of matching when we have app based searches

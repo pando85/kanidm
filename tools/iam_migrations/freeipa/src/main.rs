@@ -401,7 +401,7 @@ async fn run_sync(
                 LDAP_ATTR_CN.into(),
                 "admins".to_string(),
             ))),
-            // Kani internally has an all persons group.
+            // Kubidm internally has an all persons group.
             LdapFilter::Not(Box::new(LdapFilter::Equality(
                 LDAP_ATTR_CN.into(),
                 "ipausers".to_string(),

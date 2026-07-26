@@ -124,7 +124,7 @@ impl Default for AccountChangeMessage {
 /// use kubidm_proto::messages::*;
 /// let mut msg = AccountChangeMessage::default();
 /// msg.action=String::from("cake_eating");
-/// msg.src_user=String::from("Kani");
+/// msg.src_user=String::from("kubidm");
 /// msg.dest_user=String::from("Krabby");
 /// msg.result=String::from("It was amazing");
 /// assert_eq!(msg.status, MessageStatus::Success);
@@ -133,7 +133,7 @@ impl Default for AccountChangeMessage {
 /// assert_eq!(format!("{}", msg), expected_result);
 ///
 /// msg.output_mode = ConsoleOutputMode::JSON;
-/// let expected_result = "{\"action\":\"cake_eating\",\"result\":\"It was amazing\",\"status\":\"success\",\"src_user\":\"Kani\",\"dest_user\":\"Krabby\"}";
+/// let expected_result = "{\"action\":\"cake_eating\",\"result\":\"It was amazing\",\"status\":\"success\",\"src_user\":\"kubidm\",\"dest_user\":\"Krabby\"}";
 /// assert_eq!(format!("{}", msg), expected_result);
 /// ```
 impl fmt::Display for AccountChangeMessage {

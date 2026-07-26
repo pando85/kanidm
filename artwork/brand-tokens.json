@@ -1,6 +1,6 @@
 {
   "name": "Kubidm",
-  "description": "Identity management core service for Kaniop",
+  "description": "Identity management core service for Kubidm",
   "colors": {
     "navy": "#0D1A30",
     "deep_navy": "#071228",
