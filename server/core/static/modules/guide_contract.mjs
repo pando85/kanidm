@@ -21,6 +21,7 @@ export const MascotState = Object.freeze({
     WORKING: "working",
     SUCCESS: "success",
     WARNING: "warning",
+    TRAVEL: "travel",
     GOODBYE: "goodbye",
 });
 
