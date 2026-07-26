@@ -1,8 +1,9 @@
 (% extends "login_base.html" %)
 
 (% block logincontainer %)
-<div data-guide-state="(% if username.is_empty() %)welcome(% else %)idle(% endif %)"
-     data-guide-action="identify">
+<div data-guide-state="(% if display_ctx.error.is_some() %)warning(% else if username.is_empty() %)welcome(% else %)idle(% endif %)"
+     data-guide-action="(% if display_ctx.error.is_some() %)identify_error(% else %)identify(% endif %)"
+     (% if display_ctx.error.is_some() %)data-guide-severity="caution"(% endif %)>
 (% if let Some(error) = display_ctx.error %)
 	<div class="alert alert-danger" role="alert" data-guide-severity="caution">
 		(( error ))
@@ -10,7 +11,7 @@
 (% endif %)
 
 (% if crate::https::views::guide::guided_ui_enabled() %)
-    (% if username.is_empty() %)
+    (% if username.is_empty() && display_ctx.error.is_none() %)
     <h3>Welcome</h3>
     <section class="crab-dialog"
              data-variant="orient"
@@ -18,7 +19,7 @@
              data-guide-story-id="welcome-orientation">
         <p>Hi. I’ll help you sign in, explain security choices when they matter, and stay quiet when they don’t.</p>
     </section>
-    (% else %)
+    (% else if display_ctx.error.is_none() %)
     <h3>Welcome back</h3>
     <p class="text-body-secondary">Continue with your remembered username, or change it below.</p>
     (% endif %)
@@ -39,25 +40,8 @@
 		/>
 	</div>
 
-	<!-- BEGIN: allows a password manager to autocomplete these fields in the BG. -->
-	<input
-		class="d-none"
-		id="password"
-		name="password"
-		type="password"
-		autocomplete="current-password"
-		value=""
-	/>
-	<input
-		class="d-none"
-		id="totp"
-		name="totp"
-		type="text"
-		inputmode="numeric"
-		autocomplete="one-time-code"
-		value=""
-	/>
-	<!-- END -->
+	<input class="d-none" id="password" name="password" type="password" autocomplete="current-password" value="" />
+	<input class="d-none" id="totp" name="totp" type="text" inputmode="numeric" autocomplete="one-time-code" value="" />
 
 	<div class="mb-3 form-check form-switch">
 		<input
@@ -72,10 +56,7 @@
 		<label class="form-check-label" for="remember_me_check">Remember My Username</label>
 	</div>
 	<div class="input-group mb-3 justify-content-md-center">
-		<button
-			type="submit"
-			class="btn btn-primary(% if crate::https::views::guide::guided_ui_enabled() %) w-100(% endif %)"
-		>(% if crate::https::views::guide::guided_ui_enabled() %)Continue(% else %)Begin(% endif %)</button>
+		<button type="submit" class="btn btn-primary(% if crate::https::views::guide::guided_ui_enabled() %) w-100(% endif %)">(% if crate::https::views::guide::guided_ui_enabled() %)Continue(% else %)Begin(% endif %)</button>
 	</div>
 	(% if display_ctx.domain_info.allow_account_recovery() -%)
 	<div class="input-group mb-3 justify-content-md-center">
