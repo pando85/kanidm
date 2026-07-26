@@ -12,7 +12,10 @@
 (% if crate::https::views::guide::guided_ui_enabled() %)
     (% if username.is_empty() %)
     <h3>Welcome</h3>
-    <section class="crab-dialog" data-variant="orient">
+    <section class="crab-dialog"
+             data-variant="orient"
+             data-guide-new-only
+             data-guide-story-id="welcome-orientation">
         <p>Hi. I’ll help you sign in, explain security choices when they matter, and stay quiet when they don’t.</p>
     </section>
     (% else %)
