@@ -2895,6 +2895,7 @@ mod tests {
     use crate::value::CredentialType;
     use crate::valueset::ValueSetEmailAddress;
     use compact_jwt::JwsCompact;
+    use kubidm_lib_crypto::PW_MFA_MIN_LENGTH;
     use kubidm_proto::internal::{CUExtPortal, CredentialDetailType, PasswordFeedback};
     use kubidm_proto::v1::OutboundMessage;
     use kubidm_proto::v1::{AuthAllowed, AuthIssueSession, AuthMech, UnixUserToken};
@@ -3837,7 +3838,7 @@ mod tests {
             .unwrap_err();
         trace!(?err);
         assert!(
-            matches!(err, OperationError::PasswordQuality(details) if details == vec!(PasswordFeedback::TooShort(PW_MIN_LENGTH),))
+            matches!(err, OperationError::PasswordQuality(details) if details == vec!(PasswordFeedback::TooShort(PW_MFA_MIN_LENGTH),))
         );
 
         let err = cutxn
@@ -3900,7 +3901,7 @@ mod tests {
         let ct = Duration::from_secs(TEST_CURRENT_TIME);
 
         // Set the account policy min pw length
-        let test_pw_min_length = PW_MIN_LENGTH * 2;
+        let test_pw_min_length = PW_MFA_MIN_LENGTH * 2;
 
         let mut idms_prox_write = idms.proxy_write(ct).await.unwrap();
 

@@ -29,13 +29,15 @@ use crate::idm::serviceaccount::ServiceAccount;
 use crate::prelude::*;
 use crate::server::keys::KeyProvidersTransaction;
 use crate::server::DomainInfo;
-use crate::utils::{password_from_random, readable_password_from_random, uuid_from_duration, Sid};
+use crate::utils::{
+    password_from_random, readable_password_from_random, utf8_len, uuid_from_duration, Sid,
+};
 use crate::value::{Session, SessionState};
 use compact_jwt::{Jwk, JwsCompact};
 use concread::bptree::{BptreeMap, BptreeMapReadTxn, BptreeMapWriteTxn};
 use concread::cowcell::CowCellReadTxn;
 use concread::hashmap::{HashMap, HashMapReadTxn, HashMapWriteTxn};
-use kubidm_lib_crypto::CryptoPolicy;
+use kubidm_lib_crypto::{PW_MAX_LENGTH_NIST, PW_MFA_MIN_LENGTH, CryptoPolicy};
 use kubidm_proto::internal::{
     ApiToken, CredentialStatus, PasswordFeedback, RadiusAuthToken, ScimSyncToken, UatPurpose,
     UserAuthToken,
@@ -1808,9 +1810,14 @@ impl IdmServerProxyWriteTransaction<'_> {
         //
 
         // is the password at least 10 char?
-        if cleartext.len() < PW_MIN_LENGTH as usize {
+        let pw_graphemes = utf8_len(cleartext);
+        if pw_graphemes < PW_MFA_MIN_LENGTH as usize {
             return Err(OperationError::PasswordQuality(vec![
-                PasswordFeedback::TooShort(PW_MIN_LENGTH),
+                PasswordFeedback::TooShort(PW_MFA_MIN_LENGTH),
+            ]));
+        } else if pw_graphemes > PW_MAX_LENGTH_NIST as usize {
+            return Err(OperationError::PasswordQuality(vec![
+                PasswordFeedback::TooLong(PW_MAX_LENGTH_NIST),
             ]));
         }
 

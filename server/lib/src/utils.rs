@@ -5,6 +5,7 @@ use hashbrown::HashSet;
 use rand::distr::{Distribution, Uniform};
 use rand::{rng, Rng, RngExt};
 use std::ops::Range;
+use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(Debug)]
 pub struct DistinctAlpha;
@@ -72,6 +73,10 @@ pub fn readable_password_from_random() -> String {
             .take(5)
             .collect::<String>(),
     )
+}
+
+pub fn utf8_len(s: &str) -> usize {
+    s.graphemes(true).count()
 }
 
 impl Distribution<char> for DistinctAlpha {
