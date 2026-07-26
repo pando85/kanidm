@@ -339,7 +339,7 @@ if ! curl --cacert "${KANIDM_CA_PATH}" -fs "${KANIDM_URL%/}/status" >/dev/null 2
     rm -f "${KANIDM_TMP_DIR}/kanidm.db"
     (
         cd "${SERVER_DAEMON_DIR}" || exit 1
-        export KANIDM_CONFIG="./insecure_server.toml"
+        export KUBIDM_CONFIG="./insecure_server.toml"
         "${KANIDMD_CMD[@]}" cert-generate >/dev/null
         "${KANIDMD_CMD[@]}" server >"${KANIDMD_LOG_FILE}" 2>&1 &
         echo $! > "${KANIDM_TMP_DIR}/test_radius_kubidmd.pid"
@@ -369,7 +369,7 @@ export KANIDM_CONFIG_FILE="${KANIDM_CONFIG_FILE}"
 log "Recovering admin credentials"
 IDM_ADMIN_PASS_RAW="$(
     cd "${SERVER_DAEMON_DIR}" && \
-    KANIDM_CONFIG="./insecure_server.toml" "${KANIDMD_CMD[@]}" scripting recover-account idm_admin 2>&1
+    KUBIDM_CONFIG="./insecure_server.toml" "${KANIDMD_CMD[@]}" scripting recover-account idm_admin 2>&1
 )"
 IDM_ADMIN_PASS_JSON="$(extract_last_json_line "${IDM_ADMIN_PASS_RAW}")"
 IDM_ADMIN_PASS="$(echo "${IDM_ADMIN_PASS_JSON}" | jq -r '.output // .password // empty')"

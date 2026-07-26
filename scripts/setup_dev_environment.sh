@@ -81,7 +81,7 @@ if [ "${REMOVE_TEST_DB}" -eq 1 ]; then
     rm /tmp/kubidm/kubidm.db || true
 fi
 
-export KANIDM_CONFIG="./insecure_server.toml"
+export KUBIDM_CONFIG="./insecure_server.toml"
 IDM_ADMIN_USER="idm_admin@localhost"
 
 echo "Resetting the idm_admin user..."

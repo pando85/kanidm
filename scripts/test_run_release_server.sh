@@ -31,7 +31,7 @@ if [ ! -f "run_insecure_dev_server.sh" ]; then
     exit 1
 fi
 
-export KANIDM_CONFIG="./insecure_server.toml"
+export KUBIDM_CONFIG="./insecure_server.toml"
 
 mkdir -p /tmp/kubidm/client_ca
 
