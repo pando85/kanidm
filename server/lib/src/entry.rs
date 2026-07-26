@@ -2427,7 +2427,9 @@ impl Entry<EntryReduced, EntryCommitted> {
                 let opt_resolve_status = vs.to_scim_value();
                 let res_opt_scim_value = match opt_resolve_status {
                     None => Ok(None),
-                    Some(ScimResolveStatus::Resolved(scim_value_kubidm)) => Ok(Some(scim_value_kubidm)),
+                    Some(ScimResolveStatus::Resolved(scim_value_kubidm)) => {
+                        Ok(Some(scim_value_kubidm))
+                    }
                     Some(ScimResolveStatus::NeedsResolution(scim_value_interim)) => {
                         read_txn.resolve_scim_interim(scim_value_interim)
                     }
