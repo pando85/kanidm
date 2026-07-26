@@ -1,6 +1,13 @@
 use askama::Template;
 use std::fmt;
 
+pub(crate) fn guided_ui_enabled() -> bool {
+    std::env::var("KUBIDM_GUIDED_UI")
+        .ok()
+        .map(|value| value.to_ascii_lowercase())
+        .is_some_and(|value| matches!(value.as_str(), "1" | "true" | "yes" | "on"))
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum GuideDialogVariant {
     Orient,
