@@ -3,18 +3,20 @@
 (% block title %)Login(% endblock %)
 
 (% block head %)
+(% if crate::https::views::guide::guided_ui_enabled() %)
 <link rel="stylesheet"
       href="/pkg/guide.css?v=((crate::https::cache_buster::get_cache_buster_key()))" />
 <link rel="stylesheet"
       href="/pkg/guide_auth.css?v=((crate::https::cache_buster::get_cache_buster_key()))" />
 <script type="module"
         src="/pkg/modules/guide_controller.mjs?v=((crate::https::cache_buster::get_cache_buster_key()))"></script>
+(% endif %)
 (% endblock %)
 
 (% block body %)
 <main id="main"
-      class="form-signin m-auto align-items-center d-flex flex-column guide-auth-shell"
-      data-guide-scene="auth">
+      class="form-signin m-auto align-items-center d-flex flex-column(% if crate::https::views::guide::guided_ui_enabled() %) guide-auth-shell(% endif %)"
+      (% if crate::https::views::guide::guided_ui_enabled() %)data-guide-scene="auth"(% endif %)>
 	(% if display_ctx.domain_info.image().is_some() %)
 	<img src="/ui/images/domain"
 		alt="(( display_ctx.domain_info.display_name() ))" class="kubidm_logo" />
@@ -38,9 +40,11 @@
 		(% endblock %)
 	</div>
 
+	(% if crate::https::views::guide::guided_ui_enabled() %)
 	<div class="guide-mascot-slot"
 	     data-guide-slot
 	     aria-hidden="true"
 	     hidden></div>
+	(% endif %)
 </main>
 (% endblock %)
