@@ -2,8 +2,34 @@
 
 (% block logincontainer %)
 <div class="justify-content-center"
-     data-guide-state="protect"
-     data-guide-action="webauthn">
+     data-guide-state="guide"
+     data-guide-action="webauthn_ready">
+    (% if crate::https::views::guide::guided_ui_enabled() %)
+        (% if passkey %)
+        <h3>Use your passkey</h3>
+        <section class="crab-dialog" data-variant="teach">
+            <p>Your browser or device will ask you to approve this sign-in. The private key is not sent to Kubidm, and the credential is bound to the correct site.</p>
+        </section>
+        <details class="guide-story">
+            <summary>Why is this harder to phish?</summary>
+            <div class="guide-story-body">
+                <p>Kubidm and your authenticator prove the sign-in with a cryptographic challenge tied to this site. There is no reusable passkey secret for a fake page to ask you to type.</p>
+            </div>
+        </details>
+        (% else %)
+        <h3>Use your security key</h3>
+        <section class="crab-dialog" data-variant="teach">
+            <p>Your browser will ask you to approve this sign-in with your hardware security key. The key proves possession without sending its private key to Kubidm.</p>
+        </section>
+        <details class="guide-story">
+            <summary>What happens when I continue?</summary>
+            <div class="guide-story-body">
+                <p>The browser asks the security key to answer a challenge for this site. You may need to touch the key or complete its local verification step.</p>
+            </div>
+        </details>
+        (% endif %)
+    (% endif %)
+
     (% if passkey %)
     <form
         id="cred-form"
@@ -15,7 +41,7 @@
         <button hx-disable
                 type="button"
                 autofocus
-                class="btn btn-primary"
+                class="btn btn-primary(% if crate::https::views::guide::guided_ui_enabled() %) w-100(% endif %)"
                 id="start-passkey-button"
                 data-guide-target="primary-action">Use Passkey</button>
     </form>
@@ -25,10 +51,17 @@
         <button hx-disable
                 type="button"
                 autofocus
-                class="btn btn-primary"
+                class="btn btn-primary(% if crate::https::views::guide::guided_ui_enabled() %) w-100(% endif %)"
                 id="start-seckey-button"
                 data-guide-target="primary-action">Use Security Key</button>
     </form>
+    (% endif %)
+
+    (% if crate::https::views::guide::guided_ui_enabled() %)
+    <div class="guide-status"
+         data-guide-status
+         role="status"
+         aria-live="polite"></div>
     (% endif %)
 </div>
 
