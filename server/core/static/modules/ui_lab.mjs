@@ -1,3 +1,5 @@
+import { MotionLevel, normaliseGuideState } from "./guide_contract.mjs";
+
 const stories = {
     "first-login": {
         title: "Meet / identify",
@@ -38,40 +40,34 @@ const stories = {
         subtitle: "A short explanation before you choose.",
         dialog: {
             variant: "teach",
-            text: "Your device proves it has the right credential without sending the private key to Kubidm. The credential is also designed to work with the correct site, which makes phishing much harder.",
+            text: "A passkey proves it’s you without sending its private key to Kubidm. It is also designed to work with the correct site, which makes phishing much harder.",
         },
         content: "passkey-story",
-        next: "passkey-working",
     },
     "passkey-working": {
-        title: "Passkey working",
+        title: "Native WebAuthn active",
         productState: "webauthn_pending",
         recommendation: "recommended",
         mascotState: "working",
         severity: "neutral",
-        heading: "Use your passkey",
-        subtitle: "Follow your browser or device prompt.",
-        dialog: {
-            variant: "orient",
-            text: "I’ll stay quiet while your device handles this part.",
-        },
+        heading: "Check your device",
+        subtitle: "Your browser or device is handling the next step.",
+        dialog: null,
         content: "working",
-        next: "success",
     },
     success: {
-        title: "Confirmed success",
+        title: "Confirmed authentication",
         productState: "authentication_confirmed",
         recommendation: "none",
         mascotState: "success",
         severity: "positive",
         heading: "You’re signed in",
-        subtitle: "Your identity was confirmed.",
+        subtitle: "Kubidm confirmed your identity.",
         dialog: {
             variant: "celebrate",
-            text: "Nice. You’re in. I’ll keep the celebrations small so this still feels good on login number five hundred.",
+            text: "Done. I’ll take you to your applications.",
         },
         content: "success",
-        next: "resilience",
     },
     "password-ok": {
         title: "Password — Works OK",
@@ -79,39 +75,39 @@ const stories = {
         recommendation: "works_ok",
         mascotState: "guide",
         severity: "neutral",
-        heading: "Sign in with your password",
-        subtitle: "This is a valid option for your account.",
+        heading: "Use your password",
+        subtitle: "This is a valid option for the current account policy.",
         dialog: {
             variant: "orient",
-            text: "That works. If you want, we can add a passkey later for faster, phishing-resistant sign-in.",
+            text: "That works. If you want, we can add a passkey later for a faster, phishing-resistant sign-in.",
         },
         content: "password",
     },
     "webauthn-cancel": {
-        title: "WebAuthn cancelled",
-        productState: "webauthn_cancelled",
+        title: "WebAuthn interrupted",
+        productState: "webauthn_interrupted",
         recommendation: "recommended",
         mascotState: "guide",
         severity: "neutral",
-        heading: "Passkey prompt closed",
-        subtitle: "Nothing changed.",
+        heading: "No problem",
+        subtitle: "The WebAuthn request did not complete.",
         dialog: {
             variant: "orient",
-            text: "No problem. Try again when you’re ready, or choose another allowed sign-in method.",
+            text: "You can try again when you’re ready, or choose another sign-in method if one is available.",
         },
         content: "cancelled",
     },
     oauth: {
         title: "OAuth destination",
-        productState: "oauth_login",
-        recommendation: "recommended",
+        productState: "oauth_context",
+        recommendation: "none",
         mascotState: "guide",
         severity: "neutral",
         heading: "Sign in to continue",
-        subtitle: "Grafana is asking Acme Corp to confirm your identity.",
+        subtitle: "Grafana wants you to authenticate with Acme Corp.",
         dialog: {
             variant: "orient",
-            text: "You’re signing in through Acme Corp so you can continue to Grafana.",
+            text: "I’ll verify your Acme identity, then send you back to Grafana.",
         },
         content: "oauth",
     },
@@ -120,14 +116,14 @@ const stories = {
         productState: "reauthentication",
         recommendation: "required",
         mascotState: "protect",
-        severity: "neutral",
+        severity: "caution",
         heading: "Confirm it’s you",
-        subtitle: "Before changing your credentials, Kubidm needs to verify your identity again.",
+        subtitle: "Kubidm needs another check before this sensitive action.",
         dialog: {
             variant: "orient",
-            text: "This extra check protects a sensitive change. Use one of the methods allowed for reauthentication.",
+            text: "This extra check protects a security-sensitive change. Use one of the methods your account allows.",
         },
-        content: "method-choice",
+        content: "reauth",
     },
     "policy-required": {
         title: "Policy-required action",
@@ -135,9 +131,12 @@ const stories = {
         recommendation: "required",
         mascotState: "protect",
         severity: "caution",
-        heading: "A security step is required",
-        subtitle: "Your organisation requires a stronger sign-in method before you continue.",
-        dialog: null,
+        heading: "One security step is required",
+        subtitle: "Your organisation’s policy requires this before you can continue.",
+        dialog: {
+            variant: "orient",
+            text: "This one isn’t optional. I’ll show you what the policy requires and why the normal UI is blocking progress.",
+        },
         content: "policy-required",
     },
     returning: {
@@ -157,14 +156,13 @@ const stories = {
         recommendation: "recommended",
         mascotState: "guide",
         severity: "neutral",
-        heading: "Want a backup way in?",
-        subtitle: "Your primary sign-in works. A backup can help if your normal device is unavailable.",
+        heading: "You can sign in now",
+        subtitle: "There’s one more thing worth considering.",
         dialog: {
             variant: "suggest",
-            text: "You’re in good shape. I’d add a backup method next so one lost device doesn’t become a support ticket.",
+            text: "Your primary sign-in is ready. If policy and your setup support it, a backup path can help if your usual device is unavailable.",
         },
         content: "resilience",
-        next: "credentials-progress",
     },
     "credentials-progress": {
         title: "Credential progress",
@@ -172,14 +170,13 @@ const stories = {
         recommendation: "optional",
         mascotState: "idle",
         severity: "neutral",
-        heading: "Your identity journey",
-        subtitle: "Progress, not a security score.",
+        heading: "Your sign-in setup",
+        subtitle: "Progress without a security score.",
         dialog: {
             variant: "orient",
-            text: "You can already sign in. These next steps improve resilience without turning security into a points game.",
+            text: "I’ll show what is configured, what policy still requires, and what is simply optional.",
         },
-        content: "progress",
-        next: "complete",
+        content: "credentials-progress",
     },
     complete: {
         title: "Journey complete",
@@ -188,43 +185,43 @@ const stories = {
         mascotState: "success",
         severity: "positive",
         heading: "You’re ready",
-        subtitle: "Your recommended identity setup is complete.",
+        subtitle: "The recommended setup for this fixture is complete.",
         dialog: {
             variant: "celebrate",
-            text: "All set. I’ll stay out of the way now and show up when something actually needs your attention.",
+            text: "All set. I’ll stay out of the way unless something changes or you ask for help.",
         },
         content: "complete",
     },
     "component-dialog": {
-        title: "Primitive: Crab Dialog",
+        title: "Crab Dialog variants",
         productState: "component_preview",
         recommendation: "none",
-        mascotState: "guide",
+        mascotState: "idle",
         severity: "neutral",
-        heading: "Crab Dialog variants",
-        subtitle: "Teaching is accessible HTML, not text inside animation.",
+        heading: "Crab Dialog",
+        subtitle: "Accessible HTML content, separate from animation.",
         dialog: null,
         content: "component-dialog",
     },
     "component-options": {
-        title: "Primitive: Recommendation options",
+        title: "Recommendation taxonomy",
         productState: "component_preview",
         recommendation: "recommended",
         mascotState: "guide",
         severity: "neutral",
-        heading: "Recommendation taxonomy",
-        subtitle: "Required, Recommended, Works OK, and Optional are contextual product semantics.",
+        heading: "Recommendation options",
+        subtitle: "Required, Recommended, Works OK, and Optional are contextual presentation states.",
         dialog: null,
         content: "component-options",
     },
     "component-notice": {
-        title: "Primitive: Security notice",
+        title: "Security notices",
         productState: "component_preview",
-        recommendation: "required",
+        recommendation: "none",
         mascotState: "warning",
         severity: "caution",
-        heading: "Authoritative security UI",
-        subtitle: "The mascot may support this state, but never replaces the notice.",
+        heading: "Authoritative security notices",
+        subtitle: "The normal UI owns warnings and errors.",
         dialog: null,
         content: "component-notice",
     },
@@ -233,19 +230,15 @@ const stories = {
 const ui = {
     canvas: document.querySelector("#ui-lab-canvas"),
     preview: document.querySelector("#ui-lab-preview"),
-    theme: document.querySelector("#ui-lab-theme"),
-    viewport: document.querySelector("#ui-lab-viewport"),
-    motion: document.querySelector("#ui-lab-motion"),
     title: document.querySelector("#ui-lab-story-title"),
     productState: document.querySelector("#ui-lab-product-state"),
     recommendation: document.querySelector("#ui-lab-recommendation"),
     mascotState: document.querySelector("#ui-lab-mascot-state"),
     severity: document.querySelector("#ui-lab-severity"),
+    theme: document.querySelector("#ui-lab-theme"),
+    viewport: document.querySelector("#ui-lab-viewport"),
+    motion: document.querySelector("#ui-lab-motion"),
 };
-
-if (!ui.canvas) {
-    throw new Error("Kubidm UI Lab canvas is missing");
-}
 
 function escapeHtml(value) {
     return String(value)
@@ -258,171 +251,157 @@ function escapeHtml(value) {
 
 function dialogMarkup(dialog) {
     if (!dialog) return "";
-    return `<section class="crab-dialog" data-variant="${escapeHtml(dialog.variant)}">
+    return `<section class="ui-lab-dialog" data-variant="${escapeHtml(dialog.variant)}">
+        <span class="ui-lab-dialog-label">${escapeHtml(dialog.variant)}</span>
         <p>${escapeHtml(dialog.text)}</p>
     </section>`;
 }
 
-function optionMarkup({ title, reason, recommendation, story }) {
-    const chip = recommendation
-        ? `<span class="ui-lab-chip" data-kind="${escapeHtml(recommendation)}">${escapeHtml(labelForRecommendation(recommendation))}</span>`
-        : "";
-    const storyAttr = story ? ` data-go-story="${escapeHtml(story)}"` : "";
-    return `<button type="button" class="ui-lab-option" data-recommendation="${escapeHtml(recommendation || "none")}"${storyAttr}>
+function optionMarkup(title, reason, recommendation, primary = false) {
+    return `<button type="button" class="ui-lab-option${primary ? " ui-lab-option-primary" : ""}">
         <span>
-            <span class="ui-lab-option-title">${escapeHtml(title)}</span>
-            <span class="ui-lab-option-reason">${escapeHtml(reason)}</span>
+            <strong>${escapeHtml(title)}</strong>
+            <small>${escapeHtml(reason)}</small>
         </span>
-        ${chip}
+        <span class="ui-lab-chip" data-kind="${escapeHtml(recommendation)}">${escapeHtml(recommendation)}</span>
     </button>`;
 }
 
-function labelForRecommendation(value) {
-    return {
-        required: "Required",
-        recommended: "Recommended",
-        works_ok: "Works OK",
-        optional: "Optional",
-    }[value] || value;
+function progressMarkup(items) {
+    return `<ol class="ui-lab-progress">
+        ${items
+            .map(
+                (item) => `<li data-complete="${item.complete}">
+                    <span class="ui-lab-progress-marker"></span>
+                    <span><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.detail)}</small></span>
+                </li>`,
+            )
+            .join("")}
+    </ol>`;
+}
+
+function noticeMarkup(title, text, severity) {
+    return `<section class="ui-lab-notice" data-severity="${escapeHtml(severity)}" role="${severity === "critical" ? "alert" : "status"}">
+        <strong>${escapeHtml(title)}</strong>
+        <p>${escapeHtml(text)}</p>
+    </section>`;
+}
+
+function mascotMarkup(state) {
+    const label = escapeHtml(state);
+    return `<div class="ui-lab-mascot-slot" data-mascot-state="${label}">
+        <img data-lab-mascot-image src="/pkg/img/guide/crab-${label}.svg" alt="Kubidm guide: ${label}" />
+        <div data-lab-mascot-fallback class="ui-lab-mascot-fallback" hidden>
+            <span>Mascot asset slot<br><strong>${label}</strong></span>
+        </div>
+    </div>`;
 }
 
 function storyContent(story) {
     switch (story.content) {
         case "identify":
-            return `<form data-lab-form>
-                <label class="form-label" for="lab-username">Username</label>
-                <input id="lab-username" class="form-control" autocomplete="username" value="alex@example.com" />
-                <div class="form-check form-switch mt-3">
-                    <input id="lab-remember" class="form-check-input" type="checkbox" checked />
-                    <label class="form-check-label" for="lab-remember">Remember my username</label>
-                </div>
-                <div class="ui-lab-actions">
-                    <button type="button" class="btn ui-lab-primary-action" data-go-story="method-choice">Continue</button>
-                    <button type="button" class="btn btn-link">Recover account</button>
-                </div>
+            return `<form class="ui-lab-form" onsubmit="return false">
+                <label>Username<input class="form-control" value="alex" /></label>
+                <label class="form-check"><input type="checkbox" class="form-check-input" checked /> Remember my username</label>
+                <button type="button" class="btn ui-lab-primary-action" data-go-story="method-choice">Continue</button>
             </form>`;
         case "method-choice":
-            return `<div class="ui-lab-options">
-                ${optionMarkup({ title: "Use a passkey", reason: "Fast and designed to resist phishing.", recommendation: story.recommendation === "required" ? "required" : "recommended", story: "passkey-story" })}
-                ${optionMarkup({ title: "Use a password", reason: "Valid for this account and policy.", recommendation: "works_ok", story: "password-ok" })}
-                ${optionMarkup({ title: "Other sign-in options", reason: "Show other mechanisms available to this account.", recommendation: "optional" })}
+            return `<div class="ui-lab-option-list">
+                ${optionMarkup("Use a passkey", "Quick and phishing-resistant", "Recommended", true)}
+                ${optionMarkup("Use a password", "Valid for this account", "Works OK")}
+                ${optionMarkup("Other methods", "Show other policy-allowed choices", "Optional")}
             </div>`;
         case "passkey-story":
             return `<div class="ui-lab-story-card">
-                <div class="ui-lab-story-flow">
-                    <div class="ui-lab-story-icon">Device</div>
-                    <div aria-hidden="true">→</div>
-                    <div class="ui-lab-story-icon">Site-bound<br />proof</div>
-                </div>
-            </div>
-            <p class="text-body-secondary">The story is deliberately short. Deeper technical detail belongs behind a Learn more action.</p>
-            <div class="ui-lab-actions">
+                <div class="ui-lab-story-step"><span>1</span><p>Your device creates or holds a cryptographic credential.</p></div>
+                <div class="ui-lab-story-step"><span>2</span><p>The private key is not sent to Kubidm during authentication.</p></div>
+                <div class="ui-lab-story-step"><span>3</span><p>The credential is designed to work with the correct site, helping resist phishing.</p></div>
                 <button type="button" class="btn ui-lab-primary-action" data-go-story="passkey-working">Use a passkey</button>
-                <button type="button" class="btn btn-outline-secondary" data-go-story="password-ok">Choose another method</button>
             </div>`;
         case "working":
-            return `<div class="ui-lab-system-indicator" aria-label="Authentication in progress">ID</div>
-                <p class="text-center text-body-secondary">Waiting for the browser/device passkey prompt…</p>
-                <div class="ui-lab-actions justify-content-center">
-                    <button type="button" class="btn btn-outline-secondary" data-go-story="webauthn-cancel">Simulate cancel</button>
-                    <button type="button" class="btn ui-lab-primary-action" data-go-story="success">Simulate confirmed success</button>
-                </div>`;
+            return `<div class="ui-lab-native-placeholder">
+                <span class="ui-lab-activity-dot"></span>
+                <strong>Browser / OS passkey UI is active</strong>
+                <p>The mascot becomes quieter while the native interface has focus.</p>
+            </div>`;
         case "success":
-            return `<div class="ui-lab-notice"><strong>Authentication confirmed.</strong> This success state is only shown after product/server confirmation.</div>
-                <div class="ui-lab-actions">
-                    <button type="button" class="btn ui-lab-primary-action" data-go-story="resilience">Continue</button>
-                </div>`;
+            return `${noticeMarkup("Identity verified", "Authentication was confirmed by Kubidm.", "positive")}
+                <button type="button" class="btn ui-lab-primary-action" data-go-story="resilience">Continue</button>`;
         case "password":
-            return `<form data-lab-form>
-                <label class="form-label" for="lab-password">Password</label>
-                <input id="lab-password" class="form-control" type="password" autocomplete="current-password" value="not-a-real-password" />
-                <div class="ui-lab-actions">
-                    <button type="button" class="btn ui-lab-primary-action" data-go-story="success">Sign in</button>
-                    <button type="button" class="btn btn-link" data-go-story="method-choice">Other methods</button>
-                </div>
+            return `<form class="ui-lab-form" onsubmit="return false">
+                <label>Password<input type="password" class="form-control" value="example-password" /></label>
+                <button type="button" class="btn ui-lab-primary-action" data-go-story="success">Sign in</button>
             </form>`;
         case "cancelled":
-            return `<div class="ui-lab-notice">The passkey prompt was closed. No credential or account state changed.</div>
-                <div class="ui-lab-actions">
-                    <button type="button" class="btn ui-lab-primary-action" data-go-story="passkey-working">Try again</button>
-                    <button type="button" class="btn btn-outline-secondary" data-go-story="method-choice">Other methods</button>
-                </div>`;
+            return `<div class="ui-lab-option-list">
+                ${optionMarkup("Try passkey again", "Open the native passkey flow again", "Recommended", true)}
+                ${optionMarkup("Choose another method", "Return to available sign-in methods", "Works OK")}
+            </div>`;
         case "oauth":
-            return `<div class="ui-lab-story-card">
-                <strong>Destination</strong>
-                <p class="mb-0 mt-2">Grafana</p>
-                <small class="text-body-secondary">Authentication is provided by Acme Corp through Kubidm.</small>
-            </div>
-            <div class="ui-lab-options">
-                ${optionMarkup({ title: "Use a passkey", reason: "Recommended for this sign-in.", recommendation: "recommended", story: "passkey-working" })}
-                ${optionMarkup({ title: "Other methods", reason: "Use another mechanism allowed for this account.", recommendation: "optional", story: "method-choice" })}
-            </div>`;
+            return `<div class="ui-lab-destination-card"><div class="ui-lab-app-icon">G</div><div><strong>Grafana</strong><small>Application destination</small></div></div>
+                ${optionMarkup("Use a passkey", "Authenticate to Acme, then return to Grafana", "Recommended", true)}`;
+        case "reauth":
+            return `${noticeMarkup("Security-sensitive action", "This reauthentication is required before changing credentials.", "caution")}
+                ${optionMarkup("Use a passkey", "Confirm your identity", "Required", true)}`;
         case "policy-required":
-            return `<div class="ui-lab-notice" data-severity="caution" role="alert">
-                <strong>Action required.</strong> Your organisation requires a stronger authentication method before this workflow can continue.
-            </div>
-            <div class="ui-lab-options">
-                ${optionMarkup({ title: "Set up a passkey", reason: "Required by the active account/domain policy.", recommendation: "required", story: "passkey-story" })}
-            </div>`;
+            return `${noticeMarkup("Passkey required", "The fixture policy requires a passkey before credential changes can be saved.", "caution")}
+                ${optionMarkup("Set up a passkey", "Required by the current policy", "Required", true)}`;
         case "returning":
-            return `<div class="ui-lab-options">
-                ${optionMarkup({ title: "Use a passkey", reason: "Your normal sign-in method.", recommendation: "recommended", story: "passkey-working" })}
-                ${optionMarkup({ title: "Other sign-in options", reason: "Available if you need them.", recommendation: "optional", story: "method-choice" })}
-            </div>
-            <p class="small text-body-secondary">No teaching dialog: configured/experienced users get the shortest path.</p>`;
-        case "resilience":
-            return `<div class="ui-lab-options">
-                ${optionMarkup({ title: "Add a backup method", reason: "Helps when your normal device is unavailable.", recommendation: "recommended", story: "credentials-progress" })}
-                ${optionMarkup({ title: "Not now", reason: "You can return to this later if policy permits.", recommendation: "optional", story: "credentials-progress" })}
+            return `<div class="ui-lab-option-list">
+                ${optionMarkup("Use a passkey", "Your usual sign-in method", "Recommended", true)}
+                <button type="button" class="btn btn-link text-body-secondary">Other methods</button>
             </div>`;
-        case "progress":
-            return progressMarkup([true, true, true, false]);
+        case "resilience":
+            return `${progressMarkup([
+                { title: "You can sign in", detail: "Primary authentication is ready", complete: true },
+                { title: "Recommended method", detail: "Passkey configured", complete: true },
+                { title: "Backup path", detail: "Not configured in this fixture", complete: false },
+            ])}
+            <div class="ui-lab-option-list">
+                ${optionMarkup("Review backup options", "See what this policy supports", "Recommended", true)}
+                ${optionMarkup("Not now", "You can revisit this later", "Optional")}
+            </div>`;
+        case "credentials-progress":
+            return progressMarkup([
+                { title: "Can sign in", detail: "At least one policy-valid method", complete: true },
+                { title: "Passkey", detail: "Recommended primary method", complete: true },
+                { title: "Backup", detail: "Additional resilience", complete: false },
+                { title: "Recovery", detail: "Depends on domain configuration", complete: false },
+            ]);
         case "complete":
-            return `${progressMarkup([true, true, true, true])}
-                <div class="ui-lab-notice"><strong>Recommended setup complete.</strong> The guide can now decay to companion mode.</div>`;
+            return `${progressMarkup([
+                { title: "Can sign in", detail: "Ready", complete: true },
+                { title: "Recommended method", detail: "Ready", complete: true },
+                { title: "Resilience", detail: "Ready for this fixture", complete: true },
+            ])}
+            <p class="text-body-secondary">Routine sign-ins now become quiet. The guide returns when context changes or a security action needs attention.</p>`;
         case "component-dialog":
-            return `<div class="crab-dialog" data-variant="orient"><p>Orient: explain where the user is or what happens next.</p></div>
-                <div class="crab-dialog" data-variant="teach"><p>Teach: explain one security idea in normal language.</p></div>
-                <div class="crab-dialog" data-variant="suggest"><p>Suggest: recommend an optional next step and explain why.</p></div>
-                <div class="crab-dialog" data-variant="celebrate"><p>Celebrate: acknowledge a confirmed milestone without overdoing it.</p></div>`;
+            return `<div class="ui-lab-component-stack">
+                ${dialogMarkup({ variant: "orient", text: "I’ll help you understand what comes next." })}
+                ${dialogMarkup({ variant: "teach", text: "A passkey uses cryptography instead of a reusable secret you type into a page." })}
+                ${dialogMarkup({ variant: "suggest", text: "I recommend a passkey here, but the password option is valid too." })}
+                ${dialogMarkup({ variant: "celebrate", text: "Your passkey is ready." })}
+            </div>`;
         case "component-options":
-            return `<div class="ui-lab-options">
-                ${optionMarkup({ title: "Policy action", reason: "The workflow cannot proceed without this.", recommendation: "required" })}
-                ${optionMarkup({ title: "Passkey", reason: "Preferred for this context.", recommendation: "recommended" })}
-                ${optionMarkup({ title: "Password", reason: "Valid supported alternative.", recommendation: "works_ok" })}
-                ${optionMarkup({ title: "Backup method", reason: "Useful extra resilience.", recommendation: "optional" })}
+            return `<div class="ui-lab-option-list">
+                ${optionMarkup("Required action", "Policy prevents progress without this", "Required")}
+                ${optionMarkup("Recommended action", "Preferred for this context", "Recommended", true)}
+                ${optionMarkup("Valid alternative", "Supported without negative treatment", "Works OK")}
+                ${optionMarkup("Extra resilience", "Safe to skip when policy permits", "Optional")}
             </div>`;
         case "component-notice":
-            return `<div class="ui-lab-notice">Neutral product information.</div>
-                <div class="ui-lab-notice" data-severity="caution" role="alert">Caution: authoritative UI takes priority over mascot personality.</div>
-                <div class="ui-lab-notice" data-severity="critical" role="alert">Critical: mascot movement becomes minimal or static.</div>`;
+            return `<div class="ui-lab-component-stack">
+                ${noticeMarkup("Informational", "Normal product information remains normal UI.", "neutral")}
+                ${noticeMarkup("Attention", "Policy requires another action.", "caution")}
+                ${noticeMarkup("Account locked", "The authoritative UI communicates the critical state. The mascot stays almost still.", "critical")}
+            </div>`;
         default:
             return "";
     }
 }
 
-function progressMarkup(completed) {
-    const labels = ["You can sign in", "Recommended primary method", "Backup method available", "Recovery/resilience ready"];
-    return `<div class="ui-lab-progress">
-        <ol>${labels.map((label, index) => `<li data-complete="${completed[index] ? "true" : "false"}">${escapeHtml(label)}</li>`).join("")}</ol>
-    </div>`;
-}
-
-function mascotMarkup(state) {
-    const safeState = ["idle", "welcome", "guide", "protect", "working", "success", "warning", "goodbye"].includes(state)
-        ? state
-        : "idle";
-    return `<div class="ui-lab-mascot-slot" data-mascot-state="${safeState}">
-        <img src="/pkg/img/guide/crab-${safeState}.svg" alt="Kubidm guide: ${safeState}" data-lab-mascot-image />
-        <div class="ui-lab-mascot-fallback" data-lab-mascot-fallback hidden>
-            <span>Mascot asset slot<br /><strong>${escapeHtml(safeState)}</strong></span>
-        </div>
-    </div>`;
-}
-
 function renderStory(name, { updateHash = true } = {}) {
     const story = stories[name] || stories["first-login"];
-
     ui.title.textContent = story.title;
     ui.productState.textContent = story.productState;
     ui.recommendation.textContent = story.recommendation;
@@ -471,6 +450,17 @@ function renderStory(name, { updateHash = true } = {}) {
         if (image.complete && image.naturalWidth === 0) showFallback();
     }
 
+    const state = normaliseGuideState({
+        productState: story.productState,
+        recommendation: story.recommendation,
+        mascotState: story.mascotState,
+        severity: story.severity,
+        motionLevel: Object.values(MotionLevel).includes(ui.motion.value)
+            ? ui.motion.value
+            : MotionLevel.STATIC,
+    });
+    window.dispatchEvent(new CustomEvent("kubidm:guide-state", { detail: state }));
+
     if (updateHash) writeHash(name);
 }
 
@@ -490,6 +480,7 @@ function applyControls({ updateHash = true } = {}) {
     if (updateHash) {
         const current = new URLSearchParams(location.hash.slice(1)).get("story") || "first-login";
         writeHash(current);
+        renderStory(current, { updateHash: false });
     }
 }
 
