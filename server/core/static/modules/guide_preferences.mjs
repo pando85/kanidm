@@ -7,7 +7,7 @@ function defaultState() {
         version: 1,
         storiesSeen: [],
         suggestions: {},
-        journeyComplete: false,
+        onboardingComplete: false,
     };
 }
 
@@ -25,7 +25,10 @@ function safeParse(value) {
                 parsed.suggestions && typeof parsed.suggestions === "object"
                     ? parsed.suggestions
                     : {},
-            journeyComplete: parsed.journeyComplete === true,
+            // Accept the short-lived prototype field for forward compatibility
+            // with browsers that may already have exercised this branch.
+            onboardingComplete:
+                parsed.onboardingComplete === true || parsed.journeyComplete === true,
         };
     } catch {
         return defaultState();
@@ -59,7 +62,7 @@ export function markStorySeen(storyId) {
 
 export function shouldTeachStory(storyId) {
     const state = readGuidePreferences();
-    return !state.journeyComplete && !state.storiesSeen.includes(storyId);
+    return !state.storiesSeen.includes(storyId);
 }
 
 export function recordSuggestionDismissal(suggestionId, now = Date.now()) {
@@ -76,22 +79,21 @@ export function recordSuggestionDismissal(suggestionId, now = Date.now()) {
 export function shouldShowSuggestion(suggestionId, now = Date.now()) {
     if (!suggestionId) return true;
     const state = readGuidePreferences();
-    if (state.journeyComplete) return false;
     const item = state.suggestions[suggestionId];
     if (!item) return true;
     if (Number(item.dismissals || 0) >= MAX_DISMISSALS) return false;
     return now - Number(item.lastDismissedAt || 0) >= MIN_REMINDER_INTERVAL_MS;
 }
 
-export function markGuideJourneyComplete() {
+export function markGuideOnboardingComplete() {
     const state = readGuidePreferences();
-    state.journeyComplete = true;
+    state.onboardingComplete = true;
     return writeGuidePreferences(state);
 }
 
 export function guideExperienceLevel() {
     const state = readGuidePreferences();
-    if (state.journeyComplete) return "configured";
+    if (state.onboardingComplete) return "experienced";
     if (state.storiesSeen.length > 0 || Object.keys(state.suggestions).length > 0) return "learning";
     return "new";
 }
