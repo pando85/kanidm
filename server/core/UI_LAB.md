@@ -15,7 +15,7 @@ Release builds do not contain the route.
 
 The lab contains fixture identities and simulated outcomes. It is not an authentication endpoint and must not be enabled on a production deployment.
 
-## Run
+## Run the UI Lab
 
 From the repository root:
 
@@ -32,6 +32,24 @@ https://localhost:8443/ui/_lab
 ```
 
 The development server uses a locally generated certificate, so the browser may require accepting the development certificate before the lab is reachable.
+
+## Run the guided real authentication prototype
+
+The real authentication templates have an independent experimental presentation switch:
+
+```bash
+KUBIDM_GUIDED_UI=1 make run
+```
+
+Accepted enabled values are `1`, `true`, `yes`, and `on`, case-insensitively. With the variable unset or set to any other value, Kubidm keeps the legacy login presentation.
+
+This switch changes presentation and guide lifecycle integration only. It does not change authentication policy, mechanism ordering, credential validation, session issuance, or form endpoints.
+
+For side-by-side development of the real flow and the fixture catalogue, both switches may be enabled:
+
+```bash
+KUBIDM_GUIDED_UI=1 KUBIDM_UI_LAB=1 make run
+```
 
 ## What the lab is for
 
@@ -136,6 +154,16 @@ product / policy state
 ```
 
 Adding Rive must not require changing story definitions or embedding authentication policy in animation files.
+
+In the UI Lab, a missing canonical SVG is represented by a labelled development placeholder. In the real guided authentication flow, missing artwork is hidden entirely so the form remains clean and fully usable.
+
+## Real authentication integration
+
+The production-facing prototype now uses semantic `data-guide-*` hooks on existing login states. `static/modules/guide_controller.mjs` translates those hooks and WebAuthn lifecycle events into renderer-independent guide state.
+
+The multi-mechanism chooser continues to use the order returned by the authentication server. Kubidm already sorts available mechanisms strongest-first; the guided presentation exposes the first server-ranked mechanism as **Recommended** and presents the remaining allowed choices as **Works OK** rather than inventing a client-side security ranking.
+
+`static/pkhtml.js` emits data-free WebAuthn lifecycle events for start, assertion submission, interruption, and error. Obtaining a browser assertion never produces a success state: authentication success remains server-authoritative.
 
 ## Reusable Askama primitives
 
