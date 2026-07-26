@@ -13,7 +13,7 @@ LICENSE=        MPL20
 LICENSE_FILE=   ${WRKSRC}/LICENSE.md
 MAINTAINER=	william@blackhats.net.au
 COMMENT=	Simple and secure identity management platform
-WWW=		https://github.com/kanidm/kubidm/
+WWW=		https://github.com/pando85/kubidm/
 
 USES=		cargo ssl
 USE_GITHUB=	yes

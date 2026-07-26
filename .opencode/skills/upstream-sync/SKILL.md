@@ -5,11 +5,11 @@ description: Use when syncing changes from the upstream kanidm/kanidm repository
 
 # Upstream Sync: kanidm -> kubidm
 
-This skill handles syncing changes from the upstream `kanidm/kanidm` repository into the `pando85/kanidm` (kubidm) fork.
+This skill handles syncing changes from the upstream `kanidm/kanidm` repository into the `pando85/kubidm` (kubidm) fork.
 
 ## Repository Context
 
-- **origin**: `git@github.com:pando85/kanidm.git` (this fork)
+- **origin**: `git@github.com:pando85/kubidm.git` (this fork)
 - **upstream**: `git@github.com:kanidm/kanidm.git` (original)
 - **Main branch**: `master`
 - **Fork-specific branch**: `master-fork` (contains fork-only history)

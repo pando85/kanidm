@@ -1,6 +1,6 @@
 # Kubidm - Simple and Secure Identity Management
 
-> **This repository is an independent fork of [Kubidm](https://github.com/kanidm/kubidm).**
+> **This repository is an independent fork of [Kanidm](https://github.com/kanidm/kubidm).**
 > 
 > We started this fork because our product direction and development priorities have diverged from the upstream project.
 > 
@@ -100,7 +100,7 @@ The Kubidm anthem is [Crab Rave - Noisestorm](https://www.youtube.com/watch?v=LD
 
 [LLDAP](https://github.com/nitnelave/lldap) is a similar project focused on providing a small, easy-to-administer LDAP
 server with a web administration portal. Both LLDAP and Kubidm use the
-[Kubidm LDAP bindings](https://github.com/kanidm/ldap3) and share many common design ideas.
+[Kanidm LDAP bindings](https://github.com/kanidm/ldap3) and share many common design ideas.
 
 The primary advantage of Kubidm over LLDAP is its broader built-in feature set, including native support for OAuth2 and
 OIDC. In contrast, LLDAP requires integration with an external portal like Keycloak to provide these features. However,

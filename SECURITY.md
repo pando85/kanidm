@@ -23,4 +23,4 @@ We will endeavour to respond to your request as soon as possible.
 
 We do not offer bounties, but acknowledgement will be made if you like.
 
-[1]: https://github.com/kanidm/kubidm/security/advisories/new
+[1]: https://github.com/pando85/kubidm/security/advisories/new

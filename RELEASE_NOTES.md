@@ -799,9 +799,9 @@ especially like to thank:
 - Recycle Bin
 - Performance analysis tools
 
-[issue tracker]: https://github.com/kanidm/kubidm/issues
-[gitter community channel]: https://gitter.im/kanidm.community
-[code of conduct]: https://github.com/kanidm/kubidm/blob/master/CODE_OF_CONDUCT.md
-[kubidm book]: https://kanidm.github.io/kubidm/stable/
-[our upgrade documentation]: https://github.com/kanidm/kubidm/blob/master/book/src/server_updates.md#general-update-notes
-[support documentation]: https://github.com/kanidm/kubidm/blob/master/book/src/support.md
+[issue tracker]: https://github.com/pando85/kubidm/issues
+[gitter community channel]: https://app.gitter.im/#/room/#kubidm_community:gitter.im
+[code of conduct]: https://github.com/pando85/kubidm/blob/master/CODE_OF_CONDUCT.md
+[kubidm book]: https://kubidm.github.io/kubidm/stable/
+[our upgrade documentation]: https://github.com/pando85/kubidm/blob/master/book/src/server_updates.md#general-update-notes
+[support documentation]: https://github.com/pando85/kubidm/blob/master/book/src/support.md

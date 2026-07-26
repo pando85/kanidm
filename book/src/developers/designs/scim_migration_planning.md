@@ -76,7 +76,7 @@ provide attribute mapping abilities so that we can allow some limited customisat
 ### Load
 
 Finally to load the data into Kubidm, we will make a SCIM interface available. SCIM is a "spiritual successor" to LDAP,
-and aligns with Kani's design. SCIM allows structured data to be uploaded (unlike LDAP which is simply strings). Because
+and aligns with Kubidm's design. SCIM allows structured data to be uploaded (unlike LDAP which is simply strings). Because
 of this SCIM will allow us to expose more complex types that previously we have not been able to provide.
 
 The largest benefit to SCIM's model is its ability to perform "batched" operations, which work with Kubidm's

@@ -62,4 +62,4 @@ automation are added or designed to reduce human handling.
 
 ## For Developers
 
-Looking for the `rustdoc` documentation for the libraries themselves? [Click here!](https://kanidm.com/documentation/)
+Looking for the `rustdoc` documentation for the libraries themselves? [Click here!](https://kubidm.github.io/kubidm/stable/)

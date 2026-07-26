@@ -37,7 +37,7 @@ Many of these messages will need to be internationalised in future, so we should
 work, and only indicate or store "events" that can be translated to some kind of text based on user preference (like
 language).
 
-### Multiple Kani Servers
+### Multiple Kubidm Servers
 
 Kubidm often has multiple servers, so we need a way to ensure that messages are sent "at least once". But at the same
 time we don't want to send the message _too many_ times, as this can annoy users.

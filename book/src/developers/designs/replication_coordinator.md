@@ -324,7 +324,7 @@ For R/O nodes, we need to define how R/W will pass through. I can see a possibil
 
        │                                                               ▼
 ┌────────────┐                 ┌─────────────┐────OOB Write────▶┌─────────────┐
-│            │                 │ Remote Kani │                  │             │
+│            │                 │ Remote Kubidm │                  │             │
 │   Client   │─────Write──────▶│   Server    │                  │    Main     │
 │            │                 │             │                  │             │
 └────────────┘                 └─────────────┘◀───Replication───└─────────────┘
