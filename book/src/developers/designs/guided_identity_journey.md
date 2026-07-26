@@ -4,6 +4,7 @@
 - **Date:** 2026-07-26
 - **Related architecture:** [Mascot-Guided Product Experience](mascot_guided_product_experience.md)
 - **Related visual system:** [Mascot and Motion Design System](mascot_design_system.md)
+- **Related UI system:** [Authentication and Credential-Setup UI](authentication_credential_ui.md)
 - **Scope:** proactive guidance, authentication education, recommendation semantics, configuration progression, micro-stories, gamification boundaries, dialog content, and guidance decay
 
 ## Purpose
@@ -118,783 +119,637 @@ Classification is contextual. It depends on:
 - what the account already has configured; and
 - whether an additional mechanism improves resilience without weakening the intended authentication policy.
 
-The browser must not independently infer `Required` or `Recommended` from visible controls.
+## Journey stages
 
-## Baseline recommendation policy
-
-Where the active policy allows multiple suitable choices and the client supports them, Kubidm should generally present passkeys as the preferred normal sign-in experience.
-
-This is a product recommendation, not a protocol rule.
-
-A valid password remains a `Works OK` option when permitted by policy. Hardware security keys may be recommended or optional depending on the deployment and required assurance. TOTP may be required as part of a multi-factor mechanism, or presented as an available alternative where appropriate. Backup codes are emergency material and should not be presented as an everyday sign-in preference.
-
-The exact ordering must be derived from the mechanisms that the server actually offers. The current login flow already exposes a mechanism-choice step rather than assuming one global method; the guided experience builds on that model.
-
-## Journey model
-
-The initial guided identity journey consists of eight conceptual stages.
+The canonical first-run journey is:
 
 ```text
-1. Meet Kubidm
-       |
-2. Choose how to authenticate
-       |
-3. Learn why
-       |
-4. Configure
-       |
-5. Confirmed success
-       |
-6. Build resilience
-       |
-7. Optional extras / recovery
-       |
-8. Complete
+Meet
+-> Choose
+-> Learn
+-> Configure
+-> Confirmed Success
+-> Resilience
+-> Optional Extras / Recovery
+-> Complete
 ```
 
-The stages are conceptual, not mandatory pages. A deployment may skip stages when they are irrelevant or already satisfied.
+These are product-experience stages, not route names. A deployment or policy may skip stages that are irrelevant.
 
-For example, an account with a policy-required hardware authenticator may enter directly into explanation and configuration rather than showing a meaningless choice screen.
+### Meet
 
-## Progress semantics
-
-The journey uses milestones rather than a numerical security score.
-
-Suggested milestones:
-
-```text
-ACCESS
-Can authenticate under current policy
-
-PRIMARY
-Preferred normal sign-in method configured, where applicable
-
-RESILIENCE
-An approved independent fallback or backup path exists, where applicable
-
-RECOVERY
-Available recovery path understood/configured, where supported
-
-COMPLETE
-Current recommended setup reached
-```
-
-A user may remain in a valid intermediate state.
-
-For example:
-
-```text
-Can sign in
-    -> Good setup
-        -> Resilient setup
-```
-
-`Complete` means the current recommendation set is satisfied, not that the account is permanently secure or that every possible credential has been added.
-
-## Canonical first-run journey
-
-### Stage 1: Meet Kubidm
-
-**Goal:** establish the crab's role and explain that the setup will be guided.
-
-**Crab mode:** Welcome / Guide.
-
-**Default dialog:**
-
-> Hi. I'm Kubidm. I'll help you set up how you sign in, and I'll explain the choices as we go.
-
-**Primary action:** `Continue`
-
-**Secondary action:** `Skip introduction`, when there is no required explanatory or configuration step.
-
-The introduction should be shown once, not on every login.
-
-### Stage 2: Choose authentication method
-
-**Goal:** present only methods currently allowed and available, while making the recommended path obvious.
-
-**Crab mode:** Guide / Suggest.
-
-When a passkey is available and is the recommended option:
-
-> If you can, I'd use a passkey. It's quick to use and designed to resist phishing.
-
-Example options:
-
-```text
-Set up / Use a passkey        Recommended
-Use a password                Works OK
-Other available methods       Contextual classification
-```
-
-If the user chooses password:
-
-> That works. Use a unique password; a password manager can make that much easier. We can add a passkey later if your policy allows it.
-
-The crab accepts the choice immediately. There is no negative animation.
-
-If only one mechanism is allowed, Kubidm does not pretend the user has a choice. The screen explains the required method and proceeds.
-
-### Stage 3: Learn why
-
-**Goal:** explain the recommended method without forcing a documentation detour.
-
-**Crab mode:** Teach.
-
-Teaching is a short micro-story. The user can skip it unless an administrator has a separate non-mascot acknowledgement requirement.
-
-For passkeys, the default teaching story is:
-
-**Panel 1 — the problem**
-
-> Passwords can be typed into the wrong site or stolen after they are reused or exposed.
-
-**Panel 2 — what changes**
-
-> With a passkey, your private key is not sent to Kubidm during sign-in, and the credential is designed to work with the correct site.
-
-**Panel 3 — practical result**
-
-> That gives you fast sign-in with strong phishing resistance, without another password to remember.
-
-Do not say that all passkeys "stay on one device". Some passkeys can be synchronised by credential providers. Teaching copy should describe the security property that matters to Kubidm rather than make assumptions about credential storage.
-
-**Primary action:** `Set up a passkey`
-
-**Secondary action:** `Maybe later`, when policy permits.
-
-### Stage 4: Configure
-
-**Goal:** make a security-sensitive setup feel supervised while keeping native/browser UI primary.
-
-**Crab mode:** Protect, then Working.
-
-Before browser or OS WebAuthn UI takes focus:
-
-> Your browser or device will take over for a moment. I'll wait here while you finish.
-
-While the external prompt is active:
-
-- the crab becomes quiet;
-- the guardian claw is active;
-- the badge may show restrained cyan activity;
-- no repeated dialog is shown; and
-- native/browser instructions remain visually dominant.
-
-The guide must never claim that a credential has been created until Kubidm has confirmed it.
-
-### Stage 5: Confirmed success
-
-**Goal:** reward successful completion without excessive celebration.
-
-**Crab mode:** Success.
-
-For a major milestone such as first passkey registration:
-
-> Done. Your passkey is ready.
-
-Optional second line:
-
-> You can use it the next time Kubidm offers this sign-in method.
-
-This uses `success.major`, but remains short enough that the user can continue immediately.
-
-For a routine credential update, use `success.small` and shorter copy.
-
-### Stage 6: Build resilience
-
-**Goal:** explain why losing one device or method should not necessarily become an account-recovery incident.
-
-**Crab mode:** Suggest / Guardian-light.
-
-If the account and policy support an approved independent backup path:
-
-> You can sign in now. I'd also set up a backup path in case your usual device is unavailable.
-
-The system must not blindly recommend "more methods". A weaker fallback can undermine the benefit of a stronger primary method if policy treats both as equivalent authentication paths.
-
-The recommendation engine must therefore expose only backup/resilience options approved for this account and policy.
-
-**Primary action:** context-specific, for example `Add backup method`.
-
-**Secondary action:** `Not now`, when optional.
-
-### Stage 7: Optional extras and recovery
-
-**Goal:** distinguish useful additional setup from requirements.
-
-**Crab mode:** Guide.
-
-Default framing:
-
-> You're already set up. These are optional ways to make recovery or sign-in fit you better.
-
-Possible items depend entirely on server capabilities and policy. Examples may include:
-
-- an approved backup authentication method;
-- hardware security key registration;
-- TOTP where supported by the current account policy;
-- backup codes where supported;
-- account recovery configuration; and
-- future Kubidm-supported recovery mechanisms.
-
-No unavailable or disallowed method should be shown merely for educational completeness.
-
-### Stage 8: Complete
-
-**Goal:** explicitly end onboarding and reduce future mascot activity.
-
-**Crab mode:** Celebrate, then Idle.
-
-Default dialog:
-
-> You're ready. I'll stay quiet unless something changes or you ask for help.
-
-Alternative when the account is valid but has skipped optional recommendations:
-
-> You're ready to sign in. There are a couple of optional improvements left, and I'll remind you gently later if they're still useful.
-
-Completion should feel like relief, not the start of an engagement loop.
-
-## Alternative method paths
-
-### Password
-
-When password is allowed but a stronger/easier method is recommended, classify it as `Works OK`, not as a warning.
-
-Teaching copy:
-
-> A password works here. Make it unique to this account; a password manager is the easiest way to avoid reusing passwords.
-
-If another factor is required by policy, the guide should explain that the password is only one part of the sign-in path.
-
-### Hardware security key
-
-Teaching copy:
-
-> A security key is a strong choice when you want a separate physical authenticator. Like passkeys, WebAuthn security keys are designed to resist phishing.
-
-The UI should not imply that a security key is universally better than a passkey. The recommendation depends on deployment requirements and user context.
-
-### TOTP
-
-Teaching copy:
-
-> This code gives Kubidm another proof that it's you. It is useful when your policy asks for a second factor, but the code itself can still be entered into a convincing fake site, so follow the sign-in page carefully.
-
-This explanation is deliberately honest about the difference between TOTP and phishing-resistant WebAuthn authentication.
-
-### Backup code
-
-Teaching copy:
-
-> A backup code is for emergencies, not everyday sign-in. Keep it private and somewhere you can reach if your normal authenticator is unavailable.
-
-If codes are single-use, the authoritative product UI should state that property based on the actual implementation rather than relying on mascot copy.
-
-### Account recovery
-
-Teaching copy:
-
-> Recovery is what we use when normal sign-in is no longer available. It should be set up carefully because it becomes another path back into your account.
-
-Recovery must never be presented as equivalent to normal authentication merely because both can restore access.
-
-## Micro-story system
-
-Teaching content should normally take 10-20 seconds and contain no more than three short panels.
-
-Each micro-story has:
-
-```text
-problem -> mechanism -> practical consequence
-```
-
-The user may skip or dismiss stories unless product policy independently requires acknowledgement.
-
-### Story: Why passkeys resist phishing
-
-**Problem**
-
-> A fake sign-in page can ask you to type a password or one-time code.
-
-**Mechanism**
-
-> A passkey is cryptographically tied to the site it was created for, and its private key is not sent to Kubidm.
-
-**Consequence**
-
-> A look-alike site cannot simply ask you to hand over the same secret.
-
-### Story: Why passwords need to be unique
-
-**Problem**
-
-> If the same password is used in several places, one breach can create problems somewhere else.
-
-**Mechanism**
-
-> A password manager can generate and remember a different password for each account.
-
-**Consequence**
-
-> One exposed password does not automatically reveal the others.
-
-### Story: Why a backup path matters
-
-**Problem**
-
-> Phones, laptops, and hardware keys can be lost, replaced, or unavailable.
-
-**Mechanism**
-
-> An independent recovery or backup path gives you another approved way back in.
-
-**Consequence**
-
-> Losing one authenticator is less likely to become an administrator-assisted recovery incident.
-
-### Story: More methods are not automatically stronger
-
-**Problem**
-
-> A strong primary method can be undermined if the account also accepts an unnecessarily weak fallback.
-
-**Mechanism**
-
-> Kubidm recommends only backup paths that fit the active policy and assurance requirements.
-
-**Consequence**
-
-> Resilience should add another safe path, not create an easy bypass.
-
-### Story: Recovery is different from sign-in
-
-**Problem**
-
-> Sometimes none of your normal authenticators are available.
-
-**Mechanism**
-
-> Recovery uses a separate, deliberately controlled process to restore access.
-
-**Consequence**
-
-> It can get you back in, but because it is powerful, it deserves the same careful treatment as credentials.
-
-## Crab dialog component
-
-The teaching experience introduces a specific UI primitive: **Crab Dialog**.
-
-It is not an alert, toast, error message, or chat interface.
-
-Conceptual model:
-
-```text
-CrabDialog
-  variant: orient | teach | suggest | celebrate
-  title: optional
-  body: required
-  primary_action: optional
-  secondary_action: optional
-  learn_more: optional
-  dismissible: boolean
-```
-
-### Orient
-
-Used to establish context or the next step.
+Goal: orient a new user without creating a mandatory onboarding ceremony.
 
 Example:
 
-> Let's choose how you'll sign in.
+> Hi. I'll help you get your identity set up, and I'll explain anything unfamiliar along the way.
 
-### Teach
+The user should be able to proceed immediately.
 
-Used for one concise concept or micro-story.
+### Choose
 
-Example:
-
-> Passkeys are designed to resist phishing because the credential is tied to the real site.
-
-### Suggest
-
-Used for an opinionated but non-required recommendation.
+Goal: make the available mechanisms understandable and visibly distinguish the recommended option from alternatives.
 
 Example:
 
-> You're set up. I'd add a backup path too, if your policy offers one.
+> I'd use a passkey here. It's quick, and it's designed to resist phishing.
 
-### Celebrate
+The recommendation must correspond to an option the product actually allows.
 
-Used after server-confirmed success.
+### Learn
+
+Goal: explain the reason behind an unfamiliar choice in a short micro-story.
+
+Teaching is optional by default and must never delay authentication.
+
+### Configure
+
+Goal: help the user complete the actual mechanism setup or authentication task.
+
+The crab becomes calmer and more protective while the device/browser performs sensitive work.
+
+### Confirmed Success
+
+Goal: acknowledge a server-confirmed result without over-celebrating routine operations.
 
 Example:
 
 > Nice. Your passkey is ready.
 
-### Dialog content rules
+### Resilience
 
-- normally no more than two short sentences on a single dialog;
-- one concept per dialog;
-- explain the reason for recommendations;
-- use ordinary language first and technical terminology second;
-- do not mimic a human conversation or imply sentience;
-- do not ask open-ended questions that suggest a chatbot capability;
-- do not use mascot dialog as the only source of instructions required to complete a task;
-- do not place credential material, usernames, secrets, challenges, or raw policy errors in mascot dialog;
-- do not use dialog to soften or reinterpret an authoritative security denial; and
-- do not block navigation merely to finish a line of mascot copy.
+Goal: recommend a genuinely useful backup or recovery path when it improves the current configuration.
 
-## Proactivity model
+Example:
 
-The crab is proactive only when the intervention has immediate value.
+> You can sign in now. Want to set up a backup way in?
 
-### High-proactivity moments
+The user may skip this when policy permits.
 
-The guide may initiate teaching or suggestions during:
+### Optional Extras / Recovery
 
-- first encounter;
-- initial authentication-method selection;
-- first configuration of an unfamiliar credential type;
-- a transition from minimally valid setup to recommended setup;
-- a newly relevant resilience/recovery opportunity;
-- a major capability becoming available after an upgrade or policy change; and
-- a required security action whose reason may not be obvious.
+Goal: expose additional capabilities without turning the journey into a checklist of every feature Kubidm supports.
 
-### Low-proactivity moments
+Only relevant, safe options should be recommended.
 
-The guide should normally remain ambient during:
+### Complete
 
-- routine returning-user login;
-- repeated application selection;
-- ordinary profile viewing;
-- credential pages where the user has already dismissed the same optional recommendation; and
-- repeated successful actions that require no new learning.
+Goal: communicate that the user's current setup has reached the applicable recommended state.
 
-### Never interrupt for
+Example:
 
-- decorative trivia;
-- unrelated release notes;
-- repeated reminders during the same session;
-- an optional recommendation immediately after the user explicitly rejected it;
-- marketing copy; or
-- mascot engagement for its own sake.
+> You're ready. I'll stay out of the way unless you need me.
+
+Completion is not a claim that the account has achieved a universal maximum-security configuration.
+
+## Crab Dialog
+
+Crab Dialog is an accessible UI primitive, not text embedded inside the animation asset.
+
+### Variants
+
+```text
+orient
+teach
+suggest
+celebrate
+```
+
+### Orient
+
+Explains the current identity context.
+
+Example:
+
+> You're signing in with Acme to continue to Grafana.
+
+### Teach
+
+Explains a concept or trade-off.
+
+Example:
+
+> A passkey uses cryptographic keys, so there isn't a password for a fake site to trick you into typing.
+
+### Suggest
+
+Recommends a next step.
+
+Example:
+
+> You're already set up to sign in. A backup method could help if your usual device isn't available.
+
+### Celebrate
+
+Acknowledges confirmed progress.
+
+Example:
+
+> All set. You're in.
+
+### Dialog rules
+
+- one primary idea per dialog;
+- normally no more than two short sentences;
+- recommendations include a reason;
+- optional dialogs are dismissible;
+- the same optional recommendation is not repeated indefinitely;
+- no critical security fact exists only in a Crab Dialog;
+- dialog content must be localisable independently of the Rive asset.
+
+## Security micro-stories
+
+Micro-stories are short teaching sequences, normally 2-3 frames and approximately 10-20 seconds if read fully.
+
+They are not mandatory animation sequences and can be rendered statically.
+
+### Passkeys and phishing
+
+Frame 1:
+
+> A password is something you can type into a site, so a convincing fake site can try to ask for it.
+
+Frame 2:
+
+> With a passkey, the private key isn't sent to Kubidm when you sign in.
+
+Frame 3:
+
+> Passkeys are designed to work with the correct site, which makes phishing much harder.
+
+Do not state that every passkey permanently stays on one physical device. Syncable passkeys may be securely synchronised by a platform credential provider.
+
+### Passwords
+
+Goal: explain the trade-off without describing passwords as inherently invalid.
+
+> Passwords are familiar and work in many places. The trade-off is that they're secrets you can type, reuse, forget, or accidentally give to the wrong site.
+
+### Hardware security keys
+
+> A security key proves you have a physical authenticator. It can be a strong option, especially when your organisation requires a dedicated device.
+
+The exact recommendation depends on policy and context.
+
+### TOTP
+
+> An authenticator code adds another proof after your password. It helps protect a stolen password, but a fake site can still try to ask you for the code too.
+
+### Backup codes
+
+> Backup codes are for getting back in when your normal method isn't available. Store them somewhere safe rather than using them for everyday sign-in.
+
+### Recovery
+
+> Recovery is your route back when normal authentication isn't available. It is different from the method you use every day.
+
+## Method-choice baseline
+
+When the product can safely make this recommendation, the baseline normal-login presentation is:
+
+```text
+Passkey        Recommended
+Password       Works OK
+Other methods  contextual
+```
+
+This is not a hard-coded global ordering. It is a product-experience baseline that must yield to:
+
+- policy requirements;
+- browser capability;
+- account state;
+- available authenticators;
+- reauthentication requirements;
+- recovery context; and
+- deployment-specific restrictions.
+
+## Choosing a valid alternative
+
+If the user chooses a valid non-recommended method, the crab accepts the choice immediately.
+
+Password example:
+
+> That works. If you want, we can add a passkey later for quicker, phishing-resistant sign-in.
+
+After this acknowledgement:
+
+- do not immediately ask again;
+- do not use warning styling;
+- do not lower a score;
+- do not show disappointment;
+- continue the selected authentication path.
+
+## Proactivity rules
+
+The crab is proactive when the guidance can materially help the current decision.
+
+### Proactive by default
+
+- first meaningful encounter;
+- first mechanism choice;
+- an unfamiliar recommended mechanism;
+- newly completed primary setup with a relevant resilience recommendation;
+- a materially changed security capability or policy;
+- a required action that benefits from orientation.
+
+### Quiet by default
+
+- routine login for an experienced user;
+- a recommendation already satisfied;
+- a repeatedly dismissed optional suggestion;
+- while native WebAuthn/browser UI is active;
+- while a serious warning/error needs attention;
+- when guidance would delay a common task.
 
 ## Guidance decay
 
-Guidance becomes quieter as the user gains experience.
+The guidance layer tracks a conceptual experience state:
 
-| Experience state | Default behaviour |
-| --- | --- |
-| **New** | Proactive orientation and teaching |
-| **Learning** | Contextual teaching and recommendations |
-| **Configured** | Mostly ambient; recommendations only when materially useful |
-| **Experienced** | State feedback only by default |
-| **Security event** | Guardian behaviour regardless of experience level |
+```text
+new
+learning
+configured
+experienced
+```
 
-The system should not infer experience solely from account age. A long-lived account may still encounter a credential type for the first time.
+### New
 
-Guidance is better tracked per concept and journey than through one global "expert" flag.
+- proactive orientation;
+- recommendation reason visible;
+- teaching offered directly.
 
-## Reminder and suppression rules
+### Learning
 
-Optional recommendations need bounded repetition.
+- contextual suggestions;
+- previously completed stories suppressed;
+- progress visible during configuration.
 
-Initial baseline:
+### Configured
 
-1. show the recommendation contextually when it first becomes relevant;
-2. if dismissed, do not show it again during the same session;
-3. a later subtle reminder is permitted only when the user returns to a directly relevant security/configuration surface;
-4. repeated dismissal progressively suppresses the recommendation;
-5. once the recommendation is satisfied, remove it immediately; and
-6. a material policy or capability change may make an old recommendation relevant again.
+- recommendations limited to meaningful incomplete resilience/recovery work;
+- routine authentication is quiet.
 
-Routine login should not become a reminder channel for every incomplete optional security step.
+### Experienced
+
+- state feedback and Guardian behaviour only unless context materially changes;
+- teaching remains available on demand.
 
 ## Guidance memory
 
-Security state and policy remain server-authoritative.
+Guidance memory is presentation state, not authentication state.
 
-The guide may additionally need non-security-critical memory such as:
+It may eventually track values such as:
 
 ```text
-introduction_seen
-story_passkeys_seen
-story_totp_seen
-backup_recommendation_dismissed
-recovery_story_seen
+completed_story_ids
+dismissed_recommendation_ids
+last_recommendation_time
+experience_state
 ```
 
-These values affect presentation only. They must never affect whether Kubidm permits authentication, authorisation, recovery, or credential changes.
+It must not store:
 
-The persistence mechanism is intentionally left open for implementation design. Cross-device account preference is preferable when a suitable server-side user preference mechanism exists; local browser storage may be acceptable for purely local presentation hints but must not become a security dependency.
+- passwords;
+- WebAuthn challenges/assertions;
+- TOTP values;
+- backup codes;
+- recovery secrets; or
+- other credential material.
 
-## Failure and cancellation behaviour
+The persistence mechanism remains open. Server-side account preferences, browser-local state, or a combination may be evaluated later.
 
-### User cancels WebAuthn/native prompt
+## Reminder suppression
 
-Crab returns calmly from Protect/Working to Guide or Idle.
+Optional recommendations need bounded repetition.
 
-Suggested copy only when clarification is useful:
+Baseline behaviour:
 
-> No problem. Nothing was added. You can try again or choose another available option.
+1. show when newly relevant;
+2. allow immediate dismissal;
+3. one later reminder may be shown if still relevant;
+4. repeated dismissal suppresses proactive reminders for a substantial period or until circumstances change;
+5. completion suppresses the recommendation permanently while the condition remains satisfied.
 
-Do not classify cancellation as an account failure.
+The exact timing is an implementation decision and should be testable/configurable rather than embedded into Rive.
+
+## Authentication flow behaviour
+
+### Passkey/WebAuthn starts
+
+Crab:
+
+```text
+Guide -> Protect -> Working
+```
+
+While native browser/platform UI is active:
+
+- mascot motion becomes quiet;
+- no story/dialog competes for focus;
+- no overlay covers the native UI;
+- pending UI remains understandable without the mascot.
+
+### WebAuthn success
+
+Only after Kubidm confirms success:
+
+```text
+Working -> Success
+```
+
+### WebAuthn cancellation
+
+Cancellation is a recoverable user choice, not a security failure.
+
+Example:
+
+> No problem. Nothing changed.
+
+Return to the available methods according to current policy.
+
+Repeated cancellation should not produce increasingly dramatic reactions.
+
+### Password authentication
+
+If password is allowed, it remains a normal supported task.
+
+The crab may later suggest a passkey, but it does not interrupt active password entry to campaign for another method.
+
+### TOTP
+
+The crab may teach TOTP during initial setup. Routine code entry becomes quiet once the user is experienced.
+
+### Backup code
+
+The UI should make it clear that backup code use is exceptional/recovery-oriented when that is the intended product semantics.
+
+## Configuration progression
+
+Progress is expressed as useful milestones, not scores.
+
+Conceptual progression:
+
+```text
+Access
+Primary sign-in
+Resilience
+Recovery
+Ready
+```
+
+Example:
+
+```text
+[check] You can sign in
+[check] Passkey configured
+[dot]   Backup method
+[dot]   Recovery ready
+```
+
+The actual labels depend on account/policy state.
+
+A deployment must not show a milestone that the user cannot achieve or that the product does not support in the current context.
+
+## Resilience recommendations
+
+A backup recommendation is made only when it improves the user's ability to regain access without undermining the intended policy.
+
+The guide must not assume that "more authentication methods" always means "better security".
+
+A weaker fallback can weaken the effective security of a stronger primary method.
+
+Therefore recommendation selection belongs to product/policy logic, not content or animation.
+
+## OAuth context
+
+OAuth2 authentication should explain the relationship among product, tenant, and destination.
+
+Example:
+
+> You're signing in with Acme to continue to Grafana.
+
+The guide does not imply Kubidm operates or endorses the destination application.
+
+Routine OAuth login for experienced users should not replay onboarding education.
+
+## Reauthentication context
+
+Reauthentication is more Guardian-like than ordinary login.
+
+Example:
+
+> Quick check before this security change. Confirm it's you and we'll continue.
+
+The actual purpose comes from the authoritative reauthentication context.
+
+## Recovery context
+
+Recovery is treated as a separate journey with lower playfulness.
+
+The user may already be stressed or locked out, so:
+
+- orientation is concise;
+- Guardian personality is stronger;
+- celebrations are minimal;
+- no game-like progress pressure is used;
+- authoritative recovery instructions remain primary.
+
+## Failure and warning behaviour
 
 ### Recoverable input error
 
-Normal product validation is authoritative.
+- normal field error is primary;
+- crab may direct attention once;
+- no slapstick or exaggerated worry.
 
-The crab may enter Warning and direct gaze toward the error, but should not repeat the full validation message.
+### Authentication rejection
+
+- product message remains authoritative;
+- mascot response depends on severity;
+- the guide does not reveal additional security information beyond what the product intentionally exposes.
 
 ### Policy denial
 
-Guardian/security mode.
+- Guardian/Security mode;
+- teaching suppressed unless it helps explain a safe next action;
+- no optional framing for a genuinely required condition.
 
-The authoritative policy explanation remains normal UI. Mascot motion becomes restrained or static.
+### Account lockout
 
-### Account lockout or critical security state
+- Security mode;
+- mascot nearly/static;
+- normal product UI provides the status and available next steps.
 
-No gamification or teaching story.
+### Server/transport failure
 
-The guide becomes quiet and serious. Only concise orientation is permitted if it helps the user find the authoritative next action.
+- do not blame the user;
+- do not present the failure as an invalid credential unless Kubidm knows that is the cause;
+- mascot remains restrained.
 
-### Network/server error
+## Gamification boundaries
 
-Do not invent a security interpretation.
+Permitted:
 
-The normal error component explains the transport or server problem. The crab may use a concerned neutral posture and stop active progress animation.
+- journey progression;
+- milestones;
+- micro-stories;
+- small character reactions;
+- confirmed-success celebrations;
+- visual transition from teacher to quiet companion.
 
-## Returning-user experience
+Not permitted:
 
-The normal returning-user login should be much quieter than onboarding.
+- XP;
+- security scores with arbitrary numeric precision;
+- competitive ranking;
+- streaks;
+- artificial scarcity;
+- fake urgency;
+- punishment for skipping valid optional work;
+- animation that encourages users to make security decisions merely to please the mascot.
 
-Typical flow:
+## Content tone
 
-```text
-Welcome / Idle
-    -> Guide primary allowed method when useful
-    -> Protect / Working during authentication
-    -> Success
-    -> Travel to applications
-```
+The crab speaks in short, confident, normal language.
 
-No passkey lesson is repeated simply because a passkey button is visible.
+Preferred:
 
-If the user requests help, `Learn more`, or opens a security configuration journey, teaching becomes available again.
+> I'd use a passkey here. It's quick, and it's designed to resist phishing.
 
-## Reauthentication and OAuth
+Avoid:
 
-### Reauthentication
+> For optimal zero-trust cryptographic posture, enrol a WebAuthn credential.
 
-The crab explains why the product is asking again without implying that the existing session is invalid.
+Preferred:
 
-Example:
+> That works. We can add a passkey later if you want.
 
-> Kubidm needs to confirm it's you before this sensitive action continues.
+Avoid:
 
-The authoritative purpose is supplied by the server-rendered reauthentication context.
+> Password chosen. Your account is less secure.
 
-### OAuth application login
+The technical details remain available through deeper documentation or Learn more content.
 
-The guide should distinguish the identity provider from the destination application.
+## Security content review
 
-Example:
+Teaching copy is product security content.
 
-> You're signing in through Kubidm to continue to Grafana.
+Claims about mechanisms must be reviewed for technical accuracy and updated as platform behaviour changes.
 
-The application name/logo comes from the authoritative OAuth client context. The crab may orient the user, but must not imply that Kubidm endorses the application.
+In particular:
 
-## Semantic product state
+- do not imply passkeys cannot sync;
+- do not imply TOTP is phishing-resistant;
+- do not imply all hardware-backed credentials have identical properties;
+- do not label every additional fallback as stronger security;
+- do not make absolute guarantees such as "cannot be hacked".
 
-The guided journey adds presentation semantics above the renderer-level mascot state defined in the architecture ADR.
+## Accessibility
 
-Conceptual fields:
+Teaching content must remain available in all motion modes.
 
-```text
-journey_stage:
-  none | introduction | access | primary_auth | teaching | configure |
-  resilience | recovery | complete
+Reduced/static mode changes animation, not the explanation or choice set.
 
-recommendation:
-  none | optional | works_ok | recommended | required
+Crab Dialog is accessible normal UI content when present.
 
-guidance_mode:
-  ambient | orient | teach | suggest | celebrate | guardian
+Micro-stories must support:
 
-teaching_state:
-  none | available | active | dismissed | completed
+- keyboard navigation;
+- screen-reader reading order;
+- static rendering;
+- immediate exit/skip;
+- no required timed interaction.
 
-experience_state:
-  new | learning | configured | experienced
-```
+## Product / guidance / renderer separation
 
-These do not replace the existing renderer contract:
+Three layers remain separate.
 
-```text
-scene + action + status + severity + motion mode
-```
-
-Instead, product logic chooses the teaching/recommendation state, and the guide adapter maps the resulting experience onto the visual state machine.
-
-Example:
-
-```text
-journey_stage=primary_auth
-recommendation=recommended
-guidance_mode=suggest
-teaching_state=available
-experience_state=new
-
-->
-
-auth + point + idle + neutral + full
-```
-
-The Rive asset should not contain business rules such as "passkeys are recommended" or "this user needs a backup method".
-
-## Implementation boundary
-
-The first implementation should keep three layers separate.
-
-### Product/policy layer
+### Product/policy
 
 Determines:
 
-- allowed authentication mechanisms;
+- allowed mechanisms;
 - required mechanisms;
 - credential state;
 - policy satisfaction;
-- server-confirmed success/failure; and
-- available recovery/resilience actions.
+- server-confirmed outcomes;
+- safe recovery/resilience capabilities.
 
-### Guidance/content layer
+### Guidance/content
 
 Determines:
 
 - recommendation category;
-- whether a story or suggestion is relevant;
-- which approved dialog content to show;
-- progression milestone presentation; and
-- whether optional guidance is suppressed.
+- recommendation explanation;
+- Crab Dialog content;
+- micro-story selection;
+- milestone language;
+- reminder suppression;
+- teaching/experience state.
 
-### Renderer layer
+### Renderer
 
 Determines:
 
 - pose;
 - gaze;
-- claw movement;
+- claw gesture;
+- expression;
 - transition;
-- motion intensity;
-- expression; and
-- static/reduced/full rendering.
+- full/reduced/static visual rendering.
 
-This separation prevents animation or copy code from becoming an authentication-policy engine.
+The Rive asset never decides product policy or recommendation logic.
 
-## Accessibility
+## Conceptual semantic fields
 
-Teaching must remain usable without animation.
+The guided journey adds presentation semantics such as:
 
-- Crab Dialog content is normal semantic HTML.
-- Dialog controls are ordinary keyboard-accessible controls.
-- Animation is supplementary and normally `aria-hidden`.
-- Progress milestones expose textual status rather than relying on colour or mascot pose.
-- Micro-stories can be advanced without waiting for animation.
-- `prefers-reduced-motion` changes movement, not information availability.
-- Static mode uses the same text and choices.
-- Dismiss and skip controls have clear accessible names.
+```text
+journey_stage:
+  meet | primary_auth | resilience | recovery | complete
 
-## Privacy
+recommendation:
+  none | optional | works_ok | recommended | required
 
-The guide should not need sensitive information to teach authentication concepts.
+guidance_mode:
+  quiet | orient | teach | suggest | celebrate | guardian
 
-Do not interpolate into mascot dialog:
+teaching_state:
+  none | available | active | completed | dismissed | suppressed
 
-- passwords;
-- TOTP values;
-- backup codes;
-- WebAuthn challenges/assertions;
-- recovery secrets;
-- credential labels unless explicitly approved for normal visible UI;
-- raw server error payloads; or
-- application secrets.
+experience_state:
+  new | learning | configured | experienced
+```
 
-Using an already-visible application name, domain display name, or reauthentication purpose is acceptable when it comes from the same authoritative UI context and does not introduce a new disclosure.
+These complement rather than replace the renderer contract:
 
-## Content governance
+```text
+scene + action + status + severity + motion mode
+```
 
-Security teaching text is product/security content and should be reviewed like security-sensitive UI, not treated as ad-hoc mascot copy.
+## Canonical prototype scenarios
 
-Changes that alter claims about authentication properties should receive appropriate security review.
+The first interactive product prototype must cover:
 
-The content catalogue should ultimately be centralised rather than copied into route-specific templates.
+1. new user with passkey recommended and available;
+2. new user who chooses password instead;
+3. returning configured user;
+4. WebAuthn cancellation; and
+5. a policy-required security action.
 
-Translations must preserve technical meaning rather than translating only tone.
-
-## Initial acceptance criteria
-
-Before this journey is considered ready for implementation:
-
-- recommendation categories are available from authoritative product state or an explicit mapping layer;
-- passkey, password, hardware-key, TOTP, backup-code, and recovery teaching text has security review;
-- optional choices can be skipped without mascot pressure;
-- required actions are visually distinguishable from recommendations;
-- WebAuthn cancellation does not appear as failure;
-- success is never shown before server confirmation;
-- guidance decay prevents repeated onboarding during routine login;
-- the complete journey works in static/reduced-motion mode;
-- no security decision depends on guidance-memory state; and
-- at least one full first-run path and one returning-user path are covered by browser integration tests.
-
-## Canonical v1 scenarios to prototype
-
-The first interactive prototype should cover these scenarios before expanding the catalogue:
-
-1. **New user, passkey recommended and available**
-   - introduction;
-   - mechanism recommendation;
-   - passkey micro-story;
-   - native WebAuthn setup;
-   - confirmed success;
-   - optional resilience recommendation;
-   - completion.
-
-2. **New user chooses password instead**
-   - recommendation shown once;
-   - password accepted as `Works OK` when policy permits;
-   - no negative reaction;
-   - contextual future passkey suggestion permitted.
-
-3. **Returning configured user**
-   - no onboarding lesson;
-   - primary method guidance only when necessary;
-   - normal Protect/Working/Success flow.
-
-4. **WebAuthn cancellation**
-   - calm return to choice;
-   - no failure celebration or warning escalation;
-   - retry and alternatives remain available.
-
-5. **Required policy action**
-   - requirement comes from normal product UI;
-   - Guardian mode supports the explanation;
-   - no skip control when policy does not permit skipping.
+The concrete screen hierarchy for these scenarios is defined in [Authentication and Credential-Setup UI](authentication_credential_ui.md).
 
 ## Open questions
 
-- Which exact account/domain policy states should drive `Recommended` versus `Works OK` for every existing authentication mechanism?
-- What user-preference mechanism should persist teaching/dismissal state across devices?
-- Should administrators be able to suppress all proactive teaching while retaining state animation?
-- Which resilience/recovery configurations can safely be recommended without lowering authentication assurance?
-- How should guidance behave when passkey support is available on the account but not the current client device/browser?
-- Should a user be able to manually switch between compact and teaching-oriented guide modes?
-- Which pieces of the journey should appear during administrator-driven credential reset versus self-service setup?
-- How should localisation review verify that security claims remain technically accurate?
+- exact mechanism recommendation mapping for all current policies;
+- exact resilience/recovery recommendation catalogue;
+- guidance-memory persistence;
+- reminder timing;
+- localisation workflow for Crab Dialog and story content;
+- whether administrators may tune guidance intensity independently of mascot visibility;
+- whether deployments can substitute organisation-authored teaching copy without changing security meaning;
+- how first-run state is determined for existing migrated accounts.
 
-## Next design step
+## Next milestone
 
-With recommendation semantics, teaching, progression, and proactivity defined, the next design phase is the **canonical authentication and credential-setup UI**.
-
-The first UI prototype should implement the v1 scenarios in this document across desktop and mobile, with light/dark themes and full/reduced/static mascot modes. The UI should be derived from the real Kubidm login and credential flows rather than from a standalone onboarding application.
+Build the canonical authentication and credential-setup prototype defined in [Authentication and Credential-Setup UI](authentication_credential_ui.md), starting with the new-user/passkey-recommended scenario and validating the same structure against password choice, returning-user login, WebAuthn cancellation, and required policy action.
