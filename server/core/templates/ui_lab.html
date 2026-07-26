@@ -5,8 +5,12 @@
 (% block head %)
 <link rel="stylesheet"
       href="/pkg/ui_lab.css?v=((crate::https::cache_buster::get_cache_buster_key()))" />
+<link rel="stylesheet"
+      href="/pkg/ui_lab_journey.css?v=((crate::https::cache_buster::get_cache_buster_key()))" />
 <script type="module"
         src="/pkg/modules/ui_lab.mjs?v=((crate::https::cache_buster::get_cache_buster_key()))"></script>
+<script type="module"
+        src="/pkg/modules/ui_lab_journey.mjs?v=((crate::https::cache_buster::get_cache_buster_key()))"></script>
 (% endblock %)
 
 (% block body %)
