@@ -1,0 +1,111 @@
+(% extends "base_htmx.html" %)
+
+(% block title %)Kubidm UI Lab(% endblock %)
+
+(% block head %)
+<link rel="stylesheet"
+      href="/pkg/ui_lab.css?v=((crate::https::cache_buster::get_cache_buster_key()))" />
+<script type="module"
+        src="/pkg/modules/ui_lab.mjs?v=((crate::https::cache_buster::get_cache_buster_key()))"></script>
+(% endblock %)
+
+(% block body %)
+<main class="ui-lab" data-ui-lab>
+    <aside class="ui-lab-sidebar" aria-label="UI Lab stories">
+        <div class="ui-lab-brand">
+            <span class="ui-lab-kicker">Development only</span>
+            <h1>Kubidm UI Lab</h1>
+            <p>Real Kubidm styles, deterministic identity-experience fixtures.</p>
+        </div>
+
+        <nav class="ui-lab-story-nav" aria-label="Story catalogue">
+            <h2>Authentication</h2>
+            <button type="button" data-story="first-login">Meet / identify</button>
+            <button type="button" data-story="method-choice">Choose method</button>
+            <button type="button" data-story="passkey-story">Passkey micro-story</button>
+            <button type="button" data-story="passkey-working">Passkey working</button>
+            <button type="button" data-story="success">Confirmed success</button>
+            <button type="button" data-story="password-ok">Password — Works OK</button>
+            <button type="button" data-story="webauthn-cancel">WebAuthn cancelled</button>
+            <button type="button" data-story="oauth">OAuth destination</button>
+            <button type="button" data-story="reauth">Reauthentication</button>
+            <button type="button" data-story="policy-required">Policy required</button>
+            <button type="button" data-story="returning">Returning user</button>
+
+            <h2>Credential journey</h2>
+            <button type="button" data-story="resilience">Resilience suggestion</button>
+            <button type="button" data-story="credentials-progress">Credential progress</button>
+            <button type="button" data-story="complete">Journey complete</button>
+
+            <h2>Primitives</h2>
+            <button type="button" data-story="component-dialog">Crab Dialog</button>
+            <button type="button" data-story="component-options">Recommendation options</button>
+            <button type="button" data-story="component-notice">Security notice</button>
+        </nav>
+    </aside>
+
+    <section class="ui-lab-workbench">
+        <header class="ui-lab-toolbar">
+            <div>
+                <span class="ui-lab-kicker">Story</span>
+                <strong id="ui-lab-story-title">Meet / identify</strong>
+            </div>
+
+            <div class="ui-lab-controls">
+                <label>
+                    Theme
+                    <select id="ui-lab-theme">
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                    </select>
+                </label>
+                <label>
+                    Viewport
+                    <select id="ui-lab-viewport">
+                        <option value="desktop">Desktop</option>
+                        <option value="tablet">Tablet</option>
+                        <option value="mobile">Mobile</option>
+                    </select>
+                </label>
+                <label>
+                    Motion
+                    <select id="ui-lab-motion">
+                        <option value="full">Full</option>
+                        <option value="reduced">Reduced</option>
+                        <option value="static">Static</option>
+                    </select>
+                </label>
+            </div>
+        </header>
+
+        <div class="ui-lab-preview-stage">
+            <section id="ui-lab-preview"
+                     class="ui-lab-preview"
+                     data-viewport="desktop"
+                     data-motion="full"
+                     aria-live="polite">
+                <div id="ui-lab-canvas" class="ui-lab-canvas"></div>
+            </section>
+        </div>
+
+        <section class="ui-lab-inspector" aria-label="Story semantics">
+            <div>
+                <span class="ui-lab-kicker">Product state</span>
+                <code id="ui-lab-product-state">identify</code>
+            </div>
+            <div>
+                <span class="ui-lab-kicker">Recommendation</span>
+                <code id="ui-lab-recommendation">none</code>
+            </div>
+            <div>
+                <span class="ui-lab-kicker">Mascot state</span>
+                <code id="ui-lab-mascot-state">welcome</code>
+            </div>
+            <div>
+                <span class="ui-lab-kicker">Severity</span>
+                <code id="ui-lab-severity">neutral</code>
+            </div>
+        </section>
+    </section>
+</main>
+(% endblock %)
