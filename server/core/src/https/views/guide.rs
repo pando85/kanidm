@@ -1,11 +1,42 @@
 use askama::Template;
 use std::fmt;
 
-pub(crate) fn guided_ui_enabled() -> bool {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum GuidedUiMode {
+    Off,
+    Subtle,
+    Full,
+}
+
+impl GuidedUiMode {
+    fn from_value(value: &str) -> Self {
+        match value.trim().to_ascii_lowercase().as_str() {
+            // Keep the original boolean switch backward compatible.
+            "1" | "true" | "yes" | "on" | "full" => Self::Full,
+            "subtle" => Self::Subtle,
+            "0" | "false" | "no" | "off" | "" => Self::Off,
+            _ => Self::Off,
+        }
+    }
+}
+
+pub(crate) fn guided_ui_mode() -> GuidedUiMode {
     std::env::var("KUBIDM_GUIDED_UI")
         .ok()
-        .map(|value| value.to_ascii_lowercase())
-        .is_some_and(|value| matches!(value.as_str(), "1" | "true" | "yes" | "on"))
+        .map(|value| GuidedUiMode::from_value(&value))
+        .unwrap_or(GuidedUiMode::Off)
+}
+
+pub(crate) fn guided_ui_enabled() -> bool {
+    guided_ui_mode() != GuidedUiMode::Off
+}
+
+pub(crate) fn guided_ui_full() -> bool {
+    guided_ui_mode() == GuidedUiMode::Full
+}
+
+pub(crate) fn guided_ui_subtle() -> bool {
+    guided_ui_mode() == GuidedUiMode::Subtle
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -198,6 +229,16 @@ impl JourneyProgressView {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn guide_mode_parser_is_backward_compatible_and_bounded() {
+        assert_eq!(GuidedUiMode::from_value("1"), GuidedUiMode::Full);
+        assert_eq!(GuidedUiMode::from_value("TRUE"), GuidedUiMode::Full);
+        assert_eq!(GuidedUiMode::from_value("full"), GuidedUiMode::Full);
+        assert_eq!(GuidedUiMode::from_value("subtle"), GuidedUiMode::Subtle);
+        assert_eq!(GuidedUiMode::from_value("off"), GuidedUiMode::Off);
+        assert_eq!(GuidedUiMode::from_value("unexpected"), GuidedUiMode::Off);
+    }
 
     #[test]
     fn crab_dialog_renders_accessible_text() {
