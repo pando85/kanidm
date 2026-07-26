@@ -11,6 +11,12 @@ export const GuideFallback = Object.freeze({
     LABEL: "label",
 });
 
+function staticAssetState(mascotState) {
+    // Travel is semantic movement, not a distinct static pose. Rive will render
+    // the walking cycle; static/reduced fallbacks use the calm idle artwork.
+    return mascotState === MascotState.TRAVEL ? MascotState.IDLE : mascotState;
+}
+
 export class StaticGuideRenderer {
     constructor(
         slot,
@@ -55,7 +61,8 @@ export class StaticGuideRenderer {
         this.slot.dataset.motion = motionLevel;
         this.image.alt = `Kubidm guide: ${mascotState}`;
 
-        const nextSrc = `${this.assetRoot}/crab-${mascotState}.svg`;
+        const assetState = staticAssetState(mascotState);
+        const nextSrc = `${this.assetRoot}/crab-${assetState}.svg`;
         if (this.image.getAttribute("src") !== nextSrc) {
             if (this.fallbackMode === GuideFallback.HIDE) this.slot.hidden = true;
             this.image.hidden = false;
