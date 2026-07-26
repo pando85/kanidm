@@ -11,7 +11,6 @@ pub(crate) enum GuidedUiMode {
 impl GuidedUiMode {
     fn from_value(value: &str) -> Self {
         match value.trim().to_ascii_lowercase().as_str() {
-            // Keep the original boolean switch backward compatible.
             "1" | "true" | "yes" | "on" | "full" => Self::Full,
             "subtle" => Self::Subtle,
             "0" | "false" | "no" | "off" | "" => Self::Off,
@@ -37,6 +36,44 @@ pub(crate) fn guided_ui_full() -> bool {
 
 pub(crate) fn guided_ui_subtle() -> bool {
     guided_ui_mode() == GuidedUiMode::Subtle
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum GuidedMotionMode {
+    Auto,
+    Full,
+    Reduced,
+    Static,
+}
+
+impl GuidedMotionMode {
+    fn from_value(value: &str) -> Self {
+        match value.trim().to_ascii_lowercase().as_str() {
+            "full" => Self::Full,
+            "reduced" => Self::Reduced,
+            "static" => Self::Static,
+            "auto" | "" => Self::Auto,
+            _ => Self::Auto,
+        }
+    }
+}
+
+impl fmt::Display for GuidedMotionMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            Self::Auto => "auto",
+            Self::Full => "full",
+            Self::Reduced => "reduced",
+            Self::Static => "static",
+        })
+    }
+}
+
+pub(crate) fn guided_motion_mode() -> GuidedMotionMode {
+    std::env::var("KUBIDM_GUIDED_MOTION")
+        .ok()
+        .map(|value| GuidedMotionMode::from_value(&value))
+        .unwrap_or(GuidedMotionMode::Auto)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -241,6 +278,15 @@ mod tests {
     }
 
     #[test]
+    fn motion_mode_parser_is_bounded_and_safe_by_default() {
+        assert_eq!(GuidedMotionMode::from_value("full"), GuidedMotionMode::Full);
+        assert_eq!(GuidedMotionMode::from_value("REDUCED"), GuidedMotionMode::Reduced);
+        assert_eq!(GuidedMotionMode::from_value("static"), GuidedMotionMode::Static);
+        assert_eq!(GuidedMotionMode::from_value("auto"), GuidedMotionMode::Auto);
+        assert_eq!(GuidedMotionMode::from_value("unexpected"), GuidedMotionMode::Auto);
+    }
+
+    #[test]
     fn crab_dialog_renders_accessible_text() {
         let html = CrabDialogView::new(
             GuideDialogVariant::Teach,
@@ -306,5 +352,6 @@ mod tests {
         assert_eq!(GuideRecommendation::Required.to_string(), "required");
         assert_eq!(GuideRecommendation::WorksOk.to_string(), "works_ok");
         assert_eq!(GuideSeverity::Critical.to_string(), "critical");
+        assert_eq!(GuidedMotionMode::Static.to_string(), "static");
     }
 }
