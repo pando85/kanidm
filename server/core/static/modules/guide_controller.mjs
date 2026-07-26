@@ -1,3 +1,4 @@
+import "./guide_experience.mjs";
 import {
     MascotState,
     MotionLevel,
