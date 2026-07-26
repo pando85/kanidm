@@ -23,6 +23,12 @@ The feature will be delivered incrementally. The first production pilot will rep
 followed by authentication and application selection. Profile and credential workflows will only be integrated after the
 state model, accessibility, performance, and security behaviour have been validated.
 
+The related design baselines are:
+
+- [Mascot and Motion Design System](mascot_design_system.md) for canonical character and motion behaviour;
+- [Guided Identity Journey](guided_identity_journey.md) for proactive teaching, recommendation semantics, and guidance decay; and
+- [Authentication and Credential-Setup UI](authentication_credential_ui.md) for the concrete authentication and credential UI prototype.
+
 ## Context
 
 Kubidm is an identity-management system where users perform security-sensitive operations. The Web UI currently covers
