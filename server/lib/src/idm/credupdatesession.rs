@@ -5,7 +5,9 @@ use crate::idm::account::Account;
 use crate::idm::server::{IdmServerCredUpdateTransaction, IdmServerProxyWriteTransaction};
 use crate::prelude::*;
 use crate::server::access::Access;
-use crate::utils::{backup_code_from_random, readable_password_from_random, uuid_from_duration};
+use crate::utils::{
+    backup_code_from_random, readable_password_from_random, utf8_len, uuid_from_duration,
+};
 use crate::value::{CredUpdateSessionPerms, CredentialType, IntentTokenState, LABEL_RE};
 use compact_jwt::compact::JweCompact;
 use compact_jwt::jwe::JweBuilder;
@@ -42,6 +44,7 @@ const MAXIMUM_INTENT_TTL: Duration = Duration::from_secs(86400);
 #[derive(Debug)]
 pub enum PasswordQuality {
     TooShort(u32),
+    TooLong(u32),
     BadListed,
     DontReusePasswords,
     Feedback(Vec<PasswordFeedback>),
@@ -1884,9 +1887,15 @@ impl IdmServerCredUpdateTransaction<'_> {
 
         // is the password at least 10 char?
         let pw_min_length = resolved_account_policy.pw_min_length();
-        if cleartext.len() < pw_min_length as usize {
+        let pw_max_length = resolved_account_policy.pw_max_length();
+
+        let pw_graphemes = utf8_len(cleartext);
+
+        if pw_graphemes < pw_min_length as usize {
             return Err(PasswordQuality::TooShort(pw_min_length));
-        }
+        } else if pw_graphemes > pw_max_length as usize {
+            return Err(PasswordQuality::TooLong(pw_max_length));
+        };
 
         if let Some(some_radius_secret) = radius_secret {
             if cleartext.contains(some_radius_secret) {
@@ -2063,6 +2072,9 @@ impl IdmServerCredUpdateTransaction<'_> {
             PasswordQuality::TooShort(sz) => {
                 OperationError::PasswordQuality(vec![PasswordFeedback::TooShort(sz)])
             }
+            PasswordQuality::TooLong(sz) => {
+                OperationError::PasswordQuality(vec![PasswordFeedback::TooLong(sz)])
+            }
             PasswordQuality::BadListed => {
                 OperationError::PasswordQuality(vec![PasswordFeedback::BadListed])
             }
@@ -2105,6 +2117,9 @@ impl IdmServerCredUpdateTransaction<'_> {
         .map_err(|e| match e {
             PasswordQuality::TooShort(sz) => {
                 OperationError::PasswordQuality(vec![PasswordFeedback::TooShort(sz)])
+            }
+            PasswordQuality::TooLong(sz) => {
+                OperationError::PasswordQuality(vec![PasswordFeedback::TooLong(sz)])
             }
             PasswordQuality::BadListed => {
                 OperationError::PasswordQuality(vec![PasswordFeedback::BadListed])
@@ -2720,6 +2735,9 @@ impl IdmServerCredUpdateTransaction<'_> {
         .map_err(|e| match e {
             PasswordQuality::TooShort(sz) => {
                 OperationError::PasswordQuality(vec![PasswordFeedback::TooShort(sz)])
+            }
+            PasswordQuality::TooLong(sz) => {
+                OperationError::PasswordQuality(vec![PasswordFeedback::TooLong(sz)])
             }
             PasswordQuality::BadListed => {
                 OperationError::PasswordQuality(vec![PasswordFeedback::BadListed])
