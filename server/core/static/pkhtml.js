@@ -85,7 +85,11 @@ try {
 
 try {
     addEventListener("load", () => {
-        passkey_login();
+        // Legacy authentication keeps its direct native prompt. Guided mode first
+        // explains the method and lets the user start WebAuthn from the visible CTA.
+        if (!document.querySelector("[data-guide-scene]")) {
+            passkey_login();
+        }
     });
 } catch (error) {
     console.error(`Failed to add load-time event listener for passkey authentication: ${error}`);
