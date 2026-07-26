@@ -101,6 +101,56 @@ function setState({ action, mascotState, severity }) {
     stateNode.dataset.guideSeverity = severity;
 }
 
+function syncCredentialStep(dynamicSection) {
+    const activeStep = dynamicSection.querySelector("[data-guide-credential-step]");
+    if (!activeStep) return false;
+
+    const step = activeStep.dataset.guideCredentialStep;
+    if (step === "passkey_enrolment") {
+        setDialog({
+            variant: "orient",
+            heading: "Adding a passkey",
+            text: "Follow the enrollment step below. Your browser or authenticator owns the sensitive approval; Kubidm keeps the setup context and policy visible.",
+        });
+        setState({
+            action: "passkey_enrolment",
+            mascotState: MascotState.PROTECT,
+            severity: Severity.NEUTRAL,
+        });
+        return true;
+    }
+
+    if (step === "totp_enrolment") {
+        setDialog({
+            variant: "orient",
+            heading: "Adding TOTP",
+            text: "Connect your authenticator, name it, then prove the generated code works. Any validation message below remains authoritative.",
+        });
+        setState({
+            action: "totp_enrolment",
+            mascotState: MascotState.GUIDE,
+            severity: Severity.NEUTRAL,
+        });
+        return true;
+    }
+
+    if (step === "password_setup") {
+        setDialog({
+            variant: "orient",
+            heading: "Setting a password",
+            text: "Create a password that satisfies the policy feedback below. This is a valid method when the account policy permits it.",
+        });
+        setState({
+            action: "password_setup",
+            mascotState: MascotState.GUIDE,
+            severity: Severity.NEUTRAL,
+        });
+        return true;
+    }
+
+    return false;
+}
+
 function syncCredentialGuide() {
     if (!bindScene() || !stateNode) return;
 
@@ -138,6 +188,8 @@ function syncCredentialGuide() {
         });
         return;
     }
+
+    if (syncCredentialStep(dynamicSection)) return;
 
     if (hasPendingChanges(dynamicSection)) {
         setDialog({
