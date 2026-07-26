@@ -10,7 +10,7 @@ echo "PWD: $(pwd)"
 
 if [ "${GITHUB_ACTIONS}" ]; then
     echo "Running in Github Actions"
-    git config user.email "kubidm@kanidm.com"
+    git config user.email "kubidm@kubidm.com"
     git config user.name "Kubidm Github Actions Runner"
 fi
 

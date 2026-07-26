@@ -4,7 +4,7 @@
 # - reset the admin and idm_admin users
 # - set up a test user
 # - set up a test group
-# - set up a test oauth2 rp (https://kanidm.com)
+# - set up a test oauth2 rp (https://kubidm.com)
 # - prompt to reset testuser's creds online
 
 set -e
@@ -110,13 +110,13 @@ ${KUBIDM} group add-members "${TEST_GROUP}" "${TEST_USER_NAME}" -D "${IDM_ADMIN_
 echo "Enable experimental UI for admin idm_admin ${TEST_USER_NAME}"
 ${KUBIDM} group add-members idm_ui_enable_experimental_features "${IDM_ADMIN_USER}" "${TEST_USER_NAME}" -D "${IDM_ADMIN_USER}"
 
-# create oauth2 rp for kanidm.com
-echo "Creating the kanidm.com OAuth2 RP"
-${KUBIDM} system oauth2 create "kanidm.com" "Kubidm.com" "https://kanidm.com" -D "${IDM_ADMIN_USER}"
-echo "Creating the kanidm.com OAuth2 RP Scope Map"
-${KUBIDM} system oauth2 update-scope-map "kanidm.com" "${TEST_GROUP}" openid -D "${IDM_ADMIN_USER}"
-echo "Creating the kanidm.com OAuth2 RP Supplemental Scope Map"
-${KUBIDM} system oauth2 update-sup-scope-map "kanidm.com" "${TEST_GROUP}" admin -D "${IDM_ADMIN_USER}"
+# create oauth2 rp for kubidm.com
+echo "Creating the kubidm.com OAuth2 RP"
+${KUBIDM} system oauth2 create "kubidm.com" "Kubidm.com" "https://kubidm.com" -D "${IDM_ADMIN_USER}"
+echo "Creating the kubidm.com OAuth2 RP Scope Map"
+${KUBIDM} system oauth2 update-scope-map "kubidm.com" "${TEST_GROUP}" openid -D "${IDM_ADMIN_USER}"
+echo "Creating the kubidm.com OAuth2 RP Supplemental Scope Map"
+${KUBIDM} system oauth2 update-sup-scope-map "kubidm.com" "${TEST_GROUP}" admin -D "${IDM_ADMIN_USER}"
 
 
 # create oauth2 rp for localhost:10443 - for oauth2 proxy testing
