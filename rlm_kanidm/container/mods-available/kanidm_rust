@@ -2,6 +2,6 @@
 # Native Rust module backed by rlm_kanidm.so
 #
 kanidm {
-	# Path to Kanidm client config TOML consumed by rlm_kanidm
+	# Path to Kubidm client config TOML consumed by rlm_kanidm
 	config_path = "/data/radius.toml"
 }

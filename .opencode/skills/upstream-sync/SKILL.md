@@ -5,11 +5,11 @@ description: Use when syncing changes from the upstream kanidm/kanidm repository
 
 # Upstream Sync: kanidm -> kubidm
 
-This skill handles syncing changes from the upstream `kanidm/kanidm` repository into the `pando85/kanidm` (kubidm) fork.
+This skill handles syncing changes from the upstream `kanidm/kanidm` repository into the `pando85/kubidm` (kubidm) fork.
 
 ## Repository Context
 
-- **origin**: `git@github.com:pando85/kanidm.git` (this fork)
+- **origin**: `git@github.com:pando85/kubidm.git` (this fork)
 - **upstream**: `git@github.com:kanidm/kanidm.git` (original)
 - **Main branch**: `master`
 - **Fork-specific branch**: `master-fork` (contains fork-only history)
@@ -19,7 +19,7 @@ This skill handles syncing changes from the upstream `kanidm/kanidm` repository 
 The fork has renamed branding from `kanidm` to `kubidm` across many files. When syncing upstream changes, conflicts in these renamed files are expected. Key rename patterns:
 
 - `kanidm` -> `kubidm` in crate names, binary names, documentation
-- `kanidmd` -> `kubidmd` in daemon/service files
+- `kubidmd` -> `kubidmd` in daemon/service files
 - `pykanidm` -> `pykubidm` in Python SDK
 - Container images: `kanidm/server` -> `kubidm/server`, etc.
 - Configuration files, service files, and docs reference `kubidm` branding
@@ -27,28 +27,28 @@ The fork has renamed branding from `kanidm` to `kubidm` across many files. When 
 ### Namespaces that must NOT be renamed
 
 These are external crate names or upstream directory names that stay as `kanidm`:
-- `kanidm-hsm-crypto` - external Rust crate, do NOT rename to `kubidm-hsm-crypto`
+- `kanidm-hsm-crypto` - external Rust crate, do NOT rename to `kanidm-hsm-crypto`
 - Directory names under `unix_integration/` that upstream created: `resolver_kanidm/`, `nss_kanidm/`, `pam_kanidm/`, `rlm_kanidm/`
 - `platform/` directory files
 - `examples/` directory files (some)
-- Debian packaging: `server/daemon/debian/kanidmd.service`
+- Debian packaging: `server/daemon/debian/kubidmd.service`
 
 ### Internal crate references that MUST be renamed
 
 These workspace dependency keys and crate names were renamed by the fork:
-- `kanidm_client` -> `kubidm_client` (both workspace key AND package name)
-- `kanidm_proto` -> `kubidm_proto`
-- `kanidm_core` -> `kubidm_core`
-- `kanidmd_core` -> `kubidmd_core`
-- `kanidmd_lib` -> `kubidmd_lib`
-- `kanidmd_lib_macros` -> `kubidmd_lib_macros`
-- `kanidmd_testkit` -> `kubidmd_testkit`
-- `kanidm_build_profiles` -> `kubidm_build_profiles`
-- `kanidm_lib_crypto` -> `kubidm_lib_crypto`
-- `kanidm_lib_file_permissions` -> `kubidm_lib_file_permissions`
-- `kanidm_utils_users` -> `kubidm_utils_users`
-- `KanidmClient` -> `KubidmClient` (Rust struct name)
-- `KanidmClientBuilder` -> `KubidmClientBuilder` (Rust struct name)
+- `kubidm_client` -> `kubidm_client` (both workspace key AND package name)
+- `kubidm_proto` -> `kubidm_proto`
+- `kubidm_core` -> `kubidm_core`
+- `kubidmd_core` -> `kubidmd_core`
+- `kubidmd_lib` -> `kubidmd_lib`
+- `kubidmd_lib_macros` -> `kubidmd_lib_macros`
+- `kubidmd_testkit` -> `kubidmd_testkit`
+- `kubidm_build_profiles` -> `kubidm_build_profiles`
+- `kubidm_lib_crypto` -> `kubidm_lib_crypto`
+- `kubidm_lib_file_permissions` -> `kubidm_lib_file_permissions`
+- `kubidm_utils_users` -> `kubidm_utils_users`
+- `KubidmClient` -> `KubidmClient` (Rust struct name)
+- `KubidmClientBuilder` -> `KubidmClientBuilder` (Rust struct name)
 
 ## Fork-Specific Code Additions
 
@@ -108,15 +108,15 @@ git merge upstream/master --no-commit
    ```bash
    git checkout --theirs <file>
    # Apply branding
-   sed -i 's/kanidmd/kubidmd/g' <file>
+   sed -i 's/kubidmd/kubidmd/g' <file>
    sed -i 's/kanidm/kubidm/g' <file>
    # Then FIX: restore external crate names that must not be renamed
-   sed -i 's/kubidm-hsm-crypto/kanidm-hsm-crypto/g' <file>
-   sed -i 's/kubidm_hsm_crypto/kanidm_hsm_crypto/g' <file>
+   sed -i 's/kanidm-hsm-crypto/kanidm-hsm-crypto/g' <file>
+   sed -i 's/kanidm_hsm_crypto/kanidm_hsm_crypto/g' <file>
    ```
 
 3. **For Cargo.toml**: Accept upstream's version as the base, then:
-   - Rename internal workspace dependency keys (kanidm_* -> kubidm_*, kanidmd_* -> kubidmd_*)
+   - Rename internal workspace dependency keys (kanidm_* -> kubidm_*, kubidmd_* -> kubidmd_*)
    - Add back fork-specific workspace dependencies (aws-*, etc.)
    - Do NOT rename external crate names (kanidm-hsm-crypto, etc.)
    - Add `kubidm_unix_common` as an alias for `sparkle_unix_common` (fork's pam_kubidm needs it)
@@ -151,19 +151,19 @@ After accepting upstream files, systematically re-apply branding:
 
 ```bash
 # Fix all .rs files (be careful with external crate names!)
-for f in $(grep -rl "kanidm_proto\|kanidm_client\|KanidmClient" --include="*.rs" . | grep -v target/); do
-  sed -i 's/KanidmClient/KubidmClient/g' "$f"
-  sed -i 's/kanidm_proto/kubidm_proto/g' "$f"
-  sed -i 's/kanidm_client/kubidm_client/g' "$f"
+for f in $(grep -rl "kubidm_proto\|kubidm_client\|KubidmClient" --include="*.rs" . | grep -v target/); do
+  sed -i 's/KubidmClient/KubidmClient/g' "$f"
+  sed -i 's/kubidm_proto/kubidm_proto/g' "$f"
+  sed -i 's/kubidm_client/kubidm_client/g' "$f"
   # Restore external crate names
-  sed -i 's/kubidm_hsm_crypto/kanidm_hsm_crypto/g' "$f"
+  sed -i 's/kanidm_hsm_crypto/kanidm_hsm_crypto/g' "$f"
 done
 
 # Fix all Cargo.toml files
 for f in $(find . -name "Cargo.toml" -not -path "./target/*" -not -path "./Cargo.lock"); do
-  sed -i 's/^kanidmd_/kubidmd_/g' "$f"
-  sed -i 's/^kanidm_build_profiles/kubidm_build_profiles/' "$f"
-  sed -i 's/^kanidm_client/kubidm_client/' "$f"
+  sed -i 's/^kubidmd_/kubidmd_/g' "$f"
+  sed -i 's/^kubidm_build_profiles/kubidm_build_profiles/' "$f"
+  sed -i 's/^kubidm_client/kubidm_client/' "$f"
   # ... etc for each internal dep key
 done
 ```
@@ -217,11 +217,11 @@ The fork adds approval workflows, time-bounded grants, OAuth2 enhancements, S3 b
 Instead of accepting upstream and trying to add back fork code, the correct strategy for files with significant fork additions is:
 ```bash
 git show HEAD:<file> > <file>
-sed -i 's/kanidmd/kubidmd/g' <file>
+sed -i 's/kubidmd/kubidmd/g' <file>
 sed -i 's/kanidm/kubidm/g' <file>
 # Then restore external crate names
-sed -i 's/kubidm-hsm-crypto/kanidm-hsm-crypto/g' <file>
-sed -i 's/kubidm_hsm_crypto/kanidm_hsm_crypto/g' <file>
+sed -i 's/kanidm-hsm-crypto/kanidm-hsm-crypto/g' <file>
+sed -i 's/kanidm_hsm_crypto/kanidm_hsm_crypto/g' <file>
 ```
 
 Then selectively integrate upstream's new additions (new methods, new imports) on top.

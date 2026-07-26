@@ -1,7 +1,7 @@
 [package]
 name = "kubidm-mail-sender"
 default-run = "kubidm-mail-sender"
-description = "Kanidm Mail Sender Service"
+description = "Kubidm Mail Sender Service"
 documentation = "https://kubidm.github.io/kubidm/stable/"
 version.workspace = true
 authors.workspace = true

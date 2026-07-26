@@ -12,7 +12,7 @@ name: "Github Pages - Branch"
 env:
   SCCACHE_GHA_ENABLED: "true"
   RUSTC_WRAPPER: "sccache"
-  KANIDM_BUILD_PROFILE: developer
+  KUBIDM_BUILD_PROFILE: developer
   ACTIONS_RUNNER_DEBUG: true
 jobs:
   generate_mdbook:
@@ -38,7 +38,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install python 3.12
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.14"
 

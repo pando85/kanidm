@@ -457,7 +457,7 @@ pub trait QueryServerTransaction<'a> {
         // There are some contexts where we will be passed an rdn or dn. We need
         // to remove these elements if they exist.
         //
-        // Why is it okay to ignore the attr and dn here? In Kani spn and name are
+        // Why is it okay to ignore the attr and dn here? In Kubidm spn and name are
         // always unique and absolutes, so even if the dn/rdn are not expected, there
         // is only a single correct answer that *can* match these values. This also
         // hugely simplifies the process of matching when we have app based searches
@@ -1881,7 +1881,7 @@ impl QueryServer {
             // here because the database is not started, so we cannot pull it from there.
             d_display: domain_name,
             // Automatically derive our current taint mode based on the PRERELEASE setting.
-            d_devel_taint: option_env!("KANIDM_PRE_RELEASE").is_some(),
+            d_devel_taint: option_env!("KUBIDM_PRE_RELEASE").is_some(),
             d_ldap_allow_unix_pw_bind: false,
             d_allow_easter_eggs: false,
             d_allow_account_recovery: false,
@@ -2549,7 +2549,7 @@ impl<'a> QueryServerWriteTransaction<'a> {
         // If we have moved from stable to dev, this triggers the taint. If we
         // are moving from dev to stable, the db will be true triggering the
         // taint flag. If we are stable to stable this will be false.
-        let current_devel_flag = option_env!("KANIDM_PRE_RELEASE").is_some();
+        let current_devel_flag = option_env!("KUBIDM_PRE_RELEASE").is_some();
         let domain_info_devel_taint = current_devel_flag
             || domain_info
                 .get_ava_single_bool(Attribute::DomainDevelopmentTaint)
@@ -2558,7 +2558,7 @@ impl<'a> QueryServerWriteTransaction<'a> {
         let domain_allow_easter_eggs = domain_info
             .get_ava_single_bool(Attribute::DomainAllowEasterEggs)
             // This defaults to false for release versions, and true in development
-            .unwrap_or(option_env!("KANIDM_PRE_RELEASE").is_some());
+            .unwrap_or(option_env!("KUBIDM_PRE_RELEASE").is_some());
 
         let domain_allow_account_recovery = domain_info
             .get_ava_single_bool(Attribute::DomainAllowAccountRecovery)

@@ -22,7 +22,7 @@ DEFAULT_PACKAGE = "kubidm_openapi_client"
 DEFAULT_GENERATOR_IMAGE = "openapitools/openapi-generator-cli"
 DEFAULT_LIBRARY = "asyncio"
 DEFAULT_OUTPUT = Path(__file__).resolve().parents[1] / DEFAULT_PACKAGE
-DEFAULT_CA_PATH_ENV = os.getenv("KANIDM_CA_PATH")
+DEFAULT_CA_PATH_ENV = os.getenv("KUBIDM_CA_PATH")
 MODEL_TO_JSON_OLD_SNIPPET = """    def to_json(self) -> str:
         \"\"\"Returns the JSON representation of the model using alias\"\"\"
         # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
@@ -213,7 +213,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Generate the OpenAPI client package for pykubidm.")
     parser.add_argument(
         "--spec-url",
-        default=os.getenv("KANIDM_OPENAPI_SPEC_URL", DEFAULT_SPEC_URL),
+        default=os.getenv("KUBIDM_OPENAPI_SPEC_URL", DEFAULT_SPEC_URL),
         help=f"OpenAPI spec URL (default: {DEFAULT_SPEC_URL})",
     )
     parser.add_argument(
@@ -230,7 +230,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--ca-file",
         type=Path,
         default=Path(DEFAULT_CA_PATH_ENV) if DEFAULT_CA_PATH_ENV is not None else None,
-        help="CA file path for TLS verification (default: KANIDM_CA_PATH if set).",
+        help="CA file path for TLS verification (default: KUBIDM_CA_PATH if set).",
     )
     parser.add_argument(
         "--output",
@@ -245,12 +245,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--generator-image",
-        default=os.getenv("KANIDM_OPENAPI_GENERATOR_IMAGE", DEFAULT_GENERATOR_IMAGE),
+        default=os.getenv("KUBIDM_OPENAPI_GENERATOR_IMAGE", DEFAULT_GENERATOR_IMAGE),
         help=f"OpenAPI generator Docker image (default: {DEFAULT_GENERATOR_IMAGE}).",
     )
     parser.add_argument(
         "--library",
-        default=os.getenv("KANIDM_OPENAPI_LIBRARY", DEFAULT_LIBRARY),
+        default=os.getenv("KUBIDM_OPENAPI_LIBRARY", DEFAULT_LIBRARY),
         help=f"OpenAPI generator library (default: {DEFAULT_LIBRARY}).",
     )
     return parser

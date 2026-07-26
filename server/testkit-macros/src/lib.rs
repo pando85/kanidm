@@ -44,8 +44,8 @@ pub fn cli_kubidm(_input: TokenStream) -> TokenStream {
             .run()
             .unwrap();
         let mut kubidm = kubidm.command();
-        kubidm.env("KANIDM_URL", rsclient.get_url().to_string());
-        kubidm.env("KANIDM_TOKEN_CACHE_PATH", &token_cache_path);
+        kubidm.env("KUBIDM_URL", rsclient.get_url().to_string());
+        kubidm.env("KUBIDM_TOKEN_CACHE_PATH", &token_cache_path);
         kubidm
         }
     };

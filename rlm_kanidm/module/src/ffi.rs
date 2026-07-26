@@ -56,7 +56,7 @@ pub static mut rlm_kanidm: module_t = module_t {
     magic: rlm_kanidm_module::INIT as u64,
     name: MODULE_NAME.as_ptr(),
     type_: RLM_TYPE_THREAD_SAFE as c_int,
-    inst_size: size_of::<RlmKanidmInstance>(),
+    inst_size: size_of::<RlmKubidmInstance>(),
     config: ptr::addr_of!(MODULE_CONFIG).cast(),
     bootstrap: None,
     instantiate: Some(mod_instantiate),
@@ -65,7 +65,7 @@ pub static mut rlm_kanidm: module_t = module_t {
 };
 
 #[repr(C)]
-struct RlmKanidmInstance {
+struct RlmKubidmInstance {
     config_path: *const c_char,
     handle: *mut ModuleHandle,
 }
@@ -74,7 +74,7 @@ static mut MODULE_CONFIG: [CONF_PARSER; 2] = [
     CONF_PARSER {
         name: CONFIG_PATH_KEY.as_ptr(),
         type_: PW_TYPE_STRING as c_int,
-        offset: offset_of!(RlmKanidmInstance, config_path),
+        offset: offset_of!(RlmKubidmInstance, config_path),
         data: ptr::null_mut(),
         dflt: DEFAULT_CONFIG_PATH.as_ptr().cast(),
     },
@@ -97,7 +97,7 @@ const MODULE_METHODS: [packetmethod_t; MOD_COUNT as usize] = {
 };
 
 unsafe extern "C" fn mod_instantiate(_conf: *mut conf_part, instance_ptr: *mut c_void) -> c_int {
-    let instance_ptr: *mut RlmKanidmInstance = instance_ptr as _;
+    let instance_ptr: *mut RlmKubidmInstance = instance_ptr as _;
 
     // The purpose of these functions is to be the thinest possibly layer that converts
     // from unsafe C types into safe (albeit lowlevel) rust types. These then are sent
@@ -127,7 +127,7 @@ unsafe extern "C" fn mod_instantiate(_conf: *mut conf_part, instance_ptr: *mut c
 }
 
 unsafe extern "C" fn mod_detach(instance_ptr: *mut c_void) -> c_int {
-    let instance_ptr: *mut RlmKanidmInstance = instance_ptr as _;
+    let instance_ptr: *mut RlmKubidmInstance = instance_ptr as _;
 
     let Some(instance) = instance_ptr.as_mut() else {
         return 0;
@@ -147,7 +147,7 @@ unsafe extern "C" fn mod_authorise(
     instance_ptr: *mut c_void,
     request: *mut REQUEST,
 ) -> rlm_rcode_t {
-    let instance_ptr: *mut RlmKanidmInstance = instance_ptr as _;
+    let instance_ptr: *mut RlmKubidmInstance = instance_ptr as _;
 
     let talloc_ctx = request as *mut c_void;
 

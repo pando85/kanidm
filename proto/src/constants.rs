@@ -30,7 +30,7 @@ pub const VALID_IMAGE_UPLOAD_CONTENT_TYPES: [&str; 5] = [
 pub const APPLICATION_JSON: &str = "application/json";
 
 /// The "system" path for Kubidm client config
-pub const DEFAULT_CLIENT_CONFIG_PATH: &str = env!("KANIDM_CLIENT_CONFIG_PATH");
+pub const DEFAULT_CLIENT_CONFIG_PATH: &str = env!("KUBIDM_CLIENT_CONFIG_PATH");
 /// The user-owned path for Kubidm client config
 pub const DEFAULT_CLIENT_CONFIG_PATH_HOME: &str = "~/.config/kubidm";
 
@@ -340,11 +340,11 @@ pub const TEST_ATTR_NOTALLOWED: &str = "notallowed";
 pub const TEST_ENTRYCLASS_TEST_CLASS: &str = "testclass";
 
 /// HTTP Header containing an auth session ID for when you're going through an auth flow
-pub const KSESSIONID: &str = "X-KANIDM-AUTH-SESSION-ID";
+pub const KSESSIONID: &str = "X-KUBIDM-AUTH-SESSION-ID";
 /// HTTP Header containing the backend operation ID
-pub const KOPID: &str = "X-KANIDM-OPID";
+pub const KOPID: &str = "X-KUBIDM-OPID";
 /// HTTP Header containing the Kubidm server version
-pub const KVERSION: &str = "X-KANIDM-VERSION";
+pub const KVERSION: &str = "X-KUBIDM-VERSION";
 
 /// X-Forwarded-For header
 pub const X_FORWARDED_FOR: &str = "x-forwarded-for";

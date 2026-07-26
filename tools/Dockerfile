@@ -2,11 +2,11 @@
 ARG BASE_IMAGE=debian:trixie-slim
 
 FROM rust:1 AS builder
-ARG KANIDM_FEATURES
-ARG KANIDM_BUILD_PROFILE
-ARG KANIDM_BUILD_OPTIONS=""
+ARG KUBIDM_FEATURES
+ARG KUBIDM_BUILD_PROFILE
+ARG KUBIDM_BUILD_OPTIONS=""
 
-ENV KANIDM_BUILD_PROFILE=${KANIDM_BUILD_PROFILE:-container_generic}
+ENV KUBIDM_BUILD_PROFILE=${KUBIDM_BUILD_PROFILE:-container_generic}
 ENV RUSTFLAGS="-Clinker=clang"
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
@@ -36,21 +36,21 @@ RUN \
     export SCCACHE_DIR=/sccache; \
     export RUSTC_WRAPPER=/usr/bin/sccache; \
     export CC="/usr/bin/clang"; \
-    cargo auditable build --locked -p kubidm_tools ${KANIDM_BUILD_OPTIONS} \
+    cargo auditable build --locked -p kubidm_tools ${KUBIDM_BUILD_OPTIONS} \
         --target-dir="/usr/src/kubidm/target/" \
-        --features="${KANIDM_FEATURES}" \
+        --features="${KUBIDM_FEATURES}" \
         --release && \
-    cargo auditable build --locked -p kubidm-ipa-sync ${KANIDM_BUILD_OPTIONS} \
+    cargo auditable build --locked -p kubidm-ipa-sync ${KUBIDM_BUILD_OPTIONS} \
         --target-dir="/usr/src/kubidm/target/" \
-        --features="${KANIDM_FEATURES}" \
+        --features="${KUBIDM_FEATURES}" \
         --release && \
-    cargo auditable build --locked -p kubidm-ldap-sync ${KANIDM_BUILD_OPTIONS} \
+    cargo auditable build --locked -p kubidm-ldap-sync ${KUBIDM_BUILD_OPTIONS} \
         --target-dir="/usr/src/kubidm/target/" \
-        --features="${KANIDM_FEATURES}" \
+        --features="${KUBIDM_FEATURES}" \
         --release && \
-    cargo auditable build --locked -p kubidm-mail-sender ${KANIDM_BUILD_OPTIONS} \
+    cargo auditable build --locked -p kubidm-mail-sender ${KUBIDM_BUILD_OPTIONS} \
         --target-dir="/usr/src/kubidm/target/" \
-        --features="${KANIDM_FEATURES}" \
+        --features="${KUBIDM_FEATURES}" \
         --release && \
     cargo auditable install \
         --git https://github.com/kanidm/webauthn-rs.git \

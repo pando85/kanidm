@@ -16,7 +16,7 @@ from .testutils import (
     openapi_verify_tls,
 )
 
-PYKANIDM_DIR = Path(__file__).resolve().parents[1]
+PYKUBIDM_DIR = Path(__file__).resolve().parents[1]
 
 
 @pytest.fixture(scope="session")
@@ -31,7 +31,7 @@ def openapi_codegen_once(
         spec_url=spec_url,
         verify_tls=openapi_verify_tls,
         ca_file=Path(openapi_ca_path) if openapi_ca_path else None,
-        output=PYKANIDM_DIR / "kubidm_openapi_client",
+        output=PYKUBIDM_DIR / "kubidm_openapi_client",
     )
 
 

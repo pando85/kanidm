@@ -64,7 +64,7 @@ Using this you can show the current status of the retro changelog plugin to see 
 
 ```bash
 dsconf <instance name> plugin retro-changelog show
-dsconf slapd-DEV-KANIDM-COM plugin retro-changelog show
+dsconf slapd-DEV-KUBIDM-COM plugin retro-changelog show
 ```
 
 To enable the both the content sync and retro-changelog plugins:

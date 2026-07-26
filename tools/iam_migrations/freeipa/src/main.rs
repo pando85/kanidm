@@ -391,7 +391,7 @@ async fn run_sync(
         LdapFilter::And(vec![
             LdapFilter::Equality(LDAP_ATTR_OBJECTCLASS.into(), "groupofnames".to_string()),
             LdapFilter::Equality(LDAP_ATTR_OBJECTCLASS.into(), "ipausergroup".to_string()),
-            // Ignore user private groups, kani generates these internally.
+            // Ignore user private groups, kubidm generates these internally.
             LdapFilter::Not(Box::new(LdapFilter::Equality(
                 LDAP_ATTR_OBJECTCLASS.into(),
                 "mepmanagedentry".to_string(),
@@ -401,7 +401,7 @@ async fn run_sync(
                 LDAP_ATTR_CN.into(),
                 "admins".to_string(),
             ))),
-            // Kani internally has an all persons group.
+            // Kubidm internally has an all persons group.
             LdapFilter::Not(Box::new(LdapFilter::Equality(
                 LDAP_ATTR_CN.into(),
                 "ipausers".to_string(),

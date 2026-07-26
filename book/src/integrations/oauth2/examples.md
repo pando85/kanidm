@@ -229,7 +229,7 @@ To set up a self-managed GitLab instance to authenticate with Kubidm:
          client_options: {
            # OAuth2 client ID
            identifier: "gitlab",
-           secret: "YOUR KANIDM BASIC SECRET HERE",
+           secret: "YOUR KUBIDM BASIC SECRET HERE",
            redirect_uri: "https://gitlab.example.com/users/auth/openid_connect/callback"
          }
        },
@@ -645,7 +645,7 @@ To set up OPKSSH to authenticate with Kubidm:
    ```sh
    # where 'user' is the linux user and 'alice@example.com' is the primary email address
    sudo opkssh add user alice@example.com https://idm.example.com/oauth2/openid/opkssh
-   # where 'user' is the linux user and 'group-name' is the name of the group in kanidm that shall be able to log in
+   # where 'user' is the linux user and 'group-name' is the name of the group in kubidm that shall be able to log in
    sudo opkssh add user oidc:groups:group-name https://idm.example.com/oauth2/openid/opkssh
    ```
 
@@ -719,7 +719,7 @@ To set up a _new_ self-hosted Outline instance to authenticate with Kubidm:
 
    ```ini
    OIDC_CLIENT_ID=outline
-   OIDC_CLIENT_SECRET=YOUR KANIDM BASIC SECRET HERE
+   OIDC_CLIENT_SECRET=YOUR KUBIDM BASIC SECRET HERE
    # Use OIDC discovery with PKCE support
    OIDC_ISSUER_URL=https://idm.example.com/oauth2/openid/outline
    # Prevent redirect loop on logout

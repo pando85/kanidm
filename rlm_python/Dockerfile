@@ -4,7 +4,7 @@ FROM ${BASE_IMAGE}
 
 ARG RADIUS_USER=freerad
 EXPOSE 1812 1813
-ENV KANIDM_CONFIG_FILE="/data/radius.toml"
+ENV KUBIDM_CONFIG_FILE="/data/radius.toml"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     freeradius \

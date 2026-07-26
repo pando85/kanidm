@@ -102,7 +102,7 @@ pub fn start_logging_pipeline(
             .map_err(|err| err.to_string())?;
 
         // this env var gets set at build time, if we can pull it, add it to the metadata
-        let git_rev = match option_env!("KANIDM_PKG_COMMIT_REV") {
+        let git_rev = match option_env!("KUBIDM_PKG_COMMIT_REV") {
             Some(rev) => format!("-{rev}"),
             None => "".to_string(),
         };

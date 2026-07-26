@@ -147,7 +147,7 @@ impl From<UnixUserToken> for UserToken {
         let groups = groups.into_iter().map(GroupToken::from).collect();
 
         UserToken {
-            provider: ProviderOrigin::Kanidm,
+            provider: ProviderOrigin::Kubidm,
             name,
             spn,
             uuid,
@@ -172,7 +172,7 @@ impl From<UnixGroupToken> for GroupToken {
         } = value;
 
         GroupToken {
-            provider: ProviderOrigin::Kanidm,
+            provider: ProviderOrigin::Kubidm,
             name,
             spn,
             uuid,
@@ -334,7 +334,7 @@ impl KubidmProviderInternal {
 #[async_trait]
 impl IdProvider for KubidmProvider {
     fn origin(&self) -> ProviderOrigin {
-        ProviderOrigin::Kanidm
+        ProviderOrigin::Kubidm
     }
 
     async fn attempt_online(&self, tpm: &mut BoxedDynTpm, now: SystemTime) -> bool {

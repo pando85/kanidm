@@ -7,7 +7,7 @@ mod bootstrap;
 struct Cli {
     #[arg(short, long, env = "DEBUG")]
     debug: bool,
-    #[arg(long, env = "KANIDM_RLM_CONFIG")]
+    #[arg(long, env = "KUBIDM_RLM_CONFIG")]
     config: Option<PathBuf>,
 }
 

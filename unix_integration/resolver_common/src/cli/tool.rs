@@ -1,5 +1,5 @@
 use crate::check::check_nsswitch_has_module;
-use crate::opt::tool::{KanidmUnixOpt, KanidmUnixParser};
+use crate::opt::tool::{KubidmUnixOpt, KubidmUnixParser};
 use crate::SparkleFlavour;
 use clap::Parser;
 use sparkle_unix_common::client::DaemonClient;
@@ -50,17 +50,17 @@ macro_rules! setup_client {
 }
 
 pub async fn main<F: SparkleFlavour>(flavour: F) -> ExitCode {
-    let opt = KanidmUnixParser::parse();
+    let opt = KubidmUnixParser::parse();
 
     let debug = match opt.commands {
-        KanidmUnixOpt::AuthTest {
+        KubidmUnixOpt::AuthTest {
             debug,
             account_id: _,
         } => debug,
-        KanidmUnixOpt::CacheClear { debug, really: _ } => debug,
-        KanidmUnixOpt::CacheInvalidate { debug } => debug,
-        KanidmUnixOpt::Status { debug } => debug,
-        KanidmUnixOpt::Version { debug } => debug,
+        KubidmUnixOpt::CacheClear { debug, really: _ } => debug,
+        KubidmUnixOpt::CacheInvalidate { debug } => debug,
+        KubidmUnixOpt::Status { debug } => debug,
+        KubidmUnixOpt::Version { debug } => debug,
     };
 
     if debug {
@@ -69,7 +69,7 @@ pub async fn main<F: SparkleFlavour>(flavour: F) -> ExitCode {
     sketching::tracing_subscriber::fmt::init();
 
     match opt.commands {
-        KanidmUnixOpt::AuthTest {
+        KubidmUnixOpt::AuthTest {
             debug: _,
             account_id,
         } => {
@@ -184,7 +184,7 @@ pub async fn main<F: SparkleFlavour>(flavour: F) -> ExitCode {
             };
             ExitCode::SUCCESS
         }
-        KanidmUnixOpt::CacheClear { debug: _, really } => {
+        KubidmUnixOpt::CacheClear { debug: _, really } => {
             debug!("Starting cache clear tool ...");
 
             let mut daemon_client = setup_client!();
@@ -210,7 +210,7 @@ pub async fn main<F: SparkleFlavour>(flavour: F) -> ExitCode {
             println!("success");
             ExitCode::SUCCESS
         }
-        KanidmUnixOpt::CacheInvalidate { debug: _ } => {
+        KubidmUnixOpt::CacheInvalidate { debug: _ } => {
             debug!("Starting cache invalidate tool ...");
 
             let mut daemon_client = setup_client!();
@@ -231,7 +231,7 @@ pub async fn main<F: SparkleFlavour>(flavour: F) -> ExitCode {
             println!("success");
             ExitCode::SUCCESS
         }
-        KanidmUnixOpt::Status { debug: _ } => {
+        KubidmUnixOpt::Status { debug: _ } => {
             trace!("Starting cache status tool ...");
 
             let mut daemon_client = setup_client!();
@@ -260,8 +260,8 @@ pub async fn main<F: SparkleFlavour>(flavour: F) -> ExitCode {
             }
             ExitCode::SUCCESS
         }
-        KanidmUnixOpt::Version { debug: _ } => {
-            println!("kubidm-unix {}", env!("KANIDM_PKG_VERSION"));
+        KubidmUnixOpt::Version { debug: _ } => {
+            println!("kubidm-unix {}", env!("KUBIDM_PKG_VERSION"));
             ExitCode::SUCCESS
         }
     }

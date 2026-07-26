@@ -1,6 +1,6 @@
 [package]
 name = "kubidm_unix_int"
-description = "Kanidm Unix Integration and Identity Resolver"
+description = "Kubidm Unix Integration and Identity Resolver"
 
 version = { workspace = true }
 authors = { workspace = true }

@@ -12,12 +12,12 @@ from kubidm_openapi_client.api.person_radius_api import PersonRadiusApi
 from kubidm_openapi_client.exceptions import ApiException as OpenApiException
 
 # pylint: disable=unused-import
-from .testutils import client, KANIDM_IDM_ADMIN, openapi_ca_path, openapi_server_url, openapi_verify_tls
+from .testutils import client, KUBIDM_IDM_ADMIN, openapi_ca_path, openapi_server_url, openapi_verify_tls
 from kubidm import KubidmClient
 
 logging.basicConfig(level=logging.DEBUG)
 
-RADIUS_TEST_USER = os.getenv("KANIDM_RADIUS_TEST_USER")
+RADIUS_TEST_USER = os.getenv("KUBIDM_RADIUS_TEST_USER")
 
 
 @pytest.fixture(scope="function")
@@ -61,7 +61,7 @@ async def radius_token_client(
     cleanup_clients.append(token_source_client)
 
     auth_resp = await token_source_client.authenticate_password(
-        KANIDM_IDM_ADMIN,
+        KUBIDM_IDM_ADMIN,
         admin_password,
         update_internal_auth_token=True,
     )
@@ -79,7 +79,7 @@ async def radius_token_client(
         "verify_hostnames": openapi_verify_tls,
         "verify_certificate": openapi_verify_tls,
         "verify_ca": openapi_verify_tls,
-        "username": KANIDM_IDM_ADMIN,
+        "username": KUBIDM_IDM_ADMIN,
         "auth_token": auth_token,
     }
     if openapi_ca_path is not None:
@@ -102,7 +102,7 @@ async def radius_token_client(
 @pytest.mark.asyncio
 async def test_radius_call(radius_token_client: KubidmClient) -> None:
     """tests the radius call step"""
-    test_user = RADIUS_TEST_USER or radius_token_client.config.username or KANIDM_IDM_ADMIN
+    test_user = RADIUS_TEST_USER or radius_token_client.config.username or KUBIDM_IDM_ADMIN
     provision_error: Optional[OpenApiException] = None
 
     try:

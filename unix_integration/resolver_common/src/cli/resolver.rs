@@ -528,8 +528,8 @@ async fn main_inner<F: SparkleFlavour>(clap_args: clap::ArgMatches, flavour: F) 
         return ExitCode::FAILURE;
     };
 
-    debug!("Profile -> {}", env!("KANIDM_PROFILE_NAME"));
-    debug!("CPU Flags -> {}", env!("KANIDM_CPU_FLAGS"));
+    debug!("Profile -> {}", env!("KUBIDM_PROFILE_NAME"));
+    debug!("CPU Flags -> {}", env!("KUBIDM_CPU_FLAGS"));
 
     let Some(cfg_path_str) = clap_args.get_one::<String>("client-config") else {
         error!("Failed to pull the client config path");
@@ -616,7 +616,7 @@ async fn main_inner<F: SparkleFlavour>(clap_args: clap::ArgMatches, flavour: F) 
 
     let client_builder = if let Some(kconfig) = &cfg.kubidm_config {
         if kconfig.pam_allowed_login_groups.is_empty() {
-            error!("Kanidm is enabled but no pam_allowed_login_groups are set - KANIDM USERS CANNOT AUTHENTICATE !!!");
+            error!("Kubidm is enabled but no pam_allowed_login_groups are set - KUBIDM USERS CANNOT AUTHENTICATE !!!");
         }
 
         // setup
@@ -849,7 +849,7 @@ async fn main_inner<F: SparkleFlavour>(clap_args: clap::ArgMatches, flavour: F) 
 
     let mut clients: Vec<Arc<dyn IdProvider + Send + Sync>> = Vec::with_capacity(1);
 
-    // Setup Kanidm provider if the configuration requests it.
+    // Setup Kubidm provider if the configuration requests it.
     if let Some((cb, kconfig)) = client_builder {
         let cb = cb.connect_timeout(kconfig.conn_timeout);
         let cb = cb.request_timeout(kconfig.request_timeout);
@@ -872,7 +872,7 @@ async fn main_inner<F: SparkleFlavour>(clap_args: clap::ArgMatches, flavour: F) 
         )
         .await
         else {
-            error!("Failed to configure Kanidm Provider");
+            error!("Failed to configure Kubidm Provider");
             return ExitCode::FAILURE;
         };
 
@@ -1202,7 +1202,7 @@ pub async fn main<F: SparkleFlavour>(flavour: F) -> ExitCode {
                 .help("Allow running as root. Don't use this in production as it is risky!")
                 .short('r')
                 .long("skip-root-check")
-                .env("KANIDM_SKIP_ROOT_CHECK")
+                .env("KUBIDM_SKIP_ROOT_CHECK")
                 .action(ArgAction::SetTrue),
         )
         .arg(
@@ -1210,7 +1210,7 @@ pub async fn main<F: SparkleFlavour>(flavour: F) -> ExitCode {
                 .help("Show extra debug information")
                 .short('d')
                 .long("debug")
-                .env("KANIDM_DEBUG")
+                .env("KUBIDM_DEBUG")
                 .action(ArgAction::SetTrue),
         )
         .arg(
@@ -1226,7 +1226,7 @@ pub async fn main<F: SparkleFlavour>(flavour: F) -> ExitCode {
                 .short('u')
                 .long("unixd-config")
                 .default_value(DEFAULT_CONFIG_PATH)
-                .env("KANIDM_UNIX_CONFIG")
+                .env("KUBIDM_UNIX_CONFIG")
                 .action(ArgAction::Set),
         )
         .arg(
@@ -1235,7 +1235,7 @@ pub async fn main<F: SparkleFlavour>(flavour: F) -> ExitCode {
                 .short('c')
                 .long("client-config")
                 .default_value(DEFAULT_CLIENT_CONFIG_PATH)
-                .env("KANIDM_CLIENT_CONFIG")
+                .env("KUBIDM_CLIENT_CONFIG")
                 .action(ArgAction::Set),
         )
         .get_matches();

@@ -265,7 +265,7 @@ async fn mail_checker(
             }) = response_rx.recv() => {
                 // Mark that we are no longer processing this message id.
                 let _ = message_seen.remove(&message_id);
-                // process the response, normally by marking it as done in Kanidm.
+                // process the response, normally by marking it as done in Kubidm.
                 if status.is_ok() {
                     if let Err(client_error) = rsclient.idm_message_mark_sent(message_id).await {
                         error!(?client_error, ?message_id, "Unable to mark message as sent. Exiting to prevent potential spam!");

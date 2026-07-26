@@ -3,5 +3,5 @@ pub mod tool;
 
 pub use self::{
     ssh_authorisedkeys::SshAuthorisedKeysOpt,
-    tool::{KanidmUnixOpt, KanidmUnixParser},
+    tool::{KubidmUnixOpt, KubidmUnixParser},
 };

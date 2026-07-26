@@ -1,7 +1,7 @@
 use clap::Parser;
 
 #[derive(Debug, Parser)]
-#[command(name = "kanidm_ssh_authorizedkeys")]
+#[command(name = "kubidm_ssh_authorizedkeys")]
 pub struct SshAuthorisedKeysOpt {
     #[clap(short, long)]
     pub debug: bool,

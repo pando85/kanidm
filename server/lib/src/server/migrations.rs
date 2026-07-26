@@ -235,7 +235,7 @@ impl QueryServer {
 
         // Now set the db/domain devel taint flag to match our current release status
         // if it changes. This is what breaks the cycle of db taint from dev -> stable
-        let current_devel_flag = option_env!("KANIDM_PRE_RELEASE").is_some();
+        let current_devel_flag = option_env!("KUBIDM_PRE_RELEASE").is_some();
         if current_devel_flag {
             warn!("Domain Development Taint mode is enabled");
         }

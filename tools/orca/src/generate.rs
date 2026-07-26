@@ -1,5 +1,5 @@
 use crate::error::Error;
-use crate::kani::KubidmOrcaClient;
+use crate::kubidm::KubidmOrcaClient;
 use crate::model::ActorRole;
 use crate::profile::Profile;
 use crate::state::{Credential, Flag, Group, GroupName, Person, PreflightState, State};

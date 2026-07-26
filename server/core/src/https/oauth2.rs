@@ -149,9 +149,9 @@ pub(crate) async fn oauth2_image_get(
 //  These functions appear stateless, but the state is managed through encrypted
 //  tokens transmitted in the responses of this flow. This is because in a HA setup
 //  we can not guarantee that the User-Agent or the Resource Server (client) will
-//  access the same Kanidm instance, and we can not rely on replication in these
+//  access the same Kubidm instance, and we can not rely on replication in these
 //  cases. As a result, we must have our state in localised tokens so that any
-//  valid Kanidm instance in the topology can handle these request.
+//  valid Kubidm instance in the topology can handle these request.
 //
 
 #[instrument(level = "debug", skip(state, kopid))]

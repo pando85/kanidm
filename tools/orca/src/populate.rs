@@ -1,5 +1,5 @@
 use crate::error::Error;
-use crate::kani;
+use crate::kubidm;
 use crate::state::*;
 use std::collections::VecDeque;
 
@@ -8,7 +8,7 @@ use tokio::sync::Mutex;
 
 use std::sync::Arc;
 
-async fn apply_flags(client: Arc<kani::KubidmOrcaClient>, flags: &[Flag]) -> Result<(), Error> {
+async fn apply_flags(client: Arc<kubidm::KubidmOrcaClient>, flags: &[Flag]) -> Result<(), Error> {
     for flag in flags {
         match flag {
             Flag::DisableAllPersonsMFAPolicy => client.disable_mfa_requirement().await?,
@@ -19,7 +19,7 @@ async fn apply_flags(client: Arc<kani::KubidmOrcaClient>, flags: &[Flag]) -> Res
 }
 
 async fn preflight_person(
-    client: Arc<kani::KubidmOrcaClient>,
+    client: Arc<kubidm::KubidmOrcaClient>,
     person: Person,
 ) -> Result<(), Error> {
     debug!(?person);
@@ -55,7 +55,7 @@ async fn preflight_person(
     Ok(())
 }
 
-async fn preflight_group(client: Arc<kani::KubidmOrcaClient>, group: Group) -> Result<(), Error> {
+async fn preflight_group(client: Arc<kubidm::KubidmOrcaClient>, group: Group) -> Result<(), Error> {
     if client.group_exists(&group.name.to_string()).await? {
         // Do nothing? Do we need to reset them later?
     } else {
@@ -75,7 +75,7 @@ async fn preflight_group(client: Arc<kani::KubidmOrcaClient>, group: Group) -> R
 
 pub async fn preflight(state: State) -> Result<(), Error> {
     // Get the admin client.
-    let client = Arc::new(kani::KubidmOrcaClient::new(&state.profile).await?);
+    let client = Arc::new(kubidm::KubidmOrcaClient::new(&state.profile).await?);
 
     // Apply any flags if they exist.
     apply_flags(client.clone(), state.preflight_flags.as_slice()).await?;
