@@ -17,7 +17,8 @@
 (% if crate::https::views::guide::guided_ui_enabled() %)
 <main id="main"
       class="form-signin m-auto guide-auth-shell"
-      data-guide-scene="auth">
+      data-guide-scene="auth"
+      data-guide-auth-arrival="(% if display_ctx.reauth.is_some() %)reauth(% else if display_ctx.oauth2.is_some() %)oauth2(% else %)applications(% endif %)">
     <aside class="guide-auth-product-zone" aria-label="Kubidm">
         <div class="guide-auth-product-brand">
             <img class="guide-auth-product-mark"
