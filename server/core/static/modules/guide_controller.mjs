@@ -28,8 +28,22 @@ let sceneObserver = null;
 
 function currentMotionLevel() {
     const explicit = sceneRoot?.dataset.guideMotion;
-    if (Object.values(MotionLevel).includes(explicit)) return explicit;
-    return reducedMotion.matches ? MotionLevel.REDUCED : MotionLevel.FULL;
+    const configured = document.body?.dataset.guideMotionConfig;
+
+    // Static is always safe and should win over all other requests.
+    if (explicit === MotionLevel.STATIC || configured === MotionLevel.STATIC) {
+        return MotionLevel.STATIC;
+    }
+
+    // The user/OS reduced-motion preference always wins over a deployment that
+    // permits full animation.
+    if (reducedMotion.matches) return MotionLevel.REDUCED;
+
+    if (explicit === MotionLevel.REDUCED || configured === MotionLevel.REDUCED) {
+        return MotionLevel.REDUCED;
+    }
+
+    return MotionLevel.FULL;
 }
 
 function semanticNode() {
@@ -145,8 +159,6 @@ function syncScene() {
         return;
     }
 
-    // A reauthentication or OAuth flow may use the same credential endpoints as
-    // normal login, but it must never create an Applications arrival celebration.
     if (sceneRoot.dataset.guideScene === "auth" && !tracksApplicationsArrival()) {
         clearAuthenticationAttempt();
     }
@@ -181,8 +193,6 @@ window.addEventListener("kubidm:webauthn-start", () => {
 });
 
 window.addEventListener("kubidm:webauthn-submit", () => {
-    // The browser produced an assertion, but the server still has to validate
-    // it. Remain in Working rather than showing a success state.
     if (tracksApplicationsArrival()) markAuthenticationAttempt();
     syncScene();
     setStatus("Checking your identity…");
@@ -194,8 +204,6 @@ window.addEventListener("kubidm:webauthn-submit", () => {
 });
 
 window.addEventListener("kubidm:webauthn-cancelled", () => {
-    // NotAllowedError may mean cancellation, timeout, or no available
-    // credential. Return to a neutral actionable posture without guessing.
     clearAuthenticationAttempt();
     syncScene();
     setStatus("That request did not complete. You can try again when you are ready.");
