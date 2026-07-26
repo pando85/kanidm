@@ -10,6 +10,8 @@
 <link rel="stylesheet"
       href="/pkg/ui_lab_journey.css?v=((crate::https::cache_buster::get_cache_buster_key()))" />
 <script type="module"
+        src="/pkg/modules/ui_lab_events.mjs?v=((crate::https::cache_buster::get_cache_buster_key()))"></script>
+<script type="module"
         src="/pkg/modules/ui_lab.mjs?v=((crate::https::cache_buster::get_cache_buster_key()))"></script>
 <script type="module"
         src="/pkg/modules/ui_lab_journey.mjs?v=((crate::https::cache_buster::get_cache_buster_key()))"></script>
@@ -113,6 +115,19 @@
                 <span class="ui-lab-kicker">Severity</span>
                 <code id="ui-lab-severity">neutral</code>
             </div>
+        </section>
+
+        <section class="ui-lab-event-panel" aria-label="Guide semantic event log">
+            <header>
+                <div>
+                    <span class="ui-lab-kicker">Runtime contract</span>
+                    <strong>Semantic events</strong>
+                </div>
+                <button type="button"
+                        class="btn btn-sm btn-outline-secondary"
+                        data-ui-lab-clear-events>Clear</button>
+            </header>
+            <ol data-ui-lab-event-log></ol>
         </section>
     </section>
 </main>
