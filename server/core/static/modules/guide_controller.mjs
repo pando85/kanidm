@@ -23,6 +23,17 @@ if (sceneRoot) {
         return sceneRoot.querySelector("[data-guide-state]") || sceneRoot;
     }
 
+    function statusNode() {
+        return sceneRoot.querySelector("[data-guide-status]");
+    }
+
+    function setStatus(text, severity = Severity.NEUTRAL) {
+        const node = statusNode();
+        if (!node) return;
+        node.textContent = text;
+        node.dataset.severity = severity;
+    }
+
     function readState(overrides = {}) {
         const node = semanticNode();
         return normaliseGuideState({
@@ -63,6 +74,7 @@ if (sceneRoot) {
     }
 
     window.addEventListener("kubidm:webauthn-start", () => {
+        setStatus("Waiting for your browser or device…");
         publish({
             productState: "webauthn_pending",
             mascotState: MascotState.WORKING,
@@ -73,6 +85,7 @@ if (sceneRoot) {
     window.addEventListener("kubidm:webauthn-submit", () => {
         // The browser produced an assertion, but the server still has to validate
         // it. Remain in Working rather than showing a success state.
+        setStatus("Checking your identity…");
         publish({
             productState: "webauthn_submitting",
             mascotState: MascotState.WORKING,
@@ -83,6 +96,7 @@ if (sceneRoot) {
     window.addEventListener("kubidm:webauthn-cancelled", () => {
         // NotAllowedError may mean cancellation, timeout, or no available
         // credential. Return to a neutral actionable posture without guessing.
+        setStatus("That request did not complete. You can try again when you are ready.");
         publish({
             productState: "webauthn_interrupted",
             mascotState: MascotState.GUIDE,
@@ -91,6 +105,7 @@ if (sceneRoot) {
     });
 
     window.addEventListener("kubidm:webauthn-error", () => {
+        setStatus("The browser could not complete this request. Try again.", Severity.CAUTION);
         publish({
             productState: "webauthn_error",
             mascotState: MascotState.WARNING,
@@ -104,6 +119,7 @@ if (sceneRoot) {
 
     document.body.addEventListener("htmx:afterSettle", () => publish());
     document.body.addEventListener("htmx:responseError", () => {
+        setStatus("The request could not be completed. Try again.", Severity.CAUTION);
         publish({ mascotState: MascotState.WARNING, severity: Severity.CAUTION });
     });
 
