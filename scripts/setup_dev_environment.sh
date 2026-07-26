@@ -42,9 +42,9 @@ fi
 
 
 # defaults
-KANIDM_CONFIG_FILE="./insecure_server.toml"
-KANIDM_URL="$(grep -E 'origin.*https' "${KANIDM_CONFIG_FILE}" | awk '{print $NF}' | tr -d '"')"
-KANIDM_CA_PATH="/tmp/kubidm/chain.pem"
+KUBIDM_CONFIG_FILE="./insecure_server.toml"
+KUBIDM_URL="$(grep -E 'origin.*https' "${KUBIDM_CONFIG_FILE}" | awk '{print $NF}' | tr -d '"')"
+KUBIDM_CA_PATH="/tmp/kubidm/chain.pem"
 
 # wait for them to shut down the server if it's running...
 while true; do
@@ -54,16 +54,16 @@ while true; do
     echo "Start the kubidmd server first please!"
 
     while true; do
-        echo "Waiting for you to start the server... testing ${KANIDM_URL}"
-        curl --cacert "${KANIDM_CA_PATH}" -fs "${KANIDM_URL}" >/dev/null && break
+        echo "Waiting for you to start the server... testing ${KUBIDM_URL}"
+        curl --cacert "${KUBIDM_CA_PATH}" -fs "${KUBIDM_URL}" >/dev/null && break
         sleep 2
     done
 done
 
 # needed for the CLI tools to do their thing
-export KANIDM_URL
-export KANIDM_CA_PATH
-export KANIDM_CONFIG_FILE
+export KUBIDM_URL
+export KUBIDM_CA_PATH
+export KUBIDM_CONFIG_FILE
 
 # string things
 TEST_USER_NAME="testuser"
@@ -147,7 +147,7 @@ echo "Done!"
 
 echo "###################################"
 echo "idm_admin password: ${IDM_ADMIN_PASS}"
-echo "UI URL:             ${KANIDM_URL}"
+echo "UI URL:             ${KUBIDM_URL}"
 echo "OAuth2 RP ID:       ${OAUTH2_RP_ID}"
 echo "OAuth2 Secret:      $(echo "${OAUTH2_SECRET}" | jq  -r .secret)"
 echo "###################################"
