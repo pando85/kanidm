@@ -45,6 +45,14 @@ function renderApplicationsStory(name, { updateHash = true } = {}) {
     const story = applicationStories[name];
     if (!story || !ui.canvas) return false;
 
+    const motionLevel = Object.values(MotionLevel).includes(ui.motion?.value)
+        ? ui.motion.value
+        : MotionLevel.STATIC;
+    const assetState =
+        story.mascotState === "travel" && motionLevel !== MotionLevel.FULL
+            ? "idle"
+            : story.mascotState;
+
     ui.title.textContent = story.title;
     ui.productState.textContent = story.productState;
     ui.recommendation.textContent = story.recommendation;
@@ -61,8 +69,8 @@ function renderApplicationsStory(name, { updateHash = true } = {}) {
             <article><div class="ui-lab-app-icon">F</div><strong>Forgejo</strong><small>Source control</small></article>
             <article><div class="ui-lab-app-icon">K</div><strong>Kubernetes</strong><small>Platform</small></article>
         </div>
-        <div class="ui-lab-app-guide-slot" data-lab-mascot data-mascot-state="${story.mascotState}" data-motion="${ui.motion?.value || MotionLevel.STATIC}">
-            <img data-lab-mascot-image src="/pkg/img/guide/crab-${story.mascotState === "travel" ? "idle" : story.mascotState}.svg" alt="Kubidm guide: ${story.mascotState}" />
+        <div class="ui-lab-app-guide-slot" data-lab-mascot data-mascot-state="${story.mascotState}" data-motion="${motionLevel}">
+            <img data-lab-mascot-image src="/pkg/img/guide/crab-${assetState}.svg" alt="Kubidm guide: ${story.mascotState}" />
         </div>
     </section>`;
 
@@ -75,9 +83,7 @@ function renderApplicationsStory(name, { updateHash = true } = {}) {
         recommendation: story.recommendation,
         mascotState: story.mascotState,
         severity: story.severity,
-        motionLevel: Object.values(MotionLevel).includes(ui.motion?.value)
-            ? ui.motion.value
-            : MotionLevel.STATIC,
+        motionLevel,
     });
     window.dispatchEvent(new CustomEvent("kubidm:guide-state", { detail: state }));
     if (updateHash) writeStoryToHash(name);
@@ -101,7 +107,9 @@ document.addEventListener(
     .forEach((control) => {
         control.addEventListener("change", () => {
             const story = storyFromHash();
-            if (applicationStories[story]) queueMicrotask(() => renderApplicationsStory(story, { updateHash: false }));
+            if (applicationStories[story]) {
+                queueMicrotask(() => renderApplicationsStory(story, { updateHash: false }));
+            }
         });
     });
 
