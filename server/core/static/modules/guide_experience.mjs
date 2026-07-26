@@ -9,9 +9,14 @@ import {
 
 const boundDetails = new WeakSet();
 
-function bindStory(node) {
+function bindStory(node, experience) {
     const storyId = node.dataset.guideStoryId;
     if (!storyId) return;
+
+    if (node.hasAttribute("data-guide-new-only") && experience !== "new") {
+        node.hidden = true;
+        return;
+    }
 
     const shouldShow = shouldTeachStory(storyId) || node.dataset.guideRepeat === "always";
     node.hidden = !shouldShow;
@@ -46,7 +51,7 @@ export function syncGuideExperience(scene = document.querySelector("[data-guide-
         node.hidden = experience !== "new";
     });
 
-    scene.querySelectorAll("[data-guide-story-id]").forEach(bindStory);
+    scene.querySelectorAll("[data-guide-story-id]").forEach((node) => bindStory(node, experience));
     scene.querySelectorAll("[data-guide-suggestion-id]").forEach(bindSuggestion);
 }
 
@@ -56,7 +61,9 @@ export function completeGuideOnboarding() {
 }
 
 document.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-guide-dismiss-suggestion]");
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const button = target.closest("[data-guide-dismiss-suggestion]");
     if (!button) return;
     const container = button.closest("[data-guide-suggestion-id]");
     if (!container) return;
