@@ -1,8 +1,9 @@
 (% extends "login_base.html" %)
 
 (% block logincontainer %)
+<div data-guide-state="welcome" data-guide-action="identify">
 (% if let Some(error) = display_ctx.error %)
-	<div class="alert alert-danger" role="alert">
+	<div class="alert alert-danger" role="alert" data-guide-severity="caution">
 		(( error ))
 	</div>
 (% endif %)
@@ -67,4 +68,5 @@
 	</div>
 	(% endif -%)
 </form>
+</div>
 (% endblock %)
