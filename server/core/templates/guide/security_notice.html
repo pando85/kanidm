@@ -1,0 +1,8 @@
+<section class="guide-notice"
+         data-severity="(( severity ))"
+         (% if is_alert %)role="alert"(% endif %)>
+    (% if let Some(title) = title %)
+    <strong>((* title ))</strong>
+    (% endif %)
+    <p>(( text ))</p>
+</section>
