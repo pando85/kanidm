@@ -1,0 +1,72 @@
+[data-guide-mode="subtle"].guide-auth-shell {
+    grid-template-columns: minmax(8rem, .3fr) minmax(25rem, 1.7fr);
+    min-height: clamp(30rem, 62vh, 40rem);
+}
+
+[data-guide-mode="subtle"] .guide-auth-product-zone {
+    padding: 1.5rem;
+}
+
+[data-guide-mode="subtle"] .guide-auth-product-copy {
+    display: none;
+}
+
+[data-guide-mode="subtle"] .guide-auth-product-brand {
+    justify-content: center;
+}
+
+[data-guide-mode="subtle"] .guide-auth-product-brand span {
+    display: none;
+}
+
+[data-guide-mode="subtle"] .guide-mascot-slot {
+    right: 50%;
+    bottom: 1.25rem;
+    width: min(7rem, 80%);
+    min-height: 4rem;
+    transform: translateX(50%);
+}
+
+[data-guide-mode="subtle"] .guide-mascot-slot img {
+    max-height: 6rem;
+}
+
+[data-guide-mode="subtle"] .guide-auth-task-zone {
+    padding-block: 2rem;
+}
+
+[data-guide-mode="subtle"] .guide-credential-intro .crab-dialog,
+[data-guide-mode="subtle"] [data-guide-credential-dialog] {
+    display: none;
+}
+
+@media (max-width: 44rem) {
+    [data-guide-mode="subtle"].guide-auth-shell {
+        grid-template-columns: 1fr;
+    }
+
+    [data-guide-mode="subtle"] .guide-auth-product-zone {
+        min-height: 4rem;
+        padding: .8rem 1rem;
+    }
+
+    [data-guide-mode="subtle"] .guide-auth-product-brand {
+        justify-content: flex-start;
+    }
+
+    [data-guide-mode="subtle"] .guide-auth-product-brand span {
+        display: inline;
+    }
+
+    [data-guide-mode="subtle"] .guide-mascot-slot {
+        right: 1rem;
+        bottom: .2rem;
+        width: 4.5rem;
+        min-height: 2.75rem;
+        transform: none;
+    }
+
+    [data-guide-mode="subtle"] .guide-mascot-slot img {
+        max-height: 4rem;
+    }
+}
