@@ -45,6 +45,10 @@ function setStatus(text, severity = Severity.NEUTRAL) {
     node.dataset.severity = severity;
 }
 
+function tracksApplicationsArrival() {
+    return sceneRoot?.dataset.guideScene === "auth" && sceneRoot.dataset.guideAuthArrival === "applications";
+}
+
 function readState(overrides = {}) {
     if (!sceneRoot) return null;
 
@@ -139,12 +143,18 @@ function syncScene() {
         return;
     }
 
+    // A reauthentication or OAuth flow may use the same credential endpoints as
+    // normal login, but it must never create an Applications arrival celebration.
+    if (sceneRoot.dataset.guideScene === "auth" && !tracksApplicationsArrival()) {
+        clearAuthenticationAttempt();
+    }
+
     observeScene();
     publish();
 }
 
 function maybeMarkFormAuthentication(form) {
-    if (!(form instanceof HTMLFormElement)) return;
+    if (!(form instanceof HTMLFormElement) || !tracksApplicationsArrival()) return;
 
     let path;
     try {
@@ -171,7 +181,7 @@ window.addEventListener("kubidm:webauthn-start", () => {
 window.addEventListener("kubidm:webauthn-submit", () => {
     // The browser produced an assertion, but the server still has to validate
     // it. Remain in Working rather than showing a success state.
-    markAuthenticationAttempt();
+    if (tracksApplicationsArrival()) markAuthenticationAttempt();
     syncScene();
     setStatus("Checking your identity…");
     publish({
