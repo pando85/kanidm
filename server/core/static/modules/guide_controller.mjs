@@ -46,7 +46,6 @@ if (sceneRoot) {
         if (!renderer || renderer.slot !== slot) {
             renderer?.destroy();
             renderer = createGuideRenderer(slot, { renderer: "static" });
-            renderer.slot = slot;
         }
         return renderer;
     }
@@ -63,17 +62,40 @@ if (sceneRoot) {
         return state;
     }
 
-    sceneRoot.addEventListener("click", (event) => {
-        const target = event.target.closest("[data-guide-target]");
-        if (!target) return;
+    window.addEventListener("kubidm:webauthn-start", () => {
+        publish({
+            productState: "webauthn_pending",
+            mascotState: MascotState.WORKING,
+            severity: Severity.NEUTRAL,
+        });
+    });
 
-        const node = semanticNode();
-        if (node.dataset.guideAction === "webauthn") {
-            publish({
-                productState: "webauthn_pending",
-                mascotState: MascotState.WORKING,
-            });
-        }
+    window.addEventListener("kubidm:webauthn-submit", () => {
+        // The browser produced an assertion, but the server still has to validate
+        // it. Remain in Working rather than showing a success state.
+        publish({
+            productState: "webauthn_submitting",
+            mascotState: MascotState.WORKING,
+            severity: Severity.NEUTRAL,
+        });
+    });
+
+    window.addEventListener("kubidm:webauthn-cancelled", () => {
+        // NotAllowedError may mean cancellation, timeout, or no available
+        // credential. Return to a neutral actionable posture without guessing.
+        publish({
+            productState: "webauthn_interrupted",
+            mascotState: MascotState.GUIDE,
+            severity: Severity.NEUTRAL,
+        });
+    });
+
+    window.addEventListener("kubidm:webauthn-error", () => {
+        publish({
+            productState: "webauthn_error",
+            mascotState: MascotState.WARNING,
+            severity: Severity.CAUTION,
+        });
     });
 
     document.body.addEventListener("htmx:beforeRequest", () => {
