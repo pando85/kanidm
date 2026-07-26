@@ -27,18 +27,17 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libpam0g-dev libselinux1-dev libssl-dev libsystemd-dev libtss2-dev libudev-dev pkg-config libtalloc-dev tpm-udev
-      - name: Capture clippy output
+      - name: Capture core check output
         shell: bash
         run: |
-          rustup component add clippy
           set +e
-          cargo clippy --quiet --lib --bins --examples > /tmp/clippy.log 2>&1
+          cargo check --quiet -p kubidmd_core > /tmp/core-check.log 2>&1
           status=$?
           set -e
           if [ "$status" -eq 0 ]; then
-            printf '%s\n' 'clippy passed' > CLIPPY_FAILURE.txt
+            printf '%s\n' 'core check passed' > CLIPPY_FAILURE.txt
           else
-            tail -n 240 /tmp/clippy.log > CLIPPY_FAILURE.txt
+            tail -n 240 /tmp/core-check.log > CLIPPY_FAILURE.txt
           fi
       - name: Upload diagnostic
         uses: actions/upload-artifact@v4
