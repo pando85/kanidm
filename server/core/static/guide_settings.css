@@ -1,0 +1,57 @@
+.guide-settings-shell {
+    position: relative;
+    min-height: 30rem;
+    padding-bottom: 8rem !important;
+}
+
+.guide-settings-slot {
+    position: absolute;
+    right: 1rem;
+    bottom: .5rem;
+    width: min(9rem, 24vw);
+    min-height: 5.5rem;
+    display: grid;
+    place-items: end center;
+    pointer-events: none;
+}
+
+.guide-settings-slot[hidden] {
+    display: none;
+}
+
+.guide-settings-slot img {
+    display: block;
+    max-width: 100%;
+    max-height: 7rem;
+}
+
+[data-guide-mode="subtle"] .guide-settings-slot {
+    width: min(6rem, 18vw);
+    min-height: 4rem;
+}
+
+[data-guide-mode="subtle"] .guide-settings-slot img {
+    max-height: 5rem;
+}
+
+.guide-standalone-settings {
+    position: relative;
+    padding-bottom: 8rem;
+}
+
+@media (max-width: 36rem) {
+    .guide-settings-shell,
+    .guide-standalone-settings {
+        padding-bottom: 6rem !important;
+    }
+
+    .guide-settings-slot {
+        right: .75rem;
+        width: 5.5rem;
+        min-height: 3.5rem;
+    }
+
+    .guide-settings-slot img {
+        max-height: 4.5rem;
+    }
+}
