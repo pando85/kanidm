@@ -90,6 +90,7 @@
   - [Elevated Priv Mode](developers/designs/elevated_priv_mode.md)
   - [Mascot-Guided Product Experience](developers/designs/mascot_guided_product_experience.md)
   - [Mascot and Motion Design System](developers/designs/mascot_design_system.md)
+  - [Guided Identity Journey](developers/designs/guided_identity_journey.md)
   - [OAuth2 Device Flow](developers/designs/oauth2_device_flow.md)
   - [OAuth2 Refresh Tokens](developers/designs/oauth2_refresh_tokens.md)
   - [Replication Coordinator](developers/designs/replication_coordinator.md)
