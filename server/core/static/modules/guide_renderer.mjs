@@ -11,10 +11,11 @@ export const GuideFallback = Object.freeze({
     LABEL: "label",
 });
 
-function staticAssetState(mascotState) {
-    // Travel is semantic movement, not a distinct static pose. Rive will render
-    // the walking cycle; static/reduced fallbacks use the calm idle artwork.
-    return mascotState === MascotState.TRAVEL ? MascotState.IDLE : mascotState;
+function assetState(mascotState, motionLevel) {
+    if (mascotState !== MascotState.TRAVEL) return mascotState;
+    // Full motion gets the animated SVG walking cycle. Reduced/static modes use
+    // the calm idle pose so there is never unavoidable motion inside <img>.
+    return motionLevel === MotionLevel.FULL ? MascotState.TRAVEL : MascotState.IDLE;
 }
 
 export class StaticGuideRenderer {
@@ -61,8 +62,8 @@ export class StaticGuideRenderer {
         this.slot.dataset.motion = motionLevel;
         this.image.alt = `Kubidm guide: ${mascotState}`;
 
-        const assetState = staticAssetState(mascotState);
-        const nextSrc = `${this.assetRoot}/crab-${assetState}.svg`;
+        const nextState = assetState(mascotState, motionLevel);
+        const nextSrc = `${this.assetRoot}/crab-${nextState}.svg`;
         if (this.image.getAttribute("src") !== nextSrc) {
             if (this.fallbackMode === GuideFallback.HIDE) this.slot.hidden = true;
             this.image.hidden = false;
@@ -104,8 +105,8 @@ export class StaticGuideRenderer {
     }
 
     destroy() {
-        // Static SVG has no runtime resources. This method exists so callers can
-        // use the same lifecycle contract for the future Rive renderer.
+        // The native renderer owns no external runtime resources. This lifecycle
+        // method keeps the contract compatible with a future Rive renderer.
     }
 }
 
