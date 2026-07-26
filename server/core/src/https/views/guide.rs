@@ -76,6 +76,10 @@ pub(crate) fn guided_motion_mode() -> GuidedMotionMode {
         .unwrap_or(GuidedMotionMode::Auto)
 }
 
+// These typed Askama primitives are the shared component API for subsequent
+// route adoption. The v1 keeps them compiled and render-tested even where a
+// legacy route still uses equivalent inline markup.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum GuideDialogVariant {
     Orient,
@@ -84,6 +88,7 @@ pub(crate) enum GuideDialogVariant {
     Celebrate,
 }
 
+#[allow(dead_code)]
 impl fmt::Display for GuideDialogVariant {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
@@ -95,6 +100,7 @@ impl fmt::Display for GuideDialogVariant {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum GuideRecommendation {
     None,
@@ -104,6 +110,7 @@ pub(crate) enum GuideRecommendation {
     Optional,
 }
 
+#[allow(dead_code)]
 impl GuideRecommendation {
     fn label(self) -> &'static str {
         match self {
@@ -116,6 +123,7 @@ impl GuideRecommendation {
     }
 }
 
+#[allow(dead_code)]
 impl fmt::Display for GuideRecommendation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
@@ -128,6 +136,7 @@ impl fmt::Display for GuideRecommendation {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum GuideSeverity {
     Neutral,
@@ -136,12 +145,14 @@ pub(crate) enum GuideSeverity {
     Critical,
 }
 
+#[allow(dead_code)]
 impl GuideSeverity {
     fn is_alert(self) -> bool {
         matches!(self, Self::Caution | Self::Critical)
     }
 }
 
+#[allow(dead_code)]
 impl fmt::Display for GuideSeverity {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
@@ -153,6 +164,7 @@ impl fmt::Display for GuideSeverity {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Template)]
 #[template(path = "guide/crab_dialog.html")]
 pub(crate) struct CrabDialogView {
@@ -161,6 +173,7 @@ pub(crate) struct CrabDialogView {
     text: String,
 }
 
+#[allow(dead_code)]
 impl CrabDialogView {
     pub(crate) fn new(
         variant: GuideDialogVariant,
@@ -175,6 +188,7 @@ impl CrabDialogView {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Template)]
 #[template(path = "guide/recommendation_option.html")]
 pub(crate) struct RecommendationOptionView {
@@ -185,6 +199,7 @@ pub(crate) struct RecommendationOptionView {
     disabled: bool,
 }
 
+#[allow(dead_code)]
 impl RecommendationOptionView {
     pub(crate) fn new(
         recommendation: GuideRecommendation,
@@ -206,6 +221,7 @@ impl RecommendationOptionView {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Template)]
 #[template(path = "guide/security_notice.html")]
 pub(crate) struct SecurityNoticeView {
@@ -215,6 +231,7 @@ pub(crate) struct SecurityNoticeView {
     text: String,
 }
 
+#[allow(dead_code)]
 impl SecurityNoticeView {
     pub(crate) fn new(
         severity: GuideSeverity,
@@ -230,6 +247,7 @@ impl SecurityNoticeView {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub(crate) struct JourneyProgressItem {
     label: String,
@@ -237,6 +255,7 @@ pub(crate) struct JourneyProgressItem {
     complete: bool,
 }
 
+#[allow(dead_code)]
 impl JourneyProgressItem {
     pub(crate) fn new(
         label: impl Into<String>,
@@ -251,12 +270,14 @@ impl JourneyProgressItem {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Template)]
 #[template(path = "guide/journey_progress.html")]
 pub(crate) struct JourneyProgressView {
     items: Vec<JourneyProgressItem>,
 }
 
+#[allow(dead_code)]
 impl JourneyProgressView {
     pub(crate) fn new(items: Vec<JourneyProgressItem>) -> Self {
         Self { items }
