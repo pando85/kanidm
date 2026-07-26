@@ -59,12 +59,6 @@
             (% endif %)
 
             <div class="guide-auth-content">
-                (% block logincontainer %)
-                (% endblock %)
-            </div>
-        </div>
-    </section>
-</main>
 (% else %)
 <main id="main" class="form-signin m-auto align-items-center d-flex flex-column">
 	(% if display_ctx.domain_info.image().is_some() %)
@@ -86,8 +80,17 @@
 	</div>
 	(% endif %)
 	<div>
-		(% block logincontainer %)
-		(% endblock %)
+(% endif %)
+
+        (% block logincontainer %)
+        (% endblock %)
+
+(% if crate::https::views::guide::guided_ui_enabled() %)
+            </div>
+        </div>
+    </section>
+</main>
+(% else %)
 	</div>
 </main>
 (% endif %)
