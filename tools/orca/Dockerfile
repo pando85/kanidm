@@ -2,11 +2,11 @@
 ARG BASE_IMAGE=debian:trixie-slim
 
 FROM ${BASE_IMAGE} AS builder
-ARG KANIDM_FEATURES
-ARG KANIDM_BUILD_PROFILE
-ARG KANIDM_BUILD_OPTIONS=""
+ARG KUBIDM_FEATURES
+ARG KUBIDM_BUILD_PROFILE
+ARG KUBIDM_BUILD_OPTIONS=""
 
-ENV KANIDM_BUILD_PROFILE=${KANIDM_BUILD_PROFILE:-container_generic}
+ENV KUBIDM_BUILD_PROFILE=${KUBIDM_BUILD_PROFILE:-container_generic}
 ENV RUSTFLAGS="-Clinker=clang"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -23,9 +23,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rsync \
     && rm -rf /var/lib/apt/lists/*
 
-COPY . /usr/src/kanidm
+COPY . /usr/src/kubidm
 
-WORKDIR /usr/src/kanidm/
+WORKDIR /usr/src/kubidm/
 
 RUN \
     --mount=type=cache,id=cargo,target=/cargo \
@@ -34,22 +34,22 @@ RUN \
     export SCCACHE_DIR=/sccache; \
     export RUSTC_WRAPPER=/usr/bin/sccache; \
     export CC="/usr/bin/clang"; \
-    cargo build --locked -p orca ${KANIDM_BUILD_OPTIONS} \
-        --target-dir="/usr/src/kanidm/target/" \
-        --features="${KANIDM_FEATURES}" \
+    cargo build --locked -p orca ${KUBIDM_BUILD_OPTIONS} \
+        --target-dir="/usr/src/kubidm/target/" \
+        --features="${KUBIDM_FEATURES}" \
         --release && \
     cargo install \
         --git https://github.com/kanidm/webauthn-rs.git \
         --rev 5f4db4172f8e22aedc68c282d177e98db2b1892f \
         --force fido-mds-tool \
-        --target-dir="/usr/src/kanidm/target/" && \
+        --target-dir="/usr/src/kubidm/target/" && \
     sccache -s
 
 FROM ${BASE_IMAGE}
 
 ENV RUST_BACKTRACE=1
 
-COPY --from=builder /usr/src/kanidm/target/release/orca /sbin/
+COPY --from=builder /usr/src/kubidm/target/release/orca /sbin/
 COPY ./tools/orca/profile-sample.toml /etc/kubidm/profile-sample.toml
 
 RUN chmod +x /sbin/orca

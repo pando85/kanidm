@@ -24,7 +24,7 @@ use tokio::{runtime::Runtime, sync::broadcast};
 
 mod error;
 mod generate;
-mod kani;
+mod kubidm;
 mod model;
 mod models;
 mod opt;
@@ -63,7 +63,7 @@ fn main() -> ExitCode {
     debug!("cli -> {:?}", opt);
     match opt {
         OrcaOpt::Version { .. } => {
-            println!("orca {}", env!("KANIDM_PKG_VERSION"));
+            println!("orca {}", env!("KUBIDM_PKG_VERSION"));
             ExitCode::SUCCESS
         }
 
@@ -133,7 +133,7 @@ fn main() -> ExitCode {
             // we're okay with just one thread here
             let runtime = build_tokio_runtime(Some(1));
             runtime.block_on(async {
-                match kani::KubidmOrcaClient::new(&profile).await {
+                match kubidm::KubidmOrcaClient::new(&profile).await {
                     Ok(_) => {
                         info!("success");
                         ExitCode::SUCCESS
@@ -160,7 +160,7 @@ fn main() -> ExitCode {
             let runtime = build_tokio_runtime(Some(1));
 
             runtime.block_on(async {
-                let client = match kani::KubidmOrcaClient::new(&profile).await {
+                let client = match kubidm::KubidmOrcaClient::new(&profile).await {
                     Ok(client) => client,
                     Err(_err) => {
                         return ExitCode::FAILURE;

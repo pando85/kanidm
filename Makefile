@@ -1,10 +1,10 @@
-# Makefile for Kanidm
+# Makefile for Kubidm
 
 
 CONTAINER_TOOL ?= docker
 CONTAINER_TOOL_ARGS ?=
 CONTAINER_BUILD_ARGS ?=
-CONTAINER_IMAGE_BASE ?= kanidm
+CONTAINER_IMAGE_BASE ?= kubidm
 CONTAINER_IMAGE_VERSION ?= devel
 CONTAINER_IMAGE_EXT_VERSION ?= $(shell cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "daemon")  | .version')
 # CONTAINER_BUILDX_ACTION is used to specify the action for buildx, e.g., --push or --load
@@ -13,7 +13,7 @@ CONTAINER_BUILDX_ACTION ?= --push
 CONTAINER_IMAGE_ARCH ?= "linux/amd64,linux/arm64"
 BUILDKIT_PROGRESS ?= plain
 
-KANIDM_FEATURES ?= ""
+KUBIDM_FEATURES ?= ""
 
 # MARKDOWN_FORMAT_ARGS is used to specify additional arguments for markdown formatting
 MARKDOWN_FORMAT_ARGS ?=
@@ -54,7 +54,7 @@ run_htmx:
 	cd server/daemon && KANI_CARGO_OPTS="--features kubidmd_core/ui_htmx" ./run_insecure_dev_server.sh
 
 .PHONY: buildx/kubidmd
-buildx/kubidmd: ## Build multiarch kanidm server images and push to docker hub
+buildx/kubidmd: ## Build multiarch kubidm server images and push to docker hub
 buildx/kubidmd:
 	@$(CONTAINER_TOOL) buildx build $(CONTAINER_TOOL_ARGS) \
 		--pull $(CONTAINER_BUILDX_ACTION) --platform $(CONTAINER_IMAGE_ARCH) \
@@ -62,26 +62,26 @@ buildx/kubidmd:
 		-t $(CONTAINER_IMAGE_BASE)/server:$(CONTAINER_IMAGE_VERSION) \
 		-t $(CONTAINER_IMAGE_BASE)/server:$(CONTAINER_IMAGE_EXT_VERSION) \
 		--progress $(BUILDKIT_PROGRESS) \
-		--build-arg "KANIDM_BUILD_PROFILE=container_generic" \
-		--build-arg "KANIDM_FEATURES=$(KANIDM_FEATURES)" \
+		--build-arg "KUBIDM_BUILD_PROFILE=container_generic" \
+		--build-arg "KUBIDM_FEATURES=$(KUBIDM_FEATURES)" \
 		--compress \
-		--label "com.kanidm.git-commit=$(GIT_COMMIT)" \
-		--label "com.kanidm.version=$(CONTAINER_IMAGE_EXT_VERSION)" \
+		--label "com.kubidm.git-commit=$(GIT_COMMIT)" \
+		--label "com.kubidm.version=$(CONTAINER_IMAGE_EXT_VERSION)" \
 		$(CONTAINER_BUILD_ARGS) .
 
-.PHONY: buildx/kanidm_tools
-buildx/kanidm_tools: ## Build multiarch kanidm tool images and push to docker hub
-buildx/kanidm_tools:
+.PHONY: buildx/kubidm_tools
+buildx/kubidm_tools: ## Build multiarch kubidm tool images and push to docker hub
+buildx/kubidm_tools:
 	@$(CONTAINER_TOOL) buildx build $(CONTAINER_TOOL_ARGS) \
 		--pull $(CONTAINER_BUILDX_ACTION) --platform $(CONTAINER_IMAGE_ARCH) \
 		-f tools/Dockerfile \
 		-t $(CONTAINER_IMAGE_BASE)/tools:$(CONTAINER_IMAGE_VERSION) \
 		-t $(CONTAINER_IMAGE_BASE)/tools:$(CONTAINER_IMAGE_EXT_VERSION) \
 		--progress $(BUILDKIT_PROGRESS) \
-		--build-arg "KANIDM_BUILD_PROFILE=container_generic" \
-		--build-arg "KANIDM_FEATURES=$(KANIDM_FEATURES)" \
-		--label "com.kanidm.git-commit=$(GIT_COMMIT)" \
-		--label "com.kanidm.version=$(CONTAINER_IMAGE_EXT_VERSION)" \
+		--build-arg "KUBIDM_BUILD_PROFILE=container_generic" \
+		--build-arg "KUBIDM_FEATURES=$(KUBIDM_FEATURES)" \
+		--label "com.kubidm.git-commit=$(GIT_COMMIT)" \
+		--label "com.kubidm.version=$(CONTAINER_IMAGE_EXT_VERSION)" \
 		$(CONTAINER_BUILD_ARGS) .
 
 .PHONY: buildx/radiusd
@@ -91,8 +91,8 @@ buildx/radiusd_py:
 		--pull $(CONTAINER_BUILDX_ACTION) --platform $(CONTAINER_IMAGE_ARCH) \
 		-f rlm_python/Dockerfile \
 		--progress $(BUILDKIT_PROGRESS) \
-		--label "com.kanidm.git-commit=$(GIT_COMMIT)" \
-		--label "com.kanidm.version=$(CONTAINER_IMAGE_EXT_VERSION)" \
+		--label "com.kubidm.git-commit=$(GIT_COMMIT)" \
+		--label "com.kubidm.version=$(CONTAINER_IMAGE_EXT_VERSION)" \
 		-t $(CONTAINER_IMAGE_BASE)/radius:$(CONTAINER_IMAGE_VERSION) \
 		-t $(CONTAINER_IMAGE_BASE)/radius:$(CONTAINER_IMAGE_EXT_VERSION) .
 
@@ -101,25 +101,25 @@ buildx/radiusd_rust: ## Build multi-arch radius docker images and push to docker
 buildx/radiusd_rust:
 	@$(CONTAINER_TOOL) buildx build $(CONTAINER_TOOL_ARGS) \
 		--pull $(CONTAINER_BUILDX_ACTION) --platform $(CONTAINER_IMAGE_ARCH) \
-		-f rlm_kanidm/Dockerfile \
+		-f rlm_kubidm/Dockerfile \
 		--progress $(BUILDKIT_PROGRESS) \
-		--label "com.kanidm.git-commit=$(GIT_COMMIT)" \
-		--label "com.kanidm.version=$(CONTAINER_IMAGE_EXT_VERSION)" \
+		--label "com.kubidm.git-commit=$(GIT_COMMIT)" \
+		--label "com.kubidm.version=$(CONTAINER_IMAGE_EXT_VERSION)" \
 		-t $(CONTAINER_IMAGE_BASE)/radius:$(CONTAINER_IMAGE_VERSION) \
 		-t $(CONTAINER_IMAGE_BASE)/radius:$(CONTAINER_IMAGE_EXT_VERSION) .
 
 .PHONY: buildx
-buildx: buildx/kubidmd buildx/kanidm_tools buildx/radiusd_rust
+buildx: buildx/kubidmd buildx/kubidm_tools buildx/radiusd_rust
 
 .PHONY: build/kubidmd
 build/kubidmd:	## Build the kubidmd docker image locally
 build/kubidmd:
 	@$(CONTAINER_TOOL) build $(CONTAINER_TOOL_ARGS) -f server/Dockerfile \
 		-t $(CONTAINER_IMAGE_BASE)/server:$(CONTAINER_IMAGE_VERSION) \
-		--build-arg "KANIDM_BUILD_PROFILE=container_generic" \
-		--build-arg "KANIDM_FEATURES=" \
-		--label "com.kanidm.git-commit=$(GIT_COMMIT)" \
-		--label "com.kanidm.version=$(CONTAINER_IMAGE_EXT_VERSION)" \
+		--build-arg "KUBIDM_BUILD_PROFILE=container_generic" \
+		--build-arg "KUBIDM_FEATURES=" \
+		--label "com.kubidm.git-commit=$(GIT_COMMIT)" \
+		--label "com.kubidm.version=$(CONTAINER_IMAGE_EXT_VERSION)" \
 		$(CONTAINER_BUILD_ARGS) .
 
 .PHONY: build/orca
@@ -127,10 +127,10 @@ build/orca:	## Build the orca docker image locally
 build/orca:
 	@$(CONTAINER_TOOL) build $(CONTAINER_TOOL_ARGS) -f tools/orca/Dockerfile \
 		-t $(CONTAINER_IMAGE_BASE)/orca:$(CONTAINER_IMAGE_VERSION) \
-		--build-arg "KANIDM_BUILD_PROFILE=container_generic" \
-		--build-arg "KANIDM_FEATURES=$(KANIDM_FEATURES)" \
-		--label "com.kanidm.git-commit=$(GIT_COMMIT)" \
-		--label "com.kanidm.version=$(CONTAINER_IMAGE_EXT_VERSION)" \
+		--build-arg "KUBIDM_BUILD_PROFILE=container_generic" \
+		--build-arg "KUBIDM_FEATURES=$(KUBIDM_FEATURES)" \
+		--label "com.kubidm.git-commit=$(GIT_COMMIT)" \
+		--label "com.kubidm.version=$(CONTAINER_IMAGE_EXT_VERSION)" \
 		$(CONTAINER_BUILD_ARGS) .
 
 
@@ -140,8 +140,8 @@ build/radiusd:	## Build the radiusd docker image locally - deprecated
 build/radiusd:
 	@$(CONTAINER_TOOL) build $(CONTAINER_TOOL_ARGS) \
 		-f rlm_python/Dockerfile \
-		--label "com.kanidm.git-commit=$(GIT_COMMIT)" \
-		--label "com.kanidm.version=$(CONTAINER_IMAGE_EXT_VERSION)" \
+		--label "com.kubidm.git-commit=$(GIT_COMMIT)" \
+		--label "com.kubidm.version=$(CONTAINER_IMAGE_EXT_VERSION)" \
 		-t $(CONTAINER_IMAGE_BASE)/radius:$(CONTAINER_IMAGE_VERSION) .
 
 
@@ -149,9 +149,9 @@ build/radiusd:
 build/radiusd_rust:	## Build the radiusd docker image locally
 build/radiusd_rust:
 	@$(CONTAINER_TOOL) build $(CONTAINER_TOOL_ARGS) \
-		-f rlm_kanidm/Dockerfile \
-		--label "com.kanidm.git-commit=$(GIT_COMMIT)" \
-		--label "com.kanidm.version=$(CONTAINER_IMAGE_EXT_VERSION)" \
+		-f rlm_kubidm/Dockerfile \
+		--label "com.kubidm.git-commit=$(GIT_COMMIT)" \
+		--label "com.kubidm.version=$(CONTAINER_IMAGE_EXT_VERSION)" \
 		-t $(CONTAINER_IMAGE_BASE)/radius:$(CONTAINER_IMAGE_VERSION) .
 
 .PHONY: build
@@ -164,8 +164,8 @@ test/kubidmd:
 		$(CONTAINER_TOOL_ARGS) -f server/Dockerfile \
 		--target builder \
 		-t $(CONTAINER_IMAGE_BASE)/server:$(CONTAINER_IMAGE_VERSION)-builder \
-		--label "com.kanidm.git-commit=$(GIT_COMMIT)" \
-		--label "com.kanidm.version=$(CONTAINER_IMAGE_EXT_VERSION)" \
+		--label "com.kubidm.git-commit=$(GIT_COMMIT)" \
+		--label "com.kubidm.version=$(CONTAINER_IMAGE_EXT_VERSION)" \
 		$(CONTAINER_BUILD_ARGS) .
 	@$(CONTAINER_TOOL) run --rm $(CONTAINER_IMAGE_BASE)/server:$(CONTAINER_IMAGE_VERSION)-builder cargo test
 
@@ -198,7 +198,7 @@ vendor-prep: vendor
 	tar -cJf vendor.tar.xz vendor
 
 .PHONY: install-tools
-install-tools: ## install kanidm_tools in your local environment
+install-tools: ## install kubidm_tools in your local environment
 install-tools:
 	cargo install --path tools/cli --force
 
@@ -236,11 +236,11 @@ test/pykubidm/typecheck: ## python library type checking
 		--ignore unused-type-ignore-comment
 
 .PHONY: test/pykubidm
-test/pykubidm: ## run the kanidm python module test suite (typecheck/lint/pytest)
+test/pykubidm: ## run the kubidm python module test suite (typecheck/lint/pytest)
 test/pykubidm: test/pykubidm/pytest test/pykubidm/typecheck test/pykubidm/lint
 
 .PHONY: test/pykubidm/coverage
-test/pykubidm/coverage: ## run the Kanidm Python module test suite with coverage
+test/pykubidm/coverage: ## run the Kubidm Python module test suite with coverage
 	cd pykubidm && \
 	uv run coverage run -m pytest && \
 	uv run coverage html
@@ -263,15 +263,15 @@ doc/find: ## Find all markdown files for docs
 		-name '*.md'
 
 .PHONY: doc/format
-doc/format: ## Format docs and the Kanidm book
+doc/format: ## Format docs and the Kubidm book
 	make doc/find | xargs deno fmt --check $(MARKDOWN_FORMAT_ARGS)
 
 .PHONY: doc/format/fix
-doc/format/fix: ## Fix docs and the Kanidm book
+doc/format/fix: ## Fix docs and the Kubidm book
 	make doc/find | xargs  deno fmt  $(MARKDOWN_FORMAT_ARGS)
 
 .PHONY: book
-book: ## Build the Kanidm book
+book: ## Build the Kubidm book
 book:
 	echo "Building rust docs"
 	cargo doc --no-deps --quiet
@@ -319,28 +319,28 @@ prep:
 	cargo outdated -R
 	cargo audit
 
-.PHONY: release/kanidm
-release/kanidm: ## Build the Kanidm CLI - ensure you include the environment variable KANIDM_BUILD_PROFILE
-	cargo build -p kanidm_tools --bin kanidm --release
+.PHONY: release/kubidm
+release/kubidm: ## Build the Kubidm CLI - ensure you include the environment variable KUBIDM_BUILD_PROFILE
+	cargo build -p kubidm_tools --bin kubidm --release
 
 .PHONY: release/kubidmd
-release/kubidmd: ## Build the Kanidm daemon - ensure you include the environment variable KANIDM_BUILD_PROFILE
+release/kubidmd: ## Build the Kubidm daemon - ensure you include the environment variable KUBIDM_BUILD_PROFILE
 	cargo build -p daemon --bin kubidmd --release
 
 .PHONY: release/kubidm-ssh
-release/kubidm-ssh: ## Build the Kanidm SSH tools - ensure you include the environment variable KANIDM_BUILD_PROFILE
+release/kubidm-ssh: ## Build the Kubidm SSH tools - ensure you include the environment variable KUBIDM_BUILD_PROFILE
 	cargo build --release \
-		--bin kanidm_ssh_authorizedkeys \
-		--bin kanidm_ssh_authorizedkeys_direct
+		--bin kubidm_ssh_authorizedkeys \
+		--bin kubidm_ssh_authorizedkeys_direct
 
 .PHONY: release/kubidm-unixd
-release/kubidm-unixd: ## Build the Kanidm UNIX tools - ensure you include the environment variable KANIDM_BUILD_PROFILE
+release/kubidm-unixd: ## Build the Kubidm UNIX tools - ensure you include the environment variable KUBIDM_BUILD_PROFILE
 release/kubidm-unixd:
-	cargo build -p pam_kanidm --release
-	cargo build -p nss_kanidm --release
-	cargo build --features unix -p kanidm_unix_int --release \
-		--bin kanidm_unixd \
-		--bin kanidm_unixd_tasks \
+	cargo build -p pam_kubidm --release
+	cargo build -p nss_kubidm --release
+	cargo build --features unix -p kubidm_unix_int --release \
+		--bin kubidm_unixd \
+		--bin kubidm_unixd_tasks \
 		--bin kubidm-unix
 
 # cert things
@@ -348,11 +348,11 @@ release/kubidm-unixd:
 .PHONY: cert/clean
 cert/clean: ## clean out the insecure cert bits
 cert/clean:
-	rm -f /tmp/kanidm/*.pem
-	rm -f /tmp/kanidm/*.cnf
-	rm -f /tmp/kanidm/*.csr
-	rm -f /tmp/kanidm/ca.txt*
-	rm -f /tmp/kanidm/ca.{cnf,srl,srl.old}
+	rm -f /tmp/kubidm/*.pem
+	rm -f /tmp/kubidm/*.cnf
+	rm -f /tmp/kubidm/*.csr
+	rm -f /tmp/kubidm/ca.txt*
+	rm -f /tmp/kubidm/ca.{cnf,srl,srl.old}
 
 
 .PHONY: coverage
@@ -365,7 +365,7 @@ coverage: ## Run the coverage tests using cargo-tarpaulin
 coveralls: ## Run cargo tarpaulin and upload to coveralls
 coveralls:
 	cargo tarpaulin --coveralls $(COVERALLS_REPO_TOKEN)
-	@echo "Coveralls repo information is at https://coveralls.io/github/kanidm/kanidm"
+	@echo "Coveralls repo information is at https://coveralls.io/github/kubidm/kubidm"
 
 
 .PHONY: eslint
@@ -390,19 +390,19 @@ publish: ## Publish to crates.io
 publish:
 	cargo publish -p sketching
 	cargo publish -p scim_proto
-	cargo publish -p kanidm_build_profiles
-	cargo publish -p kanidm_proto
-	cargo publish -p kanidm_utils_users
-	cargo publish -p kanidm_lib_file_permissions
-	cargo publish -p kanidm_lib_crypto
-	cargo publish -p kanidm_client
-	cargo publish -p kanidm_tools
+	cargo publish -p kubidm_build_profiles
+	cargo publish -p kubidm_proto
+	cargo publish -p kubidm_utils_users
+	cargo publish -p kubidm_lib_file_permissions
+	cargo publish -p kubidm_lib_crypto
+	cargo publish -p kubidm_client
+	cargo publish -p kubidm_tools
 
 .PHONY: rust_container
 rust_container: # Build and run a container based on the Linux rust base container, with our requirements included
 rust_container:
-	docker build --pull -t kanidm_rust -f scripts/Dockerfile.devcontainer .
+	docker build --pull -t kubidm_rust -f scripts/Dockerfile.devcontainer .
 	docker run \
 		--rm -it \
-		--name kanidm \
-		--mount type=bind,source=$(PWD),target=/kanidm -w /kanidm kanidm_rust:latest
+		--name kubidm \
+		--mount type=bind,source=$(PWD),target=/kubidm -w /kubidm kubidm_rust:latest

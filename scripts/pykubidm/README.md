@@ -1,3 +1,3 @@
-# Kanidm Python test things
+# Kubidm Python test things
 
 Only run this on a test instance, beware.

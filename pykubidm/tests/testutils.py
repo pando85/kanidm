@@ -11,7 +11,7 @@ from kubidm import KubidmClient
 if TYPE_CHECKING:
     from kubidm_openapi_client import ApiClient
 
-KANIDM_IDM_ADMIN = "idm_admin"
+KUBIDM_IDM_ADMIN = "idm_admin"
 
 
 @pytest.fixture(scope="function")
@@ -36,12 +36,12 @@ async def client_configfile() -> Optional[KubidmClient]:
 
 @pytest.fixture(scope="session")
 def openapi_server_url() -> str:
-    return os.getenv("KANIDM_OPENAPI_URL", "https://localhost:8443")
+    return os.getenv("KUBIDM_OPENAPI_URL", "https://localhost:8443")
 
 
 @pytest.fixture(scope="session")
 def openapi_ca_path() -> Optional[str]:
-    env_path = os.getenv("KANIDM_CA_PATH")
+    env_path = os.getenv("KUBIDM_CA_PATH")
     if env_path:
         return env_path
     default_path = "/tmp/kubidm/ca.pem"
@@ -50,7 +50,7 @@ def openapi_ca_path() -> Optional[str]:
 
 @pytest.fixture(scope="session")
 def openapi_verify_tls(openapi_ca_path: Optional[str]) -> bool:
-    insecure = os.getenv("KANIDM_INSECURE")
+    insecure = os.getenv("KUBIDM_INSECURE")
     if insecure and insecure.strip().lower() in {"1", "true", "yes", "on"}:
         return False
     return True
@@ -61,7 +61,7 @@ def openapi_admin_credentials() -> Tuple[str, str]:
     password = os.getenv("IDM_ADMIN_PASS")
     if not password:
         raise pytest.skip("No IDM_ADMIN_PASS env var set for openapi tests")
-    return (KANIDM_IDM_ADMIN, password)
+    return (KUBIDM_IDM_ADMIN, password)
 
 
 @pytest.fixture(scope="function")

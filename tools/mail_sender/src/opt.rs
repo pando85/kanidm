@@ -5,7 +5,7 @@ pub const DEFAULT_MAIL_SENDER_CONFIG_PATH: &str = "/etc/kubidm/mail-sender";
 #[clap(about = "Kubidm Mail Sender")]
 pub struct Opt {
     /// Enable debugging of the sender
-    #[clap(short, long, env = "KANIDM_DEBUG")]
+    #[clap(short, long, env = "KUBIDM_DEBUG")]
     pub debug: bool,
     /// Path to the client config file.
     #[clap(short, long, value_parser, default_value_os_t = DEFAULT_CLIENT_CONFIG_PATH.into())]

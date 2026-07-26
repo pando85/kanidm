@@ -1,13 +1,13 @@
-bin/kanidm
-bin/kanidm-unix
-bin/kanidm_ssh_authorizedkeys
-bin/kanidm_ssh_authorizedkeys_direct
-lib/nss_kanidm.so.1
-lib/libpam_kanidm.so
-libexec/kanidm_unixd
-libexec/kanidm_unixd_tasks
+bin/kubidm
+bin/kubidm-unix
+bin/kubidm_ssh_authorizedkeys
+bin/kubidm_ssh_authorizedkeys_direct
+lib/nss_kubidm.so.1
+lib/libpam_kubidm.so
+libexec/kubidm_unixd
+libexec/kubidm_unixd_tasks
 @dir %%ETCDIR%%
 @dir /var/lib
-@dir(_kanidm_unixd,_kanidm_unixd,750) /var/cache/kanidm-unixd
-@dir(_kanidm_unixd,_kanidm_unixd,750) /var/lib/kanidm-unixd
-@dir(_kanidm_unixd,_kanidm_unixd,755) /var/run/kanidm-unixd
+@dir(_kubidm_unixd,_kubidm_unixd,750) /var/cache/kubidm-unixd
+@dir(_kubidm_unixd,_kubidm_unixd,750) /var/lib/kubidm-unixd
+@dir(_kubidm_unixd,_kubidm_unixd,755) /var/run/kubidm-unixd

@@ -283,11 +283,11 @@ impl Display for UnixdConfig {
 
 impl UnixdConfig {
     pub fn new() -> Self {
-        let cache_db_path = match env::var("KANIDM_CACHE_DB_PATH") {
+        let cache_db_path = match env::var("KUBIDM_CACHE_DB_PATH") {
             Ok(val) => val,
             Err(_) => DEFAULT_CACHE_DB_PATH.into(),
         };
-        let hsm_pin_path = match env::var("KANIDM_HSM_PIN_PATH") {
+        let hsm_pin_path = match env::var("KUBIDM_HSM_PIN_PATH") {
             Ok(val) => val,
             Err(_) => DEFAULT_HSM_PIN_PATH.into(),
         };
@@ -482,10 +482,10 @@ impl UnixdConfig {
 
     fn apply_from_config_v2(self, config: ConfigV2) -> Result<Self, UnixIntegrationError> {
         let kubidm_config = if let Some(kconfig) = config.kubidm {
-            let service_account_token_path_env = match env::var("KANIDM_SERVICE_ACCOUNT_TOKEN_PATH")
+            let service_account_token_path_env = match env::var("KUBIDM_SERVICE_ACCOUNT_TOKEN_PATH")
             {
                 Ok(val) => val.into(),
-                Err(_) => DEFAULT_KANIDM_SERVICE_ACCOUNT_TOKEN_PATH.into(),
+                Err(_) => DEFAULT_KUBIDM_SERVICE_ACCOUNT_TOKEN_PATH.into(),
             };
 
             let service_account_token_path: PathBuf = kconfig

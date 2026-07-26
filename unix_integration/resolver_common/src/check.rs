@@ -38,7 +38,7 @@ pub fn parse_nsswitch_contents_return_missing(contents: &str, module_name: &str)
         .collect()
 }
 
-/// Warn the admin that user/group resolution may fail if Kanidm is not configured in nsswitch.conf. This is a common misconfiguration that can lead to confusion, and is worth proactively warning about.
+/// Warn the admin that user/group resolution may fail if Kubidm is not configured in nsswitch.conf. This is a common misconfiguration that can lead to confusion, and is worth proactively warning about.
 pub fn check_nsswitch_has_module(path: Option<PathBuf>, module_name: &str) -> bool {
     // returns true if kubidm is configured in nsswitch.conf, false otherwise.
     let nsswitch_conf = path.unwrap_or_else(|| PathBuf::from("/etc/nsswitch.conf"));

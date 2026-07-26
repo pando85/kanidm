@@ -2,11 +2,11 @@
 ARG BASE_IMAGE=debian:trixie-slim
 
 FROM rust:1 AS builder
-ARG KANIDM_FEATURES
-ARG KANIDM_BUILD_PROFILE="container_generic"
-ARG KANIDM_BUILD_OPTIONS=""
+ARG KUBIDM_FEATURES
+ARG KUBIDM_BUILD_PROFILE="container_generic"
+ARG KUBIDM_BUILD_OPTIONS=""
 
-ENV KANIDM_BUILD_PROFILE=${KANIDM_BUILD_PROFILE:-container_generic}
+ENV KUBIDM_BUILD_PROFILE=${KUBIDM_BUILD_PROFILE:-container_generic}
 ENV RUSTFLAGS="-Clinker=clang"
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
@@ -37,9 +37,9 @@ RUN --mount=type=cache,id=cargo,target=/cargo \
     export SCCACHE_DIR=/sccache && \
     export RUSTC_WRAPPER=/usr/bin/sccache && \
     export CC="/usr/bin/clang" && \
-    cargo auditable build --locked -p daemon ${KANIDM_BUILD_OPTIONS} \
+    cargo auditable build --locked -p daemon ${KUBIDM_BUILD_OPTIONS} \
         --target-dir="/usr/src/kubidm/target/" \
-        --features="${KANIDM_FEATURES}" \
+        --features="${KUBIDM_FEATURES}" \
         --release; \
     ls -alh /usr/src/kubidm/target/release; \
     sccache -s

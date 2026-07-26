@@ -33,7 +33,7 @@ You can find the name of your 389 Directory Server instance with:
 ```bash
 # Run on the FreeIPA server
 dsctl --list
-> slapd-DEV-KANIDM-COM
+> slapd-DEV-KUBIDM-COM
 ```
 
 Using this you can show the current status of the retro changelog plugin to see if you need to change it's
@@ -42,7 +42,7 @@ configuration.
 ```bash
 # Run on the FreeIPA server
 dsconf <instance name> plugin retro-changelog show
-dsconf slapd-DEV-KANIDM-COM plugin retro-changelog show
+dsconf slapd-DEV-KUBIDM-COM plugin retro-changelog show
 ```
 
 You must modify the retro changelog plugin to include the full scope of the database suffix so that the sync tool can

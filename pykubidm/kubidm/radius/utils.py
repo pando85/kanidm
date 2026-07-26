@@ -19,8 +19,8 @@ def check_vlan(
     """
     logging.debug("acc=%s", acc)
     if kubidm_client is None:
-        if "KANIDM_CONFIG_FILE" in os.environ:
-            kubidm_client = KubidmClient(config_file=os.environ["KANIDM_CONFIG_FILE"])
+        if "KUBIDM_CONFIG_FILE" in os.environ:
+            kubidm_client = KubidmClient(config_file=os.environ["KUBIDM_CONFIG_FILE"])
         else:
             raise ValueError("Need to pass this a kubidm_client")
 

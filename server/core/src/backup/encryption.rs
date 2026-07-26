@@ -1096,7 +1096,7 @@ mod tests {
 
         #[test]
         fn test_parse_header_too_short() {
-            let data = b"KANIDM_ENC_BACKUP_V1".to_vec();
+            let data = b"KUBIDM_ENC_BACKUP_V1".to_vec();
             let result = BackupEncryptor::parse_header(&data);
             assert!(matches!(result, Err(BackupEncryptionError::InvalidHeader)));
         }

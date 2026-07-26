@@ -2,19 +2,19 @@
 
 > "All services evolve to the point they eventually can send email" - some wise nerd, probably.
 
-Kanidm can be configured to optionally send messages to users. This is important for features such
+Kubidm can be configured to optionally send messages to users. This is important for features such
 as sending credential reset links.
 
 ## Architecture
 
-Kanidm maintains a message queue in its database. This allows all servers to queue
+Kubidm maintains a message queue in its database. This allows all servers to queue
 messages to be sent to users. Each queued message is sent *at least* once.
 
 `kubidmd` itself does not send the messages, but relies on an external tool, `kubidm-mail-sender`
 to process the mail queue. It is recommended you only run a single instance of the `kubidm-mail-sender`
 to prevent duplicate mail transmission.
 
-## Install Kanidm Mail Sender
+## Install Kubidm Mail Sender
 
 `kubidm-mail-sender` is part of the `kubidm/tools` container. Alternately it should be provided by
 the `kubidm-server` package if you are using a distribution source.

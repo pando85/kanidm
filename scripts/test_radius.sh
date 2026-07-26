@@ -8,8 +8,8 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 IMAGE=""
 BUILD_MODE="${BUILD_MODE:-}"
-PYTHON_IMAGE="${PYTHON_IMAGE:-kanidm/radius:devel}"
-CONTAINER_IMAGE_BASE="${CONTAINER_IMAGE_BASE:-kanidm}"
+PYTHON_IMAGE="${PYTHON_IMAGE:-kubidm/radius:devel}"
+CONTAINER_IMAGE_BASE="${CONTAINER_IMAGE_BASE:-kubidm}"
 CONTAINER_IMAGE_VERSION="${CONTAINER_IMAGE_VERSION:-rust-test}"
 RUST_IMAGE="$CONTAINER_IMAGE_BASE/radius:${CONTAINER_IMAGE_VERSION}"
 
@@ -23,7 +23,7 @@ RADIUS_TEST_USER="${RADIUS_TEST_USER:-radius_test_user}"
 RADIUS_GROUP="${RADIUS_GROUP:-radius_access_allowed}"
 RADIUS_SERVICE_ACCOUNT="${RADIUS_SERVICE_ACCOUNT:-radius_server}"
 RADIUS_DEFAULT_VLAN="${RADIUS_DEFAULT_VLAN:-10}"
-RADIUS_CLIENT_SECRET="${RADIUS_CLIENT_SECRET:-kanidm-radius-e2e-secret}"
+RADIUS_CLIENT_SECRET="${RADIUS_CLIENT_SECRET:-kubidm-radius-e2e-secret}"
 RADIUS_CONTAINER_NAME="${RADIUS_CONTAINER_NAME:-radiusd-e2e}"
 RADIUS_CLIENT_IP="${RADIUS_CLIENT_IP:-127.0.0.1}"
 RADIUS_CLIENT_NASPORT="${RADIUS_CLIENT_NASPORT:-10}"
@@ -31,21 +31,21 @@ IDM_ADMIN_SPN="${IDM_ADMIN_SPN:-idm_admin@localhost}"
 ADMIN_SPN="${ADMIN_SPN:-admin@localhost}"
 ASSERT_VLAN="${ASSERT_VLAN:-0}"
 RUST_CACHE_WAIT_SECONDS="${RUST_CACHE_WAIT_SECONDS:-35}"
-KANIDM_TMP_DIR="${KANIDM_TMP_DIR:-/tmp/kanidm}"
+KUBIDM_TMP_DIR="${KUBIDM_TMP_DIR:-/tmp/kubidm}"
 
-KANIDM_STARTED=0
-KANIDMD_PID=""
+KUBIDM_STARTED=0
+KUBIDMD_PID=""
 RADIUS_CONFIG_FILE=""
-KANIDMD_LOG_FILE="${KANIDM_TMP_DIR}/test_radius_kanidmd.log"
+KUBIDMD_LOG_FILE="${KUBIDM_TMP_DIR}/test_radius_kubidmd.log"
 TESTS_PASSED=0
 TESTS_FAILED=0
 
 SETUP_DEV_SCRIPT="${REPO_ROOT}/scripts/setup_dev_environment.sh"
 RADIUS_RUN_SCRIPT="${REPO_ROOT}/rlm_python/run_radius_container.sh"
-DEFAULT_RADIUS_CONFIG="${REPO_ROOT}/examples/kanidm" # so we can shove extra stuff on the end
+DEFAULT_RADIUS_CONFIG="${REPO_ROOT}/examples/kubidm" # so we can shove extra stuff on the end
 SERVER_DAEMON_DIR="${REPO_ROOT}/server/daemon"
-KANIDM_CONFIG_FILE="${SERVER_DAEMON_DIR}/insecure_server.toml"
-KANIDM_CA_PATH="${KANIDM_TMP_DIR}/ca.pem"
+KUBIDM_CONFIG_FILE="${SERVER_DAEMON_DIR}/insecure_server.toml"
+KUBIDM_CA_PATH="${KUBIDM_TMP_DIR}/ca.pem"
 
 log() {
     echo "[test_radius] $*"
@@ -61,9 +61,9 @@ cleanup() {
     if [[ "${KEEP_CONTAINERS}" != "1" ]]; then
         docker rm -f "${RADIUS_CONTAINER_NAME}" >/dev/null 2>&1 || true
     fi
-    if [[ "${KANIDM_STARTED}" -eq 1 && -n "${KANIDMD_PID}" ]]; then
-        kill "${KANIDMD_PID}" >/dev/null 2>&1 || true
-        wait "${KANIDMD_PID}" >/dev/null 2>&1 || true
+    if [[ "${KUBIDM_STARTED}" -eq 1 && -n "${KUBIDMD_PID}" ]]; then
+        kill "${KUBIDMD_PID}" >/dev/null 2>&1 || true
+        wait "${KUBIDMD_PID}" >/dev/null 2>&1 || true
     fi
     if [[ -n "${RADIUS_CONFIG_FILE}" && -f "${RADIUS_CONFIG_FILE}" ]]; then
         rm -f "${RADIUS_CONFIG_FILE}"
@@ -79,9 +79,9 @@ on_error() {
         echo "[test_radius] Last FreeRADIUS logs:" >&2
         docker logs --tail 120 "${RADIUS_CONTAINER_NAME}" >&2 || true
     fi
-    if [[ -f "${KANIDMD_LOG_FILE}" ]]; then
-        echo "[test_radius] Last kanidmd logs:" >&2
-        tail -n 120 "${KANIDMD_LOG_FILE}" >&2 || true
+    if [[ -f "${KUBIDMD_LOG_FILE}" ]]; then
+        echo "[test_radius] Last kubidmd logs:" >&2
+        tail -n 120 "${KUBIDMD_LOG_FILE}" >&2 || true
     fi
 }
 
@@ -98,38 +98,38 @@ check_file() {
     [[ -f "${file}" ]] || die "Missing required file: ${file}"
 }
 
-ensure_kanidm_tmp_dir() {
-    mkdir -p "${KANIDM_TMP_DIR}"
+ensure_kubidm_tmp_dir() {
+    mkdir -p "${KUBIDM_TMP_DIR}"
 }
 
-wait_for_kanidm() {
+wait_for_kubidm() {
     local attempts=0
     local max_attempts=60
-    local status_url="${KANIDM_URL%/}/status"
+    local status_url="${KUBIDM_URL%/}/status"
 
-    while ! curl --cacert "${KANIDM_CA_PATH}" -fs "${status_url}" >/dev/null 2>&1; do
+    while ! curl --cacert "${KUBIDM_CA_PATH}" -fs "${status_url}" >/dev/null 2>&1; do
         attempts=$((attempts + 1))
         if [[ "${attempts}" -ge "${max_attempts}" ]]; then
-            die "Kanidm did not become healthy at ${status_url}"
+            die "Kubidm did not become healthy at ${status_url}"
         fi
         sleep 2
     done
 }
 
-build_kanidm_cmd() {
-    KANIDM_CMD=(cargo run --manifest-path "${REPO_ROOT}/Cargo.toml")
+build_kubidm_cmd() {
+    KUBIDM_CMD=(cargo run --manifest-path "${REPO_ROOT}/Cargo.toml")
     if [[ -n "${BUILD_MODE}" ]]; then
-        KANIDM_CMD+=("${BUILD_MODE}")
+        KUBIDM_CMD+=("${BUILD_MODE}")
     fi
-    KANIDM_CMD+=(--bin kanidm --)
+    KUBIDM_CMD+=(--bin kubidm --)
 }
 
-build_kanidmd_cmd() {
-    KANIDMD_CMD=(cargo run --manifest-path "${REPO_ROOT}/Cargo.toml")
+build_kubidmd_cmd() {
+    KUBIDMD_CMD=(cargo run --manifest-path "${REPO_ROOT}/Cargo.toml")
     if [[ -n "${BUILD_MODE}" ]]; then
-        KANIDMD_CMD+=("${BUILD_MODE}")
+        KUBIDMD_CMD+=("${BUILD_MODE}")
     fi
-    KANIDMD_CMD+=(-p daemon --bin kanidmd --)
+    KUBIDMD_CMD+=(-p daemon --bin kubidmd --)
 }
 
 verify_rust_image_has_module() {
@@ -138,13 +138,13 @@ verify_rust_image_has_module() {
     set +e
     out="$(
         docker run --rm --entrypoint /bin/sh "${IMAGE}" -c \
-            'for d in /usr/lib64/freeradius /usr/lib/freeradius; do [ -f "$d/rlm_kanidm.so" ] && echo "$d/rlm_kanidm.so" && exit 0; done; exit 1' 2>&1
+            'for d in /usr/lib64/freeradius /usr/lib/freeradius; do [ -f "$d/rlm_kubidm.so" ] && echo "$d/rlm_kubidm.so" && exit 0; done; exit 1' 2>&1
     )"
     rc=$?
     set -e
     if [[ "${rc}" -ne 0 ]]; then
         echo "${out}" >&2
-        die "Rust module rlm_kanidm.so not found in image ${IMAGE}"
+        die "Rust module rlm_kubidm.so not found in image ${IMAGE}"
     fi
     log "Found Rust module in image: ${out}"
 }
@@ -306,9 +306,9 @@ if ! command -v radtest >/dev/null 2>&1; then
     log "radtest not found on host, will use container radtest"
 fi
 
-build_kanidm_cmd
-build_kanidmd_cmd
-ensure_kanidm_tmp_dir
+build_kubidm_cmd
+build_kubidmd_cmd
+ensure_kubidm_tmp_dir
 
 case "${RADIUS_MODULE_IMPL}" in
     rust)
@@ -330,27 +330,27 @@ case "${RADIUS_MODULE_IMPL}" in
         ;;
 esac
 
-[[ -f "${KANIDM_CONFIG_FILE}" ]] || die "Kanidm server config file not found: ${KANIDM_CONFIG_FILE}"
-KANIDM_URL="$(grep -E '^origin.*https' "${KANIDM_CONFIG_FILE}" | awk '{print $NF}' | tr -d '"')"
-[[ -n "${KANIDM_URL}" ]] || die "Failed to derive KANIDM_URL from ${KANIDM_CONFIG_FILE}"
+[[ -f "${KUBIDM_CONFIG_FILE}" ]] || die "Kubidm server config file not found: ${KUBIDM_CONFIG_FILE}"
+KUBIDM_URL="$(grep -E '^origin.*https' "${KUBIDM_CONFIG_FILE}" | awk '{print $NF}' | tr -d '"')"
+[[ -n "${KUBIDM_URL}" ]] || die "Failed to derive KUBIDM_URL from ${KUBIDM_CONFIG_FILE}"
 
-if ! curl --cacert "${KANIDM_CA_PATH}" -fs "${KANIDM_URL%/}/status" >/dev/null 2>&1; then
-    log "Kanidm not healthy; starting temporary dev server"
-    rm -f "${KANIDM_TMP_DIR}/kanidm.db"
+if ! curl --cacert "${KUBIDM_CA_PATH}" -fs "${KUBIDM_URL%/}/status" >/dev/null 2>&1; then
+    log "Kubidm not healthy; starting temporary dev server"
+    rm -f "${KUBIDM_TMP_DIR}/kubidm.db"
     (
         cd "${SERVER_DAEMON_DIR}" || exit 1
-        export KANIDM_CONFIG="./insecure_server.toml"
-        "${KANIDMD_CMD[@]}" cert-generate >/dev/null
-        "${KANIDMD_CMD[@]}" server >"${KANIDMD_LOG_FILE}" 2>&1 &
-        echo $! > "${KANIDM_TMP_DIR}/test_radius_kanidmd.pid"
+        export KUBIDM_CONFIG="./insecure_server.toml"
+        "${KUBIDMD_CMD[@]}" cert-generate >/dev/null
+        "${KUBIDMD_CMD[@]}" server >"${KUBIDMD_LOG_FILE}" 2>&1 &
+        echo $! > "${KUBIDM_TMP_DIR}/test_radius_kubidmd.pid"
     )
-    KANIDMD_PID="$(cat "${KANIDM_TMP_DIR}/test_radius_kanidmd.pid")"
-    rm -f "${KANIDM_TMP_DIR}/test_radius_kanidmd.pid"
-    KANIDM_STARTED=1
+    KUBIDMD_PID="$(cat "${KUBIDM_TMP_DIR}/test_radius_kubidmd.pid")"
+    rm -f "${KUBIDM_TMP_DIR}/test_radius_kubidmd.pid"
+    KUBIDM_STARTED=1
 fi
 
-log "Waiting for Kanidm readiness at ${KANIDM_URL%/}/status"
-wait_for_kanidm
+log "Waiting for Kubidm readiness at ${KUBIDM_URL%/}/status"
+wait_for_kubidm
 
 if [[ "${RUN_SETUP_DEV_ENV}" == "1" ]]; then
     log "Running base environment setup"
@@ -362,37 +362,37 @@ else
     log "Skipping setup_dev_environment.sh (RUN_SETUP_DEV_ENV=${RUN_SETUP_DEV_ENV})"
 fi
 
-export KANIDM_URL
-export KANIDM_CA_PATH
-export KANIDM_CONFIG_FILE="${KANIDM_CONFIG_FILE}"
+export KUBIDM_URL
+export KUBIDM_CA_PATH
+export KUBIDM_CONFIG_FILE="${KUBIDM_CONFIG_FILE}"
 
 log "Recovering admin credentials"
 IDM_ADMIN_PASS_RAW="$(
     cd "${SERVER_DAEMON_DIR}" && \
-    KANIDM_CONFIG="./insecure_server.toml" "${KANIDMD_CMD[@]}" scripting recover-account idm_admin 2>&1
+    KUBIDM_CONFIG="./insecure_server.toml" "${KUBIDMD_CMD[@]}" scripting recover-account idm_admin 2>&1
 )"
 IDM_ADMIN_PASS_JSON="$(extract_last_json_line "${IDM_ADMIN_PASS_RAW}")"
 IDM_ADMIN_PASS="$(echo "${IDM_ADMIN_PASS_JSON}" | jq -r '.output // .password // empty')"
 [[ -n "${IDM_ADMIN_PASS}" ]] || die "Failed to recover idm_admin password"
 
 log "Logging in as ${IDM_ADMIN_SPN}"
-"${KANIDM_CMD[@]}" login -D "${IDM_ADMIN_SPN}" --password "${IDM_ADMIN_PASS}"
+"${KUBIDM_CMD[@]}" login -D "${IDM_ADMIN_SPN}" --password "${IDM_ADMIN_PASS}"
 
 log "Provisioning deterministic RADIUS fixtures"
 run_allow_exists "create service account ${RADIUS_SERVICE_ACCOUNT}" \
-    "${KANIDM_CMD[@]}" service-account create "${RADIUS_SERVICE_ACCOUNT}" "${RADIUS_SERVICE_ACCOUNT}" "${IDM_ADMIN_SPN}" -D "${IDM_ADMIN_SPN}"
+    "${KUBIDM_CMD[@]}" service-account create "${RADIUS_SERVICE_ACCOUNT}" "${RADIUS_SERVICE_ACCOUNT}" "${IDM_ADMIN_SPN}" -D "${IDM_ADMIN_SPN}"
 run_allow_exists "create person ${RADIUS_TEST_USER}" \
-    "${KANIDM_CMD[@]}" person create "${RADIUS_TEST_USER}" "${RADIUS_TEST_USER}" -D "${IDM_ADMIN_SPN}"
+    "${KUBIDM_CMD[@]}" person create "${RADIUS_TEST_USER}" "${RADIUS_TEST_USER}" -D "${IDM_ADMIN_SPN}"
 run_allow_exists "create group ${RADIUS_GROUP}" \
-    "${KANIDM_CMD[@]}" group create "${RADIUS_GROUP}" -D "${IDM_ADMIN_SPN}"
+    "${KUBIDM_CMD[@]}" group create "${RADIUS_GROUP}" -D "${IDM_ADMIN_SPN}"
 run_allow_exists "add ${RADIUS_TEST_USER} to ${RADIUS_GROUP}" \
-    "${KANIDM_CMD[@]}" group add-members "${RADIUS_GROUP}" "${RADIUS_TEST_USER}" -D "${IDM_ADMIN_SPN}"
+    "${KUBIDM_CMD[@]}" group add-members "${RADIUS_GROUP}" "${RADIUS_TEST_USER}" -D "${IDM_ADMIN_SPN}"
 run_allow_exists "add ${RADIUS_SERVICE_ACCOUNT} to idm_radius_servers" \
-    "${KANIDM_CMD[@]}" group add-members idm_radius_servers "${RADIUS_SERVICE_ACCOUNT}" -D "${IDM_ADMIN_SPN}"
+    "${KUBIDM_CMD[@]}" group add-members idm_radius_servers "${RADIUS_SERVICE_ACCOUNT}" -D "${IDM_ADMIN_SPN}"
 
 log "Generating radius secret for ${RADIUS_TEST_USER}"
-"${KANIDM_CMD[@]}" person radius generate-secret "${RADIUS_TEST_USER}" -D "${IDM_ADMIN_SPN}"
-RADIUS_SECRET_OUTPUT="$("${KANIDM_CMD[@]}" person radius show-secret "${RADIUS_TEST_USER}" -D "${IDM_ADMIN_SPN}" 2>&1)"
+"${KUBIDM_CMD[@]}" person radius generate-secret "${RADIUS_TEST_USER}" -D "${IDM_ADMIN_SPN}"
+RADIUS_SECRET_OUTPUT="$("${KUBIDM_CMD[@]}" person radius show-secret "${RADIUS_TEST_USER}" -D "${IDM_ADMIN_SPN}" 2>&1)"
 RADIUS_USER_SECRET="$(echo "${RADIUS_SECRET_OUTPUT}" | sed -n 's/^RADIUS secret for .*: //p' | tail -n 1)"
 [[ -n "${RADIUS_USER_SECRET}" ]] || die "Failed to parse RADIUS user secret from output: ${RADIUS_SECRET_OUTPUT}"
 
@@ -402,27 +402,27 @@ if date -u -v+2H "+%Y-%m-%dT%H:%M:%SZ" >/dev/null 2>&1; then
 else
     TOKEN_EXPIRY="$(date -u -d "+2 hour" "+%Y-%m-%dT%H:%M:%SZ")"
 fi
-API_TOKEN_JSON="$("${KANIDM_CMD[@]}" service-account api-token generate "${RADIUS_SERVICE_ACCOUNT}" radius "${TOKEN_EXPIRY}" -o json -D "${IDM_ADMIN_SPN}" 2>&1)"
+API_TOKEN_JSON="$("${KUBIDM_CMD[@]}" service-account api-token generate "${RADIUS_SERVICE_ACCOUNT}" radius "${TOKEN_EXPIRY}" -o json -D "${IDM_ADMIN_SPN}" 2>&1)"
 SERVICE_ACCOUNT_TOKEN="$(extract_api_token "${API_TOKEN_JSON}")"
 [[ -n "${SERVICE_ACCOUNT_TOKEN}" ]] || die "Failed to parse service account API token"
 
-CERT_SOURCE="${KANIDM_TMP_DIR}/cert.pem"
+CERT_SOURCE="${KUBIDM_TMP_DIR}/cert.pem"
 if [[ ! -f "${CERT_SOURCE}" ]]; then
-    CERT_SOURCE="${KANIDM_TMP_DIR}/chain.pem"
+    CERT_SOURCE="${KUBIDM_TMP_DIR}/chain.pem"
 fi
-[[ -f "${KANIDM_TMP_DIR}/ca.pem" ]] || die "Missing ${KANIDM_TMP_DIR}/ca.pem"
-[[ -f "${KANIDM_TMP_DIR}/key.pem" ]] || die "Missing ${KANIDM_TMP_DIR}/key.pem"
-[[ -f "${CERT_SOURCE}" ]] || die "Missing certificate file (${KANIDM_TMP_DIR}/cert.pem or ${KANIDM_TMP_DIR}/chain.pem)"
+[[ -f "${KUBIDM_TMP_DIR}/ca.pem" ]] || die "Missing ${KUBIDM_TMP_DIR}/ca.pem"
+[[ -f "${KUBIDM_TMP_DIR}/key.pem" ]] || die "Missing ${KUBIDM_TMP_DIR}/key.pem"
+[[ -f "${CERT_SOURCE}" ]] || die "Missing certificate file (${KUBIDM_TMP_DIR}/cert.pem or ${KUBIDM_TMP_DIR}/chain.pem)"
 
 CERT_BASENAME="$(basename "${CERT_SOURCE}")"
-RADIUS_CONFIG_FILE="$(mktemp "${KANIDM_TMP_DIR}/radius_e2e.XXXXXX.toml")"
-KANIDM_URL_ESCAPED="$(toml_escape "${KANIDM_URL}")"
+RADIUS_CONFIG_FILE="$(mktemp "${KUBIDM_TMP_DIR}/radius_e2e.XXXXXX.toml")"
+KUBIDM_URL_ESCAPED="$(toml_escape "${KUBIDM_URL}")"
 SERVICE_ACCOUNT_TOKEN_ESCAPED="$(toml_escape "${SERVICE_ACCOUNT_TOKEN}")"
 RADIUS_GROUP_ESCAPED="$(toml_escape "${RADIUS_GROUP}")"
 RADIUS_CLIENT_SECRET_ESCAPED="$(toml_escape "${RADIUS_CLIENT_SECRET}")"
 CERT_BASENAME_ESCAPED="$(toml_escape "${CERT_BASENAME}")"
 cat > "${RADIUS_CONFIG_FILE}" <<EOF
-uri = "${KANIDM_URL_ESCAPED}"
+uri = "${KUBIDM_URL_ESCAPED}"
 ca_path = "/certs/ca.pem"
 auth_token = "${SERVICE_ACCOUNT_TOKEN_ESCAPED}"
 radius_default_vlan = ${RADIUS_DEFAULT_VLAN}
@@ -446,9 +446,9 @@ DOCKER_RUN_ARGS=(
     -d
     --name "${RADIUS_CONTAINER_NAME}"
     --network host
-    -v "${KANIDM_TMP_DIR}/:/data/"
-    -v "${KANIDM_TMP_DIR}/:/tmp/kanidm/"
-    -v "${KANIDM_TMP_DIR}/:/certs/"
+    -v "${KUBIDM_TMP_DIR}/:/data/"
+    -v "${KUBIDM_TMP_DIR}/:/tmp/kubidm/"
+    -v "${KUBIDM_TMP_DIR}/:/certs/"
     -v "${RADIUS_CONFIG_FILE}:/data/radius.toml:ro"
 )
 
@@ -477,16 +477,16 @@ fi
 assert_radtest_result "negative bad secret" "${RADIUS_TEST_USER}" "not-the-secret" "Access-Reject" >/dev/null
 
 log "Removing ${RADIUS_TEST_USER} from ${RADIUS_GROUP} for authorization test"
-"${KANIDM_CMD[@]}" group remove-members "${RADIUS_GROUP}" "${RADIUS_TEST_USER}" -D "${IDM_ADMIN_SPN}"
+"${KUBIDM_CMD[@]}" group remove-members "${RADIUS_GROUP}" "${RADIUS_TEST_USER}" -D "${IDM_ADMIN_SPN}"
 wait_for_rust_cache_expiry
 assert_radtest_result "negative missing group" "${RADIUS_TEST_USER}" "${RADIUS_USER_SECRET}" "Access-Reject" >/dev/null
 
 log "Re-adding ${RADIUS_TEST_USER} to ${RADIUS_GROUP}"
-"${KANIDM_CMD[@]}" group add-members "${RADIUS_GROUP}" "${RADIUS_TEST_USER}" -D "${IDM_ADMIN_SPN}"
+"${KUBIDM_CMD[@]}" group add-members "${RADIUS_GROUP}" "${RADIUS_TEST_USER}" -D "${IDM_ADMIN_SPN}"
 wait_for_rust_cache_expiry
 assert_radtest_result "recovery auth" "${RADIUS_TEST_USER}" "${RADIUS_USER_SECRET}" "Access-Accept" >/dev/null
 
-log "Summary: passed=${TESTS_PASSED} failed=${TESTS_FAILED} container=${RADIUS_CONTAINER_NAME} url=${KANIDM_URL}"
+log "Summary: passed=${TESTS_PASSED} failed=${TESTS_FAILED} container=${RADIUS_CONTAINER_NAME} url=${KUBIDM_URL}"
 if [[ "${TESTS_FAILED}" -gt 0 ]]; then
     die "One or more RADIUS integration assertions failed"
 fi

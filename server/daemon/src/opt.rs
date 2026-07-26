@@ -5,7 +5,7 @@ struct BackupOpt {
     path: PathBuf,
 
     /// Compression method
-    #[clap(short = 'C', long, env = "KANIDM_BACKUP_COMPRESSION")]
+    #[clap(short = 'C', long, env = "KUBIDM_BACKUP_COMPRESSION")]
     compression: Option<String>,
 }
 
@@ -146,7 +146,7 @@ struct KubidmdParser {
     #[command(subcommand)]
     commands: KubidmdOpt,
 
-    #[clap(short, long, env = "KANIDM_CONFIG", global = true)]
+    #[clap(short, long, env = "KUBIDM_CONFIG", global = true)]
     config_path: Option<PathBuf>,
 
     #[clap(flatten)]

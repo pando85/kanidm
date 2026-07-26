@@ -2427,7 +2427,9 @@ impl Entry<EntryReduced, EntryCommitted> {
                 let opt_resolve_status = vs.to_scim_value();
                 let res_opt_scim_value = match opt_resolve_status {
                     None => Ok(None),
-                    Some(ScimResolveStatus::Resolved(scim_value_kani)) => Ok(Some(scim_value_kani)),
+                    Some(ScimResolveStatus::Resolved(scim_value_kubidm)) => {
+                        Ok(Some(scim_value_kubidm))
+                    }
                     Some(ScimResolveStatus::NeedsResolution(scim_value_interim)) => {
                         read_txn.resolve_scim_interim(scim_value_interim)
                     }
@@ -2495,7 +2497,7 @@ impl Entry<EntryReduced, EntryCommitted> {
         // Everything in our attrs set is "what was requested". So we can transform that now
         // so they are all in "ldap forms" which makes our next stage a bit easier.
 
-        // Stage 1 - transform our results to a map of kani attr -> ldap value.
+        // Stage 1 - transform our results to a map of kubidm attr -> ldap value.
         let attr_map: Result<Map<&str, Vec<Vec<u8>>>, _> = self
             .attrs
             .iter()
@@ -2507,7 +2509,7 @@ impl Entry<EntryReduced, EntryCommitted> {
         let attr_map = attr_map?;
 
         // Stage 2 - transform and get all our attr - names out that we need to return.
-        //                  ldap a, kani a
+        //                  ldap a, kubidm a
         let attr_names: Vec<(&str, &str)> = if all_attrs {
             // Join the set of attr keys, and our requested attrs.
             self.attrs
@@ -2530,7 +2532,7 @@ impl Entry<EntryReduced, EntryCommitted> {
         // Doing this to avoid duplicate attribute values per the LDAP spec
         let attributes: Vec<_> = attr_names
             .into_iter()
-            .filter_map(|(ldap_a, kani_a)| {
+            .filter_map(|(ldap_a, kubidm_a)| {
                 // In some special cases, we may need to transform or rewrite the values.
                 match ldap_a {
                     LDAP_ATTR_DN => Some(LdapPartialAttribute {
@@ -2542,7 +2544,7 @@ impl Entry<EntryReduced, EntryCommitted> {
                         vals: vec![dn.as_bytes().to_vec()],
                     }),
                     LDAP_ATTR_MAIL_PRIMARY | LDAP_ATTR_EMAIL_PRIMARY => {
-                        attr_map.get(kani_a).map(|pvs| LdapPartialAttribute {
+                        attr_map.get(kubidm_a).map(|pvs| LdapPartialAttribute {
                             atype: ldap_a.to_string(),
                             vals: pvs
                                 .first()
@@ -2551,7 +2553,7 @@ impl Entry<EntryReduced, EntryCommitted> {
                         })
                     }
                     LDAP_ATTR_MAIL_ALTERNATIVE | LDAP_ATTR_EMAIL_ALTERNATIVE => {
-                        attr_map.get(kani_a).map(|pvs| LdapPartialAttribute {
+                        attr_map.get(kubidm_a).map(|pvs| LdapPartialAttribute {
                             atype: ldap_a.to_string(),
                             vals: pvs
                                 .split_first()
@@ -2563,7 +2565,7 @@ impl Entry<EntryReduced, EntryCommitted> {
                         atype: ATTR_HOME_DIRECTORY.to_string(),
                         vals: vec![format!("/home/{}", self.get_uuid()).into_bytes()],
                     }),
-                    _ => attr_map.get(kani_a).map(|pvs| LdapPartialAttribute {
+                    _ => attr_map.get(kubidm_a).map(|pvs| LdapPartialAttribute {
                         atype: ldap_a.to_string(),
                         vals: pvs.clone(),
                     }),

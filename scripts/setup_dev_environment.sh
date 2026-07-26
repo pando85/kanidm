@@ -4,7 +4,7 @@
 # - reset the admin and idm_admin users
 # - set up a test user
 # - set up a test group
-# - set up a test oauth2 rp (https://kanidm.com)
+# - set up a test oauth2 rp (https://kubidm.com)
 # - prompt to reset testuser's creds online
 
 set -e
@@ -42,9 +42,9 @@ fi
 
 
 # defaults
-KANIDM_CONFIG_FILE="./insecure_server.toml"
-KANIDM_URL="$(grep -E 'origin.*https' "${KANIDM_CONFIG_FILE}" | awk '{print $NF}' | tr -d '"')"
-KANIDM_CA_PATH="/tmp/kubidm/chain.pem"
+KUBIDM_CONFIG_FILE="./insecure_server.toml"
+KUBIDM_URL="$(grep -E 'origin.*https' "${KUBIDM_CONFIG_FILE}" | awk '{print $NF}' | tr -d '"')"
+KUBIDM_CA_PATH="/tmp/kubidm/chain.pem"
 
 # wait for them to shut down the server if it's running...
 while true; do
@@ -54,16 +54,16 @@ while true; do
     echo "Start the kubidmd server first please!"
 
     while true; do
-        echo "Waiting for you to start the server... testing ${KANIDM_URL}"
-        curl --cacert "${KANIDM_CA_PATH}" -fs "${KANIDM_URL}" >/dev/null && break
+        echo "Waiting for you to start the server... testing ${KUBIDM_URL}"
+        curl --cacert "${KUBIDM_CA_PATH}" -fs "${KUBIDM_URL}" >/dev/null && break
         sleep 2
     done
 done
 
 # needed for the CLI tools to do their thing
-export KANIDM_URL
-export KANIDM_CA_PATH
-export KANIDM_CONFIG_FILE
+export KUBIDM_URL
+export KUBIDM_CA_PATH
+export KUBIDM_CONFIG_FILE
 
 # string things
 TEST_USER_NAME="testuser"
@@ -81,7 +81,7 @@ if [ "${REMOVE_TEST_DB}" -eq 1 ]; then
     rm /tmp/kubidm/kubidm.db || true
 fi
 
-export KANIDM_CONFIG="./insecure_server.toml"
+export KUBIDM_CONFIG="./insecure_server.toml"
 IDM_ADMIN_USER="idm_admin@localhost"
 
 echo "Resetting the idm_admin user..."
@@ -110,13 +110,13 @@ ${KUBIDM} group add-members "${TEST_GROUP}" "${TEST_USER_NAME}" -D "${IDM_ADMIN_
 echo "Enable experimental UI for admin idm_admin ${TEST_USER_NAME}"
 ${KUBIDM} group add-members idm_ui_enable_experimental_features "${IDM_ADMIN_USER}" "${TEST_USER_NAME}" -D "${IDM_ADMIN_USER}"
 
-# create oauth2 rp for kanidm.com
-echo "Creating the kanidm.com OAuth2 RP"
-${KUBIDM} system oauth2 create "kanidm_com" "Kanidm.com" "https://kanidm.com" -D "${IDM_ADMIN_USER}"
-echo "Creating the kanidm.com OAuth2 RP Scope Map"
-${KUBIDM} system oauth2 update-scope-map "kanidm_com" "${TEST_GROUP}" openid -D "${IDM_ADMIN_USER}"
-echo "Creating the kanidm.com OAuth2 RP Supplemental Scope Map"
-${KUBIDM} system oauth2 update-sup-scope-map "kanidm_com" "${TEST_GROUP}" admin -D "${IDM_ADMIN_USER}"
+# create oauth2 rp for kubidm.com
+echo "Creating the kubidm.com OAuth2 RP"
+${KUBIDM} system oauth2 create "kubidm.com" "Kubidm.com" "https://kubidm.com" -D "${IDM_ADMIN_USER}"
+echo "Creating the kubidm.com OAuth2 RP Scope Map"
+${KUBIDM} system oauth2 update-scope-map "kubidm.com" "${TEST_GROUP}" openid -D "${IDM_ADMIN_USER}"
+echo "Creating the kubidm.com OAuth2 RP Supplemental Scope Map"
+${KUBIDM} system oauth2 update-sup-scope-map "kubidm.com" "${TEST_GROUP}" admin -D "${IDM_ADMIN_USER}"
 
 
 # create oauth2 rp for localhost:10443 - for oauth2 proxy testing
@@ -147,7 +147,7 @@ echo "Done!"
 
 echo "###################################"
 echo "idm_admin password: ${IDM_ADMIN_PASS}"
-echo "UI URL:             ${KANIDM_URL}"
+echo "UI URL:             ${KUBIDM_URL}"
 echo "OAuth2 RP ID:       ${OAUTH2_RP_ID}"
 echo "OAuth2 Secret:      $(echo "${OAUTH2_SECRET}" | jq  -r .secret)"
 echo "###################################"

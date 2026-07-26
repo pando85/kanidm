@@ -312,7 +312,7 @@ impl TryFrom<&str> for AccessTokenType {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TokenRevokeRequest {
     pub token: String,
-    /// Not required for Kanidm.
+    /// Not required for Kubidm.
     /// <https://datatracker.ietf.org/doc/html/rfc7009#section-4.1.2>
     pub token_type_hint: Option<String>,
 
@@ -368,7 +368,7 @@ impl From<(&str, Option<&str>)> for ClientAuth {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AccessTokenIntrospectRequest {
     pub token: String,
-    /// Not required for Kanidm.
+    /// Not required for Kubidm.
     /// <https://datatracker.ietf.org/doc/html/rfc7009#section-4.1.2>
     pub token_type_hint: Option<String>,
 

@@ -1,6 +1,6 @@
 [package]
 name = "kubidm_client"
-description = "Kanidm Client Library"
+description = "Kubidm Client Library"
 documentation = "https://docs.rs/kubidm_client/latest/kubidm_client/"
 
 version = { workspace = true }

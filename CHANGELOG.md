@@ -9,7 +9,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Kaniop-compatible CI/maintainability setup with Renovate, git-cliff, DCO, and pre-commit hooks
+- Kubidm-compatible CI/maintainability setup with Renovate, git-cliff, DCO, and pre-commit hooks
 - AGENTS.md for AI agent guidance
 - GitHub Copilot instructions
 - Auto-tag workflow from CHANGELOG version

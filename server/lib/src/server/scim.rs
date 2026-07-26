@@ -44,7 +44,7 @@ impl ScimEntryPutEvent {
             .into_iter()
             .map(|(attr, json_value)| {
                 qs.resolve_scim_json_put(&attr, json_value)
-                    .map(|kani_value| (attr, kani_value))
+                    .map(|kubidm_value| (attr, kubidm_value))
             })
             .collect::<Result<_, _>>()?;
 
@@ -77,7 +77,7 @@ impl ScimCreateEvent {
             .into_iter()
             .map(|(attr, json_value)| {
                 qs.resolve_scim_json_post(&attr, json_value)
-                    .map(|kani_value| (attr, kani_value))
+                    .map(|kubidm_value| (attr, kubidm_value))
             })
             .collect::<Result<EntryInitNew, _>>()?;
 
@@ -343,7 +343,7 @@ impl QueryServerWriteTransaction<'_> {
                         .into_iter()
                         .map(|(attr, json_value)| {
                             self.resolve_scim_json_put(&attr, json_value)
-                                .map(|kani_value| (attr, kani_value))
+                                .map(|kubidm_value| (attr, kubidm_value))
                         })
                         .collect::<Result<_, _>>()?;
 

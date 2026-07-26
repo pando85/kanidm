@@ -5,7 +5,7 @@ pub const DEFAULT_LDAP_CONFIG_PATH: &str = "/etc/kubidm/ldap-sync";
 #[clap(about = "Kubidm LDAP Sync Driver")]
 pub struct Opt {
     /// Enable debugging of the sync driver
-    #[clap(short, long, env = "KANIDM_DEBUG")]
+    #[clap(short, long, env = "KUBIDM_DEBUG")]
     pub debug: bool,
     /// Path to the client config file.
     #[clap(short, long, value_parser, default_value_os_t = DEFAULT_CLIENT_CONFIG_PATH.into())]

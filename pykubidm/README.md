@@ -93,12 +93,12 @@ OpenAPI tests regenerate `kubidm_openapi_client` once per pytest session before 
 
 Optional environment overrides:
 
-- `KANIDM_CA_PATH` (default: `/tmp/kubidm/ca.pem` if present)
-- `KANIDM_OPENAPI_URL` (default: `https://localhost:8443`)
+- `KUBIDM_CA_PATH` (default: `/tmp/kubidm/ca.pem` if present)
+- `KUBIDM_OPENAPI_URL` (default: `https://localhost:8443`)
 - `IDM_ADMIN_PASS` (required for auth'd OpenAPI tests; matches `scripts/setup_dev_environment.sh`)
-- `KANIDM_INSECURE` (`true`/`false`, default: `false`) disables TLS verification for tests
+- `KUBIDM_INSECURE` (`true`/`false`, default: `false`) disables TLS verification for tests
 
-Note: tests always verify TLS unless `KANIDM_INSECURE=true`. Provide a CA via `KANIDM_CA_PATH` (or use the default
+Note: tests always verify TLS unless `KUBIDM_INSECURE=true`. Provide a CA via `KUBIDM_CA_PATH` (or use the default
 `/tmp/kubidm/ca.pem`) so the server cert validates.
 
 ## Changelog

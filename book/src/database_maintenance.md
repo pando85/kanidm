@@ -2,7 +2,7 @@
 
 ## Server Migration
 
-There are three methods available to migrate your Kanidm instance between servers.
+There are three methods available to migrate your Kubidm instance between servers.
 
 ### Backup/Restore
 
@@ -14,7 +14,7 @@ There are three methods available to migrate your Kanidm instance between server
 ### Data Copy
 
 1) Ensure the original server is stopped.
-1) Copy the full content of your `kanidmd` volume to the new server.
+1) Copy the full content of your `kubidmd` volume to the new server.
 1) Start the new server with the same docker arguments.
 
 ### Replication

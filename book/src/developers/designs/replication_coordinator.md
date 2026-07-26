@@ -172,7 +172,7 @@ internally add itself to the `Default Site`.
 The KRC can then issue Tokens that define which Site a new replica should join. Initially we will only allow
 `Default Site` (and will disallow creation of other sites).
 
-The new replica will load its KRC token from the environment variable `KANIDMD_KRC_TOKEN_PATH`. This value will contain
+The new replica will load its KRC token from the environment variable `KUBIDMD_KRC_TOKEN_PATH`. This value will contain
 a file path where the JWT is stored. This is compatible with systemd credentials and docker secrets. By default the
 value if unset will be defined by a profile default (`/etc/kubidm/krc.token` or `/data/krc.token`).
 
@@ -324,7 +324,7 @@ For R/O nodes, we need to define how R/W will pass through. I can see a possibil
 
        │                                                               ▼
 ┌────────────┐                 ┌─────────────┐────OOB Write────▶┌─────────────┐
-│            │                 │ Remote Kani │                  │             │
+│            │                 │ Remote Kubidm │                  │             │
 │   Client   │─────Write──────▶│   Server    │                  │    Main     │
 │            │                 │             │                  │             │
 └────────────┘                 └─────────────┘◀───Replication───└─────────────┘

@@ -76,7 +76,7 @@ pub enum ProviderOrigin {
     Ignore,
     /// Provided by local files, commonly /etc/passwd, /etc/group and /etc/shadow
     System,
-    Kanidm,
+    Kubidm,
 }
 
 impl fmt::Display for ProviderOrigin {
@@ -88,7 +88,7 @@ impl fmt::Display for ProviderOrigin {
             ProviderOrigin::System => {
                 write!(f, "System")
             }
-            ProviderOrigin::Kanidm => {
+            ProviderOrigin::Kubidm => {
                 write!(f, "Kubidm")
             }
         }
