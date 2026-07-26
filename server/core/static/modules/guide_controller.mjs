@@ -30,19 +30,13 @@ function currentMotionLevel() {
     const explicit = sceneRoot?.dataset.guideMotion;
     const configured = document.body?.dataset.guideMotionConfig;
 
-    // Static is always safe and should win over all other requests.
     if (explicit === MotionLevel.STATIC || configured === MotionLevel.STATIC) {
         return MotionLevel.STATIC;
     }
-
-    // The user/OS reduced-motion preference always wins over a deployment that
-    // permits full animation.
     if (reducedMotion.matches) return MotionLevel.REDUCED;
-
     if (explicit === MotionLevel.REDUCED || configured === MotionLevel.REDUCED) {
         return MotionLevel.REDUCED;
     }
-
     return MotionLevel.FULL;
 }
 
@@ -67,7 +61,6 @@ function tracksApplicationsArrival() {
 
 function readState(overrides = {}) {
     if (!sceneRoot) return null;
-
     const node = semanticNode();
     return normaliseGuideState({
         productState: node?.dataset.guideAction || sceneRoot.dataset.guideScene || "unknown",
@@ -81,14 +74,12 @@ function readState(overrides = {}) {
 
 function ensureRenderer() {
     if (!sceneRoot) return null;
-
     const slot = sceneRoot.querySelector("[data-guide-slot]");
     if (!slot) {
         renderer?.destroy();
         renderer = null;
         return null;
     }
-
     if (!renderer || renderer.slot !== slot) {
         renderer?.destroy();
         renderer = createGuideRenderer(slot, { renderer: "static" });
@@ -107,7 +98,11 @@ function publish(overrides = {}) {
     const state = readState(overrides);
     if (!state || !sceneRoot) return null;
 
-    if (state.productState === "authentication_denied" || state.productState === "identify") {
+    if (
+        state.productState === "authentication_denied" ||
+        state.productState === "identify" ||
+        state.productState === "identify_error"
+    ) {
         clearAuthenticationAttempt();
     }
 
@@ -124,9 +119,7 @@ function publish(overrides = {}) {
 function observeScene() {
     sceneObserver?.disconnect();
     sceneObserver = null;
-
     if (!sceneRoot) return;
-
     sceneObserver = new MutationObserver(() => publish());
     sceneObserver.observe(sceneRoot, {
         childList: true,
@@ -177,9 +170,7 @@ function maybeMarkFormAuthentication(form) {
         return;
     }
 
-    if (AUTH_CREDENTIAL_PATHS.has(path)) {
-        markAuthenticationAttempt();
-    }
+    if (AUTH_CREDENTIAL_PATHS.has(path)) markAuthenticationAttempt();
 }
 
 window.addEventListener("kubidm:webauthn-start", () => {
@@ -227,9 +218,7 @@ window.addEventListener("kubidm:webauthn-error", () => {
 
 document.body.addEventListener(
     "submit",
-    (event) => {
-        maybeMarkFormAuthentication(event.target);
-    },
+    (event) => maybeMarkFormAuthentication(event.target),
     true,
 );
 
