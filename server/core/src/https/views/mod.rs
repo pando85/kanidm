@@ -30,6 +30,8 @@ mod radius;
 mod reauth;
 mod recover;
 mod reset;
+#[cfg(debug_assertions)]
+mod ui_lab;
 
 #[derive(Template, WebTemplate)]
 #[template(path = "unrecoverable_error.html")]
@@ -124,6 +126,16 @@ pub fn view_router(state: ServerState) -> Router<ServerState> {
         kubidmd_lib::prelude::uri::OAUTH2_DEVICE_LOGIN,
         get(oauth2::view_device_get).post(oauth2::view_device_post),
     );
+
+    // The UI Lab is deliberately absent from release builds and must also be
+    // explicitly enabled in debug builds. It contains fixture states and must
+    // never become a production or authenticated-account surface.
+    #[cfg(debug_assertions)]
+    let unguarded_router = if std::env::var_os("KUBIDM_UI_LAB").is_some() {
+        unguarded_router.route("/_lab", get(ui_lab::view_lab_get))
+    } else {
+        unguarded_router
+    };
 
     // The webauthn post is unguarded because it's not a htmx event.
 
@@ -225,19 +237,14 @@ mod tests {
     #[tokio::test]
     async fn test_unrecoverableerrorview() {
         let domain_info = kubidmd_lib::server::DomainInfo::new_test();
-
         let view = UnrecoverableErrorView {
             err_code: OperationError::InvalidState,
             operation_id: Uuid::new_v4(),
             domain_info: domain_info.read(),
         };
-
         let error_html = view.render().expect("Failed to render");
-
         assert!(error_html.contains(domain_info.read().display_name()));
-
         let response = view.into_response();
-
         // TODO: this really should be an error code :(
         assert_eq!(response.status(), 200);
     }
