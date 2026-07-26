@@ -5,6 +5,9 @@ name: Agent clippy diagnostic
   push:
     branches:
       - agent/adr-mascot-guided-experience
+  pull_request:
+    branches:
+      - master
 
 permissions:
   contents: write
