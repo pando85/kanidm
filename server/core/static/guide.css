@@ -1,3 +1,5 @@
+@import url("/pkg/guide_motion.css");
+
 :root {
     --kubidm-guide-teal: #0ea39a;
     --kubidm-guide-cyan: #29c3d3;
