@@ -5,9 +5,21 @@ import {
     Severity,
     normaliseGuideState,
 } from "./guide_contract.mjs";
+import {
+    clearAuthenticationAttempt,
+    markAuthenticationAttempt,
+} from "./guide_handoff.mjs";
 import { createGuideRenderer } from "./guide_renderer.mjs";
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+const AUTH_CREDENTIAL_PATHS = new Set([
+    "/ui/login/passkey",
+    "/ui/login/seckey",
+    "/ui/login/pw",
+    "/ui/login/totp",
+    "/ui/login/backup_code",
+]);
+
 let sceneRoot = null;
 let renderer = null;
 let sceneObserver = null;
@@ -75,6 +87,10 @@ function publish(overrides = {}) {
     const state = readState(overrides);
     if (!state || !sceneRoot) return null;
 
+    if (state.productState === "authentication_denied") {
+        clearAuthenticationAttempt();
+    }
+
     document.documentElement.dataset.guideScene = sceneRoot.dataset.guideScene || "unknown";
     document.documentElement.dataset.guideState = state.mascotState;
     document.documentElement.dataset.guideSeverity = state.severity;
@@ -127,6 +143,21 @@ function syncScene() {
     publish();
 }
 
+function maybeMarkFormAuthentication(form) {
+    if (!(form instanceof HTMLFormElement)) return;
+
+    let path;
+    try {
+        path = new URL(form.action, window.location.href).pathname;
+    } catch {
+        return;
+    }
+
+    if (AUTH_CREDENTIAL_PATHS.has(path)) {
+        markAuthenticationAttempt();
+    }
+}
+
 window.addEventListener("kubidm:webauthn-start", () => {
     syncScene();
     setStatus("Waiting for your browser or device…");
@@ -140,6 +171,7 @@ window.addEventListener("kubidm:webauthn-start", () => {
 window.addEventListener("kubidm:webauthn-submit", () => {
     // The browser produced an assertion, but the server still has to validate
     // it. Remain in Working rather than showing a success state.
+    markAuthenticationAttempt();
     syncScene();
     setStatus("Checking your identity…");
     publish({
@@ -152,6 +184,7 @@ window.addEventListener("kubidm:webauthn-submit", () => {
 window.addEventListener("kubidm:webauthn-cancelled", () => {
     // NotAllowedError may mean cancellation, timeout, or no available
     // credential. Return to a neutral actionable posture without guessing.
+    clearAuthenticationAttempt();
     syncScene();
     setStatus("That request did not complete. You can try again when you are ready.");
     publish({
@@ -162,6 +195,7 @@ window.addEventListener("kubidm:webauthn-cancelled", () => {
 });
 
 window.addEventListener("kubidm:webauthn-error", () => {
+    clearAuthenticationAttempt();
     syncScene();
     setStatus("The browser could not complete this request. Try again.", Severity.CAUTION);
     publish({
@@ -170,6 +204,14 @@ window.addEventListener("kubidm:webauthn-error", () => {
         severity: Severity.CAUTION,
     });
 });
+
+document.body.addEventListener(
+    "submit",
+    (event) => {
+        maybeMarkFormAuthentication(event.target);
+    },
+    true,
+);
 
 document.body.addEventListener("htmx:beforeRequest", () => {
     publish({ mascotState: MascotState.WORKING });
