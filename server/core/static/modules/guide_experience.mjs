@@ -26,15 +26,14 @@ function bindStory(node) {
         return;
     }
 
-    // A short orientation/dialog that is actually rendered counts as seen.
-    // This is UX familiarity only and has no security meaning.
     markStorySeen(storyId);
 }
 
 function bindSuggestion(node) {
     const suggestionId = node.dataset.guideSuggestionId;
     if (!suggestionId) return;
-    node.hidden = !shouldShowSuggestion(suggestionId);
+    const eligible = node.dataset.guideSuggestionEligible !== "false";
+    node.hidden = !eligible || !shouldShowSuggestion(suggestionId);
 }
 
 export function syncGuideExperience(scene = document.querySelector("[data-guide-scene]")) {
