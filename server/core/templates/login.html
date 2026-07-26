@@ -1,13 +1,25 @@
 (% extends "login_base.html" %)
 
 (% block logincontainer %)
-<div data-guide-state="welcome" data-guide-action="identify">
+<div data-guide-state="(% if username.is_empty() %)welcome(% else %)idle(% endif %)"
+     data-guide-action="identify">
 (% if let Some(error) = display_ctx.error %)
 	<div class="alert alert-danger" role="alert" data-guide-severity="caution">
 		(( error ))
 	</div>
 (% endif %)
 
+(% if crate::https::views::guide::guided_ui_enabled() %)
+    (% if username.is_empty() %)
+    <h3>Welcome</h3>
+    <section class="crab-dialog" data-variant="orient">
+        <p>Hi. I’ll help you sign in, explain security choices when they matter, and stay quiet when they don’t.</p>
+    </section>
+    (% else %)
+    <h3>Welcome back</h3>
+    <p class="text-body-secondary">Continue with your remembered username, or change it below.</p>
+    (% endif %)
+(% endif %)
 
 <label for="username" class="form-label">Username</label>
 <form id="login" action="/ui/login/begin" method="post">
@@ -59,8 +71,8 @@
 	<div class="input-group mb-3 justify-content-md-center">
 		<button
 			type="submit"
-			class="btn btn-primary"
-		>Begin</button>
+			class="btn btn-primary(% if crate::https::views::guide::guided_ui_enabled() %) w-100(% endif %)"
+		>(% if crate::https::views::guide::guided_ui_enabled() %)Continue(% else %)Begin(% endif %)</button>
 	</div>
 	(% if display_ctx.domain_info.allow_account_recovery() -%)
 	<div class="input-group mb-3 justify-content-md-center">
