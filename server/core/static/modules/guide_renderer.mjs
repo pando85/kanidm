@@ -3,6 +3,7 @@ import {
     MotionLevel,
     assertGuideValue,
 } from "./guide_contract.mjs";
+import { RiveGuideRenderer } from "./guide_rive_renderer.mjs";
 
 const STATIC_ASSET_ROOT = "/pkg/img/guide";
 
@@ -13,9 +14,8 @@ export const GuideFallback = Object.freeze({
 
 function assetState(mascotState) {
     if (mascotState !== MascotState.TRAVEL) return mascotState;
-    // Travel is movement of the same canonical crab, not a separate character
-    // drawing. CSS owns the lateral choreography while the renderer reuses the
-    // idle artwork, which prevents visual model drift between states.
+    // Static/reduced/failure rendering uses the same canonical idle artwork.
+    // A real travel gait exists only inside the production Rive rig.
     return MascotState.IDLE;
 }
 
@@ -83,6 +83,11 @@ export class StaticGuideRenderer {
         this.fallback.hidden = true;
     }
 
+    hideImage() {
+        this.image.hidden = true;
+        this.fallback.hidden = true;
+    }
+
     showFallback() {
         const state = this.slot.dataset.mascotState || MascotState.IDLE;
         this.image.hidden = true;
@@ -106,27 +111,60 @@ export class StaticGuideRenderer {
     }
 
     destroy() {
-        // The native renderer owns no external runtime resources. This lifecycle
-        // method keeps the contract compatible with a future Rive renderer.
+        // Static assets own no runtime resources.
     }
 }
 
 export class GuideRendererController {
-    constructor(slot, { renderer = "static", ...rendererOptions } = {}) {
-        if (renderer !== "static") {
+    constructor(slot, { renderer = "auto", ...rendererOptions } = {}) {
+        if (!new Set(["auto", "static"]).has(renderer)) {
             throw new Error(`Unsupported Kubidm guide renderer: ${renderer}`);
         }
         this.slot = slot;
         this.rendererName = renderer;
-        this.renderer = new StaticGuideRenderer(slot, rendererOptions);
+        this.rendererOptions = rendererOptions;
+        this.staticRenderer = new StaticGuideRenderer(slot, rendererOptions);
+        this.riveRenderer = null;
+        this.lastState = null;
+    }
+
+    ensureRiveRenderer() {
+        if (this.rendererName === "static") return null;
+        if (!this.riveRenderer) {
+            this.riveRenderer = new RiveGuideRenderer(this.slot, {
+                onReady: () => this.staticRenderer.hideImage(),
+                onFailure: () => {
+                    if (this.lastState) {
+                        this.staticRenderer.setState({
+                            ...this.lastState,
+                            motionLevel: MotionLevel.STATIC,
+                        });
+                    }
+                },
+            });
+        }
+        return this.riveRenderer;
     }
 
     setState(state) {
-        this.renderer.setState(state);
+        this.lastState = state;
+        if (state.motionLevel === MotionLevel.FULL && this.rendererName !== "static") {
+            // A still fallback is allowed during startup/failure, but all full-motion
+            // character articulation belongs to Rive.
+            this.staticRenderer.setState({ ...state, motionLevel: MotionLevel.STATIC });
+            this.ensureRiveRenderer()?.setState(state);
+            return;
+        }
+
+        this.riveRenderer?.destroy();
+        this.riveRenderer = null;
+        this.staticRenderer.setState(state);
     }
 
     destroy() {
-        this.renderer.destroy();
+        this.riveRenderer?.destroy();
+        this.riveRenderer = null;
+        this.staticRenderer.destroy();
     }
 }
 
