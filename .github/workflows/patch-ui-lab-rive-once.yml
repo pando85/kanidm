@@ -1,0 +1,57 @@
+name: Patch UI Lab Rive contract once
+
+on:
+  push:
+    branches:
+      - agent/adr-mascot-guided-experience
+    paths:
+      - .github/workflows/patch-ui-lab-rive-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/adr-mascot-guided-experience
+          fetch-depth: 0
+      - name: Apply targeted UI Lab Rive fixes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('server/core/static/modules/ui_lab.mjs')
+          s = p.read_text()
+          s = s.replace('/pkg/img/guide/crab-${label}.svg', '/pkg/img/guide/crab-${label}.webp')
+          s = s.replace('data-go-story="resilience">Continue</button>', 'data-go-story="applications-arrival">Continue</button>')
+          s = s.replace(
+              '<section class="ui-lab-auth-shell" data-story-name="${escapeHtml(name)}">',
+              '<section class="ui-lab-auth-shell" data-story-name="${escapeHtml(name)}" data-guide-action="${escapeHtml(story.productState)}" data-guide-severity="${escapeHtml(story.severity)}">'
+          )
+          marker = '    "component-dialog": {'
+          goodbye = '''    goodbye: {\n        title: "Goodbye",\n        productState: "logout",\n        recommendation: "none",\n        mascotState: "goodbye",\n        severity: "neutral",\n        heading: "See you next time",\n        subtitle: "Logout is never delayed for mascot motion.",\n        dialog: {\n            variant: "orient",\n            text: "I’ll be here next time you sign in.",\n        },\n        content: "goodbye",\n    },\n'''
+          if '    goodbye: {' not in s:
+              s = s.replace(marker, goodbye + marker)
+          case_marker = '        case "component-dialog":'
+          goodbye_case = '''        case "goodbye":\n            return `<div class="ui-lab-native-placeholder"><strong>Logout continues immediately</strong><p>The guide may wave once, but navigation never waits for animation.</p></div>`;\n'''
+          if '        case "goodbye":' not in s:
+              s = s.replace(case_marker, goodbye_case + case_marker)
+          p.write_text(s)
+
+          p = Path('server/core/templates/ui_lab.html')
+          s = p.read_text()
+          marker = '            <h2>Primitives</h2>'
+          button = '            <h2>Session</h2>\n            <button type="button" data-story="goodbye">Goodbye / logout</button>\n\n'
+          if 'data-story="goodbye"' not in s:
+              s = s.replace(marker, button + marker)
+          p.write_text(s)
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add server/core/static/modules/ui_lab.mjs server/core/templates/ui_lab.html
+          git commit -m "fix(ui): align UI Lab stories with Rive production contract"
+          git push origin HEAD:agent/adr-mascot-guided-experience
