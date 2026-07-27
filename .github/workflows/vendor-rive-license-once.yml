@@ -6,6 +6,7 @@ on:
       - agent/adr-mascot-guided-experience
     paths:
       - .github/workflows/vendor-rive-license-once.yml
+      - server/core/scripts/vendor_rive.mjs
 
 permissions:
   contents: write
