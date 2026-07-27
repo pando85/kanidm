@@ -43,11 +43,12 @@ function fire(instance, name) {
 }
 
 export class RiveGuideRenderer {
-    constructor(slot, { onFailure = null } = {}) {
+    constructor(slot, { onReady = null, onFailure = null } = {}) {
         if (!(slot instanceof HTMLElement)) {
             throw new TypeError("RiveGuideRenderer requires an HTMLElement slot");
         }
         this.slot = slot;
+        this.onReady = onReady;
         this.onFailure = onFailure;
         this.canvas = document.createElement("canvas");
         this.canvas.dataset.guideRiveCanvas = "";
@@ -75,8 +76,7 @@ export class RiveGuideRenderer {
 
     setState(state) {
         this.lastState = state;
-        if (this.destroyed || this.failed) return;
-        if (state.motionLevel !== MotionLevel.FULL) return;
+        if (this.destroyed || this.failed || state.motionLevel !== MotionLevel.FULL) return;
 
         if (this.rive && this.viewModelInstance) {
             this.applyState(state);
@@ -139,6 +139,7 @@ export class RiveGuideRenderer {
                         lastError: null,
                     });
                     if (this.lastState) this.applyState(this.lastState);
+                    this.onReady?.();
                     resolve();
                 } catch (error) {
                     instance?.cleanup?.();
@@ -201,8 +202,8 @@ export class RiveGuideRenderer {
         });
 
         if (state.severity === Severity.CRITICAL || state.motionLevel !== MotionLevel.FULL) {
-            // The View Model owns the visual stillness. pause() is intentionally not
-            // used here because the state machine must advance once to apply bindings.
+            // The View Model owns the stillness. The state machine still advances once
+            // so the bound critical/static pose is actually applied.
             return;
         }
     }
