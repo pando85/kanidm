@@ -79,7 +79,7 @@ class MockViewModel {
     }
 }
 
-export function createMockRiveRuntime() {
+export function createMockRiveRuntime({ failLoad = false } = {}) {
     const stats = globalThis.__kubidmMockRiveStats || {
         created: 0,
         cleaned: 0,
@@ -99,7 +99,10 @@ export function createMockRiveRuntime() {
             this.viewModel = new MockViewModel(this.viewModelInstance);
             stats.created += 1;
             stats.active += 1;
-            queueMicrotask(() => options.onLoad?.());
+            queueMicrotask(() => {
+                if (failLoad) options.onLoadError?.(new Error("Injected mock Rive load failure"));
+                else options.onLoad?.();
+            });
         }
 
         viewModelByName(name) {
@@ -152,8 +155,8 @@ export function createMockRiveRuntime() {
     });
 }
 
-export function installMockRiveRuntime() {
-    const runtime = createMockRiveRuntime();
+export function installMockRiveRuntime(options) {
+    const runtime = createMockRiveRuntime(options);
     globalThis.__kubidmRiveRuntimeOverride = runtime;
     return runtime;
 }
