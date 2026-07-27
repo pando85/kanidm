@@ -22,7 +22,7 @@ function syncSlot(slot) {
     let renderer = renderers.get(slot);
     if (!renderer) {
         renderer = createGuideRenderer(slot, {
-            renderer: "static",
+            renderer: "auto",
             fallback: GuideFallback.LABEL,
         });
         renderers.set(slot, renderer);
@@ -31,6 +31,8 @@ function syncSlot(slot) {
     renderer.setState({
         mascotState: slot.dataset.mascotState || "idle",
         motionLevel: motionLevel(),
+        productState: slot.closest("[data-guide-action]")?.dataset.guideAction || "ui_lab",
+        severity: slot.closest("[data-guide-severity]")?.dataset.guideSeverity || "neutral",
     });
 }
 
