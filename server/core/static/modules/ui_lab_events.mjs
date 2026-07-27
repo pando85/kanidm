@@ -1,7 +1,7 @@
 const output = document.querySelector("[data-ui-lab-event-log]");
 const clearButton = document.querySelector("[data-ui-lab-clear-events]");
 const entries = [];
-const MAX_ENTRIES = 12;
+const MAX_ENTRIES = 16;
 
 function render() {
     if (!output) return;
@@ -10,7 +10,7 @@ function render() {
     if (entries.length === 0) {
         const empty = document.createElement("li");
         empty.className = "ui-lab-event-empty";
-        empty.textContent = "No semantic events yet.";
+        empty.textContent = "No semantic or renderer events yet.";
         output.append(empty);
         return;
     }
@@ -34,6 +34,10 @@ function record(name, detail) {
 
 window.addEventListener("kubidm:guide-state", (event) => {
     record("kubidm:guide-state", event.detail);
+});
+
+window.addEventListener("kubidm:guide-diagnostics", (event) => {
+    record("kubidm:guide-diagnostics", event.detail);
 });
 
 for (const name of ["start", "submit", "cancelled", "error"]) {
