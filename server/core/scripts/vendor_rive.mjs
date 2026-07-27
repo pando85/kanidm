@@ -12,6 +12,13 @@ function sha256(bytes) {
     return createHash("sha256").update(bytes).digest("hex");
 }
 
+function npmView(field) {
+    return execFileSync("npm", ["view", `${PACKAGE}@${VERSION}`, field], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "inherit"],
+    }).trim();
+}
+
 const temp = await mkdtemp(path.join(os.tmpdir(), "kubidm-rive-"));
 try {
     const output = execFileSync("npm", ["pack", `${PACKAGE}@${VERSION}`, "--json"], {
@@ -40,28 +47,40 @@ try {
         await cp(source, path.join(target, file));
     }
 
+    let licenseBytes = null;
     let licenseSource = null;
+    let sourceGitHead = npmView("gitHead");
     for (const candidate of ["LICENSE", "LICENSE.md", "LICENSE.txt"]) {
         try {
-            await readFile(path.join(packageRoot, candidate));
-            licenseSource = candidate;
+            licenseBytes = await readFile(path.join(packageRoot, candidate));
+            licenseSource = `npm:${candidate}`;
             break;
         } catch {
-            // Try the next package-provided license filename.
+            // Fall back to the package's immutable upstream git revision below.
         }
     }
-    if (!licenseSource) {
-        throw new Error(`${PACKAGE}@${VERSION} package did not contain a redistributable license file`);
+
+    if (!licenseBytes) {
+        if (!/^[0-9a-f]{7,40}$/i.test(sourceGitHead)) {
+            throw new Error(`${PACKAGE}@${VERSION} did not expose a usable gitHead for license retrieval`);
+        }
+        const licenseUrl = `https://raw.githubusercontent.com/rive-app/rive-wasm/${sourceGitHead}/LICENSE`;
+        const licensePath = path.join(temp, "UPSTREAM_LICENSE");
+        execFileSync("curl", ["--fail", "--location", "--silent", "--show-error", "--output", licensePath, licenseUrl]);
+        licenseBytes = await readFile(licensePath);
+        licenseSource = licenseUrl;
     }
-    const licenseBytes = await readFile(path.join(packageRoot, licenseSource));
+
     await writeFile(path.join(target, "LICENSE"), licenseBytes);
     hashes.LICENSE = sha256(licenseBytes);
 
     const metadata = {
         package: PACKAGE,
         version: VERSION,
+        sourceGitHead,
         license: packageJson.license || "UNKNOWN",
         licenseFile: "LICENSE",
+        licenseSource,
         generatedBy: "server/core/scripts/vendor_rive.mjs",
         files: hashes,
     };
