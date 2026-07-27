@@ -50,6 +50,7 @@ export class RiveGuideRenderer {
         this.slot.append(this.canvas);
 
         this.rive = null;
+        this.pendingRive = null;
         this.viewModelInstance = null;
         this.contract = null;
         this.lastState = null;
@@ -112,11 +113,22 @@ export class RiveGuideRenderer {
 
         await new Promise((resolve, reject) => {
             let instance;
+            const cleanupPending = () => {
+                instance?.cleanup?.();
+                if (this.pendingRive === instance) this.pendingRive = null;
+            };
+
             options.onLoad = () => {
+                if (this.destroyed) {
+                    cleanupPending();
+                    resolve();
+                    return;
+                }
                 try {
                     const validated = validateGuideRiveContract(instance, contract);
                     this.viewModelInstance = instance.viewModelInstance || validated.instance;
                     if (!instance.viewModelInstance) instance.bindViewModelInstance(this.viewModelInstance);
+                    this.pendingRive = null;
                     this.rive = instance;
                     this.installLifecycle();
                     this.resize();
@@ -136,15 +148,17 @@ export class RiveGuideRenderer {
                     this.onReady?.();
                     resolve();
                 } catch (error) {
-                    instance?.cleanup?.();
+                    cleanupPending();
                     reject(error);
                 }
             };
             options.onLoadError = (error) => {
-                instance?.cleanup?.();
+                cleanupPending();
                 reject(error instanceof Error ? error : new Error(String(error)));
             };
             instance = new runtime.Rive(options);
+            this.pendingRive = instance;
+            if (this.destroyed) cleanupPending();
         });
     }
 
@@ -221,6 +235,8 @@ export class RiveGuideRenderer {
         this.intersectionObserver?.disconnect();
         this.resizeObserver = null;
         this.intersectionObserver = null;
+        this.pendingRive?.cleanup?.();
+        this.pendingRive = null;
         this.rive?.cleanup?.();
         this.rive = null;
         this.viewModelInstance = null;
