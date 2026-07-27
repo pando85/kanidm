@@ -192,6 +192,20 @@ const stories = {
         },
         content: "complete",
     },
+    goodbye: {
+        title: "Goodbye",
+        productState: "logout",
+        recommendation: "none",
+        mascotState: "goodbye",
+        severity: "neutral",
+        heading: "See you next time",
+        subtitle: "Logout is never delayed for mascot motion.",
+        dialog: {
+            variant: "orient",
+            text: "I’ll be here next time you sign in.",
+        },
+        content: "goodbye",
+    },
     "component-dialog": {
         title: "Crab Dialog variants",
         productState: "component_preview",
@@ -290,7 +304,7 @@ function noticeMarkup(title, text, severity) {
 function mascotMarkup(state) {
     const label = escapeHtml(state);
     return `<div class="ui-lab-mascot-slot" data-mascot-state="${label}">
-        <img data-lab-mascot-image src="/pkg/img/guide/crab-${label}.svg" alt="Kubidm guide: ${label}" />
+        <img data-lab-mascot-image src="/pkg/img/guide/crab-${label}.webp" alt="Kubidm guide: ${label}" />
         <div data-lab-mascot-fallback class="ui-lab-mascot-fallback" hidden>
             <span>Mascot asset slot<br><strong>${label}</strong></span>
         </div>
@@ -326,7 +340,7 @@ function storyContent(story) {
             </div>`;
         case "success":
             return `${noticeMarkup("Identity verified", "Authentication was confirmed by Kubidm.", "positive")}
-                <button type="button" class="btn ui-lab-primary-action" data-go-story="resilience">Continue</button>`;
+                <button type="button" class="btn ui-lab-primary-action" data-go-story="applications-arrival">Continue</button>`;
         case "password":
             return `<form class="ui-lab-form" onsubmit="return false">
                 <label>Password<input type="password" class="form-control" value="example-password" /></label>
@@ -375,6 +389,8 @@ function storyContent(story) {
                 { title: "Resilience", detail: "Ready for this fixture", complete: true },
             ])}
             <p class="text-body-secondary">Routine sign-ins now become quiet. The guide returns when context changes or a security action needs attention.</p>`;
+        case "goodbye":
+            return `<div class="ui-lab-native-placeholder"><strong>Logout continues immediately</strong><p>The guide may wave once, but navigation never waits for animation.</p></div>`;
         case "component-dialog":
             return `<div class="ui-lab-component-stack">
                 ${dialogMarkup({ variant: "orient", text: "I’ll help you understand what comes next." })}
@@ -408,7 +424,7 @@ function renderStory(name, { updateHash = true } = {}) {
     ui.mascotState.textContent = story.mascotState;
     ui.severity.textContent = story.severity;
 
-    ui.canvas.innerHTML = `<section class="ui-lab-auth-shell" data-story-name="${escapeHtml(name)}">
+    ui.canvas.innerHTML = `<section class="ui-lab-auth-shell" data-story-name="${escapeHtml(name)}" data-guide-action="${escapeHtml(story.productState)}" data-guide-severity="${escapeHtml(story.severity)}">
         <aside class="ui-lab-product-zone">
             <div class="ui-lab-product-mark">kubi<span>dm</span></div>
             <div class="ui-lab-product-copy">
