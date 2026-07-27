@@ -3842,7 +3842,7 @@ mod tests {
         );
 
         let err = cutxn
-            .credential_primary_set_password(&cust, ct, "password1234")
+            .credential_primary_set_password(&cust, ct, "qwerty123456789")
             .unwrap_err();
         trace!(?err);
         assert!(
