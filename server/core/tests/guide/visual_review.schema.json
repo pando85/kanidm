@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kubidm.dev/schemas/guide-visual-review-v1.json",
+  "title": "Kubidm guide visual review",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "pass",
+    "scores",
+    "blocking_defects",
+    "non_blocking_defects",
+    "recommended_changes"
+  ],
+  "properties": {
+    "pass": { "type": "boolean" },
+    "scores": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "silhouette_fidelity",
+        "proportion_fidelity",
+        "band_badge_fidelity",
+        "face_fidelity",
+        "claw_role_readability",
+        "pose_semantic_readability",
+        "motion_smoothness",
+        "lack_of_clipping_deformation",
+        "accessibility_appropriateness",
+        "product_state_consistency"
+      ],
+      "properties": {
+        "silhouette_fidelity": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "proportion_fidelity": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "band_badge_fidelity": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "face_fidelity": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "claw_role_readability": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "pose_semantic_readability": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "motion_smoothness": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "lack_of_clipping_deformation": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "accessibility_appropriateness": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "product_state_consistency": { "type": "integer", "minimum": 0, "maximum": 5 }
+      }
+    },
+    "blocking_defects": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "non_blocking_defects": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "recommended_changes": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}
