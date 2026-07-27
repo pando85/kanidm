@@ -3,6 +3,9 @@
   "asset": "/pkg/img/guide/kubidm-guide.riv",
   "runtime": {
     "package": "@rive-app/canvas-lite",
+    "version": "2.39.1",
+    "javascript": "/pkg/rive/rive.js",
+    "wasm": "/pkg/rive/rive.wasm",
     "selfHosted": true,
     "cdnAllowed": false
   },
@@ -92,7 +95,7 @@
   },
   "rendererPolicy": {
     "full": "rive",
-    "reduced": "rive-reduced-or-static",
+    "reduced": "static",
     "static": "static",
     "riveFailure": "static"
   },
@@ -121,6 +124,9 @@
     "requireReducedMotionTest": true,
     "requireStaticModeTest": true,
     "requireIndependentVisualReview": true,
+    "visualReviewSchema": "tests/guide/visual_review.schema.json",
+    "visualReviewPrompt": "tests/guide/visual_review_prompt.md",
+    "minimumVisualScore": 4,
     "requireHumanApprovalForCanonicalSilhouette": true,
     "requireHumanApprovalForTravelGait": true
   }
