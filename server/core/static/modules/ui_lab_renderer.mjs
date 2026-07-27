@@ -5,9 +5,9 @@ import {
 } from "./guide_renderer.mjs";
 
 const query = new URLSearchParams(window.location.search);
-if (query.get("rive") === "mock") {
+if (query.get("rive") === "mock" || query.get("rive") === "mock-fail") {
     const { installMockRiveRuntime } = await import("./guide_rive_mock.mjs");
-    installMockRiveRuntime();
+    installMockRiveRuntime({ failLoad: query.get("rive") === "mock-fail" });
 }
 
 const canvas = document.querySelector("#ui-lab-canvas");
