@@ -88,6 +88,7 @@ export function createMockRiveRuntime({ failLoad = false } = {}) {
         pauses: 0,
         resizes: 0,
         wasmUrl: null,
+        wasmFallbackUrl: undefined,
         triggers: [],
     };
     globalThis.__kubidmMockRiveStats = stats;
@@ -143,6 +144,9 @@ export function createMockRiveRuntime({ failLoad = false } = {}) {
         RuntimeLoader: {
             setWasmUrl(url) {
                 stats.wasmUrl = url;
+            },
+            setWasmFallbackUrl(url) {
+                stats.wasmFallbackUrl = url;
             },
         },
         Layout: class MockLayout {
