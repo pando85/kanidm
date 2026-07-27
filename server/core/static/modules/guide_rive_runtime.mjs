@@ -5,6 +5,8 @@ const DEFAULT_CONTRACT_URL = "/pkg/guide_rive_contract.json";
 
 let runtimePromise = null;
 let contractPromise = null;
+let riveFilePromise = null;
+let cachedRiveFile = null;
 
 function loadScript(src) {
     return new Promise((resolve, reject) => {
@@ -66,8 +68,8 @@ export async function loadGuideRiveRuntime({
                           return globalThis.rive;
                       })();
 
-            if (!runtime?.Rive || !runtime?.RuntimeLoader) {
-                throw new Error("Self-hosted Rive runtime did not expose Rive and RuntimeLoader");
+            if (!runtime?.Rive || !runtime?.RuntimeLoader || !runtime?.RiveFile) {
+                throw new Error("Self-hosted Rive runtime did not expose Rive, RiveFile and RuntimeLoader");
             }
 
             runtime.RuntimeLoader.setWasmUrl(wasmUrl);
@@ -82,6 +84,30 @@ export async function loadGuideRiveRuntime({
         });
     }
     return runtimePromise;
+}
+
+export async function loadGuideRiveFile(runtime, { assetUrl = DEFAULT_ASSET_URL } = {}) {
+    if (!riveFilePromise) {
+        riveFilePromise = (async () => {
+            const file = new runtime.RiveFile({
+                src: assetUrl,
+                enableRiveAssetCDN: false,
+            });
+            try {
+                await file.init();
+                cachedRiveFile = file;
+                return file;
+            } catch (error) {
+                file.cleanup?.();
+                throw error;
+            }
+        })().catch((error) => {
+            riveFilePromise = null;
+            cachedRiveFile = null;
+            throw error;
+        });
+    }
+    return riveFilePromise;
 }
 
 export function guideRiveAssetUrl() {
@@ -135,6 +161,9 @@ export function validateGuideRiveContract(runtimeInstance, contract) {
 }
 
 export function resetGuideRiveRuntimeForTests() {
+    cachedRiveFile?.cleanup?.();
+    cachedRiveFile = null;
+    riveFilePromise = null;
     runtimePromise = null;
     contractPromise = null;
 }
