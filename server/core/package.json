@@ -26,6 +26,7 @@
     "test:guide": "node --test tests/guide/*.test.mjs",
     "test:guide:e2e": "playwright test -c tests/guide/playwright.config.mjs",
     "guide:evidence": "node tests/guide/capture_evidence.mjs",
+    "guide:review:validate": "node tests/guide/validate_visual_review.mjs",
     "vendor:rive": "node scripts/vendor_rive.mjs"
   }
 }
