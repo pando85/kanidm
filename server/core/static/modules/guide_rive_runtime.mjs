@@ -58,14 +58,23 @@ export async function loadGuideRiveRuntime({
     if (!runtimePromise) {
         runtimePromise = (async () => {
             const override = globalThis.__kubidmRiveRuntimeOverride;
-            if (override?.Rive && override?.RuntimeLoader) return override;
+            const runtime =
+                override?.Rive && override?.RuntimeLoader
+                    ? override
+                    : await (async () => {
+                          if (!globalThis.rive?.Rive) await loadScript(runtimeUrl);
+                          return globalThis.rive;
+                      })();
 
-            if (!globalThis.rive?.Rive) await loadScript(runtimeUrl);
-            const runtime = globalThis.rive;
             if (!runtime?.Rive || !runtime?.RuntimeLoader) {
                 throw new Error("Self-hosted Rive runtime did not expose Rive and RuntimeLoader");
             }
+
             runtime.RuntimeLoader.setWasmUrl(wasmUrl);
+            // canvas-lite has an optional WASM fallback URL. Its upstream default can
+            // point at a public CDN. Kubidm is intentionally self-hosted, so disable
+            // that path explicitly: local WASM failure must reach our static fallback.
+            runtime.RuntimeLoader.setWasmFallbackUrl?.(null);
             return runtime;
         })().catch((error) => {
             runtimePromise = null;
