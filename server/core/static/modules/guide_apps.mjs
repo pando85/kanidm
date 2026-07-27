@@ -10,10 +10,23 @@ function clearTimers() {
     timers = [];
 }
 
-function setSceneState(scene, { action, mascotState, severity = Severity.NEUTRAL }) {
+function setSceneState(
+    scene,
+    {
+        action,
+        mascotState,
+        severity = Severity.NEUTRAL,
+        travelDirection = "right",
+        lookX = 0,
+        lookY = 0,
+    },
+) {
     scene.dataset.guideAction = action;
     scene.dataset.guideState = mascotState;
     scene.dataset.guideSeverity = severity;
+    scene.dataset.guideTravelDirection = travelDirection;
+    scene.dataset.guideLookX = String(lookX);
+    scene.dataset.guideLookY = String(lookY);
 }
 
 function settle(scene) {
@@ -21,6 +34,7 @@ function settle(scene) {
         action: "applications",
         mascotState: MascotState.IDLE,
         severity: Severity.NEUTRAL,
+        lookX: 0.15,
     });
 }
 
@@ -30,6 +44,7 @@ function playConfirmedArrival(scene) {
         action: "authentication_confirmed",
         mascotState: MascotState.SUCCESS,
         severity: Severity.POSITIVE,
+        lookX: 0,
     });
 
     if (reducedMotion.matches) {
@@ -43,6 +58,8 @@ function playConfirmedArrival(scene) {
                 action: "applications_arrival",
                 mascotState: MascotState.TRAVEL,
                 severity: Severity.NEUTRAL,
+                travelDirection: "right",
+                lookX: 0.85,
             });
         }, 650),
     );
