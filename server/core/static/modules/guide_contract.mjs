@@ -31,6 +31,11 @@ export const MotionLevel = Object.freeze({
     STATIC: "static",
 });
 
+export const TravelDirection = Object.freeze({
+    LEFT: "left",
+    RIGHT: "right",
+});
+
 export const JourneyStage = Object.freeze({
     MEET: "meet",
     IDENTIFY: "identify",
@@ -48,6 +53,7 @@ const allowed = Object.freeze({
     severity: new Set(Object.values(Severity)),
     mascotState: new Set(Object.values(MascotState)),
     motionLevel: new Set(Object.values(MotionLevel)),
+    travelDirection: new Set(Object.values(TravelDirection)),
     journeyStage: new Set(Object.values(JourneyStage)),
 });
 
@@ -62,6 +68,11 @@ export function assertGuideValue(kind, value) {
     return value;
 }
 
+function numericOrZero(value) {
+    const number = Number(value ?? 0);
+    return Number.isFinite(number) ? number : 0;
+}
+
 export function normaliseGuideState(input = {}) {
     const state = {
         productState: String(input.productState || "unknown"),
@@ -69,6 +80,9 @@ export function normaliseGuideState(input = {}) {
         severity: input.severity || Severity.NEUTRAL,
         mascotState: input.mascotState || MascotState.IDLE,
         motionLevel: input.motionLevel || MotionLevel.FULL,
+        travelDirection: input.travelDirection || TravelDirection.RIGHT,
+        lookX: numericOrZero(input.lookX),
+        lookY: numericOrZero(input.lookY),
         journeyStage: input.journeyStage || null,
     };
 
@@ -76,6 +90,7 @@ export function normaliseGuideState(input = {}) {
     assertGuideValue("severity", state.severity);
     assertGuideValue("mascotState", state.mascotState);
     assertGuideValue("motionLevel", state.motionLevel);
+    assertGuideValue("travelDirection", state.travelDirection);
     if (state.journeyStage !== null) {
         assertGuideValue("journeyStage", state.journeyStage);
     }
