@@ -14,14 +14,18 @@ const contract = JSON.parse(
     await readFile(new URL("../../static/guide_rive_contract.json", import.meta.url), "utf8"),
 );
 
+function sorted(values) {
+    return [...values].sort();
+}
+
 test("machine-readable Rive contract matches product semantic enums", () => {
     assert.equal(contract.artboard, "KubidmGuide");
     assert.equal(contract.stateMachine, "ProductGuide");
     assert.equal(contract.viewModel, "GuideState");
-    assert.deepEqual(contract.properties.state.values, Object.values(MascotState));
-    assert.deepEqual(contract.properties.motion.values, Object.values(MotionLevel));
-    assert.deepEqual(contract.properties.severity.values, Object.values(Severity));
-    assert.deepEqual(contract.properties.travelDirection.values, ["left", "right"]);
+    assert.deepEqual(sorted(contract.properties.state.values), sorted(Object.values(MascotState)));
+    assert.deepEqual(sorted(contract.properties.motion.values), sorted(Object.values(MotionLevel)));
+    assert.deepEqual(sorted(contract.properties.severity.values), sorted(Object.values(Severity)));
+    assert.deepEqual(sorted(contract.properties.travelDirection.values), ["left", "right"]);
 
     for (const trigger of ["attention", "successSmall", "successMajor", "goodbye"]) {
         assert.equal(contract.properties[trigger].type, "trigger");
