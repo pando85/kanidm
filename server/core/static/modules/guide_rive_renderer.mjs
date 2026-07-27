@@ -4,8 +4,8 @@ import {
     guideRiveTriggers,
 } from "./guide_rive_binding.mjs";
 import {
-    guideRiveAssetUrl,
     loadGuideRiveContract,
+    loadGuideRiveFile,
     loadGuideRiveRuntime,
     validateGuideRiveContract,
 } from "./guide_rive_runtime.mjs";
@@ -94,15 +94,19 @@ export class RiveGuideRenderer {
             loadGuideRiveContract(),
         ]);
         if (this.destroyed) return;
+
+        const riveFile = await loadGuideRiveFile(runtime);
+        if (this.destroyed) return;
         this.contract = contract;
 
         const options = {
-            src: guideRiveAssetUrl(),
+            riveFile,
             canvas: this.canvas,
             artboard: contract.artboard,
             stateMachines: contract.stateMachine,
             autoplay: true,
             autoBind: true,
+            enableRiveAssetCDN: false,
         };
         if (runtime.Layout && runtime.Fit && runtime.Alignment) {
             options.layout = new runtime.Layout({
@@ -141,6 +145,7 @@ export class RiveGuideRenderer {
                         stateMachine: contract.stateMachine,
                         viewModel: contract.viewModel,
                         mockRuntime: runtime.__kubidmMock === true,
+                        cachedRiveFile: true,
                         fallbackActive: false,
                         lastError: null,
                     });
