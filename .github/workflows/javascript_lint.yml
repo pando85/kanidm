@@ -11,8 +11,11 @@ jobs:
       - uses: pnpm/action-setup@v6
         with:
           version: 11
-      - name: Run ESLint to check Javascript files
+      - name: Run ESLint to check browser Javascript files
         run: make eslint
+      - name: Lint guide test and build scripts
+        working-directory: server/core
+        run: pnpm exec eslint tests scripts
       - name: Run Prettier to check Javascript files
         run: make prettier
       - name: Validate mascot Rive semantic contract
