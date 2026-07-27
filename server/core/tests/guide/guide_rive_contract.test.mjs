@@ -9,7 +9,11 @@ import {
     TravelDirection,
 } from "../../static/modules/guide_contract.mjs";
 import { createMockRiveRuntime } from "../../static/modules/guide_rive_mock.mjs";
-import { validateGuideRiveContract } from "../../static/modules/guide_rive_runtime.mjs";
+import {
+    loadGuideRiveRuntime,
+    resetGuideRiveRuntimeForTests,
+    validateGuideRiveContract,
+} from "../../static/modules/guide_rive_runtime.mjs";
 
 const contract = JSON.parse(
     await readFile(new URL("../../static/guide_rive_contract.json", import.meta.url), "utf8"),
@@ -52,7 +56,23 @@ test("machine contract and vendored Rive runtime cannot drift", () => {
     assert.equal(contract.verification.minimumVisualScore, 4);
 });
 
+test("runtime loader disables Rive public WASM fallback", async () => {
+    delete globalThis.__kubidmMockRiveStats;
+    resetGuideRiveRuntimeForTests();
+    const runtime = createMockRiveRuntime();
+    globalThis.__kubidmRiveRuntimeOverride = runtime;
+    try {
+        await loadGuideRiveRuntime();
+        assert.equal(globalThis.__kubidmMockRiveStats.wasmUrl, "/pkg/rive/rive.wasm");
+        assert.equal(globalThis.__kubidmMockRiveStats.wasmFallbackUrl, null);
+    } finally {
+        delete globalThis.__kubidmRiveRuntimeOverride;
+        resetGuideRiveRuntimeForTests();
+    }
+});
+
 test("mock runtime satisfies the same Data Binding contract", async () => {
+    delete globalThis.__kubidmMockRiveStats;
     const runtime = createMockRiveRuntime();
     const instance = await new Promise((resolve) => {
         let riveInstance;
