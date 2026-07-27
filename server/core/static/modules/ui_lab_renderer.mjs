@@ -4,6 +4,12 @@ import {
     createGuideRenderer,
 } from "./guide_renderer.mjs";
 
+const query = new URLSearchParams(window.location.search);
+if (query.get("rive") === "mock") {
+    const { installMockRiveRuntime } = await import("./guide_rive_mock.mjs");
+    installMockRiveRuntime();
+}
+
 const canvas = document.querySelector("#ui-lab-canvas");
 const preview = document.querySelector("#ui-lab-preview");
 
