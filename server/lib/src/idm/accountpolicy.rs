@@ -226,7 +226,7 @@ impl ResolvedAccountPolicy {
 mod tests {
     use super::{AccountPolicy, CredentialType, ResolvedAccountPolicy};
     use crate::prelude::*;
-    use kubidm_lib_crypto::PW_MFA_MIN_LENGTH;
+    use kubidm_lib_crypto::PW_SFA_MIN_LENGTH_NIST;
     use webauthn_rs_core::proto::AttestationCaListBuilder;
 
     #[test]
@@ -353,7 +353,7 @@ jAGGiQIwHFj+dJZYUJR786osByBelJYsVZd2GbHQu209b5RCmGQ21gpSAk9QZW4B
         let resolved = ResolvedAccountPolicy::fold_from(policies.into_iter());
         assert_eq!(resolved.privilege_expiry(), MAXIMUM_AUTH_PRIVILEGE_EXPIRY);
         assert_eq!(resolved.authsession_expiry(), MAXIMUM_AUTH_SESSION_EXPIRY);
-        assert_eq!(resolved.pw_min_length(), PW_MFA_MIN_LENGTH);
+        assert_eq!(resolved.pw_min_length(), PW_SFA_MIN_LENGTH_NIST);
         assert!(resolved.limit_search_max_results().is_none());
         assert!(resolved.limit_search_max_filter_test().is_none());
         assert!(resolved.allow_primary_cred_fallback().is_none());
