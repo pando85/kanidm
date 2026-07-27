@@ -13,11 +13,15 @@ function sha256(bytes) {
     return createHash("sha256").update(bytes).digest("hex");
 }
 
-test("vendored Rive runtime bytes match committed SHA-256 metadata", async () => {
-    for (const filename of ["rive.js", "rive.wasm"]) {
+test("vendored Rive runtime and license bytes match committed SHA-256 metadata", async () => {
+    for (const filename of ["rive.js", "rive.wasm", "LICENSE"]) {
         const bytes = await readFile(new URL(`rive/${filename}`, staticRoot));
         assert.equal(sha256(bytes), runtimeVersion.files[filename], `${filename} hash drift`);
     }
+    assert.equal(runtimeVersion.license, "MIT");
+    assert.equal(runtimeVersion.licenseFile, "LICENSE");
+    assert.match(runtimeVersion.sourceGitHead, /^[0-9a-f]{40}$/i);
+    assert.match(runtimeVersion.licenseSource, new RegExp(runtimeVersion.sourceGitHead));
 });
 
 test("canonical static fallback pack is complete WebP and contains no crab SVG poses", async () => {
