@@ -2,7 +2,7 @@
 
 This directory is the executable verification boundary for the production mascot renderer.
 
-The product/application side can be developed and tested without Rive Editor by using the deterministic mock runtime. The **only external authoring deliverable** is the real `kubidm-guide.riv` plus its visual-review evidence.
+The product/application side can be developed and tested without Rive Editor by using the deterministic mock runtime. The **only external authoring deliverable** is the real `kubidm-guide.riv` plus its generated visual-review evidence and approval result.
 
 ## Prerequisites
 
@@ -30,16 +30,20 @@ pnpm test:guide
 pnpm test:guide:e2e
 ```
 
+The unit gate validates semantic/Data-Binding vocabulary, runtime-version drift, vendored runtime/license SHA-256 values, fallback image integrity, absence of pose SVGs/CSS character keyframes, and the local-only WASM configuration.
+
 The browser suite uses `?rive=mock` by default and verifies:
 
 - the production `RiveGuideRenderer` contract;
 - exact artboard/state-machine/View-Model identities;
+- `prefers-reduced-motion` overrides a Full selection;
 - reduced/static modes do not instantiate full Rive motion;
 - deterministic renderer failure activates static fallback;
 - product controls remain usable after Rive failure;
 - 100 story transitions do not accumulate active Rive instances;
 - semantic state and renderer state remain aligned;
-- local runtime/WASM/contract assets are served with expected MIME types.
+- local runtime/WASM/contract assets are served with expected MIME types; and
+- the Rive runtime's public WASM fallback URL is explicitly disabled.
 
 ## UI Lab mock modes
 
@@ -93,7 +97,9 @@ View Model:    GuideState
 
 and satisfy every property in `guide_rive_contract.json` through View Models/Data Binding.
 
-## Real `.riv` contract gate
+The Rive environment must **not** vendor or change the web runtime. Kubidm already pins and self-hosts `@rive-app/canvas-lite@2.39.1`; the authored binary must work against that exact runtime or the runtime upgrade must be a separate reviewed change.
+
+## Real `.riv` contract and failure gates
 
 After `kubidm-guide.riv` has been exported, run the browser suite against the actual vendored Rive runtime:
 
@@ -101,7 +107,45 @@ After `kubidm-guide.riv` has been exported, run the browser suite against the ac
 KUBIDM_EXPECT_REAL_RIVE=1 pnpm test:guide:e2e
 ```
 
-The opt-in test fails if the real asset cannot load, falls back to static rendering, uses the wrong artboard/state machine/View Model, or does not expose the required Data Binding contract.
+The real-asset gates fail if:
+
+- the asset cannot load or unexpectedly falls back;
+- artboard/state-machine/View-Model identities are wrong;
+- required Data Binding properties are missing;
+- a `.riv` 404 prevents the task from remaining usable;
+- a local WASM failure prevents the task from remaining usable;
+- the runtime makes an external HTTP(S) request; or
+- the server does not serve the local runtime/WASM/contract correctly.
+
+## Performance and leak verification
+
+Run the quantitative harness with the real asset:
+
+```bash
+pnpm guide:performance
+```
+
+Validate the pipeline itself before the real asset exists:
+
+```bash
+KUBIDM_RIVE_TEST_MODE=mock pnpm guide:performance
+```
+
+The current engineering gates are intentionally conservative and can be overridden only for measured investigation:
+
+```text
+initialization                    <= 2000 ms
+animation frame interval p95     <= 50 ms
+post-GC JS heap growth            <= 8 MiB
+stress transitions                100
+active Rive canvases after churn  <= 1
+console errors                    0
+external requests in real mode    0
+```
+
+The harness writes `artifacts/guide-performance.json`. A later change may tighten these thresholds once the final `.riv` is measured on target hardware; they must not be relaxed simply to make a failing asset pass.
+
+The product-level requirement for 20 authenticated Profile <-> Credentials HTMX cycles remains a staging/real-session gate because UI Lab intentionally contains no authenticated account/session fixture. The renderer's generic DOM-removal lifecycle is stress-tested independently in UI Lab; the authenticated navigation cycle must still be run in the final staging validation.
 
 ## Generate visual-review evidence
 
@@ -137,7 +181,8 @@ and includes:
 - failed network requests;
 - deterministic start/mid/end screenshots;
 - video for selected motion-heavy states;
-- a list of external network requests.
+- a list of external network requests; and
+- the exact independent-review prompt/schema/validator paths.
 
 Real-mode evidence **fails** if any external HTTP(S) request is observed. Production Rive is self-hosted.
 
@@ -176,9 +221,11 @@ AUTHOR IN RIVE
   -> export kubidm-guide.riv
   -> pnpm test:guide
   -> KUBIDM_EXPECT_REAL_RIVE=1 pnpm test:guide:e2e
+  -> pnpm guide:performance
   -> KUBIDM_GUIDE_FULL_MATRIX=1 pnpm guide:evidence
   -> independent LLM visual review
   -> pnpm guide:review:validate visual-review.json
+  -> authenticated 20-cycle Profile <-> Credentials staging check
   -> human silhouette/travel approval when applicable
   -> fix Rive geometry/motion defects in Rive
   -> fix runtime/layout defects in Kubidm
@@ -200,7 +247,8 @@ This writes:
 ```text
 static/rive/rive.js
 static/rive/rive.wasm
+static/rive/LICENSE
 static/rive/VERSION.json
 ```
 
-`VERSION.json` records the exact package version and SHA-256 of both vendored files. Runtime upgrades require normal code review plus the full Rive verification matrix.
+`VERSION.json` records the exact package version, immutable upstream `gitHead`, license source, and SHA-256 values for JS/WASM/LICENSE. Runtime upgrades require normal code review plus the full Rive verification matrix.
