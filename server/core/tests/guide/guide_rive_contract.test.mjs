@@ -6,12 +6,16 @@ import {
     MascotState,
     MotionLevel,
     Severity,
+    TravelDirection,
 } from "../../static/modules/guide_contract.mjs";
 import { createMockRiveRuntime } from "../../static/modules/guide_rive_mock.mjs";
 import { validateGuideRiveContract } from "../../static/modules/guide_rive_runtime.mjs";
 
 const contract = JSON.parse(
     await readFile(new URL("../../static/guide_rive_contract.json", import.meta.url), "utf8"),
+);
+const runtimeVersion = JSON.parse(
+    await readFile(new URL("../../static/rive/VERSION.json", import.meta.url), "utf8"),
 );
 
 function sorted(values) {
@@ -25,11 +29,27 @@ test("machine-readable Rive contract matches product semantic enums", () => {
     assert.deepEqual(sorted(contract.properties.state.values), sorted(Object.values(MascotState)));
     assert.deepEqual(sorted(contract.properties.motion.values), sorted(Object.values(MotionLevel)));
     assert.deepEqual(sorted(contract.properties.severity.values), sorted(Object.values(Severity)));
-    assert.deepEqual(sorted(contract.properties.travelDirection.values), ["left", "right"]);
+    assert.deepEqual(
+        sorted(contract.properties.travelDirection.values),
+        sorted(Object.values(TravelDirection)),
+    );
 
     for (const trigger of ["attention", "successSmall", "successMajor", "goodbye"]) {
         assert.equal(contract.properties[trigger].type, "trigger");
     }
+});
+
+test("machine contract and vendored Rive runtime cannot drift", () => {
+    assert.equal(contract.runtime.package, runtimeVersion.package);
+    assert.equal(contract.runtime.version, runtimeVersion.version);
+    assert.equal(contract.runtime.selfHosted, true);
+    assert.equal(contract.runtime.cdnAllowed, false);
+    assert.equal(contract.runtime.javascript, "/pkg/rive/rive.js");
+    assert.equal(contract.runtime.wasm, "/pkg/rive/rive.wasm");
+    assert.equal(contract.rendererPolicy.full, "rive");
+    assert.equal(contract.rendererPolicy.reduced, "static");
+    assert.equal(contract.rendererPolicy.static, "static");
+    assert.equal(contract.verification.minimumVisualScore, 4);
 });
 
 test("mock runtime satisfies the same Data Binding contract", async () => {
