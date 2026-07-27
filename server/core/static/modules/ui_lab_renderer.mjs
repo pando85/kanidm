@@ -18,6 +18,7 @@ if (!canvas || !preview) {
 }
 
 const renderers = new WeakMap();
+const activeSlots = new Set();
 
 function motionLevel() {
     const value = preview.dataset.motion || MotionLevel.STATIC;
@@ -33,6 +34,7 @@ function syncSlot(slot) {
         });
         renderers.set(slot, renderer);
     }
+    activeSlots.add(slot);
 
     renderer.setState({
         mascotState: slot.dataset.mascotState || "idle",
@@ -43,7 +45,13 @@ function syncSlot(slot) {
 }
 
 function sync() {
-    canvas.querySelectorAll(".ui-lab-mascot-slot").forEach(syncSlot);
+    const currentSlots = new Set(canvas.querySelectorAll(".ui-lab-mascot-slot"));
+    for (const slot of activeSlots) {
+        if (currentSlots.has(slot)) continue;
+        renderers.get(slot)?.destroy();
+        activeSlots.delete(slot);
+    }
+    currentSlots.forEach(syncSlot);
 }
 
 new MutationObserver(sync).observe(canvas, {
@@ -54,6 +62,11 @@ new MutationObserver(sync).observe(canvas, {
 new MutationObserver(sync).observe(preview, {
     attributes: true,
     attributeFilter: ["data-motion"],
+});
+
+window.addEventListener("pagehide", () => {
+    for (const slot of activeSlots) renderers.get(slot)?.destroy();
+    activeSlots.clear();
 });
 
 sync();
