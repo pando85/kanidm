@@ -84,14 +84,40 @@ export function createMockRiveRuntime({ failLoad = false } = {}) {
         created: 0,
         cleaned: 0,
         active: 0,
+        fileCreated: 0,
+        fileCleaned: 0,
+        fileInits: 0,
         plays: 0,
         pauses: 0,
         resizes: 0,
         wasmUrl: null,
         wasmFallbackUrl: undefined,
+        usedRiveFile: false,
+        riveAssetCdnEnabled: undefined,
+        fileAssetCdnEnabled: undefined,
         triggers: [],
     };
     globalThis.__kubidmMockRiveStats = stats;
+
+    class MockRiveFile {
+        constructor(options) {
+            this.options = options;
+            stats.fileCreated += 1;
+            stats.fileAssetCdnEnabled = options.enableRiveAssetCDN;
+        }
+
+        async init() {
+            stats.fileInits += 1;
+            if (failLoad) throw new Error("Injected mock Rive load failure");
+            return this;
+        }
+
+        cleanup() {
+            if (this.cleaned) return;
+            this.cleaned = true;
+            stats.fileCleaned += 1;
+        }
+    }
 
     class MockRive {
         constructor(options) {
@@ -100,10 +126,9 @@ export function createMockRiveRuntime({ failLoad = false } = {}) {
             this.viewModel = new MockViewModel(this.viewModelInstance);
             stats.created += 1;
             stats.active += 1;
-            queueMicrotask(() => {
-                if (failLoad) options.onLoadError?.(new Error("Injected mock Rive load failure"));
-                else options.onLoad?.();
-            });
+            stats.usedRiveFile = Boolean(options.riveFile);
+            stats.riveAssetCdnEnabled = options.enableRiveAssetCDN;
+            queueMicrotask(() => options.onLoad?.());
         }
 
         viewModelByName(name) {
@@ -141,6 +166,7 @@ export function createMockRiveRuntime({ failLoad = false } = {}) {
     return Object.freeze({
         __kubidmMock: true,
         Rive: MockRive,
+        RiveFile: MockRiveFile,
         RuntimeLoader: {
             setWasmUrl(url) {
                 stats.wasmUrl = url;
