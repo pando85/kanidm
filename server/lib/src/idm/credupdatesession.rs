@@ -3867,8 +3867,8 @@ mod tests {
         trace!(?err);
         assert!(
             matches!(err, OperationError::PasswordQuality(details) if details == vec!(
-                PasswordFeedback::AddAnotherWordOrTwo,
-                PasswordFeedback::ThisIsACommonPassword,
+                PasswordFeedback::NamesAndSurnamesByThemselvesAreEasyToGuess,
+                PasswordFeedback::AvoidDatesAndYearsThatAreAssociatedWithYou,
             ))
         );
 
