@@ -11,11 +11,12 @@ export const GuideFallback = Object.freeze({
     LABEL: "label",
 });
 
-function assetState(mascotState, motionLevel) {
+function assetState(mascotState) {
     if (mascotState !== MascotState.TRAVEL) return mascotState;
-    // Full motion gets the animated SVG walking cycle. Reduced/static modes use
-    // the calm idle pose so there is never unavoidable motion inside <img>.
-    return motionLevel === MotionLevel.FULL ? MascotState.TRAVEL : MascotState.IDLE;
+    // Travel is movement of the same canonical crab, not a separate character
+    // drawing. CSS owns the lateral choreography while the renderer reuses the
+    // idle artwork, which prevents visual model drift between states.
+    return MascotState.IDLE;
 }
 
 export class StaticGuideRenderer {
@@ -62,8 +63,8 @@ export class StaticGuideRenderer {
         this.slot.dataset.motion = motionLevel;
         this.image.alt = `Kubidm guide: ${mascotState}`;
 
-        const nextState = assetState(mascotState, motionLevel);
-        const nextSrc = `${this.assetRoot}/crab-${nextState}.svg`;
+        const nextState = assetState(mascotState);
+        const nextSrc = `${this.assetRoot}/crab-${nextState}.webp`;
         if (this.image.getAttribute("src") !== nextSrc) {
             if (this.fallbackMode === GuideFallback.HIDE) this.slot.hidden = true;
             this.image.hidden = false;
