@@ -121,16 +121,17 @@ Stories and product code describe meaning, not animation clips. Prefer names suc
 
 `static/modules/guide_renderer.mjs` owns mascot rendering.
 
-The v1 renderer is a self-hosted native SVG renderer with CSS/SMIL motion:
+The v1 renderer is a self-hosted static-image renderer with CSS choreography:
 
 ```text
 product / policy state
         -> guidance semantics
         -> guide controller
-        -> native SVG renderer
+        -> canonical WebP pose
+        -> CSS choreography
 ```
 
-Canonical still poses are used for idle, welcome, guide, protect, working, success, warning, and goodbye. Full-motion `travel` uses an animated `crab-travel.svg` with a leg cycle, body movement, and Identity Band tail secondary motion. Reduced/static travel uses the still idle pose, so unavoidable motion is never embedded in accessibility modes.
+Canonical transparent WebP poses are used for idle, welcome, guide, protect, working, success, warning, and goodbye. `travel` deliberately has no separate artwork: it reuses the canonical idle crab while CSS moves the guide safe zone laterally. That keeps the character model identical during travel and avoids embedding unavoidable animation in the image asset itself.
 
 Rive remains an enhancement boundary rather than a v1 dependency. A future self-hosted Rive renderer must consume the same semantic state and fall back to the native renderer without changing authentication or product rules.
 
@@ -141,18 +142,19 @@ In the UI Lab, missing artwork may use a labelled development placeholder. Real 
 ```text
 server/core/static/img/guide/
 ├── kubidm-identity-glyph.svg
-├── crab-idle.svg
-├── crab-welcome.svg
-├── crab-guide.svg
-├── crab-protect.svg
-├── crab-working.svg
-├── crab-success.svg
-├── crab-warning.svg
-├── crab-goodbye.svg
-└── crab-travel.svg
+├── crab-idle.webp
+├── crab-welcome.webp
+├── crab-guide.webp
+├── crab-protect.webp
+├── crab-working.webp
+├── crab-success.webp
+├── crab-warning.webp
+└── crab-goodbye.webp
 ```
 
-The v1 character is the locked shell-less B1-derived crab: coral body, six walking legs, asymmetric Guide/Guardian claws, teal Identity Band, and the Kubidm identity glyph. Do not reintroduce a secondary/back shell.
+There are intentionally no `crab-*.svg` pose files and no `crab-travel` asset. The pose images all come from the same approved canonical pose sheet. Do not redraw a state independently or introduce an alternative crab model for animation.
+
+The v1 character is the locked shell-less B1-derived crab: coral body, six walking legs, asymmetric Guide/Guardian claws, dark-teal Identity Band with pale stripe and side knot/tail, and the Kubidm identity badge. Do not reintroduce a secondary/back shell.
 
 ## Real product integration
 
