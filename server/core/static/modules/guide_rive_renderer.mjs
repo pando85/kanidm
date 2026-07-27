@@ -140,7 +140,10 @@ export class RiveGuideRenderer {
                     reject(error);
                 }
             };
-            options.onLoadError = (error) => reject(error instanceof Error ? error : new Error(String(error)));
+            options.onLoadError = (error) => {
+                instance?.cleanup?.();
+                reject(error instanceof Error ? error : new Error(String(error)));
+            };
             instance = new runtime.Rive(options);
         });
     }
