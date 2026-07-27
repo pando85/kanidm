@@ -4,7 +4,7 @@ const baseURL = process.env.KUBIDM_UI_BASE_URL || "https://localhost:8443";
 
 export default defineConfig({
     testDir: ".",
-    testMatch: /guide_rive\.e2e\.mjs$/,
+    testMatch: /guide_.*\.e2e\.mjs$/,
     timeout: 30_000,
     expect: { timeout: 5_000 },
     fullyParallel: false,
