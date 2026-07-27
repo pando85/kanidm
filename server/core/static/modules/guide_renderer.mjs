@@ -125,6 +125,7 @@ export class GuideRendererController {
         this.rendererOptions = rendererOptions;
         this.staticRenderer = new StaticGuideRenderer(slot, rendererOptions);
         this.riveRenderer = null;
+        this.riveReady = false;
         this.lastState = null;
     }
 
@@ -132,8 +133,12 @@ export class GuideRendererController {
         if (this.rendererName === "static") return null;
         if (!this.riveRenderer) {
             this.riveRenderer = new RiveGuideRenderer(this.slot, {
-                onReady: () => this.staticRenderer.hideImage(),
+                onReady: () => {
+                    this.riveReady = true;
+                    this.staticRenderer.hideImage();
+                },
                 onFailure: () => {
+                    this.riveReady = false;
                     if (this.lastState) {
                         this.staticRenderer.setState({
                             ...this.lastState,
@@ -149,21 +154,24 @@ export class GuideRendererController {
     setState(state) {
         this.lastState = state;
         if (state.motionLevel === MotionLevel.FULL && this.rendererName !== "static") {
-            // A still fallback is allowed during startup/failure, but all full-motion
-            // character articulation belongs to Rive.
-            this.staticRenderer.setState({ ...state, motionLevel: MotionLevel.STATIC });
+            // A still fallback is allowed during startup/failure, but once Rive is
+            // ready it remains the only visible full-motion character renderer.
+            if (this.riveReady) this.staticRenderer.hideImage();
+            else this.staticRenderer.setState({ ...state, motionLevel: MotionLevel.STATIC });
             this.ensureRiveRenderer()?.setState(state);
             return;
         }
 
         this.riveRenderer?.destroy();
         this.riveRenderer = null;
+        this.riveReady = false;
         this.staticRenderer.setState(state);
     }
 
     destroy() {
         this.riveRenderer?.destroy();
         this.riveRenderer = null;
+        this.riveReady = false;
         this.staticRenderer.destroy();
     }
 }
