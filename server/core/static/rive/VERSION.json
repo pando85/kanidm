@@ -1,0 +1,10 @@
+{
+  "package": "@rive-app/canvas-lite",
+  "version": "2.39.1",
+  "license": "MIT",
+  "generatedBy": "server/core/scripts/vendor_rive.mjs",
+  "files": {
+    "rive.js": "6230bf95635dd81e4bc531b795320b0e6c6adea5c957436d58088afd4637a0af",
+    "rive.wasm": "f1b908d5fcb66ad506903c7a1e56e7e4032f7d9edde36e7d15341fcdb41f666a"
+  }
+}
