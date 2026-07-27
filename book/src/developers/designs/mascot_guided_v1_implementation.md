@@ -15,50 +15,52 @@ server/account policy
         -> product state
         -> guidance semantics
         -> guide controller
-        -> native SVG renderer
+        -> canonical static artwork
+        -> CSS choreography
 ```
 
 Animation does not decide policy, authentication success, credential validity, or navigation.
 
-## Canonical identity glyph
+## Canonical identity badge
 
-The badge glyph is no longer provisional for v1.
+The badge is no longer provisional for v1.
 
-`server/core/static/img/guide/kubidm-identity-glyph.svg` is the v1 Kubidm identity glyph. It is an abstract K-shaped identity graph: one central identity node with two routed branches.
+`server/core/static/img/guide/kubidm-identity-glyph.svg` is the compact vector representation of the dark badge worn on the Kubidm Identity Band. Its geometry follows the approved mascot artwork rather than introducing a separate abstract branching/K mark.
 
-The glyph is used in the crab Identity Band badge and as the scalable SVG favicon. Existing PNG/ICO icons remain compatibility fallbacks.
-
-Future brand refinement may evolve the mark, but product implementation should treat this glyph as canonical for v1 rather than substituting generic lock/key/security icons.
+The SVG may be used wherever a compact product identity mark is needed. Future brand refinement may evolve the mark, but v1 product implementation must not substitute a generic padlock or an unrelated identity symbol for the badge worn by the canonical crab.
 
 ## Canonical mascot assets
 
-The production fallback pack is complete at:
+The production pose pack is:
 
 ```text
 server/core/static/img/guide/
 ├── kubidm-identity-glyph.svg
-├── crab-idle.svg
-├── crab-welcome.svg
-├── crab-guide.svg
-├── crab-protect.svg
-├── crab-working.svg
-├── crab-success.svg
-├── crab-warning.svg
-├── crab-goodbye.svg
-└── crab-travel.svg
+├── crab-idle.webp
+├── crab-welcome.webp
+├── crab-guide.webp
+├── crab-protect.webp
+├── crab-working.webp
+├── crab-success.webp
+├── crab-warning.webp
+└── crab-goodbye.webp
 ```
 
 The character remains the locked shell-less B1-derived model:
 
 - broad coral/orange body;
 - no secondary, back, mint, or decorative shell;
-- six simplified walking legs;
+- six compact walking legs;
 - asymmetric Guide and Guardian claws;
 - short eye stalks and restrained expression vocabulary;
-- permanent teal Kubidm Identity Band with light stripe and side tail; and
-- v1 identity glyph centered on the band.
+- permanent dark-teal Kubidm Identity Band with a pale stripe and side knot/tail; and
+- dark identity badge centered on the band.
 
-`crab-travel.svg` provides the v1 full-motion sideways walk cycle, including alternating legs, restrained body movement, and Identity Band tail secondary motion.
+All pose artwork comes from the same approved canonical pose sheet. A state must not be independently redrawn into a different crab model.
+
+There are intentionally **no `crab-*.svg` pose files** and no separate `crab-travel` asset. Earlier simplified vectors and raster-in-SVG wrappers were removed because they did not reproduce the approved mascot consistently and could render blank under SVG sanitization.
+
+`travel` is a semantic/motion state of the same crab. The renderer reuses the canonical idle artwork and CSS performs the lateral movement. This guarantees that travel cannot introduce a ninth character model.
 
 ## Renderer decision
 
@@ -66,13 +68,14 @@ Rive remains a supported future enhancement boundary, but it is not a dependency
 
 The v1 renderer is fully self-hosted and uses:
 
-- canonical SVG poses;
-- CSS choreography for pose/state transitions; and
-- SVG/SMIL motion for the travel walk cycle.
+- canonical transparent WebP pose artwork from the approved pose sheet; and
+- CSS choreography for pose/state and lateral travel motion.
+
+The artwork itself contains no required animation. Reduced and static modes can therefore use the same canonical poses without unavoidable embedded motion.
 
 This gives Kubidm a complete renderer with no CDN, no additional JavaScript framework, no worker requirement, and no new authentication dependency.
 
-A future Rive renderer must implement the same renderer-controller contract and consume the same semantic states. It must not require product, policy, route, or story definitions to be rewritten.
+A future Rive renderer must implement the same renderer-controller contract and consume the same semantic states. It must not require product, policy, route, or story definitions to be rewritten, and its character model must remain visually faithful to the approved canonical crab.
 
 ## Presentation rollout
 
@@ -105,7 +108,7 @@ static    use still poses only
 
 Unknown values fall back to `auto`.
 
-`prefers-reduced-motion: reduce` always prevents full motion even when the deployment permits it. Static mode also replaces the animated travel asset with the still idle pose.
+`prefers-reduced-motion: reduce` always prevents full motion even when the deployment permits it. Travel in reduced/static modes remains the same canonical still crab without lateral movement.
 
 Motion is never required to understand or complete a workflow.
 
@@ -216,4 +219,4 @@ The v1 implementation preserves these non-negotiable rules:
 
 The production-capable v1 is complete without Rive. A future motion/art pass may introduce a Rive rig for richer gaze, claw articulation, walk phase continuity, and Identity Band secondary motion.
 
-Such a change is renderer work, not a redesign of policy, workflow, recommendation, teaching, or product-state semantics.
+Such a change is renderer work, not a redesign of policy, workflow, recommendation, teaching, or product-state semantics. The Rive character must preserve the same canonical body, face, claws, legs, band, knot/tail, and badge language as the approved pose sheet.
