@@ -40,10 +40,28 @@ try {
         await cp(source, path.join(target, file));
     }
 
+    let licenseSource = null;
+    for (const candidate of ["LICENSE", "LICENSE.md", "LICENSE.txt"]) {
+        try {
+            await readFile(path.join(packageRoot, candidate));
+            licenseSource = candidate;
+            break;
+        } catch {
+            // Try the next package-provided license filename.
+        }
+    }
+    if (!licenseSource) {
+        throw new Error(`${PACKAGE}@${VERSION} package did not contain a redistributable license file`);
+    }
+    const licenseBytes = await readFile(path.join(packageRoot, licenseSource));
+    await writeFile(path.join(target, "LICENSE"), licenseBytes);
+    hashes.LICENSE = sha256(licenseBytes);
+
     const metadata = {
         package: PACKAGE,
         version: VERSION,
-        license: packageJson.license || "MIT",
+        license: packageJson.license || "UNKNOWN",
+        licenseFile: "LICENSE",
         generatedBy: "server/core/scripts/vendor_rive.mjs",
         files: hashes,
     };
