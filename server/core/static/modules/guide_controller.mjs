@@ -68,6 +68,10 @@ function readState(overrides = {}) {
         severity: node?.dataset.guideSeverity || Severity.NEUTRAL,
         mascotState: node?.dataset.guideState || MascotState.IDLE,
         motionLevel: currentMotionLevel(),
+        travelDirection:
+            node?.dataset.guideTravelDirection || sceneRoot.dataset.guideTravelDirection || "right",
+        lookX: node?.dataset.guideLookX ?? sceneRoot.dataset.guideLookX ?? 0,
+        lookY: node?.dataset.guideLookY ?? sceneRoot.dataset.guideLookY ?? 0,
         ...overrides,
     });
 }
@@ -131,6 +135,9 @@ function observeScene() {
             "data-guide-recommendation",
             "data-guide-severity",
             "data-guide-motion",
+            "data-guide-travel-direction",
+            "data-guide-look-x",
+            "data-guide-look-y",
         ],
     });
 }
