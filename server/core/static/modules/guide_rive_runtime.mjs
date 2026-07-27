@@ -57,6 +57,9 @@ export async function loadGuideRiveRuntime({
 } = {}) {
     if (!runtimePromise) {
         runtimePromise = (async () => {
+            const override = globalThis.__kubidmRiveRuntimeOverride;
+            if (override?.Rive && override?.RuntimeLoader) return override;
+
             if (!globalThis.rive?.Rive) await loadScript(runtimeUrl);
             const runtime = globalThis.rive;
             if (!runtime?.Rive || !runtime?.RuntimeLoader) {
@@ -120,6 +123,11 @@ export function validateGuideRiveContract(runtimeInstance, contract) {
     }
 
     return { viewModel, instance };
+}
+
+export function resetGuideRiveRuntimeForTests() {
+    runtimePromise = null;
+    contractPromise = null;
 }
 
 export const GuideRivePaths = Object.freeze({
