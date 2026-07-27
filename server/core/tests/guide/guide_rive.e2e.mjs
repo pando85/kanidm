@@ -55,6 +55,10 @@ test("full motion uses the production Rive renderer contract", async ({ page }) 
     expect(diagnostics.fallbackActive).toBe(false);
     await expect(page.locator("[data-guide-rive-canvas]")).toBeVisible();
     await expect(page.locator("[data-lab-mascot-image]")).toBeHidden();
+
+    const stats = await page.evaluate(() => globalThis.__kubidmMockRiveStats);
+    expect(stats.wasmUrl).toBe("/pkg/rive/rive.wasm");
+    expect(stats.wasmFallbackUrl).toBeNull();
 });
 
 test("static and reduced modes never instantiate full Rive motion", async ({ page }) => {
@@ -65,6 +69,15 @@ test("static and reduced modes never instantiate full Rive motion", async ({ pag
         const created = await page.evaluate(() => globalThis.__kubidmMockRiveStats?.created || 0);
         expect(created).toBe(0);
     }
+});
+
+test("OS reduced-motion overrides a Full UI Lab selection", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto(labUrl({ story: "method-choice", motion: "full" }));
+    await expect(page.locator("[data-lab-mascot-image]")).toBeVisible();
+    await expect(page.locator("[data-guide-rive-canvas]")).toHaveCount(0);
+    const created = await page.evaluate(() => globalThis.__kubidmMockRiveStats?.created || 0);
+    expect(created).toBe(0);
 });
 
 test("Rive load failure degrades to static artwork and leaves UI usable", async ({ page }) => {
