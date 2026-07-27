@@ -82,7 +82,7 @@ function ensureRenderer() {
     }
     if (!renderer || renderer.slot !== slot) {
         renderer?.destroy();
-        renderer = createGuideRenderer(slot, { renderer: "static" });
+        renderer = createGuideRenderer(slot, { renderer: "auto" });
     }
     return renderer;
 }
