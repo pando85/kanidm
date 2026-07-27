@@ -50,6 +50,7 @@ test("full motion uses the production Rive renderer contract", async ({ page }) 
     expect(diagnostics.artboard).toBe("KubidmGuide");
     expect(diagnostics.stateMachine).toBe("ProductGuide");
     expect(diagnostics.viewModel).toBe("GuideState");
+    expect(diagnostics.cachedRiveFile).toBe(true);
     expect(diagnostics.semanticState).toBe("guide");
     expect(diagnostics.riveState).toBe("guide");
     expect(diagnostics.fallbackActive).toBe(false);
@@ -59,6 +60,10 @@ test("full motion uses the production Rive renderer contract", async ({ page }) 
     const stats = await page.evaluate(() => globalThis.__kubidmMockRiveStats);
     expect(stats.wasmUrl).toBe("/pkg/rive/rive.wasm");
     expect(stats.wasmFallbackUrl).toBeNull();
+    expect(stats.fileInits).toBe(1);
+    expect(stats.usedRiveFile).toBe(true);
+    expect(stats.fileAssetCdnEnabled).toBe(false);
+    expect(stats.riveAssetCdnEnabled).toBe(false);
 });
 
 test("static and reduced modes never instantiate full Rive motion", async ({ page }) => {
@@ -92,9 +97,10 @@ test("Rive load failure degrades to static artwork and leaves UI usable", async 
     const stats = await page.evaluate(() => globalThis.__kubidmMockRiveStats);
     expect(stats.active).toBe(0);
     expect(stats.created).toBe(stats.cleaned);
+    expect(stats.fileCreated).toBe(stats.fileCleaned);
 });
 
-test("100 story transitions keep at most one Rive instance alive", async ({ page }) => {
+test("100 story transitions reuse one parsed RiveFile and keep at most one instance alive", async ({ page }) => {
     await page.goto(labUrl({ story: "first-login" }));
     await waitForRive(page);
 
@@ -121,6 +127,9 @@ test("100 story transitions keep at most one Rive instance alive", async ({ page
     const stats = await page.evaluate(() => globalThis.__kubidmMockRiveStats);
     expect(stats.active).toBeLessThanOrEqual(1);
     expect(stats.created - stats.cleaned).toBe(stats.active);
+    expect(stats.fileCreated).toBe(1);
+    expect(stats.fileInits).toBe(1);
+    expect(stats.fileCleaned).toBe(0);
 });
 
 test("semantic and Rive states agree across representative scenarios", async ({ page }) => {
@@ -157,6 +166,7 @@ test("real Rive asset satisfies the runtime contract when required", async ({ pa
     expect(diagnostics.artboard).toBe("KubidmGuide");
     expect(diagnostics.stateMachine).toBe("ProductGuide");
     expect(diagnostics.viewModel).toBe("GuideState");
+    expect(diagnostics.cachedRiveFile).toBe(true);
     expect(external).toEqual([]);
 });
 
