@@ -12,6 +12,7 @@ if (query.get("rive") === "mock" || query.get("rive") === "mock-fail") {
 
 const canvas = document.querySelector("#ui-lab-canvas");
 const preview = document.querySelector("#ui-lab-preview");
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 if (!canvas || !preview) {
     throw new Error("Kubidm UI Lab renderer requires the preview canvas");
@@ -22,6 +23,8 @@ const activeSlots = new Set();
 
 function motionLevel() {
     const value = preview.dataset.motion || MotionLevel.STATIC;
+    if (value === MotionLevel.STATIC) return MotionLevel.STATIC;
+    if (reducedMotion.matches) return MotionLevel.REDUCED;
     return Object.values(MotionLevel).includes(value) ? value : MotionLevel.STATIC;
 }
 
@@ -63,6 +66,8 @@ new MutationObserver(sync).observe(preview, {
     attributes: true,
     attributeFilter: ["data-motion"],
 });
+
+reducedMotion.addEventListener("change", sync);
 
 window.addEventListener("pagehide", () => {
     for (const slot of activeSlots) renderers.get(slot)?.destroy();
