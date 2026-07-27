@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+const BASE_ORIGIN = new URL(process.env.KUBIDM_UI_BASE_URL || "https://localhost:8443").origin;
+
 function labUrl({
     story = "first-login",
     motion = "full",
@@ -132,9 +134,7 @@ test("real Rive asset satisfies the runtime contract when required", async ({ pa
     const external = [];
     page.on("request", (request) => {
         const url = request.url();
-        if (/^https?:/.test(url) && new URL(url).origin !== new URL(page.url() || "https://localhost:8443").origin) {
-            external.push(url);
-        }
+        if (/^https?:/.test(url) && new URL(url).origin !== BASE_ORIGIN) external.push(url);
     });
     await page.goto(labUrl({ story: "method-choice", rive: null }));
     const diagnostics = await waitForRive(page);
