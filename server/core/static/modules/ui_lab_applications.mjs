@@ -8,7 +8,9 @@ const applicationStories = Object.freeze({
         mascotState: "travel",
         severity: "neutral",
         heading: "Applications",
-        subtitle: "The same guide appears to travel into the authenticated destination.",
+        subtitle: "The same guide travels into the authenticated destination.",
+        travelDirection: "right",
+        lookX: 0.85,
     },
     applications: {
         title: "Applications settled",
@@ -18,6 +20,8 @@ const applicationStories = Object.freeze({
         severity: "neutral",
         heading: "Applications",
         subtitle: "Routine use is quiet after the confirmed arrival.",
+        travelDirection: "right",
+        lookX: 0.15,
     },
 });
 
@@ -48,10 +52,7 @@ function renderApplicationsStory(name, { updateHash = true } = {}) {
     const motionLevel = Object.values(MotionLevel).includes(ui.motion?.value)
         ? ui.motion.value
         : MotionLevel.STATIC;
-    const assetState =
-        story.mascotState === "travel" && motionLevel !== MotionLevel.FULL
-            ? "idle"
-            : story.mascotState;
+    const assetState = story.mascotState === "travel" ? "idle" : story.mascotState;
 
     ui.title.textContent = story.title;
     ui.productState.textContent = story.productState;
@@ -59,7 +60,13 @@ function renderApplicationsStory(name, { updateHash = true } = {}) {
     ui.mascotState.textContent = story.mascotState;
     ui.severity.textContent = story.severity;
 
-    ui.canvas.innerHTML = `<section class="ui-lab-applications" data-guide-scene="applications" data-guide-state="${story.mascotState}">
+    ui.canvas.innerHTML = `<section class="ui-lab-applications"
+        data-guide-scene="applications"
+        data-guide-state="${story.mascotState}"
+        data-guide-action="${story.productState}"
+        data-guide-severity="${story.severity}"
+        data-guide-travel-direction="${story.travelDirection}"
+        data-guide-look-x="${story.lookX}">
         <header class="ui-lab-applications-header">
             <div><span class="ui-lab-kicker">Authenticated destination</span><h2>${story.heading}</h2><p>${story.subtitle}</p></div>
             <div class="ui-lab-avatar" aria-hidden="true">A</div>
@@ -70,7 +77,7 @@ function renderApplicationsStory(name, { updateHash = true } = {}) {
             <article><div class="ui-lab-app-icon">K</div><strong>Kubernetes</strong><small>Platform</small></article>
         </div>
         <div class="ui-lab-app-guide-slot" data-lab-mascot data-mascot-state="${story.mascotState}" data-motion="${motionLevel}">
-            <img data-lab-mascot-image src="/pkg/img/guide/crab-${assetState}.svg" alt="Kubidm guide: ${story.mascotState}" />
+            <img data-lab-mascot-image src="/pkg/img/guide/crab-${assetState}.webp" alt="Kubidm guide: ${story.mascotState}" />
         </div>
     </section>`;
 
@@ -84,6 +91,8 @@ function renderApplicationsStory(name, { updateHash = true } = {}) {
         mascotState: story.mascotState,
         severity: story.severity,
         motionLevel,
+        travelDirection: story.travelDirection,
+        lookX: story.lookX,
     });
     window.dispatchEvent(new CustomEvent("kubidm:guide-state", { detail: state }));
     if (updateHash) writeStoryToHash(name);
