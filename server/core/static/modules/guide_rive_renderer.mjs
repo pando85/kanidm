@@ -1,21 +1,14 @@
-import { MascotState, MotionLevel, Severity } from "./guide_contract.mjs";
+import { MotionLevel, Severity } from "./guide_contract.mjs";
+import {
+    guideRiveBindingValues,
+    guideRiveTriggers,
+} from "./guide_rive_binding.mjs";
 import {
     guideRiveAssetUrl,
     loadGuideRiveContract,
     loadGuideRiveRuntime,
     validateGuideRiveContract,
 } from "./guide_rive_runtime.mjs";
-
-const MAJOR_SUCCESS_STATES = new Set([
-    "authentication_confirmed",
-    "recommended_setup_complete",
-    "credential_update_complete",
-]);
-
-function clampLook(value) {
-    const number = Number(value ?? 0);
-    return Number.isFinite(number) ? Math.max(-1, Math.min(1, number)) : 0;
-}
 
 function setDiagnostic(patch) {
     if (!document.querySelector("[data-ui-lab]")) return;
@@ -135,6 +128,7 @@ export class RiveGuideRenderer {
                         artboard: contract.artboard,
                         stateMachine: contract.stateMachine,
                         viewModel: contract.viewModel,
+                        mockRuntime: runtime.__kubidmMock === true,
                         fallbackActive: false,
                         lastError: null,
                     });
@@ -174,21 +168,17 @@ export class RiveGuideRenderer {
     applyState(state) {
         if (!this.viewModelInstance || this.destroyed) return;
         const instance = this.viewModelInstance;
+        const values = guideRiveBindingValues(state);
 
-        enumSet(instance, "state", state.mascotState);
-        enumSet(instance, "motion", state.motionLevel);
-        enumSet(instance, "severity", state.severity);
-        enumSet(instance, "travelDirection", state.travelDirection || "right");
-        numberSet(instance, "lookX", clampLook(state.lookX));
-        numberSet(instance, "lookY", clampLook(state.lookY));
+        enumSet(instance, "state", values.state);
+        enumSet(instance, "motion", values.motion);
+        enumSet(instance, "severity", values.severity);
+        enumSet(instance, "travelDirection", values.travelDirection);
+        numberSet(instance, "lookX", values.lookX);
+        numberSet(instance, "lookY", values.lookY);
 
-        const previous = this.previousMascotState;
-        if (previous !== state.mascotState) {
-            if (state.mascotState === MascotState.GUIDE) fire(instance, "attention");
-            if (state.mascotState === MascotState.SUCCESS) {
-                fire(instance, MAJOR_SUCCESS_STATES.has(state.productState) ? "successMajor" : "successSmall");
-            }
-            if (state.mascotState === MascotState.GOODBYE) fire(instance, "goodbye");
+        for (const trigger of guideRiveTriggers(this.previousMascotState, state)) {
+            fire(instance, trigger);
         }
         this.previousMascotState = state.mascotState;
 
@@ -197,7 +187,7 @@ export class RiveGuideRenderer {
             productState: state.productState,
             motion: state.motionLevel,
             severity: state.severity,
-            riveState: state.mascotState,
+            riveState: values.state,
             fallbackActive: false,
         });
 
