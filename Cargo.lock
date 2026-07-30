@@ -1782,9 +1782,9 @@ dependencies = [
 
 [[package]]
 name = "crypto-glue"
-version = "0.1.17"
+version = "0.1.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "10125a24c8fd4ae742815f8790f2ae50d0a3d666c13382fa56041bce8dc88ee8"
+checksum = "4b5a869a3c08beca4e6a5bb0245c116c621c1988dbdb43a65ae37c2d8daa2167"
 dependencies = [
  "aes",
  "aes-gcm",
@@ -5349,7 +5349,7 @@ version = "5.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51e219e79014df21a225b1860a479e2dcd7cbd9130f4defd4bd0e191ea31d67d"
 dependencies = [
- "base64 0.22.1",
+ "base64 0.21.7",
  "chrono",
  "getrandom 0.2.17",
  "http 1.5.0",
@@ -7572,7 +7572,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.4.3",
+ "getrandom 0.3.4",
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",
