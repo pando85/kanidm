@@ -15,7 +15,35 @@ if (!manifestPath || !reviewPath || !humanApprovalPath) {
 const coreRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const rivPath = path.join(coreRoot, "static", "img", "guide", "kubidm-guide.riv");
 const visualValidator = path.join(coreRoot, "tests", "guide", "validate_visual_review.mjs");
+const evidenceRoot = path.dirname(path.resolve(manifestPath));
 const errors = [];
+
+const expectedStories = [
+    "returning",
+    "first-login",
+    "method-choice",
+    "reauth",
+    "passkey-working",
+    "success",
+    "component-notice",
+    "goodbye",
+    "applications-arrival",
+    "applications-arrival-left",
+];
+const expectedViewports = ["desktop", "tablet", "mobile"];
+const expectedThemes = ["light", "dark"];
+const expectedMotions = ["full", "reduced", "static"];
+const expectedReferenceAssets = [
+    "crab-idle.webp",
+    "crab-welcome.webp",
+    "crab-guide.webp",
+    "crab-protect.webp",
+    "crab-working.webp",
+    "crab-success.webp",
+    "crab-warning.webp",
+    "crab-goodbye.webp",
+    "kubidm-identity-glyph.svg",
+];
 
 async function json(filename, label) {
     try {
@@ -54,26 +82,71 @@ if (manifest) {
         errors.push("production evidence contains external network requests");
     }
 
+    const referenceAssets = manifest.canonicalReferences?.assets;
+    if (!referenceAssets || typeof referenceAssets !== "object" || Array.isArray(referenceAssets)) {
+        errors.push("evidence does not record canonical reference asset hashes");
+    } else {
+        for (const filename of expectedReferenceAssets) {
+            if (!/^[0-9a-f]{64}$/i.test(referenceAssets[filename] || "")) {
+                errors.push(`canonical reference ${filename} is missing its SHA-256`);
+            }
+        }
+    }
+
     const captures = Array.isArray(manifest.captures) ? manifest.captures : [];
-    const expectedViewports = ["desktop", "tablet", "mobile"];
-    const expectedThemes = ["light", "dark"];
-    const expectedMotions = ["full", "reduced", "static"];
-    for (const viewport of expectedViewports) {
-        for (const theme of expectedThemes) {
-            for (const motion of expectedMotions) {
-                if (
-                    !captures.some(
-                        (capture) =>
-                            capture.viewport === viewport && capture.theme === theme && capture.motion === motion,
-                    )
-                ) {
-                    errors.push(`evidence is missing ${viewport}/${theme}/${motion}`);
+    for (const story of expectedStories) {
+        for (const viewport of expectedViewports) {
+            for (const theme of expectedThemes) {
+                for (const motion of expectedMotions) {
+                    if (
+                        !captures.some(
+                            (capture) =>
+                                capture.story === story &&
+                                capture.viewport === viewport &&
+                                capture.theme === theme &&
+                                capture.motion === motion,
+                        )
+                    ) {
+                        errors.push(`evidence is missing ${story}/${viewport}/${theme}/${motion}`);
+                    }
                 }
             }
         }
     }
     if (captures.some((capture) => capture.motion === "full" && capture.diagnostic?.fallbackActive)) {
         errors.push("full-motion evidence contains a static fallback");
+    }
+    if (
+        captures.some(
+            (capture) =>
+                capture.motion === "full" &&
+                (!capture.diagnostic?.loaded || capture.diagnostic?.renderer !== "rive" || !capture.diagnostic?.riveState),
+        )
+    ) {
+        errors.push("full-motion evidence contains a capture without an active Rive diagnostic state");
+    }
+}
+
+const consoleReport = await json(path.join(evidenceRoot, "console.json"), "evidence console report");
+if (Array.isArray(consoleReport)) {
+    const noisy = consoleReport.flatMap((capture) => capture.entries || []);
+    if (noisy.length > 0) errors.push(`production evidence contains ${noisy.length} console warning/error entries`);
+}
+
+const networkReport = await json(path.join(evidenceRoot, "network.json"), "evidence network report");
+if (Array.isArray(networkReport)) {
+    const failures = networkReport.flatMap((capture) => capture.entries || []);
+    if (failures.length > 0) errors.push(`production evidence contains ${failures.length} failed network requests`);
+}
+
+const semanticReport = await json(path.join(evidenceRoot, "semantic-trace.json"), "evidence semantic trace");
+if (Array.isArray(semanticReport)) {
+    for (const capture of semanticReport) {
+        if (!Array.isArray(capture.trace) || capture.trace.length === 0) {
+            errors.push(
+                `semantic trace is empty for ${capture.story}/${capture.viewport}/${capture.theme}/${capture.motion}`,
+            );
+        }
     }
 }
 
