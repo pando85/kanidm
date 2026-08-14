@@ -7,7 +7,7 @@ const fixtureResetToken = process.env.KUBIDM_E2E_TEST_RESET_TOKEN;
 test.describe.configure({ retries: 0 });
 
 async function waitForHtmxSettled(page) {
-    await expect(page.locator(".htmx-settling, .htmx-request")).toHaveCount(0);
+    await expect(page.locator(".htmx-settling, .htmx-request")).toHaveCount(0, { timeout: 5_000 });
 }
 
 async function onboardPassword(page) {
@@ -21,9 +21,9 @@ async function onboardPassword(page) {
     await page.getByRole("button", { name: "Add Password" }).click();
     const response = await passwordFormResponse;
     expect(response.ok()).toBe(true);
-    await page.waitForFunction(() => document.querySelector("#new-password") instanceof HTMLInputElement);
 
     const passwordInput = page.locator("#new-password");
+    await passwordInput.waitFor({ state: "attached", timeout: 5_000 });
     await waitForHtmxSettled(page);
     await passwordInput.fill(fixturePassword);
     await page.locator("#new-password-check").fill(fixturePassword);
@@ -36,7 +36,7 @@ async function onboardPassword(page) {
     expect((await passwordSubmitResponse).ok()).toBe(true);
 
     const saveChanges = page.getByRole("button", { name: "Save Changes" });
-    await page.waitForFunction(() => !document.querySelector("#new-password"));
+    await expect(passwordInput).toHaveCount(0, { timeout: 5_000 });
     await waitForHtmxSettled(page);
     await expect(saveChanges).toBeEnabled();
     await saveChanges.click();
