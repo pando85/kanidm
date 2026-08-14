@@ -1,0 +1,35 @@
+---
+name: Format guide sources
+"on":
+  push:
+    branches:
+      - agent/adr-mascot-guided-experience
+permissions:
+  contents: write
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: agent/adr-mascot-guided-experience
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11
+      - name: Install Javascript dependencies
+        working-directory: server/core
+        run: pnpm install --frozen-lockfile
+      - name: Format guide sources
+        working-directory: server/core
+        run: pnpm run prettier:fix
+      - name: Commit formatting
+        run: |
+          git add server/core/static server/core/tests server/core/scripts
+          if git diff --cached --quiet; then
+            echo "Formatting already clean"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "style(ui): format guide verification sources"
+          git push origin HEAD:agent/adr-mascot-guided-experience
