@@ -1,9 +1,9 @@
-use crate::{handle_client_error, ApplicationOpt, KanidmClientParser, OpType};
+use crate::{handle_client_error, ApplicationOpt, KubidmClientParser, OpType};
 
-use kanidm_proto::scim_v1::client::{ScimEntryApplicationPost, ScimReference};
+use kubidm_proto::scim_v1::client::{ScimEntryApplicationPost, ScimReference};
 
 impl ApplicationOpt {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: KubidmClientParser) {
         match self {
             Self::List => {
                 let client = opt.to_client(OpType::Read).await;

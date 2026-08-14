@@ -867,7 +867,7 @@ pub(crate) async fn check_pwd_strength(
 
     let cu_session_token: CUSessionToken = get_cu_session(&jar).await?;
     let swapped_handler_trigger =
-        HxResponseTrigger::after_swap([HxEvent::from(KanidmHxEventName::AddPasswordSwapped)]);
+        HxResponseTrigger::after_swap([HxEvent::from(KubidmHxEventName::AddPasswordSwapped)]);
 
     let password_to_check = match opt_form {
         None => {

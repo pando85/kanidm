@@ -2460,7 +2460,7 @@ mod tests {
     use crate::server::keys::KeyProvidersTransaction;
     use crate::value::{AuthType, SessionState};
     use compact_jwt::{traits::JwsVerifiable, JwsCompact, JwsEs256Verifier, JwsVerifier};
-use kubidm_lib_crypto::{CryptoPolicy, PW_MAX_LENGTH_NIST, PW_SFA_MIN_LENGTH_NIST};
+use kubidm_lib_crypto::CryptoPolicy;
     use kubidm_proto::v1::{AuthAllowed, AuthIssueSession, AuthMech};
     use time::OffsetDateTime;
     use uuid::Uuid;
