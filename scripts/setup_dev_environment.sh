@@ -42,7 +42,7 @@ fi
 
 
 # defaults
-KUBIDM_CONFIG_FILE="./insecure_server.toml"
+KUBIDM_CONFIG_FILE="../../scripts/insecure_server.toml"
 KUBIDM_URL="$(grep -E 'origin.*https' "${KUBIDM_CONFIG_FILE}" | awk '{print $NF}' | tr -d '"')"
 KUBIDM_CA_PATH="/tmp/kubidm/chain.pem"
 
@@ -81,7 +81,7 @@ if [ "${REMOVE_TEST_DB}" -eq 1 ]; then
     rm /tmp/kubidm/kubidm.db || true
 fi
 
-export KUBIDM_CONFIG="./insecure_server.toml"
+export KUBIDM_CONFIG="../../scripts/insecure_server.toml"
 IDM_ADMIN_USER="idm_admin@localhost"
 
 echo "Resetting the idm_admin user..."
