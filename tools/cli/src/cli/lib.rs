@@ -148,6 +148,7 @@ impl SystemOpt {
     pub async fn exec(&self, opt: KubidmClientParser) {
         match self {
             SystemOpt::Api { commands } => commands.exec(opt).await,
+            SystemOpt::Application { commands } => commands.exec(opt).await,
             SystemOpt::PwBadlist { commands } => commands.exec(opt).await,
             SystemOpt::DeniedNames { commands } => commands.exec(opt).await,
             SystemOpt::Oauth2 { commands } => commands.exec(opt).await,

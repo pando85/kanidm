@@ -41,6 +41,12 @@ impl fmt::Display for AccountLinkPolicy {
 }
 
 #[derive(Clone)]
+pub enum OAuth2SubjectVerifier {
+    None,
+    Rfc7662TokenIntrospection { endpoint: Url },
+}
+
+#[derive(Clone)]
 #[allow(dead_code)]
 pub struct OAuth2ClientProvider {
     pub(crate) name: String,
@@ -51,6 +57,7 @@ pub struct OAuth2ClientProvider {
     pub(crate) request_scopes: BTreeSet<String>,
     pub(crate) authorisation_endpoint: Url,
     pub(crate) token_endpoint: Url,
+    pub(crate) user_sub_verifier: OAuth2SubjectVerifier,
     pub(crate) issuer: Option<Url>,
     pub(crate) jwks_uri: Option<Url>,
     pub(crate) userinfo_endpoint: Option<Url>,
@@ -81,6 +88,7 @@ impl OAuth2ClientProvider {
         client_id: &str,
         domain: &str,
         request_scopes: I,
+        introspect_url: &str,
     ) -> Self {
         let mut client_redirect_uri =
             Url::parse("https://idm.example.com").expect("invalid test data");
@@ -98,6 +106,9 @@ impl OAuth2ClientProvider {
 
         let request_scopes = request_scopes.into_iter().map(String::from).collect();
 
+        let endpoint = Url::parse(introspect_url).expect("invalid test data");
+        let user_sub_verifier = OAuth2SubjectVerifier::Rfc7662TokenIntrospection { endpoint };
+
         Self {
             name: "test_client_provider".to_string(),
             uuid: Uuid::new_v4(),
@@ -107,6 +118,7 @@ impl OAuth2ClientProvider {
             request_scopes,
             authorisation_endpoint,
             token_endpoint,
+            user_sub_verifier,
             issuer: None,
             jwks_uri: None,
             userinfo_endpoint: None,
@@ -326,6 +338,15 @@ impl IdmServerProxyWriteTransaction<'_> {
                     }
                 };
 
+            let maybe_rfc7662_endpoint = provider_entry
+                .get_ava_single_url(Attribute::OAuth2TokenIntrospectEndpoint)
+                .cloned();
+
+            let user_sub_verifier = match maybe_rfc7662_endpoint {
+                Some(endpoint) => OAuth2SubjectVerifier::Rfc7662TokenIntrospection { endpoint },
+                None => OAuth2SubjectVerifier::None,
+            };
+
             let provider = OAuth2ClientProvider {
                 name,
                 uuid,
@@ -335,6 +356,7 @@ impl IdmServerProxyWriteTransaction<'_> {
                 request_scopes,
                 authorisation_endpoint,
                 token_endpoint,
+                user_sub_verifier,
                 issuer,
                 jwks_uri,
                 userinfo_endpoint,

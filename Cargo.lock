@@ -460,7 +460,7 @@ dependencies = [
  "aws-credential-types",
  "aws-sigv4",
  "aws-smithy-async",
- "aws-smithy-eventstream 0.61.1",
+ "aws-smithy-eventstream 0.61.2",
  "aws-smithy-http 0.64.0",
  "aws-smithy-runtime",
  "aws-smithy-runtime-api",
@@ -660,9 +660,9 @@ dependencies = [
 
 [[package]]
 name = "aws-smithy-eventstream"
-version = "0.61.1"
+version = "0.61.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a9381123ab62d20c13082b151f30f962a3b112b727345394536dfa39a482944"
+checksum = "6de526c7b567420a31bc283657a7921b45c4cafe0827fdf2490713dcc770c28f"
 dependencies = [
  "aws-smithy-types",
  "bytes",
@@ -753,9 +753,9 @@ dependencies = [
 
 [[package]]
 name = "aws-smithy-runtime"
-version = "1.12.1"
+version = "1.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07505b34e8f4b3591a4fa69e9792b52289b95488dbbc68c3c0075b7bedb245e1"
+checksum = "483b858ff67522011c4786310c5cd8fd88d0be7ea3d5f1a48328446300c4269e"
 dependencies = [
  "aws-smithy-async",
  "aws-smithy-http 0.64.0",
@@ -829,9 +829,9 @@ dependencies = [
 
 [[package]]
 name = "aws-smithy-types"
-version = "1.6.1"
+version = "1.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6dc683efb34b9e755675b37fedbe0103141e5b6df7bdc9eb6967756a8c167d8"
+checksum = "fce83ce9abbb198d25bc7131e468d0f9fe1257125e58c39f3f9fc9f5098c9647"
 dependencies = [
  "base64-simd",
  "bytes",
@@ -1030,9 +1030,9 @@ checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
 name = "base64"
-version = "0.23.0"
+version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b25655df2c3cdd83c5e5b293b88acd880332b2ddadd7c30ac43144fdc0033da9"
+checksum = "ac07cdecf99051d9a5238b80f35af32cdeba5b336e55d957b318b50137e18da5"
 
 [[package]]
 name = "base64-simd"
@@ -1382,9 +1382,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.6.5"
+version = "4.6.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "301b56658598e48f3648647ac6fc887be7e7108eddfa4e9b63fcf3ec58c0cadf"
+checksum = "473c7e07f409a8d772161724aa8db6a765a2532a70f9667eeb7b49d3d02fbdca"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -1392,9 +1392,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.6.5"
+version = "4.6.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94a65403d1a1bd28f7dc68eb8506e8874808ee5eecb59298de588e2e1407a078"
+checksum = "7b48fea5a88e9ae728a2dcbedbfc0e730f7d60da42e1cb049a83c9fb8b789889"
 dependencies = [
  "anstream",
  "anstyle",
@@ -1404,9 +1404,9 @@ dependencies = [
 
 [[package]]
 name = "clap_complete"
-version = "4.6.8"
+version = "4.6.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1f84a88507dbd05c695f2cb5e8558e747179134005e9893882dec964190ed89"
+checksum = "3be2ad0423bdbbb0e25bc89add796f3559706d4a95e1bc98e4d9662a957b6a19"
 dependencies = [
  "clap",
 ]
@@ -1868,7 +1868,7 @@ dependencies = [
 
 [[package]]
 name = "daemon"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "clap",
  "clap_complete",
@@ -1880,9 +1880,8 @@ dependencies = [
  "kubidm_proto",
  "kubidm_utils_users",
  "kubidmd_core",
- "mimalloc",
  "prctl",
- "reqwest 0.13.4",
+ "reqwest",
  "sd-notify",
  "serde",
  "serde_json",
@@ -2292,7 +2291,7 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "420b9da095f052ea597503e39073b5b3c522f7db933fbac202d91d24492693fd"
 dependencies = [
- "base64 0.23.0",
+ "base64 0.23.1",
  "memchr",
 ]
 
@@ -3622,9 +3621,9 @@ checksum = "df3b46402a9d5adb4c86a0cf463f42e19994e3ee891101b1841f30a545cb49a9"
 
 [[package]]
 name = "hybrid-array"
-version = "0.4.14"
+version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "707114b52a152fa7bdb290cd7cd5912d9467273b6d74e21b8d81aca1f8533f6b"
+checksum = "818356c5132c1fede50f837ca96afbe78ff42413047f4abb886217845e1b6c8c"
 dependencies = [
  "serde",
  "typenum",
@@ -4132,9 +4131,9 @@ dependencies = [
 
 [[package]]
 name = "jsonschema"
-version = "0.49.7"
+version = "0.49.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca4b985be36e5b3d15162b16ca94ac18c2a0514f5598b23b9d769895cb56bc3c"
+checksum = "ce93912abc8220a3fdb768b2c4a826a7a9a4b1599cfb4d760d422eaa1faf88c7"
 dependencies = [
  "ahash",
  "bytecount",
@@ -4152,7 +4151,7 @@ dependencies = [
  "percent-encoding",
  "referencing",
  "regex",
- "reqwest 0.13.4",
+ "reqwest",
  "rustls",
  "serde",
  "serde_json",
@@ -4163,18 +4162,18 @@ dependencies = [
 
 [[package]]
 name = "jsonschema-regex"
-version = "0.49.7"
+version = "0.49.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "614c05e01260d4532d9ad28d66185fa1d93d015c5d610cde70d4b7143d7fb98f"
+checksum = "8165657ebed4d32c50f3c250c1986d8428b16fbfeac355222e8fec50aa26eb1d"
 dependencies = [
  "regex-syntax",
 ]
 
 [[package]]
 name = "jsonschema-value"
-version = "0.49.7"
+version = "0.49.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8602a6850f24cf05c518f58c9b8d08e32a28b9848115c8e193693db0952353f6"
+checksum = "b069c5fdda3e9c2242bba49d811d5bbdb488abd8d234ed44a6312fd2891113e1"
 dependencies = [
  "ahash",
  "bytecount",
@@ -4198,13 +4197,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "kanidm_actors"
+version = "1.12.0-dev"
+dependencies = [
+ "pin-project-lite",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "kanidm_radiusd"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "anyhow",
  "clap",
  "rlm_kanidm_shared",
  "toml",
+]
+
+[[package]]
+name = "kanidm_templating"
+version = "1.12.0-dev"
+dependencies = [
+ "peg",
+ "serde",
+ "serde_json",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -4238,7 +4258,7 @@ dependencies = [
 
 [[package]]
 name = "kubidm-ipa-sync"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "chrono",
  "clap",
@@ -4264,7 +4284,7 @@ dependencies = [
 
 [[package]]
 name = "kubidm-ldap-sync"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "chrono",
  "clap",
@@ -4291,7 +4311,7 @@ dependencies = [
 
 [[package]]
 name = "kubidm-mail-sender"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "chrono",
  "clap",
@@ -4315,9 +4335,9 @@ dependencies = [
 
 [[package]]
 name = "kubidm_build_profiles"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
- "base64 0.23.0",
+ "base64 0.23.1",
  "gix",
  "serde",
  "sha2 0.11.0-rc.5",
@@ -4326,14 +4346,14 @@ dependencies = [
 
 [[package]]
 name = "kubidm_client"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "compact_jwt",
  "http 1.5.0",
  "hyper",
  "kubidm_lib_file_permissions",
  "kubidm_proto",
- "reqwest 0.13.4",
+ "reqwest",
  "serde",
  "serde_json",
  "serde_urlencoded",
@@ -4348,23 +4368,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "kubidm_device_flow"
-version = "1.11.0-dev"
-dependencies = [
- "anyhow",
- "kubidm_proto",
- "oauth2",
- "reqwest 0.13.4",
- "sketching",
- "tokio",
- "tracing",
-]
-
-[[package]]
 name = "kubidm_lib_crypto"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
- "base64 0.23.0",
+ "base64 0.23.1",
  "base64urlsafedata 0.6.1-dev",
  "crypto-glue",
  "hex",
@@ -4381,7 +4388,7 @@ dependencies = [
 
 [[package]]
 name = "kubidm_lib_file_permissions"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "kubidm_utils_users",
  "tempfile",
@@ -4389,10 +4396,10 @@ dependencies = [
 
 [[package]]
 name = "kubidm_proto"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "base32",
- "base64 0.23.0",
+ "base64 0.23.1",
  "chrono",
  "clap",
  "crypto-glue",
@@ -4419,7 +4426,7 @@ dependencies = [
 
 [[package]]
 name = "kubidm_tools"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "anyhow",
  "clap",
@@ -4449,7 +4456,7 @@ dependencies = [
 
 [[package]]
 name = "kubidm_unix_int"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "clap",
  "clap_complete",
@@ -4460,14 +4467,14 @@ dependencies = [
 
 [[package]]
 name = "kubidm_utils_users"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "libc",
 ]
 
 [[package]]
 name = "kubidmd_core"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "argon2",
  "askama",
@@ -4479,7 +4486,7 @@ dependencies = [
  "axum-extra",
  "axum-htmx",
  "axum-macros",
- "base64 0.23.0",
+ "base64 0.23.1",
  "bytes",
  "chrono",
  "cidr",
@@ -4505,7 +4512,7 @@ dependencies = [
  "qrcode",
  "rand 0.10.2",
  "regex",
- "reqwest 0.13.4",
+ "reqwest",
  "rustls",
  "serde",
  "serde-hjson",
@@ -4536,10 +4543,10 @@ dependencies = [
 
 [[package]]
 name = "kubidmd_lib"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "async-trait",
- "base64 0.23.0",
+ "base64 0.23.1",
  "base64urlsafedata 0.6.1-dev",
  "bitflags 2.13.1",
  "chrono",
@@ -4562,12 +4569,11 @@ dependencies = [
  "ldap3_client",
  "ldap3_proto",
  "lodepng",
- "mimalloc",
  "nonempty",
  "num_enum",
  "rand 0.10.2",
  "regex",
- "reqwest 0.13.4",
+ "reqwest",
  "rusqlite",
  "rustls",
  "serde",
@@ -4584,6 +4590,7 @@ dependencies = [
  "tokio",
  "toml",
  "tracing",
+ "unicode-segmentation",
  "url",
  "utoipa",
  "uuid",
@@ -4596,7 +4603,7 @@ dependencies = [
 
 [[package]]
 name = "kubidmd_lib_macros"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4605,8 +4612,9 @@ dependencies = [
 
 [[package]]
 name = "kubidmd_testkit"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
+ "base64 0.23.1",
  "cidr",
  "compact_jwt",
  "escargot",
@@ -4623,8 +4631,7 @@ dependencies = [
  "kubidmd_core",
  "kubidmd_lib",
  "ldap3_client",
- "oauth2",
- "reqwest 0.13.4",
+ "reqwest",
  "serde",
  "serde_json",
  "sketching",
@@ -4706,12 +4713,12 @@ dependencies = [
 
 [[package]]
 name = "lettre"
-version = "0.11.22"
+version = "0.11.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0da65617f6cb926332d039cb578aad56178da86e128db6a1b09f4c94fa5b3349"
+checksum = "f2c646bd5cc763b1087b15493e29a64be6147ba8f19342004fa52048ee596eae"
 dependencies = [
  "async-trait",
- "base64 0.22.1",
+ "base64 0.23.1",
  "email-encoding",
  "email_address",
  "fastrand",
@@ -4755,15 +4762,6 @@ name = "libm"
 version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6d2cec3eae94f9f509c767b45932f1ada8350c4bdb85af2fcab4a3c14807981"
-
-[[package]]
-name = "libmimalloc-sys"
-version = "0.1.49"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a45a52f43e1c16f667ccfe4dd8c85b7f7c204fd5e3bf46c5b0db9a5c3c0b8e9"
-dependencies = [
- "cc",
-]
 
 [[package]]
 name = "libnss"
@@ -4881,9 +4879,9 @@ dependencies = [
 
 [[package]]
 name = "lru"
-version = "0.18.1"
+version = "0.18.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b6180140927ee907000b0aa540091f6ea512ead4447c92b8fc35bc72788a5a6"
+checksum = "5d2f2f9b4ba7e6b24d95e7e899329d35be83bcded72c8540cdd5368932d1d90a"
 dependencies = [
  "hashbrown 0.17.1",
 ]
@@ -4996,15 +4994,6 @@ name = "micromap"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a86d3146ed3995b5913c414f6664344b9617457320782e64f0bb44afd49d74"
-
-[[package]]
-name = "mimalloc"
-version = "0.1.52"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d4139bb28d14ad1facf21d5eb8825051b326e172d216b39f6d31df53cc97862"
-dependencies = [
- "libmimalloc-sys",
-]
 
 [[package]]
 name = "mime"
@@ -5165,7 +5154,7 @@ dependencies = [
 
 [[package]]
 name = "nss_kanidm"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "cc",
  "libc",
@@ -5175,7 +5164,7 @@ dependencies = [
 
 [[package]]
 name = "nss_sparkle"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "cc",
  "libc",
@@ -5185,7 +5174,7 @@ dependencies = [
 
 [[package]]
 name = "nss_sparkle_common"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "libc",
  "libnss",
@@ -5355,26 +5344,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "oauth2"
-version = "5.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "51e219e79014df21a225b1860a479e2dcd7cbd9130f4defd4bd0e191ea31d67d"
-dependencies = [
- "base64 0.21.7",
- "chrono",
- "getrandom 0.2.17",
- "http 1.5.0",
- "rand 0.8.7",
- "reqwest 0.12.28",
- "serde",
- "serde_json",
- "serde_path_to_error",
- "sha2 0.10.9",
- "thiserror 1.0.69",
- "url",
-]
-
-[[package]]
 name = "objc2-core-foundation"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5524,7 +5493,7 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 
 [[package]]
 name = "orca"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5536,7 +5505,6 @@ dependencies = [
  "kubidm_build_profiles",
  "kubidm_client",
  "mathru",
- "mimalloc",
  "rand 0.10.2",
  "rand_chacha 0.10.0",
  "serde",
@@ -5604,7 +5572,7 @@ dependencies = [
 
 [[package]]
 name = "pam_kubidm"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "libc",
  "pam_sparkle_common",
@@ -5617,7 +5585,7 @@ dependencies = [
 
 [[package]]
 name = "pam_sparkle"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "pam_sparkle_common",
  "pkg-config",
@@ -5625,7 +5593,7 @@ dependencies = [
 
 [[package]]
 name = "pam_sparkle_common"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "libc",
  "sparkle_unix_common",
@@ -6318,9 +6286,9 @@ dependencies = [
 
 [[package]]
 name = "referencing"
-version = "0.49.7"
+version = "0.49.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0753550862a089302b186486dfb843f2d547415257d78c32ae0d169e4d6784d1"
+checksum = "f39f4c36ce0f50e96fb740d895f1cad34cfa76c4ab5c36934d6590bcd7029087"
 dependencies = [
  "ahash",
  "fluent-uri",
@@ -6367,38 +6335,6 @@ name = "regex-syntax"
 version = "0.8.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
-
-[[package]]
-name = "reqwest"
-version = "0.12.28"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eddd3ca559203180a307f12d114c268abf583f59b03cb906fd0b3ff8646c1147"
-dependencies = [
- "base64 0.22.1",
- "bytes",
- "futures-core",
- "http 1.5.0",
- "http-body 1.1.0",
- "http-body-util",
- "hyper",
- "hyper-util",
- "js-sys",
- "log",
- "percent-encoding",
- "pin-project-lite",
- "serde",
- "serde_json",
- "serde_urlencoded",
- "sync_wrapper",
- "tokio",
- "tower",
- "tower-http 0.6.11",
- "tower-service",
- "url",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
-]
 
 [[package]]
 name = "reqwest"
@@ -6490,11 +6426,12 @@ dependencies = [
 
 [[package]]
 name = "rlm_kanidm"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "anyhow",
  "bindgen",
  "cc",
+ "concread",
  "kubidm_client",
  "kubidm_proto",
  "kubidmd_core",
@@ -6508,7 +6445,7 @@ dependencies = [
 
 [[package]]
 name = "rlm_kanidm_shared"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "serde",
  "toml",
@@ -6831,7 +6768,7 @@ dependencies = [
 
 [[package]]
 name = "scim_proto"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "base64urlsafedata 0.6.1-dev",
  "peg",
@@ -7270,7 +7207,7 @@ checksum = "8ee5873ec9cce0195efcb7a4e9507a04cd49aec9c83d0389df45b1ef7ba2e649"
 
 [[package]]
 name = "sketching"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "gethostname",
  "num_enum",
@@ -7335,7 +7272,7 @@ dependencies = [
 
 [[package]]
 name = "sparkle_resolver_common"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "async-trait",
  "clap",
@@ -7353,7 +7290,7 @@ dependencies = [
  "kubidmd_core",
  "kubidmd_testkit",
  "libc",
- "lru 0.18.1",
+ "lru 0.18.2",
  "nix",
  "notify-debouncer-full",
  "prctl",
@@ -7376,7 +7313,7 @@ dependencies = [
 
 [[package]]
 name = "sparkle_unix_common"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "bytes",
  "csv",
@@ -8160,6 +8097,12 @@ checksum = "5fd4f6878c9cb28d874b009da9e8d183b5abc80117c40bbd187a1fde336be6e8"
 dependencies = [
  "tinyvec",
 ]
+
+[[package]]
+name = "unicode-segmentation"
+version = "1.13.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6f5d3c3b1bf09027a88a6bc961fc00497d651009560b5463668dc81b0fa87a8"
 
 [[package]]
 name = "unicode-width"
