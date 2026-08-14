@@ -41,14 +41,21 @@ jobs:
             const actual = sha256(bytes);
             const expected = metadata.files[filename];
             if (actual !== expected) {
-              let detail = `${filename}: expected ${expected}, actual ${actual}`;
-              if (filename === "rive.js") {
-                const crlf = Buffer.from(bytes.toString("utf8").replace(/\r?\n/g, "\r\n"), "utf8");
-                detail += `, CRLF-normalized ${sha256(crlf)}`;
-              }
-              console.log(`::error file=server/core/static/rive/VERSION.json,title=Rive vendor hash drift::${detail}`);
+              console.log(`::error file=server/core/static/rive/VERSION.json,title=Rive vendor hash drift::${filename}: expected ${expected}, checkout ${actual}`);
             }
           }
+          NODE
+            cp static/rive/rive.js /tmp/kubidm-rive-checkout.js
+            pnpm vendor:rive
+            node --input-type=module <<'NODE'
+          import { createHash } from "node:crypto";
+          import { readFile } from "node:fs/promises";
+
+          const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
+          const checkout = await readFile("/tmp/kubidm-rive-checkout.js");
+          const upstream = await readFile("static/rive/rive.js");
+          const metadata = JSON.parse(await readFile("static/rive/VERSION.json", "utf8"));
+          console.log(`::notice file=server/core/static/rive/VERSION.json,title=Rive npm re-vendor::checkout ${sha256(checkout)}; npm ${sha256(upstream)}; regenerated metadata ${metadata.files["rive.js"]}; identical=${Buffer.compare(checkout, upstream) === 0}`);
           NODE
             exit 1
           fi
