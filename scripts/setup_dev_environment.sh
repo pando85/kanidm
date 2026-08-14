@@ -21,8 +21,8 @@ if [ "${1}" == "--help" ]; then
     echo " BUILD_MODE - default=--debug, set to '--release' to build binaries in release mode"
     exit 0
 fi
-if [ ! -f run_insecure_dev_server.sh ]; then
-    if [ "$(basename "$(pwd)")" == "kubidm" ]; then
+if [ ! -f Cargo.toml ]; then
+    if [ -d .git ]; then
         cd server/daemon || exit 1
     else
         echo "Please run from the server/daemon dir, I can't tell where you are..."
