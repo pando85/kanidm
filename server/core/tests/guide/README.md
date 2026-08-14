@@ -2,7 +2,7 @@
 
 This directory is the executable verification boundary for the production mascot renderer.
 
-The product/application side can be developed and tested without Rive Editor by using the deterministic mock runtime. The **only external authoring deliverable** is the real `kubidm-guide.riv` plus its generated visual-review evidence and approval result.
+The product/application side can be developed and tested without Rive Editor by using the deterministic mock runtime. The **only external authoring deliverable** is the real `kubidm-guide.riv` plus its generated visual-review evidence and independent approvals.
 
 ## Prerequisites
 
@@ -30,7 +30,7 @@ pnpm test:guide
 pnpm test:guide:e2e
 ```
 
-The unit gate validates semantic/Data-Binding vocabulary, runtime-version drift, vendored runtime/license SHA-256 values, fallback image integrity, absence of pose SVGs/CSS character keyframes, and the local-only WASM configuration.
+The unit gate validates semantic/Data-Binding vocabulary, product template bindings, runtime-version drift, vendored runtime/license SHA-256 values, fallback image integrity, absence of pose SVGs/CSS character keyframes, and the local-only WASM configuration.
 
 The browser suite uses `?rive=mock` by default and verifies:
 
@@ -41,9 +41,12 @@ The browser suite uses `?rive=mock` by default and verifies:
 - deterministic renderer failure activates static fallback;
 - product controls remain usable after Rive failure;
 - 100 story transitions do not accumulate active Rive instances;
+- 20 authenticated Profile <-> Credentials HTMX cycles do not duplicate guide slots/canvases;
 - semantic state and renderer state remain aligned;
 - local runtime/WASM/contract assets are served with expected MIME types; and
 - the Rive runtime's public WASM fallback URL is explicitly disabled.
+
+CI provisions a disposable normal-person account, creates a one-use credential reset token, sets a masked random password through the real credential UI, signs in through the real login UI, and performs the 20-cycle authenticated HTMX stress test. Credentials and reset tokens are masked and are not persisted as review artifacts.
 
 ## UI Lab mock modes
 
@@ -85,6 +88,7 @@ It must return:
 server/core/static/img/guide/kubidm-guide.riv
 artifacts/guide-review/<commit>/...
 visual-review.json
+human-approval.json
 ```
 
 The `.riv` must contain:
@@ -117,6 +121,8 @@ The real-asset gates fail if:
 - the runtime makes an external HTTP(S) request; or
 - the server does not serve the local runtime/WASM/contract correctly.
 
+The normal PR browser workflow automatically detects a committed non-empty `kubidm-guide.riv` and enables the real-runtime browser, performance and full evidence gates in addition to the mock gates.
+
 ## Performance and leak verification
 
 Run the quantitative harness with the real asset:
@@ -136,6 +142,8 @@ The current engineering gates are intentionally conservative and can be overridd
 ```text
 initialization                    <= 2000 ms
 animation frame interval p95     <= 50 ms
+desktop browsers                  Chromium, Firefox, WebKit
+mobile profile                    Chromium 390x844, 4x CPU throttle
 post-GC JS heap growth            <= 8 MiB
 stress transitions                100
 active Rive canvases after churn  <= 1
@@ -144,8 +152,6 @@ external requests in real mode    0
 ```
 
 The harness writes `artifacts/guide-performance.json`. A later change may tighten these thresholds once the final `.riv` is measured on target hardware; they must not be relaxed simply to make a failing asset pass.
-
-The product-level requirement for 20 authenticated Profile <-> Credentials HTMX cycles remains a staging/real-session gate because UI Lab intentionally contains no authenticated account/session fixture. The renderer's generic DOM-removal lifecycle is stress-tested independently in UI Lab; the authenticated navigation cycle must still be run in the final staging validation.
 
 ## Generate visual-review evidence
 
@@ -194,7 +200,7 @@ Give an independent vision-capable agent:
 2. `visual_review_prompt.md`;
 3. the generated evidence directory.
 
-The reviewer returns JSON matching `visual_review.schema.json`.
+The reviewer returns JSON matching `visual_review.schema.json`. It must copy `manifest.commit` and `manifest.rivSha256` into `evidence_commit` and `riv_sha256`, identify the independent reviewer/process, and record the review time. This prevents a review result for an older binary/evidence set from being reused accidentally.
 
 Validate it with:
 
@@ -204,13 +210,61 @@ pnpm guide:review:validate visual-review.json
 
 The validator fails when:
 
+- review provenance is missing or malformed;
 - `pass` is false;
 - any blocking defect exists;
 - any required category is missing;
-- any score is outside 0..5;
+- any score is outside 0..5; or
 - **any production score is below 4**.
 
 The animation-authoring agent may not be the only visual reviewer. The canonical silhouette and travel gait additionally require human approval.
+
+## Human silhouette and travel approval
+
+Record the two mandatory high-impact approvals in a JSON file tied to the same evidence commit and `.riv` SHA-256:
+
+```json
+{
+  "evidence_commit": "copy manifest.commit exactly",
+  "riv_sha256": "copy manifest.rivSha256 exactly",
+  "silhouette": {
+    "approved": true,
+    "reviewer": "reviewer identity",
+    "reviewed_at": "2026-08-14T21:00:00Z"
+  },
+  "travel_gait": {
+    "approved": true,
+    "reviewer": "reviewer identity",
+    "reviewed_at": "2026-08-14T21:00:00Z"
+  }
+}
+```
+
+Do not synthesize or pre-fill approval. The named reviewer must actually inspect the full production evidence, especially desktop/mobile canonical silhouette and both travel directions.
+
+## Final release-readiness gate
+
+After the real asset passes the automated suite, full evidence has been generated, the independent visual review passes, and both human approvals exist, run:
+
+```bash
+pnpm guide:release:validate \
+  artifacts/guide-review/<commit>/manifest.json \
+  visual-review.json \
+  human-approval.json
+```
+
+This gate fails unless:
+
+- the real `.riv` exists and is non-empty;
+- the evidence is real-mode and full-matrix;
+- the evidence `.riv` hash matches the currently checked-out binary;
+- desktop/tablet/mobile × light/dark × full/reduced/static coverage exists;
+- no full-motion capture fell back to static;
+- no external production request was recorded;
+- the independent visual review itself passes and references the same evidence commit and `.riv` SHA-256; and
+- human silhouette and travel approvals reference the same evidence commit and `.riv` SHA-256.
+
+A passing result is the machine-checkable release handoff. The PR must remain draft until this gate and normal repository CI are both green.
 
 ## Feedback loop
 
@@ -225,8 +279,8 @@ AUTHOR IN RIVE
   -> KUBIDM_GUIDE_FULL_MATRIX=1 pnpm guide:evidence
   -> independent LLM visual review
   -> pnpm guide:review:validate visual-review.json
-  -> authenticated 20-cycle Profile <-> Credentials staging check
-  -> human silhouette/travel approval when applicable
+  -> human silhouette/travel approval
+  -> pnpm guide:release:validate manifest.json visual-review.json human-approval.json
   -> fix Rive geometry/motion defects in Rive
   -> fix runtime/layout defects in Kubidm
   -> repeat affected gates
