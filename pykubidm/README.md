@@ -2,8 +2,8 @@
 
 A Python module for interacting with kubidm.
 
-Currently in very very very early beta, please [log an issue](https://github.com/kubidm/kubidm/issues/new) for feature
-requests and bugs.
+Currently in very very very early beta, please [log an issue](https://github.com/kubidm/kubidm/issues/new) for
+feature requests and bugs.
 
 ## Installation
 

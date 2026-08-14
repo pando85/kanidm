@@ -1,81 +1,23 @@
 (% extends "login_base.html" %)
 
 (% block logincontainer %)
-(% if crate::https::views::guide::guided_ui_enabled() %)
-<div class="container"
-     data-guide-state="guide"
-     data-guide-action="choose_method"
-     data-guide-recommendation="recommended">
-    <h4>Choose how to sign in</h4>
-
-    <section class="crab-dialog" data-variant="suggest">
-        (% if display_ctx.reauth.is_some() %)
-        <p>Use one of the methods available for this security check. Kubidm places the strongest available option first.</p>
-        (% else %)
-        <p>If you are unsure, start with the first option. Kubidm places the strongest available sign-in method first, and the other listed methods are valid too.</p>
-        (% endif %)
-    </section>
-
-    <div class="d-grid gap-2">
-        (% for mech in mechs %)
-        <form id="login" action="/ui/login/mech_choose" method="post">
-            <input type="hidden" id="mech" name="mech" value="(( mech.value ))" />
-            <button
-                (% if mech.autofocus %)autofocus(% endif %)
-                type="submit"
-                class="guide-option"
-                data-recommendation="(% if mech.autofocus %)recommended(% else %)works_ok(% endif %)"
-            >
-                <span>
-                    <span class="guide-option-title">(( mech.name ))</span>
-                    <span class="guide-option-reason">
-                        (% if mech.value == "passkey" %)
-                        Fast, phishing-resistant sign-in using a passkey.
-                        (% else if mech.value == "passwordsecuritykey" %)
-                        Password plus a hardware security key.
-                        (% else if mech.value == "passwordmfa" %)
-                        Password plus a time-based one-time code.
-                        (% else if mech.value == "passwordbackupcode" %)
-                        Password plus a backup code.
-                        (% else if mech.value == "password" %)
-                        Password sign-in allowed for this account.
-                        (% else if mech.value == "oauth2trust" %)
-                        Continue with the configured trusted identity provider.
-                        (% else if mech.value == "anonymous" %)
-                        Continue without user credentials where policy permits it.
-                        (% else %)
-                        Authentication method allowed for this account.
-                        (% endif %)
-                    </span>
-                </span>
-                <span class="guide-chip"
-                      data-kind="(% if mech.autofocus %)recommended(% else %)works_ok(% endif %)">
-                    (% if mech.autofocus %)Recommended(% else %)Works OK(% endif %)
-                </span>
-            </button>
-        </form>
-        (% endfor %)
-    </div>
-</div>
-(% else %)
 <div class="container">
-    <p>Choose how to proceed:</p>
+	<p>Choose how to proceed:</p>
 </div>
 <div class="container">
-    <ul class="list-unstyled">
-        (% for mech in mechs %)
-        <li class="text-center mb-2">
-            <form id="login" action="/ui/login/mech_choose" method="post">
-                <input type="hidden" id="mech" name="mech" value="(( mech.value ))" />
-                <button
-                    (% if mech.autofocus %)autofocus(% endif %)
-                    type="submit"
-                    class="btn btn-primary"
-                >(( mech.name ))</button>
-            </form>
-        </li>
-        (% endfor %)
-    </ul>
+	<ul class="list-unstyled">
+		(% for mech in mechs %)
+		<li class="text-center mb-2">
+			<form id="login" action="/ui/login/mech_choose" method="post">
+				<input type="hidden" id="mech" name="mech" value="(( mech.value ))" />
+				<button
+					(% if mech.autofocus %)autofocus(% endif %)
+					type="submit"
+					class="btn btn-primary"
+				>(( mech.name ))</button>
+			</form>
+		</li>
+		(% endfor %)
+	</ul>
 </div>
-(% endif %)
 (% endblock %)

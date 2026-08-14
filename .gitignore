@@ -3,6 +3,7 @@ altnames.cnf
 .backup*_test.json
 .backup_test.db
 **/target/**
+tools/oauth2-tester/Cargo.lock
 /insecure
 **/*.rs.bk
 test.db
@@ -48,6 +49,3 @@ scripts/oauth_proxy/envfile
 
 # javascript test things
 node_modules/
-server/core/playwright-report/
-server/core/test-results/
-server/core/artifacts/

@@ -1,13 +1,10 @@
 (% extends "base_htmx.html" %)
 
 (% block body %)
-	(% if crate::https::views::guide::guided_ui_enabled() %)
-	<script type="module"
-	        src="/pkg/modules/guide_logout.mjs?v=((crate::https::cache_buster::get_cache_buster_key()))"></script>
-	(% endif %)
 	(% include "navbar.html" %)
 	<div id="main">
 	(% block main %)(% endblock %)
 	</div>
 	(% include "signout_modal.html" %)
 (% endblock %)
+

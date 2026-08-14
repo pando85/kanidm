@@ -27,15 +27,7 @@ Profile
       hx-swap="outerHTML"
       hx-validate="true"
       hx-ext="bs-validation"
-      (% if crate::https::views::guide::guided_ui_enabled() %)data-guide-scene="profile" data-guide-mode="(% if crate::https::views::guide::guided_ui_subtle() %)subtle(% else %)full(% endif %)" data-guide-state="(% if rw_active %)idle(% else %)protect(% endif %)" data-guide-action="(% if rw_active %)profile_edit(% else %)profile_readonly(% endif %)"(% endif %)
       novalidate>
-    (% if crate::https::views::guide::guided_ui_full() && !rw_active %)
-    <section class="crab-dialog" data-variant="orient" data-guide-story-id="profile-unlock">
-        <strong class="crab-dialog-title">Editing is protected</strong>
-        <p>Your profile is currently read-only. Unlocking edit asks Kubidm to confirm your identity before allowing changes.</p>
-    </section>
-    (% endif %)
-
     (% call string_attr("Name", "name", person.name, true, Attribute::Name) %)(% endcall %)
 
     (% call string_attr("Displayname", "displayname", person.displayname, true, Attribute::DisplayName) %)(% endcall %)
@@ -74,9 +66,10 @@ Profile
         </div>
     </div>
 
+    <!-- Edit button -->
     <div class="pt-4">
         (% if rw_active %)
-        <button class="btn btn-primary" type="submit" data-guide-target="primary-action">Save</button>
+        <button class="btn btn-primary" type="submit">Save</button>
         (% else %)
         <a href="/ui/unlock"
               (% if !rw_possible %)disabled(% endif %)
@@ -84,7 +77,6 @@ Profile
             <button
               class="btn btn-primary"
               type="button"
-              data-guide-target="primary-action"
               (% if !rw_possible %)
               disabled
               alt="Your session is read-only and may not make changes."
@@ -96,3 +88,4 @@ Profile
 </form>
 
 (% endblock %)
+

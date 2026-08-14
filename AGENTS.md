@@ -4,14 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Kubidm is a simple, secure, and fast identity management platform. It provides an LDAP-compatible directory service,
-OAuth2/OIDC authentication, RADIUS integration, and Unix integration for PAM/NSS.
+Kubidm is a simple, secure, and fast identity management platform. It provides an LDAP-compatible directory service, OAuth2/OIDC authentication, RADIUS integration, and Unix integration for PAM/NSS.
 
-**Tech Stack**: Rust (stable channel), Cargo workspace, Python (pykubidm), JavaScript (Web UI), Docker multi-arch
-builds, mdBook documentation.
+**Tech Stack**: Rust (stable channel), Cargo workspace, Python (pykubidm), JavaScript (Web UI), Docker multi-arch builds, mdBook documentation.
 
 **Components**:
-
 - `server/daemon` - Main Kubidm server (kubidmd)
 - `server/core` - Web UI and HTTP API
 - `server/lib` - Core library
@@ -107,10 +104,9 @@ make prep
 ### Workspace Structure
 
 **Libraries** (`libs/`):
-
 - `client` - Kubidm client SDK for connecting to servers
 - `crypto` - Cryptographic operations (password hashing, encryption)
-- `proto` - SCIM and internal protocol types
+- `proto` - SCIM and internal protocol definitions
 - `scim_proto` - SCIM protocol types
 - `sketching` - Logging and tracing setup
 - `users` - User-related utilities
@@ -118,7 +114,6 @@ make prep
 - `profiles` - Build profile configuration
 
 **Server** (`server/`):
-
 - `daemon` - Main server binary (kubidmd)
 - `core` - HTTP API, Web UI, OAuth2 endpoints
 - `lib` - Core server logic (authentication, identity management)
@@ -127,7 +122,6 @@ make prep
 - `testkit-macros` - Test macros
 
 **Tools** (`tools/`):
-
 - `cli` - Kubidm CLI (kubidm command)
 - `orca` - Load testing tool
 - `iam_migrations/ldap` - LDAP migration tool
@@ -136,14 +130,12 @@ make prep
 - `mail_sender` - Email notification sender
 
 **Unix Integration** (`unix_integration/`):
-
 - `resolver` - Unix resolver daemon
 - `pam_kubidm` - PAM module
 - `nss_kubidm` - NSS module
-- `common` - Shared integration code
+- `common` - Shared Unix integration code
 
 **Python** (`pykubidm/`):
-
 - Kubidm Python SDK with async support
 - Uses uv for dependency management
 - Strict mypy type checking
@@ -207,43 +199,3 @@ make prep
 
 - Images: `ghcr.io/pando85/kubidm/server`, `ghcr.io/pando85/kubidm/tools`, `ghcr.io/pando85/kubidm/radius`
 - Tags: `devel` (latest development), version-specific for releases
-
-## Mascot / Rive Work
-
-Any change to the mascot, Rive asset, guide renderer, guide motion, or guide state machine must follow the production Rive execution plan in:
-
-`book/src/developers/designs/rive_production_execution_plan.md`
-
-The machine-readable integration contract is:
-
-`server/core/static/guide_rive_contract.json`
-
-The verification loop is mandatory:
-
-```text
-AUTHOR
-  -> export .riv
-  -> contract smoke test
-  -> UI Lab scenario tests
-  -> capture evidence bundle
-  -> deterministic assertions
-  -> independent LLM visual review
-  -> human review when required
-  -> classify defects
-  -> iterate
-  -> rerun the affected matrix
-  -> merge only when all gates pass
-```
-
-Rules:
-
-- do not claim production Rive completion without a committed `kubidm-guide.riv` and passing runtime tests;
-- use Rive View Models/Data Binding for new production control surfaces rather than legacy State Machine Inputs;
-- `RiveGuideRenderer` owns full internal character motion; do not emulate final character articulation with whole-image CSS transforms;
-- static WebP poses are fallback/reduced/static assets, not substitutes for full Rive motion;
-- do not introduce a separate travel character model; travel is a state of the canonical rig;
-- do not change locked silhouette/proportions/band/claws without explicit design approval;
-- every animation change must produce visual evidence for an independent reviewer;
-- the authoring agent must not be the only visual reviewer;
-- canonical silhouette and travel gait require human approval;
-- renderer failure must never block authentication, forms, or navigation.

@@ -76,7 +76,8 @@
 
 # For Developers
 
-- [Developer Guide](./developers/readme.md)
+- [Developer Guide](developers/readme.md)
+- [AI/LLM Policy](developers/ai_llm_policy.md)
 - [Developer Ethics](developers/developer_ethics.md)
 - [Frequently Asked Questions](developers/faq.md)
 - [Design Documents]()
@@ -88,12 +89,6 @@
   - [Cryptography Key Domains (2024)](developers/designs/cryptography_key_domains.md)
   - [Domain Join - Machine Accounts](developers/designs/domain_join_machine_accounts.md)
   - [Elevated Priv Mode](developers/designs/elevated_priv_mode.md)
-  - [Mascot-Guided Product Experience](developers/designs/mascot_guided_product_experience.md)
-  - [Mascot and Motion Design System](developers/designs/mascot_design_system.md)
-  - [Guided Identity Journey](developers/designs/guided_identity_journey.md)
-  - [Authentication and Credential-Setup UI](developers/designs/authentication_credential_ui.md)
-  - [Mascot-Guided Identity Experience v1](developers/designs/mascot_guided_v1_implementation.md)
-  - [Production Rive Execution Plan](developers/designs/rive_production_execution_plan.md)
   - [OAuth2 Device Flow](developers/designs/oauth2_device_flow.md)
   - [OAuth2 Refresh Tokens](developers/designs/oauth2_refresh_tokens.md)
   - [Replication Coordinator](developers/designs/replication_coordinator.md)

@@ -2,16 +2,6 @@
 (% block title %)Applications(% endblock %)
 
 (% block head %)
-(% if crate::https::views::guide::guided_ui_enabled() %)
-<link rel="stylesheet"
-      href="/pkg/guide.css?v=((crate::https::cache_buster::get_cache_buster_key()))" />
-<link rel="stylesheet"
-      href="/pkg/guide_apps.css?v=((crate::https::cache_buster::get_cache_buster_key()))" />
-<script type="module"
-        src="/pkg/modules/guide_controller.mjs?v=((crate::https::cache_buster::get_cache_buster_key()))"></script>
-<script type="module"
-        src="/pkg/modules/guide_apps.mjs?v=((crate::https::cache_buster::get_cache_buster_key()))"></script>
-(% endif %)
 (% endblock %)
 
 (% block main %)

@@ -22,7 +22,6 @@ mod cookies;
 mod csrf;
 mod enrol;
 mod errors;
-pub(crate) mod guide;
 mod login;
 mod navbar;
 mod oauth2;
@@ -31,8 +30,6 @@ mod radius;
 mod reauth;
 mod recover;
 mod reset;
-#[cfg(debug_assertions)]
-mod ui_lab;
 
 #[derive(Template, WebTemplate)]
 #[template(path = "unrecoverable_error.html")]
@@ -128,17 +125,7 @@ pub fn view_router(state: ServerState) -> Router<ServerState> {
         get(oauth2::view_device_get).post(oauth2::view_device_post),
     );
 
-    // The UI Lab is deliberately absent from release builds and must also be
-    // explicitly enabled in debug builds. It contains fixture states and must
-    // never become a production or authenticated-account surface.
-    #[cfg(debug_assertions)]
-    let unguarded_router = if std::env::var_os("KUBIDM_UI_LAB").is_some() {
-        unguarded_router.route("/_lab", get(ui_lab::view_lab_get))
-    } else {
-        unguarded_router
-    };
-
-    // The webauthn post is unguarded because it's not an htmx event.
+    // The webauthn post is unguarded because it's not a htmx event.
 
     // Anything that is a partial only works if triggered from htmx
     let guarded_router = Router::new()
@@ -152,6 +139,10 @@ pub fn view_router(state: ServerState) -> Router<ServerState> {
             post(reset::view_add_ssh_publickey),
         )
         .route("/radius/generate", post(radius::view_radius_post))
+        .route(
+            "/api/check_password_strength",
+            post(reset::check_pwd_strength),
+        )
         .route("/api/delete_alt_creds", post(reset::remove_alt_creds))
         .route("/api/delete_unixcred", post(reset::remove_unixcred))
         .route("/api/add_totp", post(reset::add_totp))
@@ -238,14 +229,19 @@ mod tests {
     #[tokio::test]
     async fn test_unrecoverableerrorview() {
         let domain_info = kubidmd_lib::server::DomainInfo::new_test();
+
         let view = UnrecoverableErrorView {
             err_code: OperationError::InvalidState,
             operation_id: Uuid::new_v4(),
             domain_info: domain_info.read(),
         };
+
         let error_html = view.render().expect("Failed to render");
+
         assert!(error_html.contains(domain_info.read().display_name()));
+
         let response = view.into_response();
+
         // TODO: this really should be an error code :(
         assert_eq!(response.status(), 200);
     }

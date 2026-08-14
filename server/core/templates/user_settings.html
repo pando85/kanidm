@@ -5,16 +5,6 @@
 (% block head %)
 <script src="/pkg/external/forms.js"></script>
 <script src="/pkg/external/htmx_bs_validation.js"></script>
-(% if crate::https::views::guide::guided_ui_enabled() %)
-<link rel="stylesheet"
-      href="/pkg/guide.css?v=((crate::https::cache_buster::get_cache_buster_key()))" />
-<link rel="stylesheet"
-      href="/pkg/guide_settings.css?v=((crate::https::cache_buster::get_cache_buster_key()))" />
-<script type="module"
-        src="/pkg/modules/guide_controller.mjs?v=((crate::https::cache_buster::get_cache_buster_key()))"></script>
-<script type="module"
-        src="/pkg/modules/credential_guide.mjs?v=((crate::https::cache_buster::get_cache_buster_key()))"></script>
-(% endif %)
 (% endblock %)
 
 (% block main %)
