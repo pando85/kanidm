@@ -26,12 +26,12 @@ if [ -d '.git' ]; then
 fi
 
 
-if [ ! -f "run_insecure_dev_server.sh" ]; then
+if [ ! -f "Cargo.toml" ]; then
     echo "I'm not sure where you are, please run this from the root of the repository or the server/daemon directory"
     exit 1
 fi
 
-export KUBIDM_CONFIG="./insecure_server.toml"
+export KUBIDM_CONFIG="../../scripts/insecure_server.toml"
 
 mkdir -p /tmp/kubidm/client_ca
 
@@ -56,7 +56,7 @@ fi
 
 ATTEMPT=0
 
-KUBIDM_CONFIG_FILE="./insecure_server.toml"
+KUBIDM_CONFIG_FILE="../../scripts/insecure_server.toml"
 if [ -f "${KUBIDM_CONFIG_FILE}" ]; then
     echo "Found config file ${KUBIDM_CONFIG_FILE}"
 else
