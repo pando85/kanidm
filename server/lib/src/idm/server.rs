@@ -35,7 +35,7 @@ use compact_jwt::{Jwk, JwsCompact};
 use concread::bptree::{BptreeMap, BptreeMapReadTxn, BptreeMapWriteTxn};
 use concread::cowcell::CowCellReadTxn;
 use concread::hashmap::{HashMap, HashMapReadTxn, HashMapWriteTxn};
-use kubidm_lib_crypto::CryptoPolicy;
+use kubidm_lib_crypto::{CryptoPolicy, PW_MAX_LENGTH_NIST, PW_SFA_MIN_LENGTH_NIST};
 use kubidm_proto::internal::{
     ApiToken, CredentialStatus, PasswordFeedback, RadiusAuthToken, ScimSyncToken, UatPurpose,
     UserAuthToken,
@@ -1588,7 +1588,7 @@ impl IdmServerAuthTransaction<'_> {
                 "Starting session {} for {} {}",
                 session_id,
                 account.spn(),
-                account.uuid
+                account.uuid()
             );
 
             // Account must be anon, so we can gen the uat.
@@ -1805,14 +1805,15 @@ impl IdmServerProxyWriteTransaction<'_> {
     ) -> Result<(), OperationError> {
         // password strength and badlisting is always global, rather than per-pw-policy.
         // pw-policy as check on the account is about requirements for mfa for example.
-        //
-
-        // is the password at least 10 char?
-        if cleartext.len() < PW_MIN_LENGTH as usize {
+        if cleartext.len() < PW_SFA_MIN_LENGTH_NIST as usize {
             return Err(OperationError::PasswordQuality(vec![
-                PasswordFeedback::TooShort(PW_MIN_LENGTH),
+                PasswordFeedback::TooShort(PW_SFA_MIN_LENGTH_NIST),
             ]));
-        }
+        } else if cleartext.len() > PW_MAX_LENGTH_NIST as usize {
+            return Err(OperationError::PasswordQuality(vec![
+                PasswordFeedback::TooLong(PW_MAX_LENGTH_NIST),
+            ]));
+        };
 
         // does the password pass zxcvbn?
 
@@ -2459,7 +2460,7 @@ mod tests {
     use crate::server::keys::KeyProvidersTransaction;
     use crate::value::{AuthType, SessionState};
     use compact_jwt::{traits::JwsVerifiable, JwsCompact, JwsEs256Verifier, JwsVerifier};
-    use kubidm_lib_crypto::CryptoPolicy;
+use kubidm_lib_crypto::{CryptoPolicy, PW_MAX_LENGTH_NIST, PW_SFA_MIN_LENGTH_NIST};
     use kubidm_proto::v1::{AuthAllowed, AuthIssueSession, AuthMech};
     use time::OffsetDateTime;
     use uuid::Uuid;
