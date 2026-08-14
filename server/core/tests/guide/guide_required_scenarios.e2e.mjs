@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
+import { readFile } from "node:fs/promises";
 
+const contract = JSON.parse(await readFile(new URL("../../static/guide_rive_contract.json", import.meta.url), "utf8"));
 const required = [
     ["first_encounter", "first-login", "identify", "welcome"],
     ["method_choice", "method-choice", "choose_method", "guide"],
@@ -17,6 +19,10 @@ const required = [
     ["credential_progress", "credentials-progress", "credential_setup", "idle"],
     ["logout_goodbye", "goodbye", "logout", "goodbye"],
 ];
+
+test("browser scenario matrix exactly matches the machine contract", () => {
+    expect(required.map(([scenario]) => scenario)).toEqual(contract.requiredScenarios);
+});
 
 test("every required product scenario reaches the declared semantic and Rive state", async ({ page }) => {
     test.setTimeout(60_000);
