@@ -29,9 +29,7 @@ use crate::idm::serviceaccount::ServiceAccount;
 use crate::prelude::*;
 use crate::server::keys::KeyProvidersTransaction;
 use crate::server::DomainInfo;
-use crate::utils::{
-    password_from_random, readable_password_from_random, uuid_from_duration, Sid,
-};
+use crate::utils::{password_from_random, readable_password_from_random, uuid_from_duration, Sid};
 use crate::value::{Session, SessionState};
 use compact_jwt::{Jwk, JwsCompact};
 use concread::bptree::{BptreeMap, BptreeMapReadTxn, BptreeMapWriteTxn};
@@ -2462,7 +2460,7 @@ mod tests {
     use crate::server::keys::KeyProvidersTransaction;
     use crate::value::{AuthType, SessionState};
     use compact_jwt::{traits::JwsVerifiable, JwsCompact, JwsEs256Verifier, JwsVerifier};
-use kubidm_lib_crypto::CryptoPolicy;
+    use kubidm_lib_crypto::CryptoPolicy;
     use kubidm_proto::v1::{AuthAllowed, AuthIssueSession, AuthMech};
     use time::OffsetDateTime;
     use uuid::Uuid;

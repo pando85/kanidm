@@ -269,7 +269,7 @@ async fn test_oauth2_openid_basic_flow_impl(
     // get call directly. This should be a 200. (?)
 
     let pkce_secret = PkceS256Secret::default();
-    let pkce_code_challenge = general_purpose::URL_SAFE_NO_PAD.encode(&pkce_secret.to_challenge());
+    let pkce_code_challenge = general_purpose::URL_SAFE_NO_PAD.encode(pkce_secret.to_challenge());
     let pkce_code_verifier = pkce_secret.to_verifier();
 
     let mut query = vec![
@@ -885,7 +885,7 @@ async fn test_oauth2_openid_public_flow_impl(
     // Since we are a client, we can just "pretend" we got the redirect, and issue the
     // get call directly. This should be a 200. (?)
     let pkce_secret = PkceS256Secret::default();
-    let pkce_code_challenge = general_purpose::URL_SAFE_NO_PAD.encode(&pkce_secret.to_challenge());
+    let pkce_code_challenge = general_purpose::URL_SAFE_NO_PAD.encode(pkce_secret.to_challenge());
     let pkce_code_verifier = pkce_secret.to_verifier();
 
     let mut query = vec![

@@ -3,7 +3,7 @@ name = "rlm-python"
 version = "0.1.0"
 description = "FreeRADIUS Kubidm module"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = ["kubidm"]
 
 [dependency-groups]

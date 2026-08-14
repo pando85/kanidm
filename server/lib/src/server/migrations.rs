@@ -851,10 +851,22 @@ impl QueryServerWriteTransaction<'_> {
     }
 
     pub(crate) fn migrate_schema_1_12(&mut self) -> Result<(), OperationError> {
-        self.schema.extend_in_memory(
-            migration_data::dl_1_12::phase_1_schema_attrs(),
-            migration_data::dl_1_12::phase_2_schema_classes(),
-        )
+        // Include time-bounded grant schema from DL14
+        let mut all_attrs = vec![
+            (*migration_data::dl14::schema::SCHEMA_ATTR_MEMBER_VALID_FROM).clone(),
+            (*migration_data::dl14::schema::SCHEMA_ATTR_MEMBER_VALID_UNTIL).clone(),
+            (*migration_data::dl14::schema::SCHEMA_ATTR_MAX_GRANT_DURATION).clone(),
+            (*migration_data::dl14::schema::SCHEMA_ATTR_TIME_BOUNDED_MEMBER).clone(),
+        ];
+
+        all_attrs.extend(migration_data::dl_1_12::phase_1_schema_attrs());
+
+        let mut all_classes =
+            vec![(*migration_data::dl14::schema::SCHEMA_CLASS_TIME_BOUNDED_GRANT).clone()];
+
+        all_classes.extend(migration_data::dl_1_12::phase_2_schema_classes());
+
+        self.schema.extend_in_memory(all_attrs, all_classes)
     }
 
     /// Migration domain level 1.11 to 1.12
