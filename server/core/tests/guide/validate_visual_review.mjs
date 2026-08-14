@@ -22,6 +22,18 @@ const expectedScores = [
 const review = JSON.parse(await readFile(reviewPath, "utf8"));
 const errors = [];
 
+if (typeof review.reviewer !== "string" || review.reviewer.trim().length === 0) {
+    errors.push("reviewer must name the independent reviewer or review process");
+}
+if (typeof review.reviewed_at !== "string" || Number.isNaN(Date.parse(review.reviewed_at))) {
+    errors.push("reviewed_at must be an ISO-compatible timestamp");
+}
+if (typeof review.evidence_commit !== "string" || review.evidence_commit.trim().length < 7) {
+    errors.push("evidence_commit must identify the reviewed evidence commit");
+}
+if (typeof review.riv_sha256 !== "string" || !/^[0-9a-f]{64}$/i.test(review.riv_sha256)) {
+    errors.push("riv_sha256 must be a 64-character SHA-256 hex digest");
+}
 if (typeof review.pass !== "boolean") errors.push("pass must be boolean");
 if (!review.scores || typeof review.scores !== "object" || Array.isArray(review.scores)) {
     errors.push("scores must be an object");
