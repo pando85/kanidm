@@ -27,6 +27,7 @@ export class StaticGuideRenderer {
         this.slot = slot;
         this.assetRoot = assetRoot.replace(/\/$/, "");
         this.fallbackMode = fallback;
+        this.suppressed = false;
         this.image = slot.querySelector("[data-guide-image], [data-lab-mascot-image]");
         this.fallback = slot.querySelector("[data-guide-fallback], [data-lab-mascot-fallback]");
 
@@ -52,6 +53,7 @@ export class StaticGuideRenderer {
         assertGuideValue("mascotState", mascotState);
         assertGuideValue("motionLevel", motionLevel);
 
+        this.suppressed = false;
         this.slot.dataset.mascotState = mascotState;
         this.slot.dataset.motion = motionLevel;
         this.image.alt = `Kubidm guide: ${mascotState}`;
@@ -71,17 +73,29 @@ export class StaticGuideRenderer {
     }
 
     showImage() {
+        if (this.suppressed) {
+            this.image.hidden = true;
+            this.fallback.hidden = true;
+            return;
+        }
         this.slot.hidden = false;
         this.image.hidden = false;
         this.fallback.hidden = true;
     }
 
     hideImage() {
+        this.suppressed = true;
         this.image.hidden = true;
         this.fallback.hidden = true;
     }
 
     showFallback() {
+        if (this.suppressed) {
+            this.image.hidden = true;
+            this.fallback.hidden = true;
+            return;
+        }
+
         const state = this.slot.dataset.mascotState || MascotState.IDLE;
         this.image.hidden = true;
 
@@ -104,7 +118,7 @@ export class StaticGuideRenderer {
     }
 
     destroy() {
-        // Static assets own no runtime resources.
+        this.suppressed = true;
     }
 }
 
