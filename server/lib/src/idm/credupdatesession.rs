@@ -3903,9 +3903,9 @@ mod tests {
         trace!(?err);
         assert!(
             matches!(err, OperationError::PasswordQuality(details) if details == vec!(
-            PasswordFeedback::NamesAndSurnamesByThemselvesAreEasyToGuess,
-            PasswordFeedback::AvoidDatesAndYearsThatAreAssociatedWithYou,
-                   ))
+                PasswordFeedback::NamesAndSurnamesByThemselvesAreEasyToGuess,
+                PasswordFeedback::AvoidDatesAndYearsThatAreAssociatedWithYou,
+            ))
         );
 
         let err = cutxn

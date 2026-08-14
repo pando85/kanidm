@@ -29,7 +29,9 @@ use crate::idm::serviceaccount::ServiceAccount;
 use crate::prelude::*;
 use crate::server::keys::KeyProvidersTransaction;
 use crate::server::DomainInfo;
-use crate::utils::{password_from_random, readable_password_from_random, uuid_from_duration, Sid};
+use crate::utils::{
+    password_from_random, readable_password_from_random, uuid_from_duration, Sid,
+};
 use crate::value::{Session, SessionState};
 use compact_jwt::{Jwk, JwsCompact};
 use concread::bptree::{BptreeMap, BptreeMapReadTxn, BptreeMapWriteTxn};
