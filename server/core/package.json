@@ -28,6 +28,7 @@
     "guide:evidence": "node tests/guide/capture_evidence.mjs",
     "guide:performance": "node tests/guide/measure_performance.mjs",
     "guide:review:validate": "node tests/guide/validate_visual_review.mjs",
+    "guide:release:validate": "node tests/guide/validate_release_readiness.mjs",
     "vendor:rive": "node scripts/vendor_rive.mjs"
   }
 }
