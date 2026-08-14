@@ -23,3 +23,108 @@ jobs:
       - name: Run guide verification tests
         working-directory: server/core
         run: pnpm test:guide
+
+  guide_browser:
+    name: Guide browser and Rive verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
+      CARGO_INCREMENTAL: 0
+      CARGO_TERM_COLOR: always
+      KUBIDM_BUILD_PROFILE: developer
+      KUBIDM_UI_LAB: 1
+      KUBIDM_GUIDED_UI: full
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.11
+      - name: Install server dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libpam0g-dev \
+            libudev-dev \
+            libssl-dev \
+            libsystemd-dev
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11
+      - name: Install Javascript dependencies
+        working-directory: server/core
+        run: pnpm install --frozen-lockfile
+      - name: Install Playwright browsers
+        working-directory: server/core
+        run: pnpm exec playwright install --with-deps chromium firefox webkit
+      - name: Start debug UI Lab server
+        run: |
+          KANI_CARGO_OPTS="--features kubidmd_core/ui_htmx" \
+            ./server/daemon/run_insecure_dev_server.sh \
+            > /tmp/kubidm-guide-server.log 2>&1 &
+          echo $! > /tmp/kubidm-guide-server.pid
+          for attempt in $(seq 1 120); do
+            if curl --fail --silent --show-error --insecure \
+              "https://localhost:8443/ui/_lab?rive=mock" >/dev/null; then
+              exit 0
+            fi
+            if ! kill -0 "$(cat /tmp/kubidm-guide-server.pid)" 2>/dev/null; then
+              cat /tmp/kubidm-guide-server.log
+              exit 1
+            fi
+            sleep 2
+          done
+          cat /tmp/kubidm-guide-server.log
+          exit 1
+      - name: Run mock browser scenarios and CSP gates
+        working-directory: server/core
+        run: pnpm test:guide:e2e
+      - name: Run mock performance and leak gate
+        working-directory: server/core
+        env:
+          KUBIDM_RIVE_TEST_MODE: mock
+        run: pnpm guide:performance
+      - name: Generate mock visual evidence smoke bundle
+        working-directory: server/core
+        env:
+          KUBIDM_RIVE_TEST_MODE: mock
+        run: pnpm guide:evidence
+      - name: Detect production Rive asset
+        id: rive_asset
+        working-directory: server/core
+        run: |
+          if test -s static/img/guide/kubidm-guide.riv; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "Production Rive asset is not present; real-runtime gates remain pending." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Run real Rive browser, contract and failure gates
+        if: steps.rive_asset.outputs.present == 'true'
+        working-directory: server/core
+        env:
+          KUBIDM_EXPECT_REAL_RIVE: 1
+        run: pnpm test:guide:e2e
+      - name: Run real Rive performance and leak gate
+        if: steps.rive_asset.outputs.present == 'true'
+        working-directory: server/core
+        run: pnpm guide:performance
+      - name: Generate full production visual evidence matrix
+        if: steps.rive_asset.outputs.present == 'true'
+        working-directory: server/core
+        env:
+          KUBIDM_GUIDE_FULL_MATRIX: 1
+        run: pnpm guide:evidence
+      - name: Upload guide verification artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: guide-verification-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: ignore
+          path: |
+            server/core/artifacts/
+            server/core/playwright-report/
+            server/core/test-results/
+            /tmp/kubidm-guide-server.log
