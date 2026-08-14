@@ -1,0 +1,32 @@
+---
+name: Repair vendored Rive runtime
+"on":
+  push:
+    branches:
+      - agent/adr-mascot-guided-experience
+permissions:
+  contents: write
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: agent/adr-mascot-guided-experience
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11
+      - name: Re-vendor pinned Rive runtime
+        working-directory: server/core
+        run: pnpm vendor:rive
+      - name: Commit verified upstream bytes
+        run: |
+          git add server/core/static/rive/rive.js server/core/static/rive/rive.wasm server/core/static/rive/LICENSE server/core/static/rive/VERSION.json
+          if git diff --cached --quiet; then
+            echo "Vendored runtime already matches npm bytes"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "fix(ui): restore pinned Rive runtime bytes"
+          git push origin HEAD:agent/adr-mascot-guided-experience
