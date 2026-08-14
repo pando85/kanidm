@@ -18,6 +18,14 @@ jobs:
         run: pnpm exec eslint tests scripts
       - name: Run Prettier to check Javascript files
         run: make prettier
-      - name: Validate mascot Rive semantic contract
+      - name: Validate mascot Rive binding semantics
         working-directory: server/core
-        run: pnpm test:guide
+        run: node --test tests/guide/guide_rive_binding.test.mjs
+      - name: Validate mascot Rive machine contract
+        if: always()
+        working-directory: server/core
+        run: node --test tests/guide/guide_rive_contract.test.mjs
+      - name: Validate mascot Rive assets
+        if: always()
+        working-directory: server/core
+        run: node --test tests/guide/guide_rive_assets.test.mjs
