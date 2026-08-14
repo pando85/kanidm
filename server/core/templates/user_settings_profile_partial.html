@@ -27,7 +27,15 @@ Profile
       hx-swap="outerHTML"
       hx-validate="true"
       hx-ext="bs-validation"
+      (% if crate::https::views::guide::guided_ui_enabled() %)data-guide-scene="profile" data-guide-mode="(% if crate::https::views::guide::guided_ui_subtle() %)subtle(% else %)full(% endif %)" data-guide-state="(% if rw_active %)idle(% else %)protect(% endif %)" data-guide-action="(% if rw_active %)profile_edit(% else %)profile_readonly(% endif %)"(% endif %)
       novalidate>
+    (% if crate::https::views::guide::guided_ui_full() && !rw_active %)
+    <section class="crab-dialog" data-variant="orient" data-guide-story-id="profile-unlock">
+        <strong class="crab-dialog-title">Editing is protected</strong>
+        <p>Your profile is currently read-only. Unlocking edit asks Kubidm to confirm your identity before allowing changes.</p>
+    </section>
+    (% endif %)
+
     (% call string_attr("Name", "name", person.name, true, Attribute::Name) %)(% endcall %)
 
     (% call string_attr("Displayname", "displayname", person.displayname, true, Attribute::DisplayName) %)(% endcall %)
@@ -44,7 +52,7 @@ Profile
                hx-swap="beforeend">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-plus-square"
                      viewBox="0 0 16 16" width="20" height="20">
-                    <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"></path>
+                    <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1 1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"></path>
                     <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"></path>
                 </svg>
             </a>
@@ -66,10 +74,9 @@ Profile
         </div>
     </div>
 
-    <!-- Edit button -->
     <div class="pt-4">
         (% if rw_active %)
-        <button class="btn btn-primary" type="submit">Save</button>
+        <button class="btn btn-primary" type="submit" data-guide-target="primary-action">Save</button>
         (% else %)
         <a href="/ui/unlock"
               (% if !rw_possible %)disabled(% endif %)
@@ -77,6 +84,7 @@ Profile
             <button
               class="btn btn-primary"
               type="button"
+              data-guide-target="primary-action"
               (% if !rw_possible %)
               disabled
               alt="Your session is read-only and may not make changes."
@@ -88,4 +96,3 @@ Profile
 </form>
 
 (% endblock %)
-
