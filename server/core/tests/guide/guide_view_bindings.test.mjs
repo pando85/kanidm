@@ -10,7 +10,7 @@ function requireFragment(fragment, description) {
 
 test("guide semantics and debug UI Lab stay exported and routed", () => {
     requireFragment("pub(crate) mod guide;", "guide helpers must remain available to Askama templates");
-    requireFragment('#[cfg(debug_assertions)]\nmod ui_lab;', "UI Lab module must stay debug-only");
+    requireFragment("#[cfg(debug_assertions)]\nmod ui_lab;", "UI Lab module must stay debug-only");
     requireFragment('std::env::var_os("KUBIDM_UI_LAB")', "UI Lab route must require explicit opt-in");
     requireFragment('route("/_lab", get(ui_lab::view_lab_get))', "UI Lab route must remain available to browser CI");
 });
