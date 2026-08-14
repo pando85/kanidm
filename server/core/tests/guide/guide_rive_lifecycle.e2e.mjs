@@ -44,3 +44,31 @@ test("full to static to full cleans and recreates Rive from the cached file", as
     expect(restarted.usedRiveFile).toBe(true);
     expect(restarted.resizes).toBeGreaterThan(initial.resizes);
 });
+
+test("a late static fallback load cannot reappear after Rive takes ownership", async ({ page }) => {
+    let releaseImage;
+    const imageMayFinish = new Promise((resolve) => {
+        releaseImage = resolve;
+    });
+
+    await page.route("**/pkg/img/guide/crab-guide.webp*", async (route) => {
+        await imageMayFinish;
+        await route.continue();
+    });
+
+    try {
+        await page.goto("/ui/_lab?rive=mock#story=method-choice&theme=light&viewport=desktop&motion=full", {
+            waitUntil: "domcontentloaded",
+        });
+        await page.waitForFunction(() => globalThis.__kubidmGuideDiagnostics?.loaded === true);
+        await expect(page.locator("[data-guide-rive-canvas]")).toBeVisible();
+        await expect(page.locator("[data-lab-mascot-image]")).toBeHidden();
+
+        releaseImage();
+        await page.waitForTimeout(100);
+        await expect(page.locator("[data-guide-rive-canvas]")).toBeVisible();
+        await expect(page.locator("[data-lab-mascot-image]")).toBeHidden();
+    } finally {
+        releaseImage();
+    }
+});
