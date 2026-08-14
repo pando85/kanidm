@@ -31,12 +31,15 @@ jobs:
           if [ "$merge_status" -ne 0 ]; then
             if git ls-files -u -- server/core/package.json | grep -q .; then
               git checkout --ours server/core/package.json
+              git add server/core/package.json
             fi
             if git ls-files -u -- server/core/pnpm-lock.yaml | grep -q .; then
               git checkout --ours server/core/pnpm-lock.yaml
+              git add server/core/pnpm-lock.yaml
             fi
             if git ls-files -u -- Cargo.lock | grep -q .; then
               git checkout --theirs Cargo.lock
+              git add Cargo.lock
             fi
 
             if git ls-files -u | grep -q .; then
