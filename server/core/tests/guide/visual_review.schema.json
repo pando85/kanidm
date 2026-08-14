@@ -5,6 +5,10 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
+    "reviewer",
+    "reviewed_at",
+    "evidence_commit",
+    "riv_sha256",
     "pass",
     "scores",
     "blocking_defects",
@@ -12,6 +16,10 @@
     "recommended_changes"
   ],
   "properties": {
+    "reviewer": { "type": "string", "minLength": 1 },
+    "reviewed_at": { "type": "string", "format": "date-time" },
+    "evidence_commit": { "type": "string", "minLength": 7 },
+    "riv_sha256": { "type": "string", "pattern": "^[0-9a-fA-F]{64}$" },
     "pass": { "type": "boolean" },
     "scores": {
       "type": "object",
