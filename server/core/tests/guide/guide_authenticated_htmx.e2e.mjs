@@ -15,7 +15,8 @@ async function onboardPassword(page) {
     await expect(page.getByRole("heading", { name: "Updating Credentials" })).toBeVisible();
 
     const passwordFormResponse = page.waitForResponse(
-        (response) => response.request().method() === "POST" && new URL(response.url()).pathname === "/ui/reset/add_password",
+        (response) =>
+            response.request().method() === "POST" && new URL(response.url()).pathname === "/ui/reset/add_password",
     );
     await page.getByRole("button", { name: "Add Password" }).click();
     const response = await passwordFormResponse;
