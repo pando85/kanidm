@@ -1,13 +1,29 @@
 (% extends "login_base.html" %)
 
 (% block logincontainer %)
-	<h3>Login Failed</h3>
-	<main id="main">
-		<p>Reason: (( reason ))</p>
-		<p>Operation ID: (( operation_id ))</p>
-		<a href=((Urls::Login.as_ref()))>
-			<button type="button" class="btn btn-success">Return to Login</button>
-		</a>
-	</main>
+(% if crate::https::views::guide::guided_ui_enabled() %)
+<section data-guide-state="warning"
+         data-guide-action="authentication_denied"
+         data-guide-severity="critical">
+    <h3>Login Failed</h3>
+    <div class="guide-notice" data-severity="critical" role="alert">
+        <p><strong>Authentication could not continue.</strong></p>
+        <p>Reason: (( reason ))</p>
+        <p class="mb-0">Operation ID: (( operation_id ))</p>
+    </div>
+    <a href=((Urls::Login.as_ref()))>
+        <button type="button" class="btn btn-primary">Return to Login</button>
+    </a>
+</section>
+(% else %)
+<h3>Login Failed</h3>
+<main id="main">
+    <p>Reason: (( reason ))</p>
+    <p>Operation ID: (( operation_id ))</p>
+    <a href=((Urls::Login.as_ref()))>
+        <button type="button" class="btn btn-success">Return to Login</button>
+    </a>
+</main>
+(% endif %)
 
 (% endblock %)
