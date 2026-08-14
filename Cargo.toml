@@ -209,8 +209,8 @@ enum-iterator = "2.3.0"
 fantoccini = "0.22.0"
 filetime = "^0.2.29"
 fs4 = "^1.0.2"
-futures = "^0.3.32"
-futures-util = { version = "^0.3.32", features = ["sink"] }
+futures = "0.3.34"
+futures-util = { version = "0.3.34", features = ["sink"] }
 gethostname = "1.1.0"
 gix = { version = "0.86.0", default-features = false, features = ["sha1"] }
 haproxy-protocol = { version = "0.0.4" }
@@ -276,7 +276,7 @@ reqwest = { version = "0.13.4", default-features = false, features = [
     "query",
     "socks",
 ] }
-rusqlite = { version = "=0.40.1", features = ["array", "bundled"] }
+rusqlite = { version = "=0.40.2", features = ["array", "bundled"] }
 rustls = { version = "0.23.37", default-features = false, features = [
     "std",
     "aws_lc_rs",
@@ -301,7 +301,7 @@ svg = "0.18.0"
 syn = { version = "3.0.0", features = ["full"] }
 tempfile = "3.26.0"
 testkit-macros = { path = "./server/testkit-macros" }
-time = { version = ">=0.3.47, <0.3.55", features = ["formatting", "local-offset"] }
+time = { version = ">=0.3.47, <0.3.56", features = ["formatting", "local-offset"] }
 tokio = { version = "^1.52.3", default-features = false }
 tokio-rustls = { version = "0.26.4" }
 tokio-util = "^0.7.18"

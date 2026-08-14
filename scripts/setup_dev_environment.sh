@@ -21,7 +21,7 @@ if [ "${1}" == "--help" ]; then
     echo " BUILD_MODE - default=--debug, set to '--release' to build binaries in release mode"
     exit 0
 fi
-if [ ! -f run_insecure_dev_server.sh ]; then
+if [ ! -f Cargo.toml ]; then
     if [ "$(basename "$(pwd)")" == "kubidm" ]; then
         cd server/daemon || exit 1
     else
@@ -42,7 +42,7 @@ fi
 
 
 # defaults
-KUBIDM_CONFIG_FILE="./insecure_server.toml"
+KUBIDM_CONFIG_FILE="../../scripts/insecure_server.toml"
 KUBIDM_URL="$(grep -E 'origin.*https' "${KUBIDM_CONFIG_FILE}" | awk '{print $NF}' | tr -d '"')"
 KUBIDM_CA_PATH="/tmp/kubidm/chain.pem"
 
@@ -81,7 +81,7 @@ if [ "${REMOVE_TEST_DB}" -eq 1 ]; then
     rm /tmp/kubidm/kubidm.db || true
 fi
 
-export KUBIDM_CONFIG="./insecure_server.toml"
+export KUBIDM_CONFIG="../../scripts/insecure_server.toml"
 IDM_ADMIN_USER="idm_admin@localhost"
 
 echo "Resetting the idm_admin user..."
