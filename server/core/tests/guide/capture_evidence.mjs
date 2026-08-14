@@ -22,6 +22,7 @@ const stories = [
     "component-notice",
     "goodbye",
     "applications-arrival",
+    "applications-arrival-left",
 ];
 const themes = fullMatrix ? ["light", "dark"] : ["light"];
 const viewports = fullMatrix
@@ -35,6 +36,17 @@ const viewports = fullMatrix
           ["mobile", { width: 390, height: 844 }],
       ];
 const motions = fullMatrix ? ["full", "reduced", "static"] : ["full"];
+const referenceFiles = [
+    "crab-idle.webp",
+    "crab-welcome.webp",
+    "crab-guide.webp",
+    "crab-protect.webp",
+    "crab-working.webp",
+    "crab-success.webp",
+    "crab-warning.webp",
+    "crab-goodbye.webp",
+    "kubidm-identity-glyph.svg",
+];
 
 async function sha256IfPresent(filename) {
     try {
@@ -51,6 +63,16 @@ async function jsonIfPresent(filename) {
     } catch {
         return null;
     }
+}
+
+async function referenceHashes() {
+    const entries = await Promise.all(
+        referenceFiles.map(async (filename) => [
+            filename,
+            await sha256IfPresent(path.resolve("static", "img", "guide", filename)),
+        ]),
+    );
+    return Object.fromEntries(entries);
 }
 
 function urlFor(story, theme, viewport, motion) {
@@ -74,10 +96,16 @@ const manifest = {
     },
     rivSha256: await sha256IfPresent(path.resolve("static", "img", "guide", "kubidm-guide.riv")),
     runtime: runtimeVersion,
+    canonicalReferences: {
+        designSystem: "book/src/developers/designs/mascot_design_system.md",
+        executionPlan: "book/src/developers/designs/rive_production_execution_plan.md",
+        assets: await referenceHashes(),
+    },
     review: {
         prompt: "tests/guide/visual_review_prompt.md",
         schema: "tests/guide/visual_review.schema.json",
         validator: "tests/guide/validate_visual_review.mjs",
+        releaseValidator: "tests/guide/validate_release_readiness.mjs",
     },
     captures: [],
 };
@@ -96,7 +124,8 @@ for (const [viewportName, viewportSize] of viewports) {
                     ignoreHTTPSErrors: true,
                     viewport: viewportSize,
                     recordVideo:
-                        ["method-choice", "success", "applications-arrival"].includes(story) && motion === "full"
+                        ["method-choice", "success", "applications-arrival", "applications-arrival-left"].includes(story) &&
+                        motion === "full"
                             ? { dir: artifactDir }
                             : undefined,
                 });
