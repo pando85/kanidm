@@ -2,40 +2,8 @@ import { expect, test } from "@playwright/test";
 
 const fixtureUsername = process.env.KUBIDM_E2E_TEST_USERNAME || "guide_e2e_user";
 const fixturePassword = process.env.KUBIDM_E2E_TEST_PASSWORD;
-const fixtureResetToken = process.env.KUBIDM_E2E_TEST_RESET_TOKEN;
 
 test.describe.configure({ retries: 0 });
-
-async function onboardPassword(page) {
-    await page.goto(`/ui/reset?token=${encodeURIComponent(fixtureResetToken)}`);
-    await expect(page.getByRole("heading", { name: "Updating Credentials" })).toBeVisible();
-
-    const passwordFormResponse = page.waitForResponse(
-        (response) =>
-            response.request().method() === "POST" && new URL(response.url()).pathname === "/ui/reset/add_password",
-    );
-    await page.getByRole("button", { name: "Add Password" }).click();
-    const response = await passwordFormResponse;
-    expect(response.ok()).toBe(true);
-
-    const passwordInput = page.locator("#new-password");
-    await passwordInput.waitFor({ state: "visible", timeout: 5_000 });
-    await passwordInput.fill(fixturePassword);
-    await page.locator("#new-password-check").fill(fixturePassword);
-
-    const passwordSubmitResponse = page.waitForResponse(
-        (candidate) =>
-            candidate.request().method() === "POST" && new URL(candidate.url()).pathname === "/ui/reset/add_password",
-    );
-    await page.locator("#password-submit").click();
-    expect((await passwordSubmitResponse).ok()).toBe(true);
-
-    const saveChanges = page.getByRole("button", { name: "Save Changes" });
-    await expect(passwordInput).toHaveCount(0, { timeout: 5_000 });
-    await expect(saveChanges).toBeEnabled();
-    await saveChanges.click();
-    await page.waitForURL((url) => url.pathname.startsWith("/ui/login"), { timeout: 15_000 });
-}
 
 async function loginAsFixture(page) {
     await page.goto("/ui/login");
@@ -77,17 +45,13 @@ async function assertStableGuide(page, expectedAction) {
 }
 
 test("Profile and Credentials survive 20 HTMX cycles without guide DOM leaks", async ({ page, browserName }) => {
-    test.skip(browserName !== "chromium", "one-use onboarding fixture is intentionally exercised once in Chromium");
-    test.skip(
-        !fixturePassword || !fixtureResetToken,
-        "requires the deterministic normal-person onboarding fixture from CI",
-    );
+    test.skip(browserName !== "chromium", "the authenticated HTMX fixture is intentionally exercised once in Chromium");
+    test.skip(!fixturePassword, "requires the deterministic normal-person password provisioned by CI");
     test.setTimeout(120_000);
 
     const pageErrors = [];
     page.on("pageerror", (error) => pageErrors.push(error.message));
 
-    await onboardPassword(page);
     await loginAsFixture(page);
     await page.goto("/ui/profile");
     await assertStableGuide(page, /profile_(readonly|edit)/);
