@@ -77,10 +77,19 @@ if (manifest) {
     }
 }
 
+const review = await json(reviewPath, "independent visual review");
 try {
     execFileSync(process.execPath, [visualValidator, reviewPath], { stdio: "inherit" });
 } catch {
     errors.push("independent visual review did not pass production thresholds");
+}
+if (review) {
+    if (!rivSha256 || review.riv_sha256 !== rivSha256) {
+        errors.push("independent visual review must record the current .riv SHA-256");
+    }
+    if (manifest?.commit && review.evidence_commit !== manifest.commit) {
+        errors.push("independent visual review must reference the reviewed evidence commit");
+    }
 }
 
 const human = await json(humanApprovalPath, "human approval");
