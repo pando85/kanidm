@@ -1,9 +1,4 @@
-import {
-    ScenarioId,
-    scenarios,
-    scenarioById,
-    stepIndexForStory,
-} from "./guide_scenarios.mjs";
+import { ScenarioId, scenarios, scenarioById, stepIndexForStory } from "./guide_scenarios.mjs";
 
 const toolbar = document.querySelector(".ui-lab-toolbar");
 const storyTitle = document.querySelector("#ui-lab-story-title");

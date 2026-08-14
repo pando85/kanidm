@@ -1,15 +1,6 @@
 import "./guide_experience.mjs";
-import {
-    MascotState,
-    MotionLevel,
-    Recommendation,
-    Severity,
-    normaliseGuideState,
-} from "./guide_contract.mjs";
-import {
-    clearAuthenticationAttempt,
-    markAuthenticationAttempt,
-} from "./guide_handoff.mjs";
+import { MascotState, MotionLevel, Recommendation, Severity, normaliseGuideState } from "./guide_contract.mjs";
+import { clearAuthenticationAttempt, markAuthenticationAttempt } from "./guide_handoff.mjs";
 import { createGuideRenderer } from "./guide_renderer.mjs";
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -68,8 +59,7 @@ function readState(overrides = {}) {
         severity: node?.dataset.guideSeverity || Severity.NEUTRAL,
         mascotState: node?.dataset.guideState || MascotState.IDLE,
         motionLevel: currentMotionLevel(),
-        travelDirection:
-            node?.dataset.guideTravelDirection || sceneRoot.dataset.guideTravelDirection || "right",
+        travelDirection: node?.dataset.guideTravelDirection || sceneRoot.dataset.guideTravelDirection || "right",
         lookX: node?.dataset.guideLookX ?? sceneRoot.dataset.guideLookX ?? 0,
         lookY: node?.dataset.guideLookY ?? sceneRoot.dataset.guideLookY ?? 0,
         ...overrides,
@@ -223,11 +213,7 @@ window.addEventListener("kubidm:webauthn-error", () => {
     });
 });
 
-document.body.addEventListener(
-    "submit",
-    (event) => maybeMarkFormAuthentication(event.target),
-    true,
-);
+document.body.addEventListener("submit", (event) => maybeMarkFormAuthentication(event.target), true);
 
 document.body.addEventListener("htmx:beforeRequest", () => {
     publish({ mascotState: MascotState.WORKING });

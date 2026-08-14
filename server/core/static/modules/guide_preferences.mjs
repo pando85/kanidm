@@ -21,14 +21,10 @@ function safeParse(value) {
             storiesSeen: Array.isArray(parsed.storiesSeen)
                 ? parsed.storiesSeen.filter((item) => typeof item === "string")
                 : [],
-            suggestions:
-                parsed.suggestions && typeof parsed.suggestions === "object"
-                    ? parsed.suggestions
-                    : {},
+            suggestions: parsed.suggestions && typeof parsed.suggestions === "object" ? parsed.suggestions : {},
             // Accept the short-lived prototype field for forward compatibility
             // with browsers that may already have exercised this branch.
-            onboardingComplete:
-                parsed.onboardingComplete === true || parsed.journeyComplete === true,
+            onboardingComplete: parsed.onboardingComplete === true || parsed.journeyComplete === true,
         };
     } catch {
         return defaultState();

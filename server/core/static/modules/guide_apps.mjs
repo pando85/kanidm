@@ -12,14 +12,7 @@ function clearTimers() {
 
 function setSceneState(
     scene,
-    {
-        action,
-        mascotState,
-        severity = Severity.NEUTRAL,
-        travelDirection = "right",
-        lookX = 0,
-        lookY = 0,
-    },
+    { action, mascotState, severity = Severity.NEUTRAL, travelDirection = "right", lookX = 0, lookY = 0 },
 ) {
     scene.dataset.guideAction = action;
     scene.dataset.guideState = mascotState;

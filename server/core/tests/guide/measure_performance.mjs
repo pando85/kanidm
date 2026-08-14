@@ -89,7 +89,8 @@ async function churn(count) {
         const story = sequence[index % sequence.length];
         await page.locator(`[data-story="${story}"]`).click();
         await page.waitForFunction(
-            (expected) => document.querySelector("#ui-lab-story-title")?.textContent?.length > 0 &&
+            (expected) =>
+                document.querySelector("#ui-lab-story-title")?.textContent?.length > 0 &&
                 document.querySelector(`[data-story="${expected}"]`)?.getAttribute("aria-current") === "true",
             story,
         );

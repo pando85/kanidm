@@ -1,16 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-    MascotState,
-    MotionLevel,
-    Severity,
-    normaliseGuideState,
-} from "../../static/modules/guide_contract.mjs";
-import {
-    guideRiveBindingValues,
-    guideRiveTriggers,
-} from "../../static/modules/guide_rive_binding.mjs";
+import { MascotState, MotionLevel, Severity, normaliseGuideState } from "../../static/modules/guide_contract.mjs";
+import { guideRiveBindingValues, guideRiveTriggers } from "../../static/modules/guide_rive_binding.mjs";
 
 test("Rive binding maps bounded semantic state", () => {
     const state = normaliseGuideState({

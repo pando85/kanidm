@@ -2,13 +2,7 @@ import { expect, test } from "@playwright/test";
 
 const BASE_ORIGIN = new URL(process.env.KUBIDM_UI_BASE_URL || "https://localhost:8443").origin;
 
-function labUrl({
-    story = "first-login",
-    motion = "full",
-    rive = "mock",
-    theme = "light",
-    viewport = "desktop",
-} = {}) {
+function labUrl({ story = "first-login", motion = "full", rive = "mock", theme = "light", viewport = "desktop" } = {}) {
     const query = rive ? `?rive=${rive}` : "";
     return `/ui/_lab${query}#story=${story}&theme=${theme}&viewport=${viewport}&motion=${motion}`;
 }

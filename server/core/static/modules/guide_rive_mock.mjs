@@ -12,7 +12,10 @@ const PROPERTY_DEFINITIONS = Object.freeze([
 ]);
 
 const ENUMS = Object.freeze([
-    { name: "state", values: ["idle", "welcome", "guide", "protect", "working", "success", "warning", "goodbye", "travel"] },
+    {
+        name: "state",
+        values: ["idle", "welcome", "guide", "protect", "working", "success", "warning", "goodbye", "travel"],
+    },
     { name: "motion", values: ["full", "reduced", "static"] },
     { name: "severity", values: ["neutral", "positive", "caution", "critical"] },
     { name: "travelDirection", values: ["left", "right"] },

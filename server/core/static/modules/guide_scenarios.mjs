@@ -1,10 +1,4 @@
-import {
-    JourneyStage,
-    MascotState,
-    Recommendation,
-    Severity,
-    normaliseGuideState,
-} from "./guide_contract.mjs";
+import { JourneyStage, MascotState, Recommendation, Severity, normaliseGuideState } from "./guide_contract.mjs";
 
 function step(story, stage, state) {
     return Object.freeze({
@@ -41,7 +35,8 @@ const applicationsSettled = () =>
 export const scenarios = Object.freeze({
     [ScenarioId.PASSKEY_FIRST_RUN]: Object.freeze({
         title: "Scenario A — new user, passkey recommended",
-        description: "First-run teaching path through confirmed sign-in, Applications arrival, then optional resilience guidance.",
+        description:
+            "First-run teaching path through confirmed sign-in, Applications arrival, then optional resilience guidance.",
         steps: Object.freeze([
             step("first-login", JourneyStage.IDENTIFY, {
                 productState: "identify",

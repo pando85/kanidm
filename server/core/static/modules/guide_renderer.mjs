@@ -1,8 +1,4 @@
-import {
-    MascotState,
-    MotionLevel,
-    assertGuideValue,
-} from "./guide_contract.mjs";
+import { MascotState, MotionLevel, assertGuideValue } from "./guide_contract.mjs";
 import { RiveGuideRenderer } from "./guide_rive_renderer.mjs";
 
 const STATIC_ASSET_ROOT = "/pkg/img/guide";
@@ -20,10 +16,7 @@ function assetState(mascotState) {
 }
 
 export class StaticGuideRenderer {
-    constructor(
-        slot,
-        { assetRoot = STATIC_ASSET_ROOT, fallback = GuideFallback.HIDE } = {},
-    ) {
+    constructor(slot, { assetRoot = STATIC_ASSET_ROOT, fallback = GuideFallback.HIDE } = {}) {
         if (!(slot instanceof HTMLElement)) {
             throw new TypeError("StaticGuideRenderer requires an HTMLElement slot");
         }

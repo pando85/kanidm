@@ -471,9 +471,7 @@ function renderStory(name, { updateHash = true } = {}) {
         recommendation: story.recommendation,
         mascotState: story.mascotState,
         severity: story.severity,
-        motionLevel: Object.values(MotionLevel).includes(ui.motion.value)
-            ? ui.motion.value
-            : MotionLevel.STATIC,
+        motionLevel: Object.values(MotionLevel).includes(ui.motion.value) ? ui.motion.value : MotionLevel.STATIC,
     });
     window.dispatchEvent(new CustomEvent("kubidm:guide-state", { detail: state }));
 

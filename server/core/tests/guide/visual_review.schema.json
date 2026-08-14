@@ -29,16 +29,48 @@
         "product_state_consistency"
       ],
       "properties": {
-        "silhouette_fidelity": { "type": "integer", "minimum": 0, "maximum": 5 },
-        "proportion_fidelity": { "type": "integer", "minimum": 0, "maximum": 5 },
-        "band_badge_fidelity": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "silhouette_fidelity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "proportion_fidelity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "band_badge_fidelity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
         "face_fidelity": { "type": "integer", "minimum": 0, "maximum": 5 },
-        "claw_role_readability": { "type": "integer", "minimum": 0, "maximum": 5 },
-        "pose_semantic_readability": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "claw_role_readability": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "pose_semantic_readability": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
         "motion_smoothness": { "type": "integer", "minimum": 0, "maximum": 5 },
-        "lack_of_clipping_deformation": { "type": "integer", "minimum": 0, "maximum": 5 },
-        "accessibility_appropriateness": { "type": "integer", "minimum": 0, "maximum": 5 },
-        "product_state_consistency": { "type": "integer", "minimum": 0, "maximum": 5 }
+        "lack_of_clipping_deformation": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "accessibility_appropriateness": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "product_state_consistency": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        }
       }
     },
     "blocking_defects": {

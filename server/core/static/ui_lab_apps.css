@@ -1,91 +1,93 @@
 .ui-lab-applications {
-    position: relative;
-    min-height: 34rem;
-    padding: clamp(1.25rem, 4vw, 3rem);
-    overflow: hidden;
-    border-radius: 1.2rem;
-    background: var(--bs-body-bg);
-    color: var(--bs-body-color);
+  position: relative;
+  min-height: 34rem;
+  padding: clamp(1.25rem, 4vw, 3rem);
+  overflow: hidden;
+  border-radius: 1.2rem;
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
 }
 
 .ui-lab-applications-header {
-    display: flex;
-    gap: 1rem;
-    align-items: flex-start;
-    justify-content: space-between;
-    padding-bottom: 1.25rem;
-    border-bottom: 1px solid var(--bs-border-color);
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--bs-border-color);
 }
 
 .ui-lab-applications-header h2 {
-    margin: .15rem 0 .35rem;
+  margin: 0.15rem 0 0.35rem;
 }
 
 .ui-lab-applications-header p {
-    margin: 0;
-    color: var(--bs-secondary-color);
+  margin: 0;
+  color: var(--bs-secondary-color);
 }
 
 .ui-lab-avatar {
-    width: 2.5rem;
-    height: 2.5rem;
-    display: grid;
-    place-items: center;
-    border-radius: 50%;
-    background: var(--kubidm-guide-teal);
-    color: #fff;
-    font-weight: 800;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--kubidm-guide-teal);
+  color: #fff;
+  font-weight: 800;
 }
 
 .ui-lab-app-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1rem;
-    margin-top: 1.5rem;
-    padding-bottom: 8rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-bottom: 8rem;
 }
 
 .ui-lab-app-grid article {
-    min-height: 8.5rem;
-    display: grid;
-    align-content: center;
-    justify-items: center;
-    gap: .35rem;
-    border: 1px solid var(--bs-border-color);
-    border-radius: .9rem;
-    background: var(--bs-tertiary-bg);
+  min-height: 8.5rem;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.9rem;
+  background: var(--bs-tertiary-bg);
 }
 
 .ui-lab-app-grid small {
-    color: var(--bs-secondary-color);
+  color: var(--bs-secondary-color);
 }
 
 .ui-lab-app-guide-slot {
-    position: absolute;
-    right: 1.25rem;
-    bottom: .75rem;
-    width: 9rem;
-    min-height: 6rem;
-    display: grid;
-    place-items: end center;
-    pointer-events: none;
+  position: absolute;
+  right: 1.25rem;
+  bottom: 0.75rem;
+  width: 9rem;
+  min-height: 6rem;
+  display: grid;
+  place-items: end center;
+  pointer-events: none;
 }
 
 .ui-lab-app-guide-slot img {
-    max-width: 100%;
-    max-height: 7rem;
+  max-width: 100%;
+  max-height: 7rem;
 }
 
-.ui-lab-applications[data-guide-state="travel"] .ui-lab-app-guide-slot[data-motion="full"] img {
-    animation: guide-travel-arrival 900ms cubic-bezier(.2,.8,.3,1) both;
+.ui-lab-applications[data-guide-state="travel"]
+  .ui-lab-app-guide-slot[data-motion="full"]
+  img {
+  animation: guide-travel-arrival 900ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 
 @media (max-width: 48rem) {
-    .ui-lab-app-grid {
-        grid-template-columns: 1fr;
-    }
+  .ui-lab-app-grid {
+    grid-template-columns: 1fr;
+  }
 
-    .ui-lab-app-guide-slot {
-        width: 6rem;
-    }
+  .ui-lab-app-guide-slot {
+    width: 6rem;
+  }
 }

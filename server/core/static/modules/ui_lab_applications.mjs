@@ -49,9 +49,7 @@ function renderApplicationsStory(name, { updateHash = true } = {}) {
     const story = applicationStories[name];
     if (!story || !ui.canvas) return false;
 
-    const motionLevel = Object.values(MotionLevel).includes(ui.motion?.value)
-        ? ui.motion.value
-        : MotionLevel.STATIC;
+    const motionLevel = Object.values(MotionLevel).includes(ui.motion?.value) ? ui.motion.value : MotionLevel.STATIC;
     const assetState = story.mascotState === "travel" ? "idle" : story.mascotState;
 
     ui.title.textContent = story.title;

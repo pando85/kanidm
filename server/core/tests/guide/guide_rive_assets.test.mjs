@@ -36,11 +36,11 @@ test("canonical static fallback pack is complete WebP and contains no crab SVG p
         "crab-goodbye.webp",
     ];
     const files = await readdir(guideRoot);
+    assert.deepEqual(files.filter((name) => /^crab-.*\.webp$/.test(name)).sort(), expected.sort());
     assert.deepEqual(
-        files.filter((name) => /^crab-.*\.webp$/.test(name)).sort(),
-        expected.sort(),
+        files.filter((name) => /^crab-.*\.svg$/.test(name)),
+        [],
     );
-    assert.deepEqual(files.filter((name) => /^crab-.*\.svg$/.test(name)), []);
 
     for (const filename of expected) {
         const bytes = await readFile(new URL(filename, guideRoot));

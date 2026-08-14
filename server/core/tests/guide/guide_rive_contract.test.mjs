@@ -2,12 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import {
-    MascotState,
-    MotionLevel,
-    Severity,
-    TravelDirection,
-} from "../../static/modules/guide_contract.mjs";
+import { MascotState, MotionLevel, Severity, TravelDirection } from "../../static/modules/guide_contract.mjs";
 import { createMockRiveRuntime } from "../../static/modules/guide_rive_mock.mjs";
 import {
     loadGuideRiveRuntime,
@@ -15,12 +10,8 @@ import {
     validateGuideRiveContract,
 } from "../../static/modules/guide_rive_runtime.mjs";
 
-const contract = JSON.parse(
-    await readFile(new URL("../../static/guide_rive_contract.json", import.meta.url), "utf8"),
-);
-const runtimeVersion = JSON.parse(
-    await readFile(new URL("../../static/rive/VERSION.json", import.meta.url), "utf8"),
-);
+const contract = JSON.parse(await readFile(new URL("../../static/guide_rive_contract.json", import.meta.url), "utf8"));
+const runtimeVersion = JSON.parse(await readFile(new URL("../../static/rive/VERSION.json", import.meta.url), "utf8"));
 
 function sorted(values) {
     return [...values].sort();
@@ -33,10 +24,7 @@ test("machine-readable Rive contract matches product semantic enums", () => {
     assert.deepEqual(sorted(contract.properties.state.values), sorted(Object.values(MascotState)));
     assert.deepEqual(sorted(contract.properties.motion.values), sorted(Object.values(MotionLevel)));
     assert.deepEqual(sorted(contract.properties.severity.values), sorted(Object.values(Severity)));
-    assert.deepEqual(
-        sorted(contract.properties.travelDirection.values),
-        sorted(Object.values(TravelDirection)),
-    );
+    assert.deepEqual(sorted(contract.properties.travelDirection.values), sorted(Object.values(TravelDirection)));
 
     for (const trigger of ["attention", "successSmall", "successMajor", "goodbye"]) {
         assert.equal(contract.properties[trigger].type, "trigger");

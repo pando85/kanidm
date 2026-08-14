@@ -35,9 +35,7 @@ function hasVisiblePrimaryCredential(dynamicSection) {
         return true;
     }
 
-    return [...dynamicSection.querySelectorAll("h6")].some(
-        (heading) => heading.textContent.trim() === "Password",
-    );
+    return [...dynamicSection.querySelectorAll("h6")].some((heading) => heading.textContent.trim() === "Password");
 }
 
 function milestone(name) {

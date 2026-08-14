@@ -9,8 +9,7 @@ const baseOrigin = new URL(baseURL).origin;
 const mode = process.env.KUBIDM_RIVE_TEST_MODE || "real";
 const fullMatrix = process.env.KUBIDM_GUIDE_FULL_MATRIX === "1";
 const commit =
-    process.env.GUIDE_REVIEW_COMMIT ||
-    execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+    process.env.GUIDE_REVIEW_COMMIT || execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
 const outputRoot = path.resolve("artifacts", "guide-review", commit);
 
 const stories = [
@@ -91,17 +90,13 @@ for (const [viewportName, viewportSize] of viewports) {
     for (const theme of themes) {
         for (const motion of motions) {
             for (const story of stories) {
-                const artifactDir = path.join(
-                    outputRoot,
-                    `${story}-${viewportName}-${theme}-${motion}`,
-                );
+                const artifactDir = path.join(outputRoot, `${story}-${viewportName}-${theme}-${motion}`);
                 await mkdir(artifactDir, { recursive: true });
                 const context = await browser.newContext({
                     ignoreHTTPSErrors: true,
                     viewport: viewportSize,
                     recordVideo:
-                        ["method-choice", "success", "applications-arrival"].includes(story) &&
-                        motion === "full"
+                        ["method-choice", "success", "applications-arrival"].includes(story) && motion === "full"
                             ? { dir: artifactDir }
                             : undefined,
                 });
@@ -178,20 +173,14 @@ for (const [viewportName, viewportSize] of viewports) {
                     fullPage: true,
                 });
 
-                const diagnostic = await page.evaluate(
-                    () => globalThis.__kubidmGuideDiagnostics || null,
-                );
+                const diagnostic = await page.evaluate(() => globalThis.__kubidmGuideDiagnostics || null);
                 const trace = await page.evaluate(() => globalThis.__kubidmEvidenceTrace || []);
                 const semanticState = await page.locator("#ui-lab-mascot-state").textContent();
                 if (motion === "full" && diagnostic?.fallbackActive) {
-                    throw new Error(
-                        `Unexpected full-mode fallback for ${story}/${viewportName}/${theme}`,
-                    );
+                    throw new Error(`Unexpected full-mode fallback for ${story}/${viewportName}/${theme}`);
                 }
                 if (motion === "full" && diagnostic?.riveState !== semanticState) {
-                    throw new Error(
-                        `Rive/semantic mismatch: expected ${semanticState}, got ${diagnostic?.riveState}`,
-                    );
+                    throw new Error(`Rive/semantic mismatch: expected ${semanticState}, got ${diagnostic?.riveState}`);
                 }
 
                 manifest.captures.push({
@@ -228,10 +217,7 @@ for (const [viewportName, viewportSize] of viewports) {
 await browser.close();
 manifest.externalRequests = externalRequests;
 await writeFile(path.join(outputRoot, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
-await writeFile(
-    path.join(outputRoot, "semantic-trace.json"),
-    `${JSON.stringify(allSemantic, null, 2)}\n`,
-);
+await writeFile(path.join(outputRoot, "semantic-trace.json"), `${JSON.stringify(allSemantic, null, 2)}\n`);
 await writeFile(path.join(outputRoot, "console.json"), `${JSON.stringify(allConsole, null, 2)}\n`);
 await writeFile(path.join(outputRoot, "network.json"), `${JSON.stringify(allNetwork, null, 2)}\n`);
 

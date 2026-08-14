@@ -1,8 +1,5 @@
 import { MotionLevel, Severity } from "./guide_contract.mjs";
-import {
-    guideRiveBindingValues,
-    guideRiveTriggers,
-} from "./guide_rive_binding.mjs";
+import { guideRiveBindingValues, guideRiveTriggers } from "./guide_rive_binding.mjs";
 import {
     loadGuideRiveContract,
     loadGuideRiveFile,
@@ -89,10 +86,7 @@ export class RiveGuideRenderer {
     }
 
     async initialize() {
-        const [runtime, contract] = await Promise.all([
-            loadGuideRiveRuntime(),
-            loadGuideRiveContract(),
-        ]);
+        const [runtime, contract] = await Promise.all([loadGuideRiveRuntime(), loadGuideRiveContract()]);
         if (this.destroyed) return;
 
         const riveFile = await loadGuideRiveFile(runtime);

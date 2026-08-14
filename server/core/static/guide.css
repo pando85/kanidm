@@ -1,245 +1,254 @@
 @import url("/pkg/guide_motion.css");
 
 :root {
-    --kubidm-guide-teal: #0ea39a;
-    --kubidm-guide-cyan: #29c3d3;
+  --kubidm-guide-teal: #0ea39a;
+  --kubidm-guide-cyan: #29c3d3;
 }
 
 .crab-dialog {
-    position: relative;
-    margin: 1.25rem 0;
-    padding: 0.95rem 1rem;
-    border: 1px solid var(--bs-border-color);
-    border-radius: 0.8rem;
-    background: var(--bs-tertiary-bg);
+  position: relative;
+  margin: 1.25rem 0;
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.8rem;
+  background: var(--bs-tertiary-bg);
 }
 
 .crab-dialog::before {
-    content: "Guide";
-    display: block;
-    margin-bottom: 0.35rem;
-    color: var(--kubidm-guide-teal);
-    font-size: 0.7rem;
-    font-weight: 800;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+  content: "Guide";
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--kubidm-guide-teal);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .crab-dialog[data-variant="teach"]::before {
-    content: "A quick story";
+  content: "A quick story";
 }
 
 .crab-dialog[data-variant="suggest"]::before {
-    content: "Suggestion";
+  content: "Suggestion";
 }
 
 .crab-dialog[data-variant="celebrate"]::before {
-    content: "Nice";
+  content: "Nice";
 }
 
 .crab-dialog-title {
-    display: block;
-    margin-bottom: 0.3rem;
+  display: block;
+  margin-bottom: 0.3rem;
 }
 
 .crab-dialog p:last-child,
 .guide-notice p:last-child {
-    margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 .guide-option {
-    width: 100%;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 1rem;
-    align-items: center;
-    border: 1px solid var(--bs-border-color);
-    border-radius: 0.75rem;
-    background: var(--bs-body-bg);
-    color: var(--bs-body-color);
-    padding: 0.8rem 0.9rem;
-    text-align: left;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.75rem;
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  padding: 0.8rem 0.9rem;
+  text-align: left;
 }
 
 .guide-option:hover:not(:disabled),
 .guide-option:focus-visible {
-    border-color: var(--kubidm-guide-teal);
+  border-color: var(--kubidm-guide-teal);
 }
 
 .guide-option:focus-visible {
-    outline: 3px solid color-mix(in srgb, var(--kubidm-guide-teal) 30%, transparent);
-    outline-offset: 2px;
+  outline: 3px solid
+    color-mix(in srgb, var(--kubidm-guide-teal) 30%, transparent);
+  outline-offset: 2px;
 }
 
 .guide-option:disabled {
-    opacity: 0.65;
+  opacity: 0.65;
 }
 
 .guide-option[data-recommendation="recommended"] {
-    border-color: color-mix(in srgb, var(--kubidm-guide-teal) 65%, var(--bs-border-color));
-    background: color-mix(in srgb, var(--kubidm-guide-teal) 8%, var(--bs-body-bg));
+  border-color: color-mix(
+    in srgb,
+    var(--kubidm-guide-teal) 65%,
+    var(--bs-border-color)
+  );
+  background: color-mix(
+    in srgb,
+    var(--kubidm-guide-teal) 8%,
+    var(--bs-body-bg)
+  );
 }
 
 .guide-option-title,
 .guide-option-reason {
-    display: block;
+  display: block;
 }
 
 .guide-option-title {
-    font-weight: 700;
+  font-weight: 700;
 }
 
 .guide-option-reason {
-    margin-top: 0.2rem;
-    color: var(--bs-secondary-color);
-    font-size: 0.82rem;
+  margin-top: 0.2rem;
+  color: var(--bs-secondary-color);
+  font-size: 0.82rem;
 }
 
 .guide-chip {
-    border: 1px solid var(--bs-border-color);
-    border-radius: 999px;
-    padding: 0.2rem 0.5rem;
-    font-size: 0.68rem;
-    font-weight: 700;
-    white-space: nowrap;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 999px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .guide-chip[data-kind="recommended"] {
-    border-color: var(--kubidm-guide-teal);
-    color: var(--kubidm-guide-teal);
+  border-color: var(--kubidm-guide-teal);
+  color: var(--kubidm-guide-teal);
 }
 
 .guide-chip[data-kind="required"] {
-    border-color: var(--bs-warning-border-subtle);
-    color: var(--bs-warning-text-emphasis);
+  border-color: var(--bs-warning-border-subtle);
+  color: var(--bs-warning-text-emphasis);
 }
 
 .guide-chip[data-kind="works_ok"],
 .guide-chip[data-kind="optional"] {
-    color: var(--bs-secondary-color);
+  color: var(--bs-secondary-color);
 }
 
 .guide-notice {
-    margin: 1rem 0;
-    padding: 0.85rem 1rem;
-    border: 1px solid var(--bs-border-color);
-    border-radius: 0.75rem;
-    background: var(--bs-secondary-bg);
+  margin: 1rem 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.75rem;
+  background: var(--bs-secondary-bg);
 }
 
 .guide-notice[data-severity="positive"] {
-    border-color: var(--bs-success-border-subtle);
-    background: var(--bs-success-bg-subtle);
-    color: var(--bs-success-text-emphasis);
+  border-color: var(--bs-success-border-subtle);
+  background: var(--bs-success-bg-subtle);
+  color: var(--bs-success-text-emphasis);
 }
 
 .guide-notice[data-severity="caution"] {
-    border-color: var(--bs-warning-border-subtle);
-    background: var(--bs-warning-bg-subtle);
-    color: var(--bs-warning-text-emphasis);
+  border-color: var(--bs-warning-border-subtle);
+  background: var(--bs-warning-bg-subtle);
+  color: var(--bs-warning-text-emphasis);
 }
 
 .guide-notice[data-severity="critical"] {
-    border-color: var(--bs-danger-border-subtle);
-    background: var(--bs-danger-bg-subtle);
-    color: var(--bs-danger-text-emphasis);
+  border-color: var(--bs-danger-border-subtle);
+  background: var(--bs-danger-bg-subtle);
+  color: var(--bs-danger-text-emphasis);
 }
 
 .guide-story {
-    margin: 1rem 0 1.25rem;
-    border: 1px solid var(--bs-border-color);
-    border-radius: 0.8rem;
-    background: var(--bs-tertiary-bg);
+  margin: 1rem 0 1.25rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.8rem;
+  background: var(--bs-tertiary-bg);
 }
 
 .guide-story summary {
-    padding: 0.75rem 0.9rem;
-    cursor: pointer;
-    color: var(--kubidm-guide-teal);
-    font-weight: 700;
+  padding: 0.75rem 0.9rem;
+  cursor: pointer;
+  color: var(--kubidm-guide-teal);
+  font-weight: 700;
 }
 
 .guide-story[open] summary {
-    border-bottom: 1px solid var(--bs-border-color);
+  border-bottom: 1px solid var(--bs-border-color);
 }
 
 .guide-story-body {
-    padding: 0.85rem 0.9rem;
-    color: var(--bs-secondary-color);
-    font-size: 0.88rem;
-    line-height: 1.55;
+  padding: 0.85rem 0.9rem;
+  color: var(--bs-secondary-color);
+  font-size: 0.88rem;
+  line-height: 1.55;
 }
 
 .guide-story-body > :last-child {
-    margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 .guide-status {
-    min-height: 1.5rem;
-    margin-top: 0.8rem;
-    color: var(--bs-secondary-color);
-    font-size: 0.82rem;
-    text-align: center;
+  min-height: 1.5rem;
+  margin-top: 0.8rem;
+  color: var(--bs-secondary-color);
+  font-size: 0.82rem;
+  text-align: center;
 }
 
 .guide-status[data-severity="caution"] {
-    color: var(--bs-warning-text-emphasis);
+  color: var(--bs-warning-text-emphasis);
 }
 
 .guide-credential-intro {
-    max-width: 42rem;
+  max-width: 42rem;
 }
 
 .guide-progress {
-    display: grid;
-    gap: 0.7rem;
-    margin: 1.25rem 0;
-    padding: 0;
-    list-style: none;
+  display: grid;
+  gap: 0.7rem;
+  margin: 1.25rem 0;
+  padding: 0;
+  list-style: none;
 }
 
 .guide-progress li {
-    display: grid;
-    grid-template-columns: 1.35rem minmax(0, 1fr);
-    gap: 0.65rem;
-    align-items: start;
+  display: grid;
+  grid-template-columns: 1.35rem minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
 }
 
 .guide-progress-marker {
-    width: 1rem;
-    height: 1rem;
-    margin-top: 0.15rem;
-    border: 2px solid var(--bs-border-color);
-    border-radius: 50%;
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.15rem;
+  border: 2px solid var(--bs-border-color);
+  border-radius: 50%;
 }
 
 .guide-progress li[data-complete="true"] .guide-progress-marker {
-    border-color: var(--kubidm-guide-teal);
-    background: var(--kubidm-guide-teal);
-    box-shadow: inset 0 0 0 3px var(--bs-body-bg);
+  border-color: var(--kubidm-guide-teal);
+  background: var(--kubidm-guide-teal);
+  box-shadow: inset 0 0 0 3px var(--bs-body-bg);
 }
 
 .guide-progress strong,
 .guide-progress small {
-    display: block;
+  display: block;
 }
 
 .guide-progress small {
-    margin-top: 0.1rem;
-    color: var(--bs-secondary-color);
+  margin-top: 0.1rem;
+  color: var(--bs-secondary-color);
 }
 
 [data-motion="reduced"] .guide-motion-secondary,
 [data-motion="static"] .guide-motion-secondary,
 [data-motion="static"] .guide-motion-primary {
-    animation: none !important;
-    transition: none !important;
+  animation: none !important;
+  transition: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .guide-motion-secondary,
-    .guide-motion-primary {
-        animation: none !important;
-        transition: none !important;
-    }
+  .guide-motion-secondary,
+  .guide-motion-primary {
+    animation: none !important;
+    transition: none !important;
+  }
 }

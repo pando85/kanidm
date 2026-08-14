@@ -28,11 +28,9 @@ function loadScript(src) {
         script.async = true;
         script.dataset.kubidmRiveRuntime = "";
         script.addEventListener("load", resolve, { once: true });
-        script.addEventListener(
-            "error",
-            () => reject(new Error(`Failed to load Rive runtime: ${src}`)),
-            { once: true },
-        );
+        script.addEventListener("error", () => reject(new Error(`Failed to load Rive runtime: ${src}`)), {
+            once: true,
+        });
         document.head.append(script);
     });
 }
@@ -53,10 +51,7 @@ export async function loadGuideRiveContract(url = DEFAULT_CONTRACT_URL) {
     return contractPromise;
 }
 
-export async function loadGuideRiveRuntime({
-    runtimeUrl = DEFAULT_RUNTIME_URL,
-    wasmUrl = DEFAULT_WASM_URL,
-} = {}) {
+export async function loadGuideRiveRuntime({ runtimeUrl = DEFAULT_RUNTIME_URL, wasmUrl = DEFAULT_WASM_URL } = {}) {
     if (!runtimePromise) {
         runtimePromise = (async () => {
             const override = globalThis.__kubidmRiveRuntimeOverride;

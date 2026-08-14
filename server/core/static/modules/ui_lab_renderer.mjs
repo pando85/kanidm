@@ -1,8 +1,5 @@
 import { MotionLevel } from "./guide_contract.mjs";
-import {
-    GuideFallback,
-    createGuideRenderer,
-} from "./guide_renderer.mjs";
+import { GuideFallback, createGuideRenderer } from "./guide_renderer.mjs";
 
 const query = new URLSearchParams(window.location.search);
 if (query.get("rive") === "mock" || query.get("rive") === "mock-fail") {

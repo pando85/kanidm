@@ -59,13 +59,13 @@ The browser suite uses `?rive=mock` by default and verifies:
 The UI Lab exposes read-only diagnostics at:
 
 ```js
-window.__kubidmGuideDiagnostics
+window.__kubidmGuideDiagnostics;
 ```
 
 Mock lifecycle counters are available at:
 
 ```js
-window.__kubidmMockRiveStats
+window.__kubidmMockRiveStats;
 ```
 
 These exist only for development/test instrumentation and are not product security state.
