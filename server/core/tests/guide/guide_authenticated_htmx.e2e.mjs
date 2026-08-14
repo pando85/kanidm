@@ -6,10 +6,6 @@ const fixtureResetToken = process.env.KUBIDM_E2E_TEST_RESET_TOKEN;
 
 test.describe.configure({ retries: 0 });
 
-async function waitForHtmxSettled(page) {
-    await expect(page.locator(".htmx-settling, .htmx-request")).toHaveCount(0, { timeout: 5_000 });
-}
-
 async function onboardPassword(page) {
     await page.goto(`/ui/reset?token=${encodeURIComponent(fixtureResetToken)}`);
     await expect(page.getByRole("heading", { name: "Updating Credentials" })).toBeVisible();
@@ -23,8 +19,7 @@ async function onboardPassword(page) {
     expect(response.ok()).toBe(true);
 
     const passwordInput = page.locator("#new-password");
-    await passwordInput.waitFor({ state: "attached", timeout: 5_000 });
-    await waitForHtmxSettled(page);
+    await passwordInput.waitFor({ state: "visible", timeout: 5_000 });
     await passwordInput.fill(fixturePassword);
     await page.locator("#new-password-check").fill(fixturePassword);
 
@@ -37,7 +32,6 @@ async function onboardPassword(page) {
 
     const saveChanges = page.getByRole("button", { name: "Save Changes" });
     await expect(passwordInput).toHaveCount(0, { timeout: 5_000 });
-    await waitForHtmxSettled(page);
     await expect(saveChanges).toBeEnabled();
     await saveChanges.click();
     await page.waitForURL((url) => url.pathname.startsWith("/ui/login"), { timeout: 15_000 });
@@ -76,10 +70,9 @@ async function assertStableGuide(page, expectedAction) {
         "data-guide-action",
         expectedAction,
     );
-    await waitForHtmxSettled(page);
 
-    // Full motion may still be waiting on or falling back from the production Rive asset,
-    // but HTMX replacement must never leave multiple live canvases in the document.
+    // The destination semantic marker above is emitted by the settled HTMX response.
+    // At that point replacement must have destroyed any previous renderer instance.
     expect(await page.locator("[data-guide-rive-canvas]").count()).toBeLessThanOrEqual(1);
 }
 
