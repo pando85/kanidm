@@ -4,15 +4,27 @@ const fixtureUsername = process.env.KUBIDM_E2E_TEST_USERNAME || "guide_e2e_user"
 const fixturePassword = process.env.KUBIDM_E2E_TEST_PASSWORD;
 const fixtureResetToken = process.env.KUBIDM_E2E_TEST_RESET_TOKEN;
 
+async function clickAndWaitForHtmx(page, locator) {
+    const settled = page.evaluate(
+        () =>
+            new Promise((resolve) => {
+                document.body.addEventListener("htmx:afterSettle", () => resolve(true), { once: true });
+            }),
+    );
+    await locator.click();
+    await settled;
+}
+
 async function onboardPassword(page) {
     await page.goto(`/ui/reset?token=${encodeURIComponent(fixtureResetToken)}`);
     await expect(page.getByRole("heading", { name: "Updating Credentials" })).toBeVisible();
 
-    await page.getByRole("button", { name: "Add Password" }).click();
-    await expect(page.locator("#new-password")).toBeVisible();
-    await page.locator("#new-password").fill(fixturePassword);
+    await clickAndWaitForHtmx(page, page.getByRole("button", { name: "Add Password" }));
+    const passwordInput = page.locator("#new-password");
+    await expect(passwordInput).toBeVisible();
+    await passwordInput.fill(fixturePassword);
     await page.locator("#new-password-check").fill(fixturePassword);
-    await page.locator("#password-submit").click();
+    await clickAndWaitForHtmx(page, page.locator("#password-submit"));
 
     const saveChanges = page.getByRole("button", { name: "Save Changes" });
     await expect(saveChanges).toBeEnabled();
@@ -43,14 +55,7 @@ async function loginAsFixture(page) {
 }
 
 async function clickSettingsAndWaitForHtmx(page, label) {
-    const settled = page.evaluate(
-        () =>
-            new Promise((resolve) => {
-                document.body.addEventListener("htmx:afterSettle", () => resolve(true), { once: true });
-            }),
-    );
-    await page.getByRole("link", { name: label, exact: true }).click();
-    await settled;
+    await clickAndWaitForHtmx(page, page.getByRole("link", { name: label, exact: true }));
 }
 
 async function assertStableGuide(page, expectedAction) {
