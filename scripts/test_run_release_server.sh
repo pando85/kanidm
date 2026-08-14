@@ -19,12 +19,22 @@ cargo build --locked $BUILD_MODE --bin kubidm --bin kubidmd --quiet || {
     exit 1
 }
 
-if [ ! -f "scripts/run_insecure_dev_server.sh" ]; then
-    echo "I'm not sure where you are, please run this from the root of the repository"
+if [ -d '.git' ]; then
+    echo "You're in the root dir, let's move you!"
+    CURRENT_DIR="$(pwd)"
+    cd server/daemon/ || exit 1
+    CONFIG_PATH="../../scripts/insecure_server.toml"
+else
+    CONFIG_PATH="./scripts/insecure_server.toml"
+fi
+
+
+if [ ! -f "Cargo.toml" ]; then
+    echo "I'm not sure where you are, please run this from the root of the repository or the server/daemon directory"
     exit 1
 fi
 
-export KUBIDM_CONFIG="./scripts/insecure_server.toml"
+export KUBIDM_CONFIG="${CONFIG_PATH}"
 
 mkdir -p /tmp/kubidm/client_ca
 
@@ -49,7 +59,7 @@ fi
 
 ATTEMPT=0
 
-KUBIDM_CONFIG_FILE="./scripts/insecure_server.toml"
+KUBIDM_CONFIG_FILE="${CONFIG_PATH}"
 if [ -f "${KUBIDM_CONFIG_FILE}" ]; then
     echo "Found config file ${KUBIDM_CONFIG_FILE}"
 else
