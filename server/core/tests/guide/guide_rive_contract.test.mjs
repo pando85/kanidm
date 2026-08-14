@@ -31,6 +31,30 @@ test("machine-readable Rive contract matches product semantic enums", () => {
     }
 });
 
+test("Rive contract exposes only presentation-safe bounded properties", () => {
+    const allowed = [
+        "state",
+        "motion",
+        "severity",
+        "travelDirection",
+        "lookX",
+        "lookY",
+        "attention",
+        "successSmall",
+        "successMajor",
+        "goodbye",
+    ];
+    assert.deepEqual(sorted(Object.keys(contract.properties)), sorted(allowed));
+
+    for (const name of Object.keys(contract.properties)) {
+        assert.doesNotMatch(
+            name,
+            /user|account|credential|password|token|secret|session|policy|email/i,
+            `Rive property ${name} must remain presentation-only`,
+        );
+    }
+});
+
 test("machine contract and vendored Rive runtime cannot drift", () => {
     assert.equal(contract.runtime.package, runtimeVersion.package);
     assert.equal(contract.runtime.version, runtimeVersion.version);
