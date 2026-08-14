@@ -44,6 +44,8 @@ jobs:
       - name: Docker metadata
         id: meta
         uses: docker/metadata-action@v6
+        env:
+          NODE_OPTIONS: --use-system-ca
       - name: Build kubidm
         uses: docker/build-push-action@v7
         with:

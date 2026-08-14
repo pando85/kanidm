@@ -5,6 +5,7 @@ use hashbrown::HashSet;
 use rand::distr::{Distribution, Uniform};
 use rand::{rng, Rng, RngExt};
 use std::ops::Range;
+use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(Debug)]
 pub struct DistinctAlpha;
@@ -109,14 +110,11 @@ impl<'a> GraphemeClusterIter<'a> {
         let char_bounds = if value.len() < window {
             Vec::with_capacity(0)
         } else {
-            let mut char_bounds = Vec::with_capacity(value.len());
-            for idx in 0..value.len() {
-                if value.is_char_boundary(idx) {
-                    char_bounds.push(idx);
-                }
-            }
-            char_bounds.push(value.len());
-            char_bounds
+            value
+                .grapheme_indices(true)
+                .map(|(idx, _grapheme)| idx)
+                .chain(std::iter::once(value.len()))
+                .collect::<Vec<_>>()
         };
 
         let window_max = char_bounds.len().saturating_sub(window);
@@ -151,7 +149,7 @@ impl<'a> Iterator for GraphemeClusterIter<'a> {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let clusters = self.char_bounds.len().saturating_sub(1);
+        let clusters = self.char_bounds.len().saturating_sub(self.window);
         (clusters, Some(clusters))
     }
 }
@@ -162,12 +160,16 @@ pub(crate) fn trigraph_iter(value: &str) -> impl Iterator<Item = &str> {
         .chain(GraphemeClusterIter::new(value, 1))
 }
 
+pub(crate) fn utf8_len(value: &str) -> usize {
+    value.graphemes(true).count()
+}
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
     use std::time::Duration;
 
-    use crate::utils::{uuid_from_duration, uuid_to_gid_u32, GraphemeClusterIter};
+    use crate::utils::{utf8_len, uuid_from_duration, uuid_to_gid_u32, GraphemeClusterIter};
 
     #[test]
     fn test_utils_uuid_from_duration() {
@@ -203,31 +205,33 @@ mod tests {
     fn test_utils_grapheme_cluster_iter() {
         let d = "❤️🧡💛💚💙💜";
 
-        let gc_expect = vec!["❤", "\u{fe0f}", "🧡", "💛", "💚", "💙", "💜"];
-        let gc: Vec<_> = GraphemeClusterIter::new(d, 1).collect();
+        let gc_expect = vec!["❤\u{fe0f}", "🧡", "💛", "💚", "💙", "💜"];
+        let gc_iter = GraphemeClusterIter::new(d, 1);
+        assert_eq!(gc_iter.size_hint().0, 6);
+        let gc: Vec<_> = gc_iter.collect();
         assert_eq!(gc, gc_expect);
 
-        let gc_expect = vec!["❤\u{fe0f}", "\u{fe0f}🧡", "🧡💛", "💛💚", "💚💙", "💙💜"];
-        let gc: Vec<_> = GraphemeClusterIter::new(d, 2).collect();
+        let gc_expect = vec!["❤\u{fe0f}🧡", "🧡💛", "💛💚", "💚💙", "💙💜"];
+        let gc_iter = GraphemeClusterIter::new(d, 2);
+        assert_eq!(gc_iter.size_hint().0, 5);
+        let gc: Vec<_> = gc_iter.collect();
         assert_eq!(gc, gc_expect);
 
-        let gc_expect = vec!["❤\u{fe0f}🧡", "\u{fe0f}🧡💛", "🧡💛💚", "💛💚💙", "💚💙💜"];
-        let gc: Vec<_> = GraphemeClusterIter::new(d, 3).collect();
+        let gc_expect = vec!["❤\u{fe0f}🧡💛", "🧡💛💚", "💛💚💙", "💚💙💜"];
+        let gc_iter = GraphemeClusterIter::new(d, 3);
+        assert_eq!(gc_iter.size_hint().0, 4);
+        let gc: Vec<_> = gc_iter.collect();
         assert_eq!(gc, gc_expect);
+    }
 
-        let d = "🤷🏿‍♂️";
-
-        let gc_expect = vec!["🤷", "🏿", "\u{200d}", "♂", "\u{fe0f}"];
-        let gc: Vec<_> = GraphemeClusterIter::new(d, 1).collect();
-        assert_eq!(gc, gc_expect);
-
-        let gc_expect = vec!["🤷🏿", "🏿\u{200d}", "\u{200d}♂", "♂\u{fe0f}"];
-        let gc: Vec<_> = GraphemeClusterIter::new(d, 2).collect();
-        assert_eq!(gc, gc_expect);
-
-        let gc_expect = vec!["🤷🏿\u{200d}", "🏿\u{200d}♂", "\u{200d}♂\u{fe0f}"];
-        let gc: Vec<_> = GraphemeClusterIter::new(d, 3).collect();
-        assert_eq!(gc, gc_expect);
+    #[test]
+    fn test_utils_grapheme_len() {
+        assert_eq!(utf8_len(""), 0);
+        assert_eq!(utf8_len("a"), 1);
+        assert_eq!(utf8_len("ab"), 2);
+        assert_eq!(utf8_len("abcdef"), 6);
+        assert_eq!(utf8_len("🤷"), 1);
+        assert_eq!(utf8_len("🤷🏿"), 1);
     }
 
     #[test]
@@ -238,7 +242,6 @@ mod tests {
 
     #[test]
     fn test_utils_grapheme_cluster_iter_window_larger_than_string() {
-        // Window larger than string length should return empty
         let gc: Vec<_> = GraphemeClusterIter::new("abc", 10).collect();
         assert!(gc.is_empty());
     }
@@ -259,7 +262,6 @@ mod tests {
     #[test]
     fn test_utils_grapheme_cluster_iter_size_hint() {
         let iter = GraphemeClusterIter::new("abc", 1);
-        // "abc" has 3 char boundaries (0,1,2,3) -> 3 clusters for window=1
         assert_eq!(iter.size_hint(), (3, Some(3)));
     }
 
@@ -268,10 +270,6 @@ mod tests {
         use crate::utils::trigraph_iter;
 
         let clusters: Vec<_> = trigraph_iter("abc").collect();
-        // trigraph iter chains window=3, window=2, window=1
-        // window=3: ["abc"]
-        // window=2: ["ab", "bc"]
-        // window=1: ["a", "b", "c"]
         assert_eq!(clusters, vec!["abc", "ab", "bc", "a", "b", "c"]);
     }
 
@@ -280,9 +278,6 @@ mod tests {
         use crate::utils::trigraph_iter;
 
         let clusters: Vec<_> = trigraph_iter("ab").collect();
-        // window=3: [] (too short)
-        // window=2: ["ab"]
-        // window=1: ["a", "b"]
         assert_eq!(clusters, vec!["ab", "a", "b"]);
     }
 
@@ -292,7 +287,6 @@ mod tests {
 
         let pw = password_from_random_len(10);
         assert_eq!(pw.len(), 10);
-        // All characters should be from the allowed set
         let allowed = "abcdefghjkpqrstuvwxyz0123456789";
         for c in pw.chars() {
             assert!(allowed.contains(c), "Invalid character: {}", c);
@@ -312,7 +306,6 @@ mod tests {
         use crate::utils::readable_password_from_random;
 
         let pw = readable_password_from_random();
-        // Format: XXXXX-XXXXX-XXXXX-XXXXX (4 groups of 5)
         assert_eq!(pw.len(), 23);
         assert_eq!(pw.chars().filter(|&c| c == '-').count(), 3);
         let parts: Vec<&str> = pw.split('-').collect();
@@ -339,7 +332,6 @@ mod tests {
         use rand::distr::Distribution;
         use rand::rng;
 
-        // Generate many characters and verify they're all from the allowed set
         let allowed = "abcdefghjkpqrstuvwxyz0123456789";
         let mut rng = rng();
         for _ in 0..1000 {

@@ -14,6 +14,10 @@ in a position to contact us to ask for changes and help.
 
 If you have not already, please see our documentation on [rights and ethics](developer_ethics.md)
 
+### AI / LLM Policy
+
+If you have not already, please see our policy on [AI/LLM usage](ai_llm_policy.md)
+
 ### Humans First
 
 We must at all times make decisions that put humans first. We must respect all cultures, languages and identities and
@@ -74,6 +78,10 @@ path that is correct for all users unless no other options are possible.
 
 All configuration items, must be constrained to fit within our principles so that every Kubidm deployment, will aim to
 provide a positive experience to all people.
+
+### AI Usage
+
+We do not allow AI generated content in this project.
 
 ## Setup the Server
 
