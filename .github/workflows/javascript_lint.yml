@@ -81,19 +81,38 @@ jobs:
           done
           cat /tmp/kubidm-guide-server.log
           exit 1
-      - name: Recover masked idm_admin browser fixture
+      - name: Provision masked normal-person browser fixture
         working-directory: server/daemon
         env:
           KUBIDM_CONFIG: ../../scripts/insecure_server.toml
+          KUBIDM_URL: https://localhost:8443
+          KUBIDM_CA_PATH: /tmp/kubidm/chain.pem
         run: |
-          recovery="$({ cargo run -p daemon --bin kubidmd -- scripting recover-account idm_admin; } 2>&1)"
-          password="$(printf '%s\n' "$recovery" | grep '"output"' | tail -n 1 | jq -r '.output // empty')"
-          if test -z "$password"; then
-            echo "Unable to recover deterministic idm_admin browser fixture" >&2
+          admin_recovery="$({ cargo run -p daemon --bin kubidmd -- scripting recover-account idm_admin; } 2>&1)"
+          admin_password="$(printf '%s\n' "$admin_recovery" | grep '"output"' | tail -n 1 | jq -r '.output // empty')"
+          if test -z "$admin_password"; then
+            echo "Unable to recover idm_admin for browser fixture provisioning" >&2
             exit 1
           fi
-          echo "::add-mask::$password"
-          echo "KUBIDM_E2E_IDM_ADMIN_PASSWORD=$password" >> "$GITHUB_ENV"
+          echo "::add-mask::$admin_password"
+
+          KUBIDM=(cargo run --manifest-path ../../Cargo.toml --bin kubidm --)
+          "${KUBIDM[@]}" login -D idm_admin@localhost --password "$admin_password"
+          "${KUBIDM[@]}" person create guide_e2e_user "Guide E2E User" -D idm_admin@localhost
+          "${KUBIDM[@]}" group add-members idm_ui_enable_experimental_features guide_e2e_user -D idm_admin@localhost
+
+          reset_output="$("${KUBIDM[@]}" person credential create-reset-token guide_e2e_user -D idm_admin@localhost)"
+          reset_token="$(printf '%s\n' "$reset_output" | grep -Eo 'token=[A-Za-z0-9_-]+' | head -n 1 | cut -d= -f2)"
+          if test -z "$reset_token"; then
+            echo "Unable to create reset token for normal-person browser fixture" >&2
+            exit 1
+          fi
+          test_password="GuideE2E-$(openssl rand -hex 16)-Aa1!"
+          echo "::add-mask::$reset_token"
+          echo "::add-mask::$test_password"
+          echo "KUBIDM_E2E_TEST_USERNAME=guide_e2e_user" >> "$GITHUB_ENV"
+          echo "KUBIDM_E2E_TEST_RESET_TOKEN=$reset_token" >> "$GITHUB_ENV"
+          echo "KUBIDM_E2E_TEST_PASSWORD=$test_password" >> "$GITHUB_ENV"
       - name: Run mock browser scenarios, authenticated HTMX stress and CSP gates
         working-directory: server/core
         run: pnpm test:guide:e2e
