@@ -10,6 +10,8 @@ const maxFrameP95Ms = Number(process.env.KUBIDM_RIVE_MAX_FRAME_P95_MS || 50);
 const maxMobileInitMs = Number(process.env.KUBIDM_RIVE_MAX_MOBILE_INIT_MS || 4000);
 const maxMobileFrameP95Ms = Number(process.env.KUBIDM_RIVE_MAX_MOBILE_FRAME_P95_MS || 80);
 const maxHeapGrowthBytes = Number(process.env.KUBIDM_RIVE_MAX_HEAP_GROWTH_BYTES || 8 * 1024 * 1024);
+const maxIdleTaskMs = Number(process.env.KUBIDM_RIVE_MAX_IDLE_TASK_MS || 200);
+const idleSampleMs = Number(process.env.KUBIDM_RIVE_IDLE_SAMPLE_MS || 2000);
 const stressTransitions = Number(process.env.KUBIDM_RIVE_STRESS_TRANSITIONS || 100);
 const mobileCpuRate = Number(process.env.KUBIDM_RIVE_MOBILE_CPU_RATE || 4);
 const output = path.resolve("artifacts", "guide-performance.json");
@@ -26,10 +28,14 @@ function labUrl(story) {
     return `${baseURL}/ui/_lab${query}#story=${story}&theme=light&viewport=desktop&motion=full`;
 }
 
+async function performanceMetric(session, name) {
+    const response = await session.send("Performance.getMetrics");
+    return response.metrics.find((metric) => metric.name === name)?.value || 0;
+}
+
 async function heapUsed(session) {
     await session.send("HeapProfiler.collectGarbage");
-    const response = await session.send("Performance.getMetrics");
-    return response.metrics.find((metric) => metric.name === "JSHeapUsedSize")?.value || 0;
+    return performanceMetric(session, "JSHeapUsedSize");
 }
 
 async function collectFrameIntervals(page) {
@@ -48,6 +54,33 @@ async function collectFrameIntervals(page) {
             requestAnimationFrame(tick);
         });
         return intervals;
+    });
+}
+
+async function resourceTiming(page) {
+    return page.evaluate(() => {
+        const entries = performance.getEntriesByType("resource");
+        const lookup = (pathname) => {
+            const entry = entries.find((candidate) => {
+                try {
+                    return new URL(candidate.name).pathname === pathname;
+                } catch {
+                    return false;
+                }
+            });
+            if (!entry) return null;
+            return {
+                transferSize: entry.transferSize,
+                encodedBodySize: entry.encodedBodySize,
+                decodedBodySize: entry.decodedBodySize,
+                durationMs: entry.duration,
+            };
+        };
+        return {
+            javascript: lookup("/pkg/rive/rive.js"),
+            wasm: lookup("/pkg/rive/rive.wasm"),
+            riv: lookup("/pkg/img/guide/kubidm-guide.riv"),
+        };
     });
 }
 
@@ -73,6 +106,7 @@ async function measureProfile({
     frameLimit,
     cpuRate = 1,
     measureHeap = false,
+    measureIdleCpu = false,
 }) {
     const browser = await browserType.launch();
     const context = await browser.newContext({ ignoreHTTPSErrors: true, viewport });
@@ -89,7 +123,11 @@ async function measureProfile({
     });
 
     await page.addInitScript(() => {
-        globalThis.__kubidmRivePerf = { loadedAt: null, firstDiagnosticAt: null };
+        globalThis.__kubidmRivePerf = {
+            loadedAt: null,
+            firstDiagnosticAt: null,
+            firstVisibleAt: null,
+        };
         window.addEventListener("kubidm:guide-diagnostics", (event) => {
             const now = performance.now();
             if (globalThis.__kubidmRivePerf.firstDiagnosticAt === null) {
@@ -99,11 +137,31 @@ async function measureProfile({
                 globalThis.__kubidmRivePerf.loadedAt = now;
             }
         });
+        window.addEventListener(
+            "DOMContentLoaded",
+            () => {
+                const detectVisibleCanvas = () => {
+                    const canvas = document.querySelector("[data-guide-rive-canvas]");
+                    if (canvas && !canvas.hidden) {
+                        const style = getComputedStyle(canvas);
+                        const rect = canvas.getBoundingClientRect();
+                        if (style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0) {
+                            globalThis.__kubidmRivePerf.firstVisibleAt = performance.now();
+                            return;
+                        }
+                    }
+                    requestAnimationFrame(detectVisibleCanvas);
+                };
+                requestAnimationFrame(detectVisibleCanvas);
+            },
+            { once: true },
+        );
     });
 
     let cdp = null;
     if (browserType === chromium) {
         cdp = await context.newCDPSession(page);
+        await cdp.send("Performance.enable");
         if (cpuRate > 1) await cdp.send("Emulation.setCPUThrottlingRate", { rate: cpuRate });
     }
 
@@ -111,17 +169,32 @@ async function measureProfile({
     await page.waitForFunction(() => globalThis.__kubidmGuideDiagnostics?.loaded === true, null, {
         timeout: initLimit + 5000,
     });
+    await page.waitForFunction(() => globalThis.__kubidmRivePerf?.firstVisibleAt !== null, null, {
+        timeout: initLimit + 5000,
+    });
 
     const init = await page.evaluate(() => globalThis.__kubidmRivePerf);
     const initMs = init.loadedAt;
+    const firstVisibleMs = init.firstVisibleAt;
+    const transfers = await resourceTiming(page);
     const frameIntervals = await collectFrameIntervals(page);
     const frameP95Ms = percentile(frameIntervals, 0.95);
+
+    let idleTaskMs = null;
+    if (measureIdleCpu && cdp) {
+        await page.locator('[data-story="returning"]').click();
+        await page.waitForFunction(() => document.querySelector("#ui-lab-mascot-state")?.textContent === "idle");
+        await page.waitForTimeout(500);
+        const taskBefore = await performanceMetric(cdp, "TaskDuration");
+        await page.waitForTimeout(idleSampleMs);
+        const taskAfter = await performanceMetric(cdp, "TaskDuration");
+        idleTaskMs = (taskAfter - taskBefore) * 1000;
+    }
 
     let heapBefore = null;
     let heapAfter = null;
     let heapGrowthBytes = null;
     if (measureHeap && cdp) {
-        await cdp.send("Performance.enable");
         await churn(page, 20);
         heapBefore = await heapUsed(cdp);
         await churn(page, stressTransitions);
@@ -136,15 +209,24 @@ async function measureProfile({
 
     const failures = [];
     if (!Number.isFinite(initMs) || initMs > initLimit) failures.push(`Rive init ${initMs}ms > ${initLimit}ms`);
+    if (!Number.isFinite(firstVisibleMs) || firstVisibleMs > initLimit + 1000) {
+        failures.push(`first visible mascot frame ${firstVisibleMs}ms > ${initLimit + 1000}ms`);
+    }
     if (frameP95Ms > frameLimit) failures.push(`frame p95 ${frameP95Ms}ms > ${frameLimit}ms`);
+    if (idleTaskMs !== null && idleTaskMs > maxIdleTaskMs) {
+        failures.push(`idle main-thread task time ${idleTaskMs}ms > ${maxIdleTaskMs}ms over ${idleSampleMs}ms`);
+    }
     if (heapGrowthBytes !== null && heapGrowthBytes > maxHeapGrowthBytes) {
         failures.push(`post-GC JS heap growth ${heapGrowthBytes} > ${maxHeapGrowthBytes}`);
     }
     if (canvasCount > 1) failures.push(`active Rive canvases ${canvasCount} > 1`);
     if (diagnostics?.fallbackActive) failures.push("Rive unexpectedly fell back to static renderer");
     if (consoleErrors.length > 0) failures.push(`console errors: ${consoleErrors.join("; ")}`);
-    if (mode === "real" && externalRequests.length > 0) {
-        failures.push(`external requests: ${externalRequests.join("; ")}`);
+    if (mode === "real") {
+        for (const [asset, timing] of Object.entries(transfers)) {
+            if (!timing) failures.push(`missing Resource Timing entry for ${asset}`);
+        }
+        if (externalRequests.length > 0) failures.push(`external requests: ${externalRequests.join("; ")}`);
     }
 
     return {
@@ -154,18 +236,24 @@ async function measureProfile({
         cpuRate,
         thresholds: {
             maxInitMs: initLimit,
+            maxFirstVisibleMs: initLimit + 1000,
             maxFrameP95Ms: frameLimit,
+            maxIdleTaskMs: measureIdleCpu ? maxIdleTaskMs : null,
+            idleSampleMs: measureIdleCpu ? idleSampleMs : null,
             maxHeapGrowthBytes: measureHeap ? maxHeapGrowthBytes : null,
             stressTransitions: measureHeap ? stressTransitions : null,
         },
         measurements: {
             initMs,
+            firstVisibleMs,
             frameP95Ms,
             frameSampleCount: frameIntervals.length,
+            idleTaskMs,
             heapBefore,
             heapAfter,
             heapGrowthBytes,
             canvasCount,
+            transfers,
         },
         diagnostics,
         consoleErrors,
@@ -182,6 +270,7 @@ const profiles = [
         initLimit: maxInitMs,
         frameLimit: maxFrameP95Ms,
         measureHeap: true,
+        measureIdleCpu: true,
     },
     {
         browserType: firefox,
@@ -217,6 +306,8 @@ const result = {
         maxFrameP95Ms,
         maxMobileInitMs,
         maxMobileFrameP95Ms,
+        maxIdleTaskMs,
+        idleSampleMs,
         maxHeapGrowthBytes,
         stressTransitions,
         mobileCpuRate,
