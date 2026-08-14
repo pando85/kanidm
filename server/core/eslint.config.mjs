@@ -17,7 +17,17 @@ export default [
     },
   },
   {
-    files: ["tests/**/*.mjs", "scripts/**/*.mjs"],
+    files: ["tests/**/*.mjs"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        // Playwright page callbacks are authored in these files but execute in the browser.
+        ...globals.browser,
+      },
+    },
+  },
+  {
+    files: ["scripts/**/*.mjs"],
     languageOptions: {
       globals: {
         ...globals.node,
