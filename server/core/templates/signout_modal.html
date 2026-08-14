@@ -7,9 +7,18 @@
             <div class="modal-body text-center">
                 Are you sure you'd like to log out?
                 <br />
+                (% if crate::https::views::guide::guided_ui_enabled() %)
+                <img class="mt-3"
+                     src="/pkg/img/guide/crab-goodbye.webp?v=((crate::https::cache_buster::get_cache_buster_key()))"
+                     alt="Kubidm crab waving goodbye" />
+                (% if crate::https::views::guide::guided_ui_full() %)
+                <p class="small text-body-secondary mt-2 mb-0">I’ll be here next time you sign in.</p>
+                (% endif %)
+                (% else %)
                 <img
                     src="/pkg/img/kubidm-waving.svg?v=((crate::https::cache_buster::get_cache_buster_key()))"
                     alt="Kubidm logo waving goodbye" />
+                (% endif %)
             </div>
             <div class="modal-footer">
                 <a href="/ui/logout" hx-boost="false">
