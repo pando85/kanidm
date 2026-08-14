@@ -101,17 +101,14 @@ jobs:
           "${KUBIDM[@]}" person create guide_e2e_user "Guide E2E User" -D idm_admin@localhost
           "${KUBIDM[@]}" group add-members idm_ui_enable_experimental_features guide_e2e_user -D idm_admin@localhost
 
-          reset_output="$("${KUBIDM[@]}" person credential create-reset-token guide_e2e_user -D idm_admin@localhost)"
-          reset_token="$(printf '%s\n' "$reset_output" | grep -Eo 'token=[A-Za-z0-9_-]+' | head -n 1 | cut -d= -f2)"
-          if test -z "$reset_token"; then
-            echo "Unable to create reset token for normal-person browser fixture" >&2
+          user_recovery="$({ cargo run -p daemon --bin kubidmd -- scripting recover-account guide_e2e_user; } 2>&1)"
+          test_password="$(printf '%s\n' "$user_recovery" | grep '"output"' | tail -n 1 | jq -r '.output // empty')"
+          if test -z "$test_password"; then
+            echo "Unable to recover normal-person browser fixture password" >&2
             exit 1
           fi
-          test_password="GuideE2E-$(openssl rand -hex 16)-Aa1!"
-          echo "::add-mask::$reset_token"
           echo "::add-mask::$test_password"
           echo "KUBIDM_E2E_TEST_USERNAME=guide_e2e_user" >> "$GITHUB_ENV"
-          echo "KUBIDM_E2E_TEST_RESET_TOKEN=$reset_token" >> "$GITHUB_ENV"
           echo "KUBIDM_E2E_TEST_PASSWORD=$test_password" >> "$GITHUB_ENV"
       - name: Run mock browser scenarios, authenticated HTMX stress and CSP gates
         working-directory: server/core
