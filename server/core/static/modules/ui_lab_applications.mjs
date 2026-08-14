@@ -141,7 +141,13 @@ window.addEventListener("hashchange", () => {
     if (applicationStories[story]) renderApplicationsStory(story, { updateHash: false });
 });
 
-const initialHash = globalThis.__kubidmUiLabInitialHash || location.hash;
-const initial = storyFromHash(initialHash);
-if (applicationStories[initial]) renderApplicationsStory(initial);
-delete globalThis.__kubidmUiLabInitialHash;
+window.addEventListener(
+    "load",
+    () => {
+        const initialHash = globalThis.__kubidmUiLabInitialHash || location.hash;
+        const initial = storyFromHash(initialHash);
+        if (applicationStories[initial]) renderApplicationsStory(initial);
+        delete globalThis.__kubidmUiLabInitialHash;
+    },
+    { once: true },
+);
