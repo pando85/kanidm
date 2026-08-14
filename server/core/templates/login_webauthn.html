@@ -61,7 +61,11 @@
                 data-guide-target="primary-action">Use Passkey</button>
     </form>
     (% else %)
-    <form id="cred-form" action="/ui/login/seckey" method="POST">
+    <form
+        id="cred-form"
+        action="/ui/login/seckey"
+        method="POST"
+        data-challenge="(( challenge ))">
         <input hidden="hidden" name="cred" id="cred">
         <button hx-disable
                 type="button"

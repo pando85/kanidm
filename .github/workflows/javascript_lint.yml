@@ -3,6 +3,9 @@ name: Javascript Linting
 "on":
   - push
   - pull_request
+concurrency:
+  group: javascript-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   javascript_lint:
     runs-on: ubuntu-latest
