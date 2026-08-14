@@ -8,7 +8,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   format_gate_sources_once:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/agent/adr-mascot-guided-experience'
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: write
