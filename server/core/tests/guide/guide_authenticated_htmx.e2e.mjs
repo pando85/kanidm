@@ -4,29 +4,27 @@ const fixtureUsername = process.env.KUBIDM_E2E_TEST_USERNAME || "guide_e2e_user"
 const fixturePassword = process.env.KUBIDM_E2E_TEST_PASSWORD;
 const fixtureResetToken = process.env.KUBIDM_E2E_TEST_RESET_TOKEN;
 
-async function clickAndWaitForHtmx(page, locator) {
-    const settled = page.evaluate(
-        () =>
-            new Promise((resolve) => {
-                document.body.addEventListener("htmx:afterSettle", () => resolve(true), { once: true });
-            }),
-    );
-    await locator.click();
-    await settled;
+test.describe.configure({ retries: 0 });
+
+async function waitForHtmxSettled(page) {
+    await expect(page.locator(".htmx-settling, .htmx-request")).toHaveCount(0);
 }
 
 async function onboardPassword(page) {
     await page.goto(`/ui/reset?token=${encodeURIComponent(fixtureResetToken)}`);
     await expect(page.getByRole("heading", { name: "Updating Credentials" })).toBeVisible();
 
-    await clickAndWaitForHtmx(page, page.getByRole("button", { name: "Add Password" }));
+    await page.getByRole("button", { name: "Add Password" }).click();
     const passwordInput = page.locator("#new-password");
     await expect(passwordInput).toBeVisible();
+    await waitForHtmxSettled(page);
     await passwordInput.fill(fixturePassword);
     await page.locator("#new-password-check").fill(fixturePassword);
-    await clickAndWaitForHtmx(page, page.locator("#password-submit"));
+    await page.locator("#password-submit").click();
 
     const saveChanges = page.getByRole("button", { name: "Save Changes" });
+    await expect(passwordInput).toHaveCount(0);
+    await waitForHtmxSettled(page);
     await expect(saveChanges).toBeEnabled();
     await saveChanges.click();
     await page.waitForURL((url) => url.pathname.startsWith("/ui/login"), { timeout: 15_000 });
@@ -54,8 +52,8 @@ async function loginAsFixture(page) {
     await signedIn;
 }
 
-async function clickSettingsAndWaitForHtmx(page, label) {
-    await clickAndWaitForHtmx(page, page.getByRole("link", { name: label, exact: true }));
+async function clickSettings(page, label) {
+    await page.getByRole("link", { name: label, exact: true }).click();
 }
 
 async function assertStableGuide(page, expectedAction) {
@@ -65,6 +63,7 @@ async function assertStableGuide(page, expectedAction) {
         "data-guide-action",
         expectedAction,
     );
+    await waitForHtmxSettled(page);
 
     // Full motion may still be waiting on or falling back from the production Rive asset,
     // but HTMX replacement must never leave multiple live canvases in the document.
@@ -88,10 +87,10 @@ test("Profile and Credentials survive 20 HTMX cycles without guide DOM leaks", a
     await assertStableGuide(page, /profile_(readonly|edit)/);
 
     for (let cycle = 0; cycle < 20; cycle += 1) {
-        await clickSettingsAndWaitForHtmx(page, "Credentials");
+        await clickSettings(page, "Credentials");
         await assertStableGuide(page, "credential_setup");
 
-        await clickSettingsAndWaitForHtmx(page, "Profile");
+        await clickSettings(page, "Profile");
         await assertStableGuide(page, /profile_(readonly|edit)/);
     }
 
