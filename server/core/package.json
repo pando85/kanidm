@@ -21,8 +21,8 @@
     "prettier": "^3.8.3"
   },
   "scripts": {
-    "prettier": "pnpx prettier --ignore-path 'prettier-ignore' ./static ./tests ./scripts --check",
-    "prettier:fix": "pnpx prettier --ignore-path 'prettier-ignore' ./static ./tests ./scripts --write",
+    "prettier": "prettier --ignore-path 'prettier-ignore' ./static ./tests ./scripts --check",
+    "prettier:fix": "prettier --ignore-path 'prettier-ignore' ./static ./tests ./scripts --write",
     "test:guide": "node --test tests/guide/*.test.mjs",
     "test:guide:e2e": "playwright test -c tests/guide/playwright.config.mjs",
     "guide:evidence": "node tests/guide/capture_evidence.mjs",

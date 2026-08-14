@@ -11,63 +11,15 @@ jobs:
       - uses: pnpm/action-setup@v6
         with:
           version: 11
-      - name: Run ESLint to check browser Javascript files
-        run: make eslint
-      - name: Lint guide test and build scripts
+      - name: Install Javascript dependencies
         working-directory: server/core
-        run: pnpm exec eslint tests scripts
-      - name: Run Prettier to check Javascript files
-        run: make prettier
-      - name: Validate mascot Rive binding semantics
+        run: pnpm install --frozen-lockfile
+      - name: Run ESLint
         working-directory: server/core
-        run: node --test tests/guide/guide_rive_binding.test.mjs
-      - name: Validate mascot Rive machine contract
-        if: always()
+        run: pnpm exec eslint static tests scripts --no-warn-ignored
+      - name: Run Prettier check
         working-directory: server/core
-        run: node --test tests/guide/guide_rive_contract.test.mjs
-      - name: Validate vendored Rive runtime integrity
-        if: always()
+        run: pnpm run prettier
+      - name: Run guide verification tests
         working-directory: server/core
-        run: |
-          if ! node --test --test-name-pattern="vendored Rive runtime" tests/guide/guide_rive_assets.test.mjs; then
-            node --input-type=module <<'NODE'
-          import { createHash } from "node:crypto";
-          import { readFile } from "node:fs/promises";
-
-          const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
-          const metadata = JSON.parse(await readFile("static/rive/VERSION.json", "utf8"));
-          for (const filename of ["rive.js", "rive.wasm", "LICENSE"]) {
-            const bytes = await readFile(`static/rive/${filename}`);
-            const actual = sha256(bytes);
-            const expected = metadata.files[filename];
-            if (actual !== expected) {
-              console.log(`::error file=server/core/static/rive/VERSION.json,title=Rive vendor hash drift::${filename}: expected ${expected}, checkout ${actual}`);
-            }
-          }
-          NODE
-            cp static/rive/rive.js /tmp/kubidm-rive-checkout.js
-            pnpm vendor:rive
-            node --input-type=module <<'NODE'
-          import { createHash } from "node:crypto";
-          import { readFile } from "node:fs/promises";
-
-          const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
-          const checkout = await readFile("/tmp/kubidm-rive-checkout.js");
-          const upstream = await readFile("static/rive/rive.js");
-          const metadata = JSON.parse(await readFile("static/rive/VERSION.json", "utf8"));
-          console.log(`::notice file=server/core/static/rive/VERSION.json,title=Rive npm re-vendor::checkout ${sha256(checkout)}; npm ${sha256(upstream)}; regenerated metadata ${metadata.files["rive.js"]}; identical=${Buffer.compare(checkout, upstream) === 0}`);
-          NODE
-            exit 1
-          fi
-      - name: Validate static mascot fallback pack
-        if: always()
-        working-directory: server/core
-        run: node --test --test-name-pattern="canonical static fallback pack" tests/guide/guide_rive_assets.test.mjs
-      - name: Validate CSS excludes character animation
-        if: always()
-        working-directory: server/core
-        run: node --test --test-name-pattern="CSS contains no full-motion" tests/guide/guide_rive_assets.test.mjs
-      - name: Validate real Rive asset budget when present
-        if: always()
-        working-directory: server/core
-        run: node --test --test-name-pattern="real Rive asset obeys" tests/guide/guide_rive_assets.test.mjs
+        run: pnpm test:guide
