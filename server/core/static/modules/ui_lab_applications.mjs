@@ -50,6 +50,14 @@ function storyFromHash(hash = location.hash) {
     return new URLSearchParams(hash.slice(1)).get("story");
 }
 
+function storyFromUrl(url) {
+    try {
+        return storyFromHash(new URL(url).hash);
+    } catch {
+        return null;
+    }
+}
+
 function writeStoryToHash(story) {
     const params = new URLSearchParams(location.hash.slice(1));
     params.set("story", story);
@@ -119,7 +127,10 @@ document.addEventListener(
         const button = event.target.closest("[data-story], [data-go-story]");
         const story = button?.dataset.story || button?.dataset.goStory;
         if (!applicationStories[story]) return;
+        // Applications owns these extension stories. Stop the core UI Lab click
+        // handler from rendering its first-login fallback after this handler.
         event.preventDefault();
+        event.stopImmediatePropagation();
         renderApplicationsStory(story);
     },
     true,
@@ -136,9 +147,11 @@ document.addEventListener(
         });
     });
 
-window.addEventListener("hashchange", () => {
-    const story = storyFromHash();
-    if (applicationStories[story]) renderApplicationsStory(story, { updateHash: false });
+window.addEventListener("hashchange", (event) => {
+    // Core registers first and may normalise an extension story with
+    // history.replaceState(). The event's original newURL remains stable.
+    const story = storyFromUrl(event.newURL);
+    if (applicationStories[story]) renderApplicationsStory(story);
 });
 
 window.addEventListener(
