@@ -128,6 +128,13 @@ export class GuideRendererController {
             this.riveRenderer = new RiveGuideRenderer(this.slot, {
                 onReady: () => {
                     this.riveReady = true;
+                    if (this.lastState) {
+                        // Startup intentionally renders a still static fallback while
+                        // Rive loads. Restore the requested motion marker before hiding
+                        // that fallback or guide_motion.css will keep the canvas hidden.
+                        this.slot.dataset.mascotState = this.lastState.mascotState;
+                        this.slot.dataset.motion = this.lastState.motionLevel;
+                    }
                     this.staticRenderer.hideImage();
                 },
                 onFailure: () => {
