@@ -17,6 +17,14 @@
   display: block;
 }
 
+[data-guide-rive-canvas][hidden],
+[data-guide-image][hidden],
+[data-lab-mascot-image][hidden],
+[data-guide-fallback][hidden],
+[data-lab-mascot-fallback][hidden] {
+  display: none !important;
+}
+
 [data-guide-mode="subtle"] .crab-dialog[data-variant="orient"],
 [data-guide-mode="subtle"] .crab-dialog[data-variant="teach"],
 [data-guide-mode="subtle"] .guide-story {
