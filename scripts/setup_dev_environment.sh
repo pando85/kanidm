@@ -21,13 +21,17 @@ if [ "${1}" == "--help" ]; then
     echo " BUILD_MODE - default=--debug, set to '--release' to build binaries in release mode"
     exit 0
 fi
-if [ ! -f run_insecure_dev_server.sh ]; then
-    if [ "$(basename "$(pwd)")" == "kubidm" ]; then
-        cd server/daemon || exit 1
-    else
-        echo "Please run from the server/daemon dir, I can't tell where you are..."
-        exit 1
-    fi
+if [ ! -f scripts/run_insecure_dev_server.sh ] && [ ! -f run_insecure_dev_server.sh ]; then
+    echo "Please run from the root of the repository"
+    exit 1
+fi
+
+if [ -f scripts/run_insecure_dev_server.sh ]; then
+    REPO_ROOT="$(pwd)"
+    SCRIPT_DIR="scripts"
+else
+    REPO_ROOT="$(cd .. && pwd)"
+    SCRIPT_DIR="."
 fi
 
 
@@ -42,7 +46,7 @@ fi
 
 
 # defaults
-KUBIDM_CONFIG_FILE="./insecure_server.toml"
+KUBIDM_CONFIG_FILE="${SCRIPT_DIR}/insecure_server.toml"
 KUBIDM_URL="$(grep -E 'origin.*https' "${KUBIDM_CONFIG_FILE}" | awk '{print $NF}' | tr -d '"')"
 KUBIDM_CA_PATH="/tmp/kubidm/chain.pem"
 
@@ -73,7 +77,7 @@ OAUTH2_RP_ID="test_oauth2"
 OAUTH2_RP_DISPLAY="test_oauth2"
 
 # commands to run things
-KUBIDM="cargo run ${BUILD_MODE} --manifest-path ../../Cargo.toml --bin kubidm -- "
+KUBIDM="cargo run ${BUILD_MODE} --manifest-path ${REPO_ROOT}/Cargo.toml --bin kubidm -- "
 KUBIDMD="cargo run ${BUILD_MODE} -p daemon --bin kubidmd -- "
 
 if [ "${REMOVE_TEST_DB}" -eq 1 ]; then
@@ -81,7 +85,7 @@ if [ "${REMOVE_TEST_DB}" -eq 1 ]; then
     rm /tmp/kubidm/kubidm.db || true
 fi
 
-export KUBIDM_CONFIG="./insecure_server.toml"
+export KUBIDM_CONFIG="${SCRIPT_DIR}/insecure_server.toml"
 IDM_ADMIN_USER="idm_admin@localhost"
 
 echo "Resetting the idm_admin user..."

@@ -19,19 +19,12 @@ cargo build --locked $BUILD_MODE --bin kubidm --bin kubidmd --quiet || {
     exit 1
 }
 
-if [ -d '.git' ]; then
-    echo "You're in the root dir, let's move you!"
-    CURRENT_DIR="$(pwd)"
-    cd server/daemon/ || exit 1
-fi
-
-
-if [ ! -f "run_insecure_dev_server.sh" ]; then
-    echo "I'm not sure where you are, please run this from the root of the repository or the server/daemon directory"
+if [ ! -f "scripts/run_insecure_dev_server.sh" ]; then
+    echo "I'm not sure where you are, please run this from the root of the repository"
     exit 1
 fi
 
-export KUBIDM_CONFIG="./insecure_server.toml"
+export KUBIDM_CONFIG="./scripts/insecure_server.toml"
 
 mkdir -p /tmp/kubidm/client_ca
 
@@ -56,7 +49,7 @@ fi
 
 ATTEMPT=0
 
-KUBIDM_CONFIG_FILE="./insecure_server.toml"
+KUBIDM_CONFIG_FILE="./scripts/insecure_server.toml"
 if [ -f "${KUBIDM_CONFIG_FILE}" ]; then
     echo "Found config file ${KUBIDM_CONFIG_FILE}"
 else
@@ -77,12 +70,7 @@ while true; do
     fi
 done
 
-BUILD_MODE=$BUILD_MODE ../../scripts/setup_dev_environment.sh || kill -9 "${KUBIDMD_PID}"
-
-
-if [ -n "$CURRENT_DIR" ]; then
-    cd "$CURRENT_DIR" || exit 1
-fi
+BUILD_MODE=$BUILD_MODE ./scripts/setup_dev_environment.sh || kill -9 "${KUBIDMD_PID}"
 
 echo "Running the OpenAPI schema checks"
 
