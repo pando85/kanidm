@@ -66,6 +66,8 @@ struct ProfileConfig {
     server_config_path: String,
     server_migration_path: String,
     server_ui_pkg_path: String,
+    #[serde(default)]
+    server_ui_pkg_path_make_absolute: bool,
     client_config_path: String,
     resolver_config_path: String,
     resolver_unix_shell_path: String,
