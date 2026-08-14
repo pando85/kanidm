@@ -14,7 +14,9 @@ test("guided login remains interactive while the Rive asset is still pending", a
     try {
         await page.goto("/ui/login", { waitUntil: "domcontentloaded" });
         await expect(page.locator("#username")).toBeEditable({ timeout: 1_500 });
-        await expect(page.locator('form[action="/ui/login/begin"] button[type="submit"]')).toBeEnabled({ timeout: 1_500 });
+        await expect(page.locator('form[action="/ui/login/begin"] button[type="submit"]')).toBeEnabled({
+            timeout: 1_500,
+        });
     } finally {
         releaseAsset();
     }

@@ -145,7 +145,12 @@ async function measureProfile({
                     if (canvas && !canvas.hidden) {
                         const style = getComputedStyle(canvas);
                         const rect = canvas.getBoundingClientRect();
-                        if (style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0) {
+                        if (
+                            style.display !== "none" &&
+                            style.visibility !== "hidden" &&
+                            rect.width > 0 &&
+                            rect.height > 0
+                        ) {
                             globalThis.__kubidmRivePerf.firstVisibleAt = performance.now();
                             return;
                         }

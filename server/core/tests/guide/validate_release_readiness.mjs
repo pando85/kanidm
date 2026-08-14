@@ -120,7 +120,9 @@ if (manifest) {
         captures.some(
             (capture) =>
                 capture.motion === "full" &&
-                (!capture.diagnostic?.loaded || capture.diagnostic?.renderer !== "rive" || !capture.diagnostic?.riveState),
+                (!capture.diagnostic?.loaded ||
+                    capture.diagnostic?.renderer !== "rive" ||
+                    !capture.diagnostic?.riveState),
         )
     ) {
         errors.push("full-motion evidence contains a capture without an active Rive diagnostic state");

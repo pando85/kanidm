@@ -25,7 +25,9 @@ for (const [name, viewport] of profiles) {
 
         const mascot = await page.locator(".ui-lab-mascot-slot").boundingBox();
         expect(mascot).not.toBeNull();
-        const actions = page.locator("#ui-lab-canvas button, #ui-lab-canvas input, #ui-lab-canvas select, #ui-lab-canvas a[href]");
+        const actions = page.locator(
+            "#ui-lab-canvas button, #ui-lab-canvas input, #ui-lab-canvas select, #ui-lab-canvas a[href]",
+        );
         for (let index = 0; index < (await actions.count()); index += 1) {
             const action = actions.nth(index);
             if (!(await action.isVisible())) continue;

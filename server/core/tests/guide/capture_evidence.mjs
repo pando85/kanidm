@@ -124,8 +124,9 @@ for (const [viewportName, viewportSize] of viewports) {
                     ignoreHTTPSErrors: true,
                     viewport: viewportSize,
                     recordVideo:
-                        ["method-choice", "success", "applications-arrival", "applications-arrival-left"].includes(story) &&
-                        motion === "full"
+                        ["method-choice", "success", "applications-arrival", "applications-arrival-left"].includes(
+                            story,
+                        ) && motion === "full"
                             ? { dir: artifactDir }
                             : undefined,
                 });
