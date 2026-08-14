@@ -78,7 +78,20 @@ jobs:
           done
           cat /tmp/kubidm-guide-server.log
           exit 1
-      - name: Run mock browser scenarios and CSP gates
+      - name: Recover masked idm_admin browser fixture
+        working-directory: server/daemon
+        env:
+          KUBIDM_CONFIG: ../../scripts/insecure_server.toml
+        run: |
+          recovery="$({ cargo run -p daemon --bin kubidmd -- scripting recover-account idm_admin; } 2>&1)"
+          password="$(printf '%s\n' "$recovery" | grep '"output"' | tail -n 1 | jq -r '.output // empty')"
+          if test -z "$password"; then
+            echo "Unable to recover deterministic idm_admin browser fixture" >&2
+            exit 1
+          fi
+          echo "::add-mask::$password"
+          echo "KUBIDM_E2E_IDM_ADMIN_PASSWORD=$password" >> "$GITHUB_ENV"
+      - name: Run mock browser scenarios, authenticated HTMX stress and CSP gates
         working-directory: server/core
         run: pnpm test:guide:e2e
       - name: Run mock performance and leak gate
