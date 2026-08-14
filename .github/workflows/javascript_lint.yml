@@ -26,6 +26,7 @@ jobs:
 
   guide_browser:
     name: Guide browser and Rive verification
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
@@ -61,11 +62,10 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium firefox webkit
       - name: Start debug UI Lab server
         run: |
-          KANI_CARGO_OPTS="--features kubidmd_core/ui_htmx" \
-            ./server/daemon/run_insecure_dev_server.sh \
+          ./server/daemon/run_insecure_dev_server.sh \
             > /tmp/kubidm-guide-server.log 2>&1 &
           echo $! > /tmp/kubidm-guide-server.pid
-          for attempt in $(seq 1 120); do
+          for attempt in $(seq 1 300); do
             if curl --fail --silent --show-error --insecure \
               "https://localhost:8443/ui/_lab?rive=mock" >/dev/null; then
               exit 0
