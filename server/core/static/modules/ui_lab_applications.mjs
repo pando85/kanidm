@@ -46,8 +46,8 @@ const ui = {
     motion: document.querySelector("#ui-lab-motion"),
 };
 
-function storyFromHash() {
-    return new URLSearchParams(location.hash.slice(1)).get("story");
+function storyFromHash(hash = location.hash) {
+    return new URLSearchParams(hash.slice(1)).get("story");
 }
 
 function writeStoryToHash(story) {
@@ -141,5 +141,7 @@ window.addEventListener("hashchange", () => {
     if (applicationStories[story]) renderApplicationsStory(story, { updateHash: false });
 });
 
-const initial = storyFromHash();
-if (applicationStories[initial]) renderApplicationsStory(initial, { updateHash: false });
+const initialHash = globalThis.__kubidmUiLabInitialHash || location.hash;
+const initial = storyFromHash(initialHash);
+if (applicationStories[initial]) renderApplicationsStory(initial);
+delete globalThis.__kubidmUiLabInitialHash;
