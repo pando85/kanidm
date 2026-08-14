@@ -4,7 +4,7 @@ You are the independent visual reviewer for the Kubidm production Rive mascot.
 
 Your task is **design compliance and motion-quality verification**, not subjective cuteness or style preference.
 
-Review the supplied `artifacts/guide-review/<commit>/` evidence bundle together with the approved canonical mascot references.
+Review the supplied `artifacts/guide-review/<commit>/` evidence bundle together with the approved canonical mascot references. Read `manifest.json` first. Your result must copy its `commit` into `evidence_commit` and its `rivSha256` into `riv_sha256` exactly; this binds the approval to the evidence and mascot binary you actually reviewed. Set `reviewer` to the independent model/process identity used for this review and `reviewed_at` to the review completion time in ISO 8601 form.
 
 ## Locked character invariants
 
@@ -104,6 +104,10 @@ Return **JSON only**, conforming to `visual_review.schema.json`:
 
 ```json
 {
+  "reviewer": "independent-review-model-or-process",
+  "reviewed_at": "2026-08-14T21:00:00Z",
+  "evidence_commit": "copy manifest.commit exactly",
+  "riv_sha256": "copy manifest.rivSha256 exactly",
   "pass": true,
   "scores": {
     "silhouette_fidelity": 5,
