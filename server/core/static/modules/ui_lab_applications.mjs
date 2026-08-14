@@ -2,7 +2,7 @@ import { MotionLevel, normaliseGuideState } from "./guide_contract.mjs";
 
 const applicationStories = Object.freeze({
     "applications-arrival": {
-        title: "Applications arrival",
+        title: "Applications arrival — right",
         productState: "applications_arrival",
         recommendation: "none",
         mascotState: "travel",
@@ -11,6 +11,17 @@ const applicationStories = Object.freeze({
         subtitle: "The same guide travels into the authenticated destination.",
         travelDirection: "right",
         lookX: 0.85,
+    },
+    "applications-arrival-left": {
+        title: "Applications arrival — left",
+        productState: "applications_arrival",
+        recommendation: "none",
+        mascotState: "travel",
+        severity: "neutral",
+        heading: "Applications",
+        subtitle: "Mirrored travel verifies the same lateral gait in the opposite direction.",
+        travelDirection: "left",
+        lookX: -0.85,
     },
     applications: {
         title: "Applications settled",
@@ -74,7 +85,12 @@ function renderApplicationsStory(name, { updateHash = true } = {}) {
             <article><div class="ui-lab-app-icon">F</div><strong>Forgejo</strong><small>Source control</small></article>
             <article><div class="ui-lab-app-icon">K</div><strong>Kubernetes</strong><small>Platform</small></article>
         </div>
-        <div class="ui-lab-app-guide-slot" data-lab-mascot data-mascot-state="${story.mascotState}" data-motion="${motionLevel}">
+        <div class="ui-lab-app-guide-slot"
+             data-lab-mascot
+             data-mascot-state="${story.mascotState}"
+             data-travel-direction="${story.travelDirection}"
+             data-look-x="${story.lookX}"
+             data-motion="${motionLevel}">
             <img data-lab-mascot-image src="/pkg/img/guide/crab-${assetState}.webp" alt="Kubidm guide: ${story.mascotState}" />
         </div>
     </section>`;
