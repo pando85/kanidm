@@ -1,32 +1,38 @@
 ---
-name: Repair vendored Rive runtime
+name: Diagnose vendored Rive normalization
 "on":
   push:
     branches:
       - agent/adr-mascot-guided-experience
-permissions:
-  contents: write
 jobs:
-  repair:
+  diagnose:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: agent/adr-mascot-guided-experience
       - uses: pnpm/action-setup@v6
         with:
           version: 11
-      - name: Re-vendor pinned Rive runtime
+      - name: Compare checkout and npm bytes
         working-directory: server/core
-        run: pnpm vendor:rive
-      - name: Commit verified upstream bytes
         run: |
-          git add server/core/static/rive/rive.js server/core/static/rive/rive.wasm server/core/static/rive/LICENSE server/core/static/rive/VERSION.json
-          if git diff --cached --quiet; then
-            echo "Vendored runtime already matches npm bytes"
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "fix(ui): restore pinned Rive runtime bytes"
-          git push origin HEAD:agent/adr-mascot-guided-experience
+          cp static/rive/rive.js /tmp/rive-checkout.js
+          pnpm vendor:rive
+          node --input-type=module <<'NODE'
+          import { createHash } from "node:crypto";
+          import { readFile } from "node:fs/promises";
+
+          const hash = (v) => createHash("sha256").update(v).digest("hex");
+          const checkout = await readFile("/tmp/rive-checkout.js");
+          const npm = await readFile("static/rive/rive.js");
+          const text = npm.toString("utf8");
+          const variants = {
+            raw: npm,
+            lf: Buffer.from(text.replace(/\r\n?/g, "\n")),
+            crlf: Buffer.from(text.replace(/\r?\n/g, "\r\n")),
+            noFinalLf: Buffer.from(text.replace(/(?:\r\n|\r|\n)$/, "")),
+          };
+          console.log(`::notice title=Rive checkout hash::${hash(checkout)}`);
+          for (const [name, bytes] of Object.entries(variants)) {
+            console.log(`::notice title=Rive npm ${name} hash::${hash(bytes)}; matches checkout=${Buffer.compare(bytes, checkout) === 0}`);
+          }
+          NODE
