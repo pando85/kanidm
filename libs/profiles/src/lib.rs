@@ -138,9 +138,21 @@ pub fn apply_profile() {
     }
     println!("cargo:rustc-env=KUBIDM_PROFILE_NAME={profile}");
     println!("cargo:rustc-env=KUBIDM_CPU_FLAGS={}", profile_cfg.cpu_flags);
+    let server_ui_pkg_path = if profile_cfg.server_ui_pkg_path_make_absolute {
+        let manifest_dir =
+            env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
+        let resolved = std::path::Path::new(&manifest_dir).join(&profile_cfg.server_ui_pkg_path);
+        resolved
+            .canonicalize()
+            .unwrap_or_else(|_| resolved)
+            .display()
+            .to_string()
+    } else {
+        profile_cfg.server_ui_pkg_path
+    };
     println!(
         "cargo:rustc-env=KUBIDM_SERVER_UI_PKG_PATH={}",
-        profile_cfg.server_ui_pkg_path
+        server_ui_pkg_path
     );
     println!(
         "cargo:rustc-env=KUBIDM_SERVER_ADMIN_BIND_PATH={}",
