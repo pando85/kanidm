@@ -159,7 +159,7 @@ export const scenarios = Object.freeze({
                 severity: Severity.NEUTRAL,
             }),
             step("webauthn-cancel", JourneyStage.CHOOSE, {
-                productState: "webauthn_cancelled",
+                productState: "webauthn_interrupted",
                 recommendation: Recommendation.RECOMMENDED,
                 mascotState: MascotState.GUIDE,
                 severity: Severity.NEUTRAL,
