@@ -28,7 +28,24 @@ jobs:
       - name: Validate vendored Rive runtime integrity
         if: always()
         working-directory: server/core
-        run: node --test --test-name-pattern="vendored Rive runtime" tests/guide/guide_rive_assets.test.mjs
+        run: |
+          if ! node --test --test-name-pattern="vendored Rive runtime" tests/guide/guide_rive_assets.test.mjs; then
+            node --input-type=module <<'NODE'
+          import { createHash } from "node:crypto";
+          import { readFile } from "node:fs/promises";
+
+          const metadata = JSON.parse(await readFile("static/rive/VERSION.json", "utf8"));
+          for (const filename of ["rive.js", "rive.wasm", "LICENSE"]) {
+            const bytes = await readFile(`static/rive/${filename}`);
+            const actual = createHash("sha256").update(bytes).digest("hex");
+            const expected = metadata.files[filename];
+            if (actual !== expected) {
+              console.log(`::error file=server/core/static/rive/VERSION.json,title=Rive vendor hash drift::${filename}: expected ${expected}, actual ${actual}`);
+            }
+          }
+          NODE
+            exit 1
+          fi
       - name: Validate static mascot fallback pack
         if: always()
         working-directory: server/core
