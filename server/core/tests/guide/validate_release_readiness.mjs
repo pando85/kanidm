@@ -27,7 +27,9 @@ async function json(filename, label) {
 }
 
 async function sha256(filename) {
-    return createHash("sha256").update(await readFile(filename)).digest("hex");
+    return createHash("sha256")
+        .update(await readFile(filename))
+        .digest("hex");
 }
 
 let rivSha256 = null;
@@ -61,7 +63,8 @@ if (manifest) {
             for (const motion of expectedMotions) {
                 if (
                     !captures.some(
-                        (capture) => capture.viewport === viewport && capture.theme === theme && capture.motion === motion,
+                        (capture) =>
+                            capture.viewport === viewport && capture.theme === theme && capture.motion === motion,
                     )
                 ) {
                     errors.push(`evidence is missing ${viewport}/${theme}/${motion}`);

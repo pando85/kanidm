@@ -73,7 +73,7 @@ test("guided authentication product bindings remain present", async () => {
 
     const webauthn = files["static/pkhtml.js"];
     includesAll(webauthn, "static/pkhtml.js", [
-        'window.dispatchEvent(new CustomEvent(`kubidm:webauthn-${name}`',
+        "window.dispatchEvent(new CustomEvent(`kubidm:webauthn-${name}`",
         'if (!document.querySelector("[data-guide-scene]"))',
         'dispatchWebauthnEvent("submit")',
         'dispatchWebauthnEvent("cancelled"',
