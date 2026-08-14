@@ -26,9 +26,7 @@ jobs:
           vcpkg integrate install
           vcpkg install openssl:x64-windows-static-md
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
+        run: rustup update stable && rustup default stable
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.11

@@ -35,7 +35,7 @@ jobs:
             libudev-dev \
             libpam0g-dev
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        run: rustup update stable && rustup default stable
 
       - name: Install python 3.12
         uses: actions/setup-python@v7
