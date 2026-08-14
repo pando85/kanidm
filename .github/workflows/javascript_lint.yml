@@ -25,7 +25,19 @@ jobs:
         if: always()
         working-directory: server/core
         run: node --test tests/guide/guide_rive_contract.test.mjs
-      - name: Validate mascot Rive assets
+      - name: Validate vendored Rive runtime integrity
         if: always()
         working-directory: server/core
-        run: node --test tests/guide/guide_rive_assets.test.mjs
+        run: node --test --test-name-pattern="vendored Rive runtime" tests/guide/guide_rive_assets.test.mjs
+      - name: Validate static mascot fallback pack
+        if: always()
+        working-directory: server/core
+        run: node --test --test-name-pattern="canonical static fallback pack" tests/guide/guide_rive_assets.test.mjs
+      - name: Validate CSS excludes character animation
+        if: always()
+        working-directory: server/core
+        run: node --test --test-name-pattern="CSS contains no full-motion" tests/guide/guide_rive_assets.test.mjs
+      - name: Validate real Rive asset budget when present
+        if: always()
+        working-directory: server/core
+        run: node --test --test-name-pattern="real Rive asset obeys" tests/guide/guide_rive_assets.test.mjs
