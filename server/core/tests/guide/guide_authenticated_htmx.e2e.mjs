@@ -14,16 +14,28 @@ async function onboardPassword(page) {
     await page.goto(`/ui/reset?token=${encodeURIComponent(fixtureResetToken)}`);
     await expect(page.getByRole("heading", { name: "Updating Credentials" })).toBeVisible();
 
+    const passwordFormResponse = page.waitForResponse(
+        (response) => response.request().method() === "POST" && new URL(response.url()).pathname === "/ui/reset/add_password",
+    );
     await page.getByRole("button", { name: "Add Password" }).click();
+    const response = await passwordFormResponse;
+    expect(response.ok()).toBe(true);
+    await page.waitForFunction(() => document.querySelector("#new-password") instanceof HTMLInputElement);
+
     const passwordInput = page.locator("#new-password");
-    await expect(passwordInput).toBeVisible();
     await waitForHtmxSettled(page);
     await passwordInput.fill(fixturePassword);
     await page.locator("#new-password-check").fill(fixturePassword);
+
+    const passwordSubmitResponse = page.waitForResponse(
+        (candidate) =>
+            candidate.request().method() === "POST" && new URL(candidate.url()).pathname === "/ui/reset/add_password",
+    );
     await page.locator("#password-submit").click();
+    expect((await passwordSubmitResponse).ok()).toBe(true);
 
     const saveChanges = page.getByRole("button", { name: "Save Changes" });
-    await expect(passwordInput).toHaveCount(0);
+    await page.waitForFunction(() => !document.querySelector("#new-password"));
     await waitForHtmxSettled(page);
     await expect(saveChanges).toBeEnabled();
     await saveChanges.click();
