@@ -51,6 +51,7 @@ members = [
 exclude = [
     "tools/device_flow",
     "tools/oauth2-tester",
+    "patches/aws-runtime-1.7.2",
 ]
 
 # Below follows some guides/estimates to system resources consumed during a build.
