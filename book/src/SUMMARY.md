@@ -93,6 +93,7 @@
   - [OAuth2 Refresh Tokens](developers/designs/oauth2_refresh_tokens.md)
   - [Replication Coordinator](developers/designs/replication_coordinator.md)
   - [Replication Design and Notes](developers/designs/replication_design_and_notes.md)
+  - [Cluster Disaster Recovery Semantics](developers/designs/cluster_disaster_recovery_semantics.md)
   - [REST Interface](developers/designs/rest_interface.md)
   - [Unixd Multi Resolver 2024](developers/designs/unixd_multi_resolver_2024.md)
 - [Python Module](developers/python_module.md)
