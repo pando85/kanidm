@@ -430,7 +430,9 @@ pub trait ReplicationUpdateVectorTransaction {
                     //
                     // In the future the RUV concept may be ditched entirely anyway, thoughts needed.
                     let intersect = *cv & *sv;
-                    if *cv == &intersect {
+                    let cv_vec: Vec<u64> = cv.iter().collect();
+                    let intersect_vec: Vec<u64> = intersect.iter().collect();
+                    if cv_vec == intersect_vec {
                         trace!("{:?} is consistent!", ck);
                     } else {
                         error!("{:?} is NOT consistent! IDL's differ", ck);
