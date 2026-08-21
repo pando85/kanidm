@@ -209,6 +209,9 @@ pub enum OperationError {
     DB0002MismatchedRestoreVersion,
     DB0003FilterResolveCacheBuild,
     DB0004DatabaseTooOld,
+    DB0005BackupEntrySemanticInvalid {
+        entry_id: u64,
+    },
 
     // SCIM
     SC0001IncomingSshPublicKey,
@@ -482,6 +485,7 @@ impl OperationError {
             Self::DB0002MismatchedRestoreVersion => None,
             Self::DB0003FilterResolveCacheBuild => None,
             Self::DB0004DatabaseTooOld => Some("The database is too old to be migrated.".into()),
+            Self::DB0005BackupEntrySemanticInvalid { entry_id } => Some(format!("Backup aborted: entry {entry_id} failed semantic validation via Entry::from_dbentry. The database contains a syntactically valid but semantically unloadable entry.")),
             Self::KG001TaskTimeout => Some("Task timed out".into()),
             Self::KG002TaskCommFailure => Some("Inter-Task communication failure".into()),
             Self::KG003CacheClearFailed => Some("Failed to clear cache".into()),

@@ -57,6 +57,7 @@
 
 - [Service Integration Examples](examples/readme.md)
   - [Kubernetes Ingress](examples/kubernetes_ingress.md)
+  - [Kubernetes Health Probes](integrations/kubernetes_probes.md)
   - [Traefik](examples/traefik.md)
 
 - [Replication](repl/readme.md)
