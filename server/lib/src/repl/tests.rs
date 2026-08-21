@@ -3964,3 +3964,146 @@ async fn test_repl_increment_reference_conflicts(server_a: &QueryServer, server_
 // Test change of domain version over incremental.
 //
 // todo when I have domain version migrations working.
+
+#[qs_pair_test]
+async fn test_repl_refresh_self_heals_dangling_references(
+    server_a: &QueryServer,
+    server_b: &QueryServer,
+) {
+    let ct = duration_from_epoch_now();
+
+    let mut server_a_txn = server_a.write(ct).await.unwrap();
+    let mut server_b_txn = server_b.read().await.unwrap();
+
+    assert!(repl_initialise(&mut server_b_txn, &mut server_a_txn)
+        .and_then(|_| server_a_txn.commit())
+        .is_ok());
+    drop(server_b_txn);
+
+    let mut server_a_txn = server_a.write(ct).await.unwrap();
+
+    let t_uuid = Uuid::new_v4();
+    let g_uuid = Uuid::new_v4();
+    let dangling_uuid = Uuid::new_v4();
+
+    assert!(server_a_txn
+        .internal_create(vec![entry_init!(
+            (Attribute::Class, EntryClass::Object.to_value()),
+            (Attribute::Class, EntryClass::Account.to_value()),
+            (Attribute::Class, EntryClass::Person.to_value()),
+            (Attribute::Name, Value::new_iname("testperson1")),
+            (Attribute::Uuid, Value::Uuid(t_uuid)),
+            (Attribute::Description, Value::new_utf8s("testperson1")),
+            (Attribute::DisplayName, Value::new_utf8s("testperson1"))
+        ),])
+        .is_ok());
+
+    assert!(server_a_txn
+        .internal_create(vec![entry_init!(
+            (Attribute::Class, EntryClass::Object.to_value()),
+            (Attribute::Class, EntryClass::Group.to_value()),
+            (Attribute::Name, Value::new_iname("testgroup1")),
+            (Attribute::Uuid, Value::Uuid(g_uuid)),
+            (Attribute::Member, Value::Refer(t_uuid)),
+            (Attribute::Member, Value::Refer(dangling_uuid))
+        ),])
+        .is_ok());
+
+    server_a_txn.commit().expect("Failed to commit");
+
+    let ct = duration_from_epoch_now();
+    let mut server_a_txn = server_a.read().await.unwrap();
+    let mut server_b_txn = server_b.write(ct).await.unwrap();
+
+    assert!(repl_initialise(&mut server_a_txn, &mut server_b_txn).is_ok());
+
+    let g = server_b_txn
+        .internal_search_all_uuid(g_uuid)
+        .expect("Unable to access group entry.");
+
+    assert!(g.attribute_equality(Attribute::Member, &PartialValue::Refer(t_uuid)));
+    assert!(!g.attribute_equality(Attribute::Member, &PartialValue::Refer(dangling_uuid)));
+
+    server_b_txn.commit().expect("Failed to commit");
+    drop(server_a_txn);
+}
+
+#[qs_pair_test]
+async fn test_repl_refresh_self_heals_derived_references(
+    server_a: &QueryServer,
+    server_b: &QueryServer,
+) {
+    let ct = duration_from_epoch_now();
+
+    let mut server_a_txn = server_a.write(ct).await.unwrap();
+    let mut server_b_txn = server_b.read().await.unwrap();
+
+    assert!(repl_initialise(&mut server_b_txn, &mut server_a_txn)
+        .and_then(|_| server_a_txn.commit())
+        .is_ok());
+    drop(server_b_txn);
+
+    let mut server_a_txn = server_a.write(ct).await.unwrap();
+
+    let tgroup_uuid = Uuid::new_v4();
+    let dyn_uuid = Uuid::new_v4();
+    let dangling_mb_uuid = Uuid::new_v4();
+    let dangling_mo_uuid = Uuid::new_v4();
+
+    let e_dyn = entry_init!(
+        (Attribute::Class, EntryClass::Object.to_value()),
+        (Attribute::Class, EntryClass::Group.to_value()),
+        (Attribute::Class, EntryClass::DynGroup.to_value()),
+        (Attribute::Uuid, Value::Uuid(dyn_uuid)),
+        (Attribute::Name, Value::new_iname("test_dyngroup")),
+        (Attribute::DynMember, Value::Refer(dangling_mb_uuid)),
+        (
+            Attribute::DynGroupFilter,
+            Value::JsonFilt(kubidm_proto::internal::Filter::Eq(
+                Attribute::Name.to_string(),
+                "testgroup".to_string()
+            ))
+        )
+    );
+
+    let e_group = entry_init!(
+        (Attribute::Class, EntryClass::Group.to_value()),
+        (Attribute::Class, EntryClass::MemberOf.to_value()),
+        (Attribute::Name, Value::new_iname("testgroup")),
+        (Attribute::Uuid, Value::Uuid(tgroup_uuid)),
+        (Attribute::MemberOf, Value::Refer(dangling_mo_uuid))
+    );
+
+    assert!(server_a_txn.internal_create(vec![e_dyn, e_group]).is_ok());
+
+    server_a_txn.commit().expect("Failed to commit");
+
+    let ct = duration_from_epoch_now();
+    let mut server_a_txn = server_a.read().await.unwrap();
+    let mut server_b_txn = server_b.write(ct).await.unwrap();
+
+    assert!(repl_initialise(&mut server_a_txn, &mut server_b_txn).is_ok());
+
+    let dyna = server_b_txn
+        .internal_search_uuid(dyn_uuid)
+        .expect("Failed to access dyn group on B");
+
+    let dyn_members: std::collections::BTreeSet<Uuid> = dyna
+        .get_ava_refer(Attribute::DynMember)
+        .cloned()
+        .unwrap_or_default();
+    assert!(!dyn_members.contains(&dangling_mb_uuid));
+
+    let group = server_b_txn
+        .internal_search_uuid(tgroup_uuid)
+        .expect("Failed to access group on B");
+
+    let mo_members: std::collections::BTreeSet<Uuid> = group
+        .get_ava_refer(Attribute::MemberOf)
+        .cloned()
+        .unwrap_or_default();
+    assert!(!mo_members.contains(&dangling_mo_uuid));
+
+    server_b_txn.commit().expect("Failed to commit");
+    drop(server_a_txn);
+}
