@@ -179,13 +179,7 @@ This design prioritizes availability while ensuring data consistency. A catching
 
 ## Monitoring and Alerting
 
-### Metrics
-
-The readiness endpoint exposes state that can be monitored:
-
-- `replication_state` - Current replication state (gauge)
-- `database_health` - Database health status (gauge)
-- `serving_ready` - Overall readiness (gauge)
+The `/readyz` endpoint exposes state that can be monitored by polling the endpoint and parsing the JSON response.
 
 ### Recommended Alerts
 
@@ -194,36 +188,9 @@ The readiness endpoint exposes state that can be monitored:
 3. **Database Unhealthy:** Alert immediately when `database_health` is `unhealthy`
 4. **Not Ready:** Alert when a replica has been `not_ready` for more than 15 minutes (excluding initialization)
 
-### Example Prometheus Rules
+### Example Blackbox Exporter Configuration
 
-```yaml
-groups:
-- name: kubidm
-  rules:
-  - alert: KubidmReplicationFailed
-    expr: kubidm_replication_state{state="failed"} == 1
-    for: 5m
-    labels:
-      severity: critical
-    annotations:
-      summary: "Kubidm replication failed on {{ $labels.instance }}"
-      
-  - alert: KubidmRefreshRequired
-    expr: kubidm_replication_state{state="refresh_required"} == 1
-    for: 10m
-    labels:
-      severity: warning
-    annotations:
-      summary: "Kubidm requires refresh on {{ $labels.instance }}"
-      
-  - alert: KubidmDatabaseUnhealthy
-    expr: kubidm_database_health{health="unhealthy"} == 1
-    for: 1m
-    labels:
-      severity: critical
-    annotations:
-      summary: "Kubidm database unhealthy on {{ $labels.instance }}"
-```
+To monitor readiness with Prometheus, use the blackbox exporter to probe the `/readyz` endpoint and alert on non-200 responses or specific JSON field values.
 
 ## Troubleshooting
 
@@ -233,7 +200,7 @@ Check the `/readyz` endpoint response to determine the cause:
 
 1. **`server_phase` not `running`:** Server is still initializing. Wait for initialization to complete.
 
-2. **`database_health` is `unhealthy`:** Database consistency check failed. Check logs for database errors. May require database repair or restore from backup.
+2. **`database_health` is `unhealthy`:** Database backend has encountered a failure. Check logs for database errors. May require database repair or restore from backup.
 
 3. **`replication_state` is `refresh_required`:** Replica has fallen too far behind and needs a full refresh. This happens automatically, but if it persists, check:
    - Network connectivity to peers

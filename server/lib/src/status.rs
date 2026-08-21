@@ -164,6 +164,96 @@ impl ReplicationStateTracker {
         }
     }
 
+    pub fn mark_startup_complete(&self, replication_configured: bool) {
+        self.set_server_phase("running".to_string());
+        self.set_database_health(DatabaseHealth::Healthy);
+        if !replication_configured {
+            self.set_replication_state(ReplicationState::Healthy);
+        }
+    }
+
+    pub fn mark_database_failure(&self) {
+        self.set_database_health(DatabaseHealth::Unhealthy);
+    }
+
+    pub fn notify_replication_refresh_required(&self) {
+        self.set_replication_state(ReplicationState::RefreshRequired);
+    }
+
+    pub fn notify_replication_refresh_started(&self) {
+        self.set_replication_state(ReplicationState::Refreshing);
+    }
+
+    pub fn notify_replication_refresh_success(&self) {
+        self.set_replication_state(ReplicationState::CatchingUp);
+    }
+
+    pub fn notify_replication_refresh_failed(&self) {
+        let current = self.get_replication_state();
+        if current == ReplicationState::Refreshing {
+            self.set_replication_state(ReplicationState::RefreshRequired);
+        }
+    }
+
+    pub fn notify_replication_incremental_success(&self, now: u64) {
+        self.record_replication_success(now);
+        let current = self.get_replication_state();
+        if current == ReplicationState::CatchingUp
+            || current == ReplicationState::Healthy
+        {
+            self.set_replication_state(ReplicationState::Healthy);
+        }
+    }
+
+    pub fn notify_replication_connect_failure(&self, now: u64) {
+        self.record_replication_failure(now);
+    }
+
+    pub fn notify_replication_connect_success(&self) {
+        let current = self.get_replication_state();
+        if current == ReplicationState::Degraded {
+            self.set_replication_state(ReplicationState::CatchingUp);
+        }
+    }
+
+    pub fn init_peers_from_config(&self, peer_urls: Vec<String>) {
+        if peer_urls.is_empty() {
+            return;
+        }
+        let peers: Vec<PeerInfo> = peer_urls
+            .into_iter()
+            .map(|url| PeerInfo {
+                url,
+                connected: false,
+                last_success: None,
+                stale: false,
+            })
+            .collect();
+        self.set_peers(Some(peers));
+    }
+
+    pub fn update_peer_connected(&self, peer_url: &str, now: u64) {
+        if let Ok(mut lock) = self.inner.peers.write() {
+            if let Some(ref mut peers) = *lock {
+                if let Some(peer) = peers.iter_mut().find(|p| p.url == peer_url) {
+                    peer.connected = true;
+                    peer.last_success = Some(now);
+                    peer.stale = false;
+                }
+            }
+        }
+    }
+
+    pub fn update_peer_disconnected(&self, peer_url: &str) {
+        if let Ok(mut lock) = self.inner.peers.write() {
+            if let Some(ref mut peers) = *lock {
+                if let Some(peer) = peers.iter_mut().find(|p| p.url == peer_url) {
+                    peer.connected = false;
+                }
+            }
+        }
+    }
+
     pub fn set_replication_state(&self, state: ReplicationState) {
         if let Ok(mut lock) = self.inner.replication_state.write() {
             *lock = state;
@@ -339,6 +429,10 @@ impl StatusActor {
 
     pub fn get_tracker(&self) -> &ReplicationStateTracker {
         &self.tracker
+    }
+
+    pub fn get_tracker_clone(&self) -> ReplicationStateTracker {
+        self.tracker.clone()
     }
 
     pub fn get_readiness_status(&self) -> ReadinessStatus {
