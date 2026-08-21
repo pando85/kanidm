@@ -1,0 +1,167 @@
+name: One-shot #357 semantic backup validation
+
+on:
+  push:
+    branches:
+      - fix/357-semantic-backup-validation
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/357-semantic-backup-validation
+          fetch-depth: 0
+
+      - name: Apply focused patch
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('server/lib/src/be/mod.rs')
+          src = path.read_text()
+
+          old = '''    fn into_entry(self) -> Result<EntrySealedCommitted, OperationError> {
+        let db_e = serde_json::from_slice(self.data.as_slice()).map_err(|e| {
+            admin_error!(?e, id = %self.id, "Serde JSON Error");
+            let raw_str = String::from_utf8_lossy(self.data.as_slice());
+            debug!(raw = %raw_str);
+            OperationError::SerdeJsonError
+        })?;
+        // let id = u64::try_from(self.id).map_err(|_| OperationError::InvalidEntryId)?;
+        Entry::from_dbentry(db_e, self.id).ok_or(OperationError::CorruptedEntry(self.id))
+    }
+'''
+          new = '''    fn into_entry(self) -> Result<EntrySealedCommitted, OperationError> {
+        let db_e = serde_json::from_slice(self.data.as_slice()).map_err(|e| {
+            admin_error!(?e, id = %self.id, "Serde JSON Error");
+            let raw_str = String::from_utf8_lossy(self.data.as_slice());
+            debug!(raw = %raw_str);
+            OperationError::SerdeJsonError
+        })?;
+        // let id = u64::try_from(self.id).map_err(|_| OperationError::InvalidEntryId)?;
+        Entry::from_dbentry(db_e, self.id).ok_or(OperationError::CorruptedEntry(self.id))
+    }
+
+    /// Deserialize the raw row for backup while also proving that the same
+    /// persisted representation can be loaded through the normal semantic
+    /// entry conversion path. A successful JSON decode alone is insufficient:
+    /// value-set invariants are checked by `Entry::from_dbentry`.
+    fn to_semantically_validated_dbentry(&self) -> Result<DbEntry, OperationError> {
+        let db_e = serde_json::from_slice(self.data.as_slice()).map_err(|e| {
+            admin_error!(?e, id = %self.id, "Serde JSON Error while preparing backup");
+            OperationError::SerdeJsonError
+        })?;
+
+        let validation_db_e = serde_json::from_slice(self.data.as_slice()).map_err(|e| {
+            admin_error!(?e, id = %self.id, "Serde JSON Error while validating backup entry");
+            OperationError::SerdeJsonError
+        })?;
+
+        Entry::from_dbentry(validation_db_e, self.id).ok_or_else(|| {
+            admin_error!(id = %self.id, "Refusing to create backup containing a semantically invalid database entry");
+            OperationError::CorruptedEntry(self.id)
+        })?;
+
+        Ok(db_e)
+    }
+'''
+          assert old in src, 'IdRawEntry insertion anchor changed'
+          src = src.replace(old, new, 1)
+
+          old = '''        let entries: Result<Vec<DbEntry>, _> = raw_entries
+            .iter()
+            .map(|id_ent| {
+                serde_json::from_slice(id_ent.data.as_slice())
+                    .map_err(|_| OperationError::SerdeJsonError) // log?
+            })
+            .collect();
+'''
+          new = '''        let entries: Result<Vec<DbEntry>, _> = raw_entries
+            .iter()
+            .map(IdRawEntry::to_semantically_validated_dbentry)
+            .collect();
+'''
+          assert old in src, 'backup parsing anchor changed'
+          src = src.replace(old, new, 1)
+
+          anchor = '''    #[test]
+    fn test_be_backup_restore() {
+'''
+          test = r'''    #[test]
+    fn test_be_backup_rejects_semantically_invalid_entry() {
+        run_test!(|be: &mut BackendWriteTransaction| {
+            be.reset_db_s_uuid().unwrap();
+            be.reset_db_d_uuid().unwrap();
+            be.set_db_ts_max(Duration::from_secs(1)).unwrap();
+
+            let mut entry: Entry<EntryInit, EntryNew> = Entry::new();
+            entry.add_ava(Attribute::UserId, Value::from("backup-corruption-test"));
+            entry.add_ava(
+                Attribute::Uuid,
+                Value::from("db237e8a-0079-4b8c-8a56-593b22aa44d1"),
+            );
+
+            assert!(be
+                .create(&CID_ZERO, vec![entry.into_sealed_new()])
+                .is_ok());
+
+            let mut raw_entries = be
+                .get_idlayer()
+                .get_identry_raw(&IdList::AllIds)
+                .expect("failed to read raw entry");
+            assert_eq!(raw_entries.len(), 1);
+
+            let raw_entry = raw_entries.pop().unwrap();
+            let id = raw_entry.id;
+            let mut db_entry: DbEntry = serde_json::from_slice(&raw_entry.data).unwrap();
+            match &mut db_entry.ent {
+                crate::be::dbentry::DbEntryVers::V3 { attrs, .. } => {
+                    attrs.insert(
+                        Attribute::Indexed,
+                        crate::be::dbvalue::DbValueSetV2::Index(vec![u16::MAX]),
+                    );
+                }
+            }
+
+            let data = serde_json::to_vec(&db_entry).unwrap();
+            be.get_idlayer()
+                .write_identries_raw(std::iter::once(IdRawEntry { id, data }))
+                .expect("failed to inject semantically invalid raw entry");
+
+            let mut output = Vec::new();
+            let result = be.backup(&mut output, BackupCompression::NoCompression);
+            assert!(matches!(
+                result,
+                Err(OperationError::CorruptedEntry(corrupt_id)) if corrupt_id == id
+            ));
+            assert!(output.is_empty());
+        });
+    }
+
+'''
+          assert anchor in src, 'backup test anchor changed'
+          src = src.replace(anchor, test + anchor, 1)
+
+          path.write_text(src)
+
+      - name: Format
+        run: cargo fmt --all -- --check || (cargo fmt --all && git diff --check)
+
+      - name: Run focused backend backup tests
+        run: cargo test -p kubidmd_lib test_be_backup -- --nocapture
+
+      - name: Remove one-shot workflow and commit
+        run: |
+          git rm .github/workflows/one-shot-357.yml
+          git add -- server/lib/src/be/mod.rs
+          git diff --cached --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'fix: validate semantic entry state before backup'
+          git push origin HEAD:fix/357-semantic-backup-validation
