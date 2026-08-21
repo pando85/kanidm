@@ -19,8 +19,36 @@ use std::sync::Arc;
 
 pub struct ReferentialIntegrity;
 
-pub fn is_derived_reference(attr: &Attribute) -> bool {
-    matches!(attr, Attribute::DynMember | Attribute::MemberOf)
+pub fn is_always_derived_reference(attr: &Attribute) -> bool {
+    matches!(attr, Attribute::MemberOf)
+}
+
+pub fn is_derived_reference_for_entry(attr: &Attribute, entry: &EntrySealedCommitted) -> bool {
+    if is_always_derived_reference(attr) {
+        return true;
+    }
+    if matches!(attr, Attribute::DynMember) {
+        return entry.attribute_equality(Attribute::Class, &EntryClass::DynGroup.into());
+    }
+    false
+}
+
+fn is_attribute_must_for_entry(
+    schema: &dyn SchemaTransaction,
+    entry: &EntrySealedCommitted,
+    attr: &Attribute,
+) -> bool {
+    let Some(class_set) = entry.get_ava_as_iutf8(Attribute::Class) else {
+        return false;
+    };
+    class_set.iter().any(|cls_name| {
+        schema
+            .get_classes()
+            .get(cls_name.as_str())
+            .map_or(false, |cls| {
+                cls.systemmust.contains(attr) || cls.must.contains(attr)
+            })
+    })
 }
 
 impl ReferentialIntegrity {
@@ -251,20 +279,86 @@ impl Plugin for ReferentialIntegrity {
         qs: &mut QueryServerWriteTransaction,
         cand: &[EntrySealedCommitted],
     ) -> Result<(), OperationError> {
-        let uuids = Self::cand_all_references_to_uuid_set(qs, cand)?;
+        let uuids = Self::cand_references_to_uuid_filter(qs, None, cand)?;
 
         let all_exist_fast = Self::check_uuids_exist_fast(qs, uuids.as_slice())?;
 
         let missing_uuids = if !all_exist_fast {
-            debug!("Refresh contains missing references; self-healing by removing dangling references.");
+            debug!("Refresh contains missing references; checking schema validity.");
             Self::check_uuids_exist_slow(qs, uuids.as_slice())?
         } else {
             debug!("All references are valid!");
-            Vec::with_capacity(0)
+            return Ok(());
         };
 
         if missing_uuids.is_empty() {
             return Ok(());
+        }
+
+        let schema = qs.get_schema();
+        let ref_types = schema.get_reference_types();
+        let missing_set: BTreeSet<Uuid> = missing_uuids.iter().copied().collect();
+
+        let filt = filter_all!(f_or(
+            missing_uuids
+                .iter()
+                .flat_map(|u| {
+                    ref_types
+                        .values()
+                        .map(move |r| f_eq(r.name.clone(), PartialValue::Refer(*u)))
+                })
+                .collect(),
+        ));
+
+        let affected_entries = qs.internal_search(filt).inspect_err(|err| {
+            error!(?err, "internal search failure during refresh refint check");
+        })?;
+
+        for entry in &affected_entries {
+            let entry_uuid = entry.get_uuid();
+            let entry_name = entry
+                .get_ava_single_utf8(Attribute::Name)
+                .map(|s| s.to_string());
+
+            for rtype in ref_types.values() {
+                if is_derived_reference_for_entry(&rtype.name, entry) {
+                    continue;
+                }
+                if let Some(vs) = entry.get_ava_set(&rtype.name) {
+                    if let Some(uuid_iter) = vs.as_ref_uuid_iter() {
+                        for vu in uuid_iter {
+                            if missing_set.contains(&vu) {
+                                if is_attribute_must_for_entry(schema, entry, &rtype.name) {
+                                    error!(
+                                        source_entry_uuid = %entry_uuid,
+                                        source_entry_name = ?entry_name,
+                                        attribute = %rtype.name,
+                                        missing_target_uuid = %vu,
+                                        "Refresh rejected: required reference target missing"
+                                    );
+                                    return Err(OperationError::Plugin(
+                                        PluginError::ReferentialIntegrity(format!(
+                                            "Refresh rejected: entry {} ({}) attribute {} references missing target {}",
+                                            entry_uuid,
+                                            entry_name.as_deref().unwrap_or("<unknown>"),
+                                            rtype.name,
+                                            vu
+                                        )),
+                                    ));
+                                } else {
+                                    warn!(
+                                        source_entry_uuid = %entry_uuid,
+                                        source_entry_name = ?entry_name,
+                                        attribute = %rtype.name,
+                                        missing_target_uuid = %vu,
+                                        "Self-healing: removing optional reference to missing target during refresh"
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         if event_enabled!(tracing::Level::DEBUG) {
@@ -461,7 +555,7 @@ impl Plugin for ReferentialIntegrity {
                 .map(|s| s.to_string());
 
             for rtype in ref_types.values() {
-                if is_derived_reference(&rtype.name) {
+                if is_derived_reference_for_entry(&rtype.name, c) {
                     continue;
                 }
 
@@ -516,7 +610,7 @@ where
         trace!(cand_id = %cand.get_display_id());
 
         let cand_ref_valuesets = ref_types.values().filter_map(|rtype| {
-            if skip_derived && is_derived_reference(&rtype.name) {
+            if skip_derived && is_derived_reference_for_entry(&rtype.name, cand) {
                 None
             } else {
                 cand.get_ava_set(&rtype.name)
@@ -571,20 +665,6 @@ impl ReferentialIntegrity {
             .collect())
     }
 
-    fn cand_all_references_to_uuid_set(
-        qs: &mut QueryServerWriteTransaction,
-        post_cand: &[EntrySealedCommitted],
-    ) -> Result<Vec<Uuid>, OperationError> {
-        let schema = qs.get_schema();
-        let ref_types = schema.get_reference_types();
-
-        let mut reference_set = BTreeSet::new();
-
-        update_reference_set_inner(ref_types, post_cand.iter(), &mut reference_set, false)?;
-
-        Ok(reference_set.into_iter().collect())
-    }
-
     fn cand_refers_to_target_uuid(post_cand: &[EntrySealedCommitted]) -> Vec<Uuid> {
         post_cand
             .iter()
@@ -614,7 +694,7 @@ impl ReferentialIntegrity {
                 let schema = qs.get_schema();
                 let ref_types = schema.get_reference_types();
                 for rtype in ref_types.values() {
-                    if is_derived_reference(&rtype.name) {
+                    if is_derived_reference_for_entry(&rtype.name, cand) {
                         continue;
                     }
                     if let Some(vs) = cand.get_ava_set(&rtype.name) {
