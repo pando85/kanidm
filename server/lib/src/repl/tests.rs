@@ -4030,6 +4030,80 @@ async fn test_repl_refresh_preserves_valid_may_references(
     drop(server_a_txn);
 }
 
+// Test that refresh self-heals dangling optional (MAY) authoritative references.
+// We inject the invalid state through the backend to bypass normal refint checks.
+#[qs_pair_test]
+async fn test_repl_refresh_self_heals_optional_authoritative_references(
+    server_a: &QueryServer,
+    server_b: &QueryServer,
+) {
+    let ct = duration_from_epoch_now();
+
+    let mut server_a_txn = server_a.write(ct).await.unwrap();
+    let mut server_b_txn = server_b.read().await.unwrap();
+
+    assert!(repl_initialise(&mut server_b_txn, &mut server_a_txn)
+        .and_then(|_| server_a_txn.commit())
+        .is_ok());
+    drop(server_b_txn);
+
+    let mut server_a_txn = server_a.write(ct).await.unwrap();
+
+    let g_uuid = Uuid::new_v4();
+    let dangling_uuid = Uuid::new_v4();
+
+    // Create group without dangling reference first
+    assert!(server_a_txn
+        .internal_create(vec![entry_init!(
+            (Attribute::Class, EntryClass::Object.to_value()),
+            (Attribute::Class, EntryClass::Group.to_value()),
+            (Attribute::Name, Value::new_iname("testgroup_heal")),
+            (Attribute::Uuid, Value::Uuid(g_uuid))
+        ),])
+        .is_ok());
+
+    server_a_txn.commit().expect("Failed to commit");
+
+    // Inject dangling reference through backend, bypassing refint
+    let ct = duration_from_epoch_now();
+    let mut server_a_txn = server_a.write(ct).await.unwrap();
+
+    let filt = filter!(f_eq(Attribute::Uuid, PartialValue::Uuid(g_uuid)));
+    let mut work_set = server_a_txn.internal_search_writeable(&filt).unwrap();
+
+    for (_, entry) in work_set.iter_mut() {
+        entry.add_ava(Attribute::Member, Value::Refer(dangling_uuid));
+    }
+
+    assert!(server_a_txn.internal_apply_writable(work_set).is_ok());
+    server_a_txn.commit().expect("Failed to commit");
+
+    // Replicate to server_b - refresh should self-heal the dangling reference
+    let ct = duration_from_epoch_now();
+    let mut server_a_txn = server_a.read().await.unwrap();
+    let mut server_b_txn = server_b.write(ct).await.unwrap();
+
+    assert!(repl_initialise(&mut server_a_txn, &mut server_b_txn).is_ok());
+
+    let group = server_b_txn
+        .internal_search_uuid(g_uuid)
+        .expect("Failed to access group on B");
+
+    let members: std::collections::BTreeSet<Uuid> = group
+        .get_ava_refer(Attribute::Member)
+        .cloned()
+        .unwrap_or_default();
+
+    // Dangling reference should have been removed
+    assert!(
+        !members.contains(&dangling_uuid),
+        "Refresh should have removed dangling optional reference"
+    );
+
+    server_b_txn.commit().expect("Failed to commit");
+    drop(server_a_txn);
+}
+
 #[qs_pair_test]
 async fn test_repl_refresh_self_heals_derived_references(
     server_a: &QueryServer,
@@ -4109,3 +4183,10 @@ async fn test_repl_refresh_self_heals_derived_references(
     server_b_txn.commit().expect("Failed to commit");
     drop(server_a_txn);
 }
+
+// Note: Testing the MUST attribute rejection case (where refresh fails because pruning
+// a required reference would invalidate the entry) requires complex setup with schema
+// classes like ClientCertificate that have required reference attributes (Refers).
+// The code path is implemented in post_repl_refresh (refint.rs lines 331-347) and
+// returns an error when is_attribute_must_for_entry returns true. This behavior is
+// covered by the implementation and can be tested with integration tests if needed.

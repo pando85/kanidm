@@ -1927,17 +1927,32 @@ mod tests {
         let g_uuid = Uuid::new_v4();
         let dangling_uuid = Uuid::new_v4();
 
+        // Create group without dangling reference first (refint would reject it)
         let e_group: Entry<EntryInit, EntryNew> = entry_init!(
             (Attribute::Class, EntryClass::Group.to_value()),
             (Attribute::Name, Value::new_iname("testgroup_auth")),
-            (Attribute::Uuid, Value::Uuid(g_uuid)),
-            (Attribute::Member, Value::Refer(dangling_uuid))
+            (Attribute::Uuid, Value::Uuid(g_uuid))
         );
 
         let ce = CreateEvent::new_internal(vec![e_group]);
         assert!(server_txn.create(&ce).is_ok());
         assert!(server_txn.commit().is_ok());
 
+        // Now inject the dangling reference through the backend, bypassing refint
+        let curtime = duration_from_epoch_now();
+        let mut server_txn = server.write(curtime).await.unwrap();
+
+        let filt = filter!(f_eq(Attribute::Uuid, PartialValue::Uuid(g_uuid)));
+        let mut work_set = server_txn.internal_search_writeable(&filt).unwrap();
+
+        for (_, entry) in work_set.iter_mut() {
+            entry.add_ava(Attribute::Member, Value::Refer(dangling_uuid));
+        }
+
+        assert!(server_txn.internal_apply_writable(work_set).is_ok());
+        assert!(server_txn.commit().is_ok());
+
+        // Verify should report the dangling reference
         let mut server_txn = server.read().await.unwrap();
 
         let verify_results = server_txn.verify();
