@@ -350,7 +350,11 @@ macro_rules! verify {
                         r.push(Err(ConsistencyError::BackendAllIdsSync))
                     }
                     let allids_match = db_allids.len() == (*($self).allids).len()
-                        && db_allids == (*($self).allids);
+                        && {
+                            let db_vec: Vec<u64> = db_allids.into_iter().collect();
+                            let mem_vec: Vec<u64> = (*($self).allids).into_iter().collect();
+                            db_vec == mem_vec
+                        };
                     if !allids_match {
                         // might want to redo how large key-values are formatted considering what this could look like
                         admin_warn!(
