@@ -351,6 +351,24 @@ fn test_backup_verify_restored_server_is_functional() {
             .expect("Failed to get restored oauth2 config");
         assert!(oauth2.is_some(), "Restored OAuth2 config should exist");
 
+        let all_persons_members = restored_client
+            .idm_group_get_members("idm_all_persons")
+            .await
+            .expect("Failed to get dynamic group members")
+            .expect("Dynamic group idm_all_persons should exist");
+        assert!(
+            !all_persons_members.is_empty(),
+            "Dynamic group idm_all_persons should have members after restore"
+        );
+
+        let auth_result = restored_client
+            .auth_simple_password(NOT_ADMIN_TEST_USERNAME, NOT_ADMIN_TEST_PASSWORD)
+            .await;
+        assert!(
+            auth_result.is_ok(),
+            "Authentication should succeed on restored server"
+        );
+
         restored_handle.shutdown().await;
     });
 }
