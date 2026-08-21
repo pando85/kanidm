@@ -580,7 +580,14 @@ fn print_verification_result(result: &BackupVerificationResult, is_full: bool) {
     }
 
     if is_full {
-        eprintln!("Full restore verification: {}", if result.is_fully_valid() { "PASS" } else { "FAIL" });
+        eprintln!(
+            "Full restore verification: {}",
+            if result.is_fully_valid() {
+                "PASS"
+            } else {
+                "FAIL"
+            }
+        );
     }
 }
 
@@ -612,7 +619,10 @@ async fn run_full_verification(
     let mut be_wr_txn = match be.write() {
         Ok(txn) => txn,
         Err(err) => {
-            error!(?err, "Unable to proceed, backend write transaction failure.");
+            error!(
+                ?err,
+                "Unable to proceed, backend write transaction failure."
+            );
             return false;
         }
     };
@@ -638,7 +648,10 @@ async fn run_full_verification(
     let mut be_wr_txn = match be.write() {
         Ok(txn) => txn,
         Err(err) => {
-            error!(?err, "Unable to proceed, backend write transaction failure.");
+            error!(
+                ?err,
+                "Unable to proceed, backend write transaction failure."
+            );
             return false;
         }
     };
@@ -658,10 +671,7 @@ async fn run_full_verification(
         }
     };
 
-    if let Err(e) = server
-        .initialise_helper(curtime, DOMAIN_TGT_LEVEL)
-        .await
-    {
+    if let Err(e) = server.initialise_helper(curtime, DOMAIN_TGT_LEVEL).await {
         error!(?e, "Full verification failed during server initialization");
         return false;
     }

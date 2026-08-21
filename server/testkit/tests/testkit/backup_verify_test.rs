@@ -123,7 +123,10 @@ async fn populate_test_data(rsclient: &KubidmClient) {
         .expect("Failed to create engineers group");
 
     rsclient
-        .idm_group_add_members("backup_engineers", &["backup_user_alice", "backup_user_bob"])
+        .idm_group_add_members(
+            "backup_engineers",
+            &["backup_user_alice", "backup_user_bob"],
+        )
         .await
         .expect("Failed to add members to engineers group");
 
@@ -139,8 +142,7 @@ async fn populate_test_data(rsclient: &KubidmClient) {
     rsclient
         .idm_oauth2_client_add_origin(
             TEST_INTEGRATION_RS_ID,
-            &url::Url::parse("https://demo.example.com/oauth2/flow")
-                .expect("Invalid redirect URL"),
+            &url::Url::parse("https://demo.example.com/oauth2/flow").expect("Invalid redirect URL"),
         )
         .await
         .expect("Failed to add oauth2 origin");
@@ -176,8 +178,7 @@ async fn create_backup_from_server(
         None,
     );
 
-    let be = kubidmd_lib::be::Backend::new(cfg, idxmeta, false)
-        .expect("Failed to create backend");
+    let be = kubidmd_lib::be::Backend::new(cfg, idxmeta, false).expect("Failed to create backend");
 
     let mut be_ro_txn = be.read().expect("Failed to get read txn");
 
@@ -200,8 +201,7 @@ fn test_backup_verify_structural_valid() {
         let db_path = temp_dir.path().join("test.db");
         let backup_path = temp_dir.path().join("backup.json");
 
-        let (rsclient, core_handle, _addr) =
-            setup_test_server(Some(db_path.clone())).await;
+        let (rsclient, core_handle, _addr) = setup_test_server(Some(db_path.clone())).await;
 
         populate_test_data(&rsclient).await;
 
@@ -220,7 +220,10 @@ fn test_backup_verify_structural_valid() {
         verify_config.db_path = Some(temp_dir.path().join("verify.db"));
 
         let result = verify_backup_server_core(&verify_config, &backup_path, false).await;
-        assert!(result, "Structural verification should pass for valid backup");
+        assert!(
+            result,
+            "Structural verification should pass for valid backup"
+        );
 
         core_handle.shutdown().await;
     });
@@ -238,8 +241,7 @@ fn test_backup_verify_full_restore() {
         let db_path = temp_dir.path().join("test.db");
         let backup_path = temp_dir.path().join("backup.json");
 
-        let (rsclient, core_handle, _addr) =
-            setup_test_server(Some(db_path.clone())).await;
+        let (rsclient, core_handle, _addr) = setup_test_server(Some(db_path.clone())).await;
 
         populate_test_data(&rsclient).await;
 
@@ -254,7 +256,10 @@ fn test_backup_verify_full_restore() {
         verify_config.db_path = Some(restore_db_path.clone());
 
         let result = verify_backup_server_core(&verify_config, &backup_path, true).await;
-        assert!(result, "Full restore verification should pass for valid backup");
+        assert!(
+            result,
+            "Full restore verification should pass for valid backup"
+        );
 
         assert!(restore_db_path.exists(), "Restored database should exist");
     });
@@ -303,8 +308,7 @@ fn test_backup_verify_restored_server_is_functional() {
         let db_path = temp_dir.path().join("original.db");
         let backup_path = temp_dir.path().join("backup.json");
 
-        let (rsclient, core_handle, _addr) =
-            setup_test_server(Some(db_path.clone())).await;
+        let (rsclient, core_handle, _addr) = setup_test_server(Some(db_path.clone())).await;
 
         populate_test_data(&rsclient).await;
 
