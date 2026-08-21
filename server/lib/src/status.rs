@@ -7,7 +7,6 @@
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use std::time::Duration;
 use uuid::Uuid;
 
 /// Replication state machine for a Kubidm replica.
@@ -82,7 +81,7 @@ impl std::fmt::Display for ServingReadiness {
 }
 
 /// Information about a replication peer.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PeerInfo {
     /// URL of the peer.
     pub url: String,
@@ -217,28 +216,16 @@ impl ReplicationStateTracker {
         self.inner.peers.read().ok().and_then(|p| p.clone())
     }
 
-    pub fn record_replication_success(&self) {
-        let now = Duration::from_secs(
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_secs(),
-        );
+    pub fn record_replication_success(&self, now: u64) {
         self.inner
             .last_replication_success
-            .store(now.as_secs(), Ordering::SeqCst);
+            .store(now, Ordering::SeqCst);
     }
 
-    pub fn record_replication_failure(&self) {
-        let now = Duration::from_secs(
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_secs(),
-        );
+    pub fn record_replication_failure(&self, now: u64) {
         self.inner
             .last_replication_failure
-            .store(now.as_secs(), Ordering::SeqCst);
+            .store(now, Ordering::SeqCst);
     }
 
     pub fn get_last_replication_success(&self) -> Option<u64> {
@@ -511,11 +498,11 @@ mod tests {
         assert!(tracker.get_last_replication_success().is_none());
         assert!(tracker.get_last_replication_failure().is_none());
 
-        tracker.record_replication_success();
-        assert!(tracker.get_last_replication_success().is_some());
+        tracker.record_replication_success(1234567890);
+        assert_eq!(tracker.get_last_replication_success(), Some(1234567890));
 
-        tracker.record_replication_failure();
-        assert!(tracker.get_last_replication_failure().is_some());
+        tracker.record_replication_failure(1234567900);
+        assert_eq!(tracker.get_last_replication_failure(), Some(1234567900));
     }
 
     #[test]
