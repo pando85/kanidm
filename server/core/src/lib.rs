@@ -52,7 +52,7 @@ use crypto_glue::{
 use kubidm_proto::backup::BackupCompression;
 use kubidm_proto::internal::OperationError;
 use kubidm_proto::scim_v1::client::ScimAssertGeneric;
-use kubidmd_lib::be::{Backend, BackendConfig, BackendTransaction};
+use kubidmd_lib::be::{Backend, BackendConfig, BackendTransaction, BackupVerificationResult};
 use kubidmd_lib::idm::ldap::LdapServer;
 use kubidmd_lib::prelude::*;
 use kubidmd_lib::schema::Schema;
@@ -478,6 +478,214 @@ pub async fn restore_server_core(config: &Configuration, dst_path: &Path) {
     reindex_inner(be, schema, config).await;
 
     info!("✅ Restore Success!");
+}
+
+pub async fn verify_backup_server_core(
+    config: &Configuration,
+    backup_path: &Path,
+    full_verification: bool,
+) -> bool {
+    let compression = BackupCompression::identify_file(backup_path);
+
+    if !full_verification {
+        let schema = match Schema::new() {
+            Ok(s) => s,
+            Err(e) => {
+                error!("Failed to setup in memory schema: {:?}", e);
+                return false;
+            }
+        };
+
+        let be = match setup_backend(config, &schema) {
+            Ok(be) => be,
+            Err(e) => {
+                error!("Failed to setup backend: {:?}", e);
+                return false;
+            }
+        };
+
+        let mut be_wr_txn = match be.write() {
+            Ok(txn) => txn,
+            Err(err) => {
+                error!(?err, "Unable to proceed, backend write transaction failure.");
+                return false;
+            }
+        };
+
+        let input = match std::fs::File::open(backup_path) {
+            Ok(f) => f,
+            Err(err) => {
+                error!(?err, "Failed to open backup file {}", backup_path.display());
+                return false;
+            }
+        };
+
+        match be_wr_txn.verify_backup(input, compression) {
+            Ok(result) => {
+                print_verification_result(&result, false);
+                result.is_fully_valid()
+            }
+            Err(e) => {
+                error!("Structural verification failed: {:?}", e);
+                false
+            }
+        }
+    } else {
+        let temp_dir = std::env::temp_dir()
+            .join("kubidmd-verify-backup")
+            .join(std::process::id().to_string());
+
+        if let Err(err) = std::fs::create_dir_all(&temp_dir) {
+            error!(?err, "Failed to create temp directory for verification");
+            return false;
+        }
+
+        let temp_db_path = temp_dir.join("verify.db");
+
+        let mut verify_config = config.clone();
+        verify_config.db_path = Some(temp_db_path);
+
+        let result = run_full_verification(&verify_config, backup_path, compression).await;
+
+        let _ = std::fs::remove_dir_all(&temp_dir);
+
+        result
+    }
+}
+
+fn print_verification_result(result: &BackupVerificationResult, is_full: bool) {
+    if result.structural_valid {
+        eprintln!("Backup structural validation: PASS");
+        eprintln!("  Entry count: {}", result.entry_count);
+        if let Some(ref version) = result.version {
+            eprintln!("  Backup version: {}", version);
+        }
+        eprintln!(
+            "  Version compatible: {}",
+            if result.version_compatible {
+                "YES"
+            } else {
+                "NO"
+            }
+        );
+    } else {
+        eprintln!("Backup structural validation: FAIL");
+    }
+
+    if !result.errors.is_empty() {
+        eprintln!("  Issues found:");
+        for err in &result.errors {
+            eprintln!("    - {}", err);
+        }
+    }
+
+    if is_full {
+        eprintln!("Full restore verification: {}", if result.is_fully_valid() { "PASS" } else { "FAIL" });
+    }
+}
+
+async fn run_full_verification(
+    config: &Configuration,
+    backup_path: &Path,
+    compression: BackupCompression,
+) -> bool {
+    if let Some(db_path) = config.db_path.as_ref() {
+        touch_file_or_quit(db_path);
+    }
+
+    let schema = match Schema::new() {
+        Ok(s) => s,
+        Err(e) => {
+            error!("Failed to setup in memory schema: {:?}", e);
+            return false;
+        }
+    };
+
+    let be = match setup_backend(config, &schema) {
+        Ok(be) => be,
+        Err(e) => {
+            error!("Failed to setup backend for verification: {:?}", e);
+            return false;
+        }
+    };
+
+    let mut be_wr_txn = match be.write() {
+        Ok(txn) => txn,
+        Err(err) => {
+            error!(?err, "Unable to proceed, backend write transaction failure.");
+            return false;
+        }
+    };
+
+    let input = match std::fs::File::open(backup_path) {
+        Ok(f) => f,
+        Err(err) => {
+            error!(?err, "Failed to open backup file {}", backup_path.display());
+            return false;
+        }
+    };
+
+    let restore_result = be_wr_txn
+        .restore(input, compression)
+        .and_then(|_| be_wr_txn.commit());
+
+    if let Err(e) = restore_result {
+        error!("Full verification failed during restore: {:?}", e);
+        return false;
+    }
+    info!("Backup restored successfully into temporary backend");
+
+    let mut be_wr_txn = match be.write() {
+        Ok(txn) => txn,
+        Err(err) => {
+            error!(?err, "Unable to proceed, backend write transaction failure.");
+            return false;
+        }
+    };
+
+    let r = be_wr_txn.reindex(true).and_then(|_| be_wr_txn.commit());
+    if let Err(e) = r {
+        error!("Full verification failed during reindex: {:?}", e);
+        return false;
+    }
+
+    let curtime = duration_from_epoch_now();
+    let server = match QueryServer::new(be, schema, config.domain.clone(), curtime) {
+        Ok(qs) => qs,
+        Err(err) => {
+            error!(?err, "Failed to setup query server for verification");
+            return false;
+        }
+    };
+
+    if let Err(e) = server
+        .initialise_helper(curtime, DOMAIN_TGT_LEVEL)
+        .await
+    {
+        error!(?e, "Full verification failed during server initialization");
+        return false;
+    }
+
+    let verify_results = server.verify().await;
+
+    if verify_results.is_empty() {
+        eprintln!("Full restore verification: PASS");
+        eprintln!("  Database consistency: PASS");
+        eprintln!("  Schema validation: PASS");
+        eprintln!("  Index verification: PASS");
+        eprintln!("  Entry verification: PASS");
+        eprintln!("  RUV verification: PASS");
+        eprintln!("  Plugin verification: PASS");
+        true
+    } else {
+        eprintln!("Full restore verification: FAIL");
+        for er in &verify_results {
+            if let Err(consistency_err) = er {
+                error!("Consistency error: {:?}", consistency_err);
+            }
+        }
+        false
+    }
 }
 
 pub async fn reindex_server_core(config: &Configuration) {
