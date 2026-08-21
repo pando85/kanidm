@@ -251,7 +251,7 @@ impl Plugin for ReferentialIntegrity {
         qs: &mut QueryServerWriteTransaction,
         cand: &[EntrySealedCommitted],
     ) -> Result<(), OperationError> {
-        let uuids = Self::cand_references_to_uuid_filter(qs, None, cand)?;
+        let uuids = Self::cand_all_references_to_uuid_set(qs, cand)?;
 
         let all_exist_fast = Self::check_uuids_exist_fast(qs, uuids.as_slice())?;
 
@@ -456,7 +456,9 @@ impl Plugin for ReferentialIntegrity {
         let mut res = Vec::with_capacity(0);
         for c in &all_cand {
             let entry_uuid = c.get_uuid();
-            let entry_name = c.get_ava_single_utf8(Attribute::Name).map(|s| s.to_string());
+            let entry_name = c
+                .get_ava_single_utf8(Attribute::Name)
+                .map(|s| s.to_string());
 
             for rtype in ref_types.values() {
                 if is_derived_reference(&rtype.name) {
@@ -498,11 +500,23 @@ fn update_reference_set<'a, I>(
 where
     I: Iterator<Item = &'a EntrySealedCommitted>,
 {
+    update_reference_set_inner(ref_types, entry_iter, reference_set, true)
+}
+
+fn update_reference_set_inner<'a, I>(
+    ref_types: &HashMap<Attribute, SchemaAttribute>,
+    entry_iter: I,
+    reference_set: &mut BTreeSet<Uuid>,
+    skip_derived: bool,
+) -> Result<(), OperationError>
+where
+    I: Iterator<Item = &'a EntrySealedCommitted>,
+{
     for cand in entry_iter {
         trace!(cand_id = %cand.get_display_id());
 
         let cand_ref_valuesets = ref_types.values().filter_map(|rtype| {
-            if is_derived_reference(&rtype.name) {
+            if skip_derived && is_derived_reference(&rtype.name) {
                 None
             } else {
                 cand.get_ava_set(&rtype.name)
@@ -557,6 +571,20 @@ impl ReferentialIntegrity {
             .collect())
     }
 
+    fn cand_all_references_to_uuid_set(
+        qs: &mut QueryServerWriteTransaction,
+        post_cand: &[EntrySealedCommitted],
+    ) -> Result<Vec<Uuid>, OperationError> {
+        let schema = qs.get_schema();
+        let ref_types = schema.get_reference_types();
+
+        let mut reference_set = BTreeSet::new();
+
+        update_reference_set_inner(ref_types, post_cand.iter(), &mut reference_set, false)?;
+
+        Ok(reference_set.into_iter().collect())
+    }
+
     fn cand_refers_to_target_uuid(post_cand: &[EntrySealedCommitted]) -> Vec<Uuid> {
         post_cand
             .iter()
@@ -580,8 +608,9 @@ impl ReferentialIntegrity {
 
             for cand in post_cand {
                 let entry_uuid = cand.get_uuid();
-                let entry_name =
-                    cand.get_ava_single_utf8(Attribute::Name).map(|s| s.to_string());
+                let entry_name = cand
+                    .get_ava_single_utf8(Attribute::Name)
+                    .map(|s| s.to_string());
                 let schema = qs.get_schema();
                 let ref_types = schema.get_reference_types();
                 for rtype in ref_types.values() {
