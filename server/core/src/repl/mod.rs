@@ -349,6 +349,7 @@ async fn repl_run_consumer_refresh_inner(
     Ok(Some(addr))
 }
 
+#[allow(clippy::too_many_arguments)]
 #[instrument(
     level="info",
     skip(tls_connector, idms, consumer_conn_settings, server_name, tracker),
