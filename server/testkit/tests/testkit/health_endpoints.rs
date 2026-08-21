@@ -3,14 +3,11 @@
 use kubidmd_lib::status::{DatabaseHealth, ReplicationState, ServingReadiness};
 
 #[kubidmd_testkit::test]
-async fn test_healthz_endpoint(_rsclient: &kubidm_client::KubidmClient) {
-    let rsclient = reqwest::Client::builder()
-        .danger_accept_invalid_certs(true)
-        .build()
-        .expect("Failed to build client");
+async fn test_healthz_endpoint(rsclient: &kubidm_client::KubidmClient) {
+    let client = rsclient.client();
 
-    let res = rsclient
-        .get("https://127.0.0.1:8080/healthz")
+    let res = client
+        .get(rsclient.make_url("/healthz"))
         .send()
         .await
         .expect("Failed to send request");
@@ -22,20 +19,15 @@ async fn test_healthz_endpoint(_rsclient: &kubidm_client::KubidmClient) {
 }
 
 #[kubidmd_testkit::test]
-async fn test_readyz_endpoint_after_startup(_rsclient: &kubidm_client::KubidmClient) {
-    let rsclient = reqwest::Client::builder()
-        .danger_accept_invalid_certs(true)
-        .build()
-        .expect("Failed to build client");
+async fn test_readyz_endpoint_after_startup(rsclient: &kubidm_client::KubidmClient) {
+    let client = rsclient.client();
 
-    let res = rsclient
-        .get("https://127.0.0.1:8080/readyz")
+    let res = client
+        .get(rsclient.make_url("/readyz"))
         .send()
         .await
         .expect("Failed to send request");
 
-    // After server startup completes, the readiness endpoint should return 200
-    // because the server lifecycle wiring marks the server as running and DB as healthy.
     assert_eq!(res.status(), 200);
 
     let body: serde_json::Value = res.json().await.expect("Failed to parse JSON");
@@ -47,14 +39,11 @@ async fn test_readyz_endpoint_after_startup(_rsclient: &kubidm_client::KubidmCli
 }
 
 #[kubidmd_testkit::test]
-async fn test_status_endpoint_legacy(_rsclient: &kubidm_client::KubidmClient) {
-    let rsclient = reqwest::Client::builder()
-        .danger_accept_invalid_certs(true)
-        .build()
-        .expect("Failed to build client");
+async fn test_status_endpoint_legacy(rsclient: &kubidm_client::KubidmClient) {
+    let client = rsclient.client();
 
-    let res = rsclient
-        .get("https://127.0.0.1:8080/status")
+    let res = client
+        .get(rsclient.make_url("/status"))
         .send()
         .await
         .expect("Failed to send request");
