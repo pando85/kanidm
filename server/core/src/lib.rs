@@ -504,10 +504,10 @@ pub async fn verify_backup_server_core(
             }
         };
 
-        let mut be_wr_txn = match be.write() {
+        let mut be_ro_txn = match be.read() {
             Ok(txn) => txn,
             Err(err) => {
-                error!(?err, "Unable to proceed, backend write transaction failure.");
+                error!(?err, "Unable to proceed, backend read transaction failure.");
                 return false;
             }
         };
@@ -520,7 +520,7 @@ pub async fn verify_backup_server_core(
             }
         };
 
-        match be_wr_txn.verify_backup(input, compression) {
+        match be_ro_txn.verify_backup(input, compression) {
             Ok(result) => {
                 print_verification_result(&result, false);
                 result.is_fully_valid()
