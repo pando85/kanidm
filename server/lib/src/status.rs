@@ -177,6 +177,10 @@ impl ReplicationStateTracker {
         self.set_database_health(DatabaseHealth::Unhealthy);
     }
 
+    pub fn mark_database_healthy(&self) {
+        self.set_database_health(DatabaseHealth::Healthy);
+    }
+
     pub fn notify_replication_refresh_required(&self) {
         self.set_replication_state(ReplicationState::RefreshRequired);
     }

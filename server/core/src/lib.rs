@@ -1309,7 +1309,7 @@ async fn launch_server_tasks(
         handles.push((TaskName::MigrationReload, migration_reload_handle));
 
         // Setup timed events associated to the write thread
-        let interval_handle = IntervalActor::start(server_write_ref, broadcast_tx.subscribe());
+        let interval_handle = IntervalActor::start(server_write_ref, broadcast_tx.subscribe(), tracker.clone());
 
         handles.push((TaskName::IntervalActor, interval_handle));
 

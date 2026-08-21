@@ -21,6 +21,7 @@ use kubidmd_lib::constants::PURGE_FREQUENCY;
 use kubidmd_lib::event::{
     OnlineBackupEvent, PurgeDeleteAfterEvent, PurgeRecycledEvent, PurgeTombstoneEvent,
 };
+use kubidmd_lib::status::ReplicationStateTracker;
 
 pub(crate) struct IntervalActor;
 
@@ -28,6 +29,7 @@ impl IntervalActor {
     pub fn start(
         server: &'static QueryServerWriteV1,
         mut rx: broadcast::Receiver<CoreAction>,
+        tracker: ReplicationStateTracker,
     ) -> tokio::task::JoinHandle<()> {
         tokio::spawn(async move {
             let mut inter = interval(Duration::from_secs(PURGE_FREQUENCY));
@@ -43,6 +45,17 @@ impl IntervalActor {
                 server
                     .handle_purge_delete_after_event(PurgeDeleteAfterEvent::new())
                     .await;
+
+                let ct = kubidmd_lib::prelude::duration_from_epoch_now();
+                let health_ok = server
+                    .handle_healthcheck(ct)
+                    .await;
+
+                if health_ok {
+                    tracker.mark_database_healthy();
+                } else {
+                    tracker.mark_database_failure();
+                }
 
                 tokio::select! {
                     Ok(action) = rx.recv() => {

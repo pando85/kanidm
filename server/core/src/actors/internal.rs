@@ -14,6 +14,7 @@ use kubidmd_lib::{
     idm::delayed::DelayedAction,
     server::scim::ScimAssertEvent,
 };
+use std::time::Duration;
 use tracing::{Instrument, Level};
 
 impl QueryServerReadV1 {
@@ -121,6 +122,19 @@ impl QueryServerWriteV1 {
                 }
             })
             .inspect_err(|err| error!(?err, "Unable to purge delete after entries"));
+    }
+
+    pub async fn handle_healthcheck(&self, ct: Duration) -> bool {
+        match self.idms.proxy_read(ct).await {
+            Ok(mut idms_prox_read) => {
+                let result = idms_prox_read.qs_read.get_domain_name();
+                result.is_ok()
+            }
+            Err(err) => {
+                error!(?err, "Database health check failed");
+                false
+            }
+        }
     }
 
     pub(crate) async fn handle_delayedaction(&self, da_batch: &mut Vec<DelayedAction>) {
