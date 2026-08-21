@@ -8,6 +8,7 @@ use kubidmd_lib::prelude::duration_from_epoch_now;
 use kubidmd_lib::prelude::IdmServer;
 use kubidmd_lib::repl::proto::ConsumerState;
 use kubidmd_lib::server::QueryServerTransaction;
+use kubidmd_lib::status::ReplicationStateTracker;
 use rustls::{
     client::ClientConfig,
     pki_types::{CertificateDer, PrivateKeyDer, ServerName},
@@ -64,6 +65,7 @@ pub(crate) async fn create_repl_server(
     idms: Arc<IdmServer>,
     repl_config: &ReplicationConfiguration,
     rx: broadcast::Receiver<CoreAction>,
+    tracker: ReplicationStateTracker,
 ) -> Result<ReplicationServerHandles, ()> {
     // We need to start the tcp listener. This will persist over ssl reloads!
     let listener = TcpListener::bind(&repl_config.bindaddress)
@@ -83,12 +85,30 @@ pub(crate) async fn create_repl_server(
         "Starting replication interface https://{} ...",
         repl_config.bindaddress
     );
+
+    let peer_urls: Vec<String> = repl_config
+        .manual
+        .keys()
+        .filter_map(|url| {
+            url.domain().map(|d| {
+                format!(
+                    "{}://{}{}",
+                    url.scheme(),
+                    d,
+                    url.port().map(|p| format!(":{}", p)).unwrap_or_default()
+                )
+            })
+        })
+        .collect();
+    tracker.init_peers_from_config(peer_urls);
+
     let repl_handle: JoinHandle<()> = tokio::spawn(repl_acceptor(
         listener,
         idms,
         repl_config.clone(),
         rx,
         ctrl_rx,
+        tracker,
     ));
 
     info!("Created replication interface");
@@ -190,7 +210,7 @@ async fn repl_consumer_disconnect_supplier(
 /// This returns the socket address that worked, so you can try that first next time
 #[instrument(
     level="info",
-    skip(refresh_coord, tls_connector, idms, consumer_conn_settings),
+    skip(refresh_coord, tls_connector, idms, consumer_conn_settings, tracker),
     fields(eventid = Uuid::new_v4().to_string(), server_name = %server_name.to_str())
 )]
 async fn repl_run_consumer_refresh(
@@ -200,6 +220,7 @@ async fn repl_run_consumer_refresh(
     tls_connector: &TlsConnector,
     idms: &IdmServer,
     consumer_conn_settings: &ConsumerConnSettings,
+    tracker: &ReplicationStateTracker,
 ) -> Result<Option<SocketAddr>, ()> {
     // Take the refresh lock. Note that every replication consumer *should* end up here
     // behind this lock, but only one can proceed. This is what we want!
@@ -220,7 +241,11 @@ async fn repl_run_consumer_refresh(
         consumer_conn_settings,
     )
     .await
-    .ok_or(())?;
+    .ok_or_else(|| {
+        tracker.notify_replication_refresh_failed();
+    })?;
+
+    tracker.notify_replication_refresh_started();
 
     let result = repl_run_consumer_refresh_inner(
         addr,
@@ -233,6 +258,11 @@ async fn repl_run_consumer_refresh(
 
     // disconnect the connection if possible.
     repl_consumer_disconnect_supplier(supplier_conn, consumer_conn_settings).await;
+
+    match &result {
+        Ok(_) => tracker.notify_replication_refresh_success(),
+        Err(_) => tracker.notify_replication_refresh_failed(),
+    }
 
     result
 }
@@ -319,9 +349,10 @@ async fn repl_run_consumer_refresh_inner(
     Ok(Some(addr))
 }
 
+#[allow(clippy::too_many_arguments)]
 #[instrument(
     level="info",
-    skip(tls_connector, idms, consumer_conn_settings, server_name),
+    skip(tls_connector, idms, consumer_conn_settings, server_name, tracker),
     fields(eventid = Uuid::new_v4().to_string(), server_name = %server_name.to_str())
 )]
 async fn repl_run_consumer(
@@ -332,14 +363,37 @@ async fn repl_run_consumer(
     idms: &IdmServer,
     consumer_conn_settings: &ConsumerConnSettings,
     task_tx: &mut broadcast::Sender<ReplConsumerCtrl>,
+    tracker: &ReplicationStateTracker,
+    peer_url: &str,
 ) -> Option<SocketAddr> {
-    let (socket_addr, mut supplier_conn) = repl_consumer_connect_supplier(
+    let connect_result = repl_consumer_connect_supplier(
         server_name,
         sock_addrs,
         tls_connector,
         consumer_conn_settings,
     )
-    .await?;
+    .await;
+
+    let (socket_addr, mut supplier_conn) = match connect_result {
+        Some(r) => {
+            let now = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0);
+            tracker.notify_replication_connect_success();
+            tracker.update_peer_connected(peer_url, now);
+            r
+        }
+        None => {
+            let now = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0);
+            tracker.notify_replication_connect_failure(now);
+            tracker.update_peer_disconnected(peer_url);
+            return None;
+        }
+    };
 
     let result = repl_run_consumer_inner(
         socket_addr,
@@ -348,6 +402,7 @@ async fn repl_run_consumer(
         automatic_refresh,
         consumer_conn_settings,
         task_tx,
+        tracker,
     )
     .await;
 
@@ -363,6 +418,7 @@ async fn repl_run_consumer_inner(
     automatic_refresh: bool,
     consumer_conn_settings: &ConsumerConnSettings,
     task_tx: &mut broadcast::Sender<ReplConsumerCtrl>,
+    tracker: &ReplicationStateTracker,
 ) -> Option<SocketAddr> {
     // Perform incremental.
     let consumer_ruv_range = {
@@ -445,10 +501,16 @@ async fn repl_run_consumer_inner(
     match consumer_state {
         ConsumerState::Ok => {
             info!("Incremental Replication Success");
+            let now = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0);
+            tracker.notify_replication_incremental_success(now);
             // return to bypass the failure message.
             Some(socket_addr)
         }
         ConsumerState::RefreshRequired => {
+            tracker.notify_replication_refresh_required();
             if automatic_refresh {
                 warn!("Consumer is out of date and must be refreshed. This will happen *now*.");
 
@@ -503,6 +565,7 @@ async fn repl_task(
     mut task_tx: broadcast::Sender<ReplConsumerCtrl>,
     automatic_refresh: bool,
     idms: Arc<IdmServer>,
+    tracker: ReplicationStateTracker,
 ) {
     if origin.scheme() != "repl" {
         error!("Replica origin is not repl:// - refusing to proceed.");
@@ -608,6 +671,13 @@ async fn repl_task(
             continue;
         }
 
+        let peer_url = format!(
+            "{}://{}{}",
+            origin.scheme(),
+            origin.domain().unwrap_or("unknown"),
+            origin.port().map(|p| format!(":{}", p)).unwrap_or_default()
+        );
+
         tokio::select! {
             Ok(task) = task_rx.recv() => {
                 match task {
@@ -619,7 +689,8 @@ async fn repl_task(
                             &sorted_socket_addrs,
                             &tls_connector,
                             &idms,
-                            &consumer_conn_settings
+                            &consumer_conn_settings,
+                            &tracker,
                         )
                         .await).unwrap_or_default();
                     }
@@ -634,7 +705,9 @@ async fn repl_task(
                     automatic_refresh,
                     &idms,
                     &consumer_conn_settings,
-                    &mut task_tx
+                    &mut task_tx,
+                    &tracker,
+                    &peer_url,
                 )
                 .await;
             }
@@ -728,6 +801,7 @@ async fn repl_acceptor(
     repl_config: ReplicationConfiguration,
     mut rx: broadcast::Receiver<CoreAction>,
     mut ctrl_rx: mpsc::Receiver<ReplCtrl>,
+    tracker: ReplicationStateTracker,
 ) {
     info!("Starting Replication Acceptor ...");
     // Persistent parts
@@ -888,6 +962,7 @@ async fn repl_acceptor(
                         task_tx_c,
                         *automatic_refresh,
                         idms.clone(),
+                        tracker.clone(),
                     ));
 
                     task_handles.push_back(handle);

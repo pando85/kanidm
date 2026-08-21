@@ -1062,7 +1062,6 @@ pub fn from_db_valueset_v2(dbvs: DbValueSetV2) -> Result<ValueSet, OperationErro
         DbValueSetV2::TotpSecret(set) => ValueSetTotpSecret::from_dbvs2(set),
         DbValueSetV2::AuditLogString(set) => ValueSetAuditLogString::from_dbvs2(set),
         DbValueSetV2::PhoneNumber(_, _) | DbValueSetV2::TrustedDeviceEnrollment(_) => {
-            debug_assert!(false);
             Err(OperationError::InvalidValueState)
         }
         DbValueSetV2::Image(set) => ValueSetImage::from_dbvs2(&set),

@@ -25,7 +25,10 @@ impl<B> tower_http::trace::MakeSpan<B> for SpanCreator {
 
         // This marks some spans as deferred on "noisy" routes that people often don't want
         // to see.
-        let is_deferred = request.uri() == "/" || request.uri() == "/status";
+        let is_deferred = request.uri() == "/"
+            || request.uri() == "/status"
+            || request.uri() == "/healthz"
+            || request.uri() == "/readyz";
 
         tracing::span!(
             Level::INFO,

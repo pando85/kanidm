@@ -6,6 +6,23 @@ be that physical damage or a mistake. Kubidm supports backup and restore of the 
 It is important that you only attempt to restore data with the same version of the server that the backup originated
 from.
 
+## Backup Integrity Guarantees
+
+When Kubidm reports that an online or manual backup completed successfully, that backup is guaranteed to be
+semantically valid. Before finalizing any backup, the server validates every database entry through the same
+conversion path used during normal database loading (`Entry::from_dbentry`). If any entry is syntactically valid
+(deserializes correctly) but semantically invalid (cannot be loaded by the server), the backup will fail with an
+error identifying the problematic entry.
+
+This means:
+
+- A successful backup can be safely restored by the same supported Kubidm release series
+- Storage integrity (checksums) and semantic integrity (loadable entries) are both verified
+- Corruption or invalid state in the database is detected at backup time, not restore time
+
+If a backup fails due to semantic validation, the database contains entries that cannot be loaded. This requires
+investigation and potentially manual intervention to resolve the underlying data issue.
+
 ## Method 1 - Automatic Backup
 
 Automatic backups can be generated online by a `kubidmd server` instance by including the `[online_backup]` section in
