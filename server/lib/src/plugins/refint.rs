@@ -45,9 +45,7 @@ fn is_attribute_must_for_entry(
         schema
             .get_classes()
             .get(cls_name.as_str())
-            .map_or(false, |cls| {
-                cls.systemmust.contains(attr) || cls.must.contains(attr)
-            })
+            .is_some_and(|cls| cls.systemmust.contains(attr) || cls.must.contains(attr))
     })
 }
 
