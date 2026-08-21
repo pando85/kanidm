@@ -276,7 +276,7 @@ fn test_tracker_complete_lifecycle_with_db_health() {
     use kubidmd_lib::status::ReplicationStateTracker;
 
     let tracker = ReplicationStateTracker::new();
-    
+
     // Initial state: bootstrap
     assert_eq!(tracker.get_server_phase(), "bootstrap");
     assert_eq!(
@@ -331,7 +331,7 @@ fn test_tracker_peer_disconnect_does_not_affect_readiness() {
     let tracker = ReplicationStateTracker::new();
     tracker.mark_startup_complete(true);
     tracker.init_peers_from_config(vec!["repl://peer1.example.com:8443".to_string()]);
-    
+
     assert_eq!(tracker.compute_serving_readiness(), ServingReadiness::Ready);
 
     // Peer connects
@@ -341,7 +341,7 @@ fn test_tracker_peer_disconnect_does_not_affect_readiness() {
     // Peer disconnects - should NOT affect readiness
     tracker.update_peer_disconnected("repl://peer1.example.com:8443");
     assert_eq!(tracker.compute_serving_readiness(), ServingReadiness::Ready);
-    
+
     let peers = tracker.get_peers().expect("peers should be set");
     assert!(!peers[0].connected);
 }

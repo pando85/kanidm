@@ -47,9 +47,7 @@ impl IntervalActor {
                     .await;
 
                 let ct = kubidmd_lib::prelude::duration_from_epoch_now();
-                let health_ok = server
-                    .handle_healthcheck(ct)
-                    .await;
+                let health_ok = server.handle_healthcheck(ct).await;
 
                 if health_ok {
                     tracker.mark_database_healthy();
