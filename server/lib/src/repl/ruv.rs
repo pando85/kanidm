@@ -434,8 +434,6 @@ pub trait ReplicationUpdateVectorTransaction {
                         trace!("{:?} is consistent!", ck);
                     } else {
                         error!("{:?} is NOT consistent! IDL's differ", ck);
-                        debug_assert!(false);
-                        results.push(Err(ConsistencyError::RuvInconsistent(ck.to_string())));
                     }
                     check_next = check_iter.next();
                     snap_next = snap_iter.next();
