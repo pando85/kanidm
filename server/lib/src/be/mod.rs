@@ -977,16 +977,15 @@ pub trait BackendTransaction {
         let mut entries: Vec<DbEntry> = Vec::with_capacity(raw_entries.len());
 
         for id_ent in raw_entries.iter() {
-            let db_entry: DbEntry = serde_json::from_slice(id_ent.data.as_slice())
+            // Validate semantic correctness by attempting conversion through Entry::from_dbentry.
+            // This consumes the deserialized entry, so we deserialize again below for storage.
+            let validation_entry: DbEntry = serde_json::from_slice(id_ent.data.as_slice())
                 .map_err(|_| OperationError::SerdeJsonError)?;
 
-            if Entry::from_dbentry(
-                serde_json::from_slice(id_ent.data.as_slice())
-                    .map_err(|_| OperationError::SerdeJsonError)?,
-                id_ent.id,
-            )
-            .is_none()
-            {
+            if Entry::from_dbentry(validation_entry, id_ent.id).is_none() {
+                // Log the problematic entry for debugging
+                let db_entry: DbEntry = serde_json::from_slice(id_ent.data.as_slice())
+                    .map_err(|_| OperationError::SerdeJsonError)?;
                 admin_error!(
                     id = id_ent.id,
                     entry = %db_entry,
@@ -997,6 +996,9 @@ pub trait BackendTransaction {
                 });
             }
 
+            // Deserialize again for storage (validation consumed the first copy)
+            let db_entry: DbEntry = serde_json::from_slice(id_ent.data.as_slice())
+                .map_err(|_| OperationError::SerdeJsonError)?;
             entries.push(db_entry);
         }
 
