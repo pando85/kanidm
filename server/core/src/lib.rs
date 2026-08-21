@@ -52,7 +52,9 @@ use crypto_glue::{
 use kubidm_proto::backup::BackupCompression;
 use kubidm_proto::internal::OperationError;
 use kubidm_proto::scim_v1::client::ScimAssertGeneric;
-use kubidmd_lib::be::{Backend, BackendConfig, BackendTransaction, BackupVerificationResult};
+use kubidmd_lib::be::{
+    parse_and_validate_backup, Backend, BackendConfig, BackendTransaction, BackupVerificationResult,
+};
 use kubidmd_lib::idm::ldap::LdapServer;
 use kubidmd_lib::prelude::*;
 use kubidmd_lib::schema::Schema;
@@ -487,70 +489,49 @@ pub async fn verify_backup_server_core(
 ) -> bool {
     let compression = BackupCompression::identify_file(backup_path);
 
-    if !full_verification {
-        let schema = match Schema::new() {
-            Ok(s) => s,
-            Err(e) => {
-                error!("Failed to setup in memory schema: {:?}", e);
-                return false;
-            }
-        };
-
-        let be = match setup_backend(config, &schema) {
-            Ok(be) => be,
-            Err(e) => {
-                error!("Failed to setup backend: {:?}", e);
-                return false;
-            }
-        };
-
-        let mut be_ro_txn = match be.read() {
-            Ok(txn) => txn,
-            Err(err) => {
-                error!(?err, "Unable to proceed, backend read transaction failure.");
-                return false;
-            }
-        };
-
-        let input = match std::fs::File::open(backup_path) {
-            Ok(f) => f,
-            Err(err) => {
-                error!(?err, "Failed to open backup file {}", backup_path.display());
-                return false;
-            }
-        };
-
-        match be_ro_txn.verify_backup(input, compression) {
-            Ok(result) => {
-                print_verification_result(&result, false);
-                result.is_fully_valid()
-            }
-            Err(e) => {
-                error!("Structural verification failed: {:?}", e);
-                false
-            }
+    let input = match std::fs::File::open(backup_path) {
+        Ok(f) => f,
+        Err(err) => {
+            error!(?err, "Failed to open backup file {}", backup_path.display());
+            return false;
         }
-    } else {
-        let temp_dir = std::env::temp_dir()
-            .join("kubidmd-verify-backup")
-            .join(std::process::id().to_string());
+    };
 
-        if let Err(err) = std::fs::create_dir_all(&temp_dir) {
+    let structural_result = match parse_and_validate_backup(input, compression) {
+        Ok(result) => result,
+        Err(e) => {
+            error!("Structural verification failed: {:?}", e);
+            return false;
+        }
+    };
+
+    print_verification_result(&structural_result, false);
+
+    if !full_verification {
+        return structural_result.is_fully_valid();
+    }
+
+    if !structural_result.is_fully_valid() {
+        error!("Structural validation failed, skipping full restore verification");
+        return false;
+    }
+
+    let temp_dir = match tempfile::tempdir() {
+        Ok(dir) => dir,
+        Err(err) => {
             error!(?err, "Failed to create temp directory for verification");
             return false;
         }
+    };
 
-        let temp_db_path = temp_dir.join("verify.db");
+    let temp_db_path = temp_dir.path().join("verify.db");
 
-        let mut verify_config = config.clone();
-        verify_config.db_path = Some(temp_db_path);
+    let mut verify_config = config.clone();
+    verify_config.db_path = Some(temp_db_path);
 
-        let result = run_full_verification(&verify_config, backup_path, compression).await;
+    let result = run_full_verification(&verify_config, backup_path, compression).await;
 
-        let _ = std::fs::remove_dir_all(&temp_dir);
-
-        result
-    }
+    result
 }
 
 fn print_verification_result(result: &BackupVerificationResult, is_full: bool) {
@@ -1198,6 +1179,7 @@ pub struct CoreHandle {
     tx: broadcast::Sender<CoreAction>,
     /// This stores a name for the handle, and the handle itself so we can tell which failed/succeeded at the end.
     handles: Vec<(TaskName, task::JoinHandle<()>)>,
+    server_read_ref: Option<&'static QueryServerReadV1>,
 }
 
 impl CoreHandle {
@@ -1226,6 +1208,23 @@ impl CoreHandle {
         if self.tx.send(CoreAction::Reload).is_err() {
             eprintln!("No receivers acked reload request.");
         }
+    }
+
+    pub async fn trigger_online_backup(
+        &self,
+        outpath: &Path,
+        compression: BackupCompression,
+    ) -> Result<(), OperationError> {
+        let server_read = self.server_read_ref.ok_or(OperationError::InvalidState)?;
+        server_read
+            .handle_online_backup(
+                kubidmd_lib::event::OnlineBackupEvent::new(),
+                outpath,
+                999,
+                compression,
+                None,
+            )
+            .await
     }
 }
 
@@ -1415,6 +1414,7 @@ pub async fn create_server_core(
         clean_shutdown: false,
         tx: broadcast_tx,
         handles,
+        server_read_ref: Some(server_read_ref),
     };
 
     if startup_success.is_ok() {
