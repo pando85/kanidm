@@ -199,9 +199,7 @@ impl ReplicationStateTracker {
     pub fn notify_replication_incremental_success(&self, now: u64) {
         self.record_replication_success(now);
         let current = self.get_replication_state();
-        if current == ReplicationState::CatchingUp
-            || current == ReplicationState::Healthy
-        {
+        if current == ReplicationState::CatchingUp || current == ReplicationState::Healthy {
             self.set_replication_state(ReplicationState::Healthy);
         }
     }
@@ -479,7 +477,10 @@ mod tests {
         let tracker = ReplicationStateTracker::new();
 
         tracker.set_replication_state(ReplicationState::CatchingUp);
-        assert_eq!(tracker.get_replication_state(), ReplicationState::CatchingUp);
+        assert_eq!(
+            tracker.get_replication_state(),
+            ReplicationState::CatchingUp
+        );
 
         tracker.set_database_health(DatabaseHealth::Unhealthy);
         assert_eq!(tracker.get_database_health(), DatabaseHealth::Unhealthy);
@@ -504,10 +505,7 @@ mod tests {
         tracker.set_replication_state(ReplicationState::Healthy);
         tracker.set_database_health(DatabaseHealth::Healthy);
 
-        assert_eq!(
-            tracker.compute_serving_readiness(),
-            ServingReadiness::Ready
-        );
+        assert_eq!(tracker.compute_serving_readiness(), ServingReadiness::Ready);
     }
 
     #[test]
@@ -556,10 +554,7 @@ mod tests {
         tracker.set_replication_state(ReplicationState::CatchingUp);
         tracker.set_database_health(DatabaseHealth::Healthy);
 
-        assert_eq!(
-            tracker.compute_serving_readiness(),
-            ServingReadiness::Ready
-        );
+        assert_eq!(tracker.compute_serving_readiness(), ServingReadiness::Ready);
     }
 
     #[test]

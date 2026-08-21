@@ -1337,9 +1337,13 @@ async fn launch_server_tasks(
         let maybe_repl_ctrl_tx = match &config.repl_config {
             Some(rc) => {
                 // ⚠️  only start the sockets and listeners in non-config-test modes.
-                let repl_server_handles =
-                    repl::create_repl_server(idms_arc.clone(), rc, broadcast_tx.subscribe(), tracker.clone())
-                        .await?;
+                let repl_server_handles = repl::create_repl_server(
+                    idms_arc.clone(),
+                    rc,
+                    broadcast_tx.subscribe(),
+                    tracker.clone(),
+                )
+                .await?;
 
                 let ReplicationServerHandles {
                     repl_handle,

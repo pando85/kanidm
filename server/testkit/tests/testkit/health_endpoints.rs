@@ -71,7 +71,8 @@ fn test_replication_state_serialization() {
     let json = serde_json::to_string(&state).expect("Failed to serialize");
     assert_eq!(json, "\"healthy\"");
 
-    let state: ReplicationState = serde_json::from_str("\"catching_up\"").expect("Failed to deserialize");
+    let state: ReplicationState =
+        serde_json::from_str("\"catching_up\"").expect("Failed to deserialize");
     assert_eq!(state, ReplicationState::CatchingUp);
 }
 
@@ -81,7 +82,8 @@ fn test_serving_readiness_serialization() {
     let json = serde_json::to_string(&readiness).expect("Failed to serialize");
     assert_eq!(json, "\"ready\"");
 
-    let readiness: ServingReadiness = serde_json::from_str("\"not_ready\"").expect("Failed to deserialize");
+    let readiness: ServingReadiness =
+        serde_json::from_str("\"not_ready\"").expect("Failed to deserialize");
     assert_eq!(readiness, ServingReadiness::NotReady);
 }
 
@@ -91,7 +93,8 @@ fn test_database_health_serialization() {
     let json = serde_json::to_string(&health).expect("Failed to serialize");
     assert_eq!(json, "\"healthy\"");
 
-    let health: DatabaseHealth = serde_json::from_str("\"unhealthy\"").expect("Failed to deserialize");
+    let health: DatabaseHealth =
+        serde_json::from_str("\"unhealthy\"").expect("Failed to deserialize");
     assert_eq!(health, DatabaseHealth::Unhealthy);
 }
 
@@ -108,10 +111,7 @@ fn test_tracker_lifecycle_transitions() {
     assert_eq!(tracker.get_server_phase(), "running");
     assert_eq!(tracker.get_database_health(), DatabaseHealth::Healthy);
     assert_eq!(tracker.get_replication_state(), ReplicationState::Healthy);
-    assert_eq!(
-        tracker.compute_serving_readiness(),
-        ServingReadiness::Ready
-    );
+    assert_eq!(tracker.compute_serving_readiness(), ServingReadiness::Ready);
 }
 
 #[test]
@@ -120,10 +120,7 @@ fn test_tracker_database_failure_makes_not_ready() {
 
     let tracker = ReplicationStateTracker::new();
     tracker.mark_startup_complete(false);
-    assert_eq!(
-        tracker.compute_serving_readiness(),
-        ServingReadiness::Ready
-    );
+    assert_eq!(tracker.compute_serving_readiness(), ServingReadiness::Ready);
 
     tracker.mark_database_failure();
     assert_eq!(tracker.get_database_health(), DatabaseHealth::Unhealthy);
@@ -151,25 +148,25 @@ fn test_tracker_replication_refresh_cycle() {
     );
 
     tracker.notify_replication_refresh_started();
-    assert_eq!(tracker.get_replication_state(), ReplicationState::Refreshing);
+    assert_eq!(
+        tracker.get_replication_state(),
+        ReplicationState::Refreshing
+    );
     assert_eq!(
         tracker.compute_serving_readiness(),
         ServingReadiness::NotReady
     );
 
     tracker.notify_replication_refresh_success();
-    assert_eq!(tracker.get_replication_state(), ReplicationState::CatchingUp);
     assert_eq!(
-        tracker.compute_serving_readiness(),
-        ServingReadiness::Ready
+        tracker.get_replication_state(),
+        ReplicationState::CatchingUp
     );
+    assert_eq!(tracker.compute_serving_readiness(), ServingReadiness::Ready);
 
     tracker.notify_replication_incremental_success(12345);
     assert_eq!(tracker.get_replication_state(), ReplicationState::Healthy);
-    assert_eq!(
-        tracker.compute_serving_readiness(),
-        ServingReadiness::Ready
-    );
+    assert_eq!(tracker.compute_serving_readiness(), ServingReadiness::Ready);
 }
 
 #[test]
@@ -181,7 +178,10 @@ fn test_tracker_refresh_failure_returns_to_refresh_required() {
 
     tracker.notify_replication_refresh_required();
     tracker.notify_replication_refresh_started();
-    assert_eq!(tracker.get_replication_state(), ReplicationState::Refreshing);
+    assert_eq!(
+        tracker.get_replication_state(),
+        ReplicationState::Refreshing
+    );
 
     tracker.notify_replication_refresh_failed();
     assert_eq!(
@@ -227,16 +227,10 @@ fn test_tracker_connect_failure_does_not_affect_readiness() {
 
     let tracker = ReplicationStateTracker::new();
     tracker.mark_startup_complete(true);
-    assert_eq!(
-        tracker.compute_serving_readiness(),
-        ServingReadiness::Ready
-    );
+    assert_eq!(tracker.compute_serving_readiness(), ServingReadiness::Ready);
 
     tracker.notify_replication_connect_failure(12345);
-    assert_eq!(
-        tracker.compute_serving_readiness(),
-        ServingReadiness::Ready
-    );
+    assert_eq!(tracker.compute_serving_readiness(), ServingReadiness::Ready);
     assert!(tracker.get_last_replication_failure().is_some());
 }
 
@@ -248,11 +242,11 @@ fn test_tracker_degraded_recovery_on_connect() {
     tracker.mark_startup_complete(true);
 
     tracker.set_replication_state(ReplicationState::Degraded);
-    assert_eq!(
-        tracker.compute_serving_readiness(),
-        ServingReadiness::Ready
-    );
+    assert_eq!(tracker.compute_serving_readiness(), ServingReadiness::Ready);
 
     tracker.notify_replication_connect_success();
-    assert_eq!(tracker.get_replication_state(), ReplicationState::CatchingUp);
+    assert_eq!(
+        tracker.get_replication_state(),
+        ReplicationState::CatchingUp
+    );
 }
