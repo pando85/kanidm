@@ -250,3 +250,98 @@ fn test_tracker_degraded_recovery_on_connect() {
         ReplicationState::CatchingUp
     );
 }
+
+#[test]
+fn test_tracker_database_health_recovery() {
+    use kubidmd_lib::status::ReplicationStateTracker;
+
+    let tracker = ReplicationStateTracker::new();
+    tracker.mark_startup_complete(false);
+    assert_eq!(tracker.compute_serving_readiness(), ServingReadiness::Ready);
+
+    tracker.mark_database_failure();
+    assert_eq!(tracker.get_database_health(), DatabaseHealth::Unhealthy);
+    assert_eq!(
+        tracker.compute_serving_readiness(),
+        ServingReadiness::NotReady
+    );
+
+    tracker.mark_database_healthy();
+    assert_eq!(tracker.get_database_health(), DatabaseHealth::Healthy);
+    assert_eq!(tracker.compute_serving_readiness(), ServingReadiness::Ready);
+}
+
+#[test]
+fn test_tracker_complete_lifecycle_with_db_health() {
+    use kubidmd_lib::status::ReplicationStateTracker;
+
+    let tracker = ReplicationStateTracker::new();
+    
+    // Initial state: bootstrap
+    assert_eq!(tracker.get_server_phase(), "bootstrap");
+    assert_eq!(
+        tracker.compute_serving_readiness(),
+        ServingReadiness::NotReady
+    );
+
+    // Startup complete
+    tracker.mark_startup_complete(true);
+    assert_eq!(tracker.get_server_phase(), "running");
+    assert_eq!(tracker.compute_serving_readiness(), ServingReadiness::Ready);
+
+    // DB failure
+    tracker.mark_database_failure();
+    assert_eq!(
+        tracker.compute_serving_readiness(),
+        ServingReadiness::NotReady
+    );
+
+    // DB recovery
+    tracker.mark_database_healthy();
+    assert_eq!(tracker.compute_serving_readiness(), ServingReadiness::Ready);
+
+    // Replication refresh required
+    tracker.notify_replication_refresh_required();
+    assert_eq!(
+        tracker.compute_serving_readiness(),
+        ServingReadiness::NotReady
+    );
+
+    // Refresh starts
+    tracker.notify_replication_refresh_started();
+    assert_eq!(
+        tracker.compute_serving_readiness(),
+        ServingReadiness::NotReady
+    );
+
+    // Refresh succeeds
+    tracker.notify_replication_refresh_success();
+    assert_eq!(tracker.compute_serving_readiness(), ServingReadiness::Ready);
+
+    // Incremental replication succeeds
+    tracker.notify_replication_incremental_success(12345);
+    assert_eq!(tracker.get_replication_state(), ReplicationState::Healthy);
+    assert_eq!(tracker.compute_serving_readiness(), ServingReadiness::Ready);
+}
+
+#[test]
+fn test_tracker_peer_disconnect_does_not_affect_readiness() {
+    use kubidmd_lib::status::ReplicationStateTracker;
+
+    let tracker = ReplicationStateTracker::new();
+    tracker.mark_startup_complete(true);
+    tracker.init_peers_from_config(vec!["repl://peer1.example.com:8443".to_string()]);
+    
+    assert_eq!(tracker.compute_serving_readiness(), ServingReadiness::Ready);
+
+    // Peer connects
+    tracker.update_peer_connected("repl://peer1.example.com:8443", 12345);
+    assert_eq!(tracker.compute_serving_readiness(), ServingReadiness::Ready);
+
+    // Peer disconnects - should NOT affect readiness
+    tracker.update_peer_disconnected("repl://peer1.example.com:8443");
+    assert_eq!(tracker.compute_serving_readiness(), ServingReadiness::Ready);
+    
+    let peers = tracker.get_peers().expect("peers should be set");
+    assert!(!peers[0].connected);
+}
