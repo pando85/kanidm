@@ -4,6 +4,7 @@ mod backup_verify_test;
 mod delegation;
 mod domain;
 mod group;
+mod health_endpoints;
 mod http_manifest;
 mod https_middleware;
 mod identity_verification_tests;

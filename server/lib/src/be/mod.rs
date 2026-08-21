@@ -1058,15 +1058,33 @@ pub trait BackendTransaction {
         let idlayer = self.get_idlayer();
         let raw_entries: Vec<IdRawEntry> = idlayer.get_identry_raw(&idl)?;
 
-        let entries: Result<Vec<DbEntry>, _> = raw_entries
-            .iter()
-            .map(|id_ent| {
-                serde_json::from_slice(id_ent.data.as_slice())
-                    .map_err(|_| OperationError::SerdeJsonError) // log?
-            })
-            .collect();
+        let mut entries: Vec<DbEntry> = Vec::with_capacity(raw_entries.len());
 
-        let entries = entries?;
+        for id_ent in raw_entries.iter() {
+            // Validate semantic correctness by attempting conversion through Entry::from_dbentry.
+            // This consumes the deserialized entry, so we deserialize again below for storage.
+            let validation_entry: DbEntry = serde_json::from_slice(id_ent.data.as_slice())
+                .map_err(|_| OperationError::SerdeJsonError)?;
+
+            if Entry::from_dbentry(validation_entry, id_ent.id).is_none() {
+                // Log the problematic entry for debugging
+                let db_entry: DbEntry = serde_json::from_slice(id_ent.data.as_slice())
+                    .map_err(|_| OperationError::SerdeJsonError)?;
+                admin_error!(
+                    id = id_ent.id,
+                    entry = %db_entry,
+                    "Backup semantic validation failed: entry deserialized but Entry::from_dbentry rejected it"
+                );
+                return Err(OperationError::DB0005BackupEntrySemanticInvalid {
+                    entry_id: id_ent.id,
+                });
+            }
+
+            // Deserialize again for storage (validation consumed the first copy)
+            let db_entry: DbEntry = serde_json::from_slice(id_ent.data.as_slice())
+                .map_err(|_| OperationError::SerdeJsonError)?;
+            entries.push(db_entry);
+        }
 
         let db_s_uuid = idlayer
             .get_db_s_uuid()
@@ -2373,9 +2391,12 @@ mod tests {
     use super::super::entry::{Entry, EntryInit, EntryNew};
     use super::Limits;
     use super::{
-        Backend, BackendConfig, BackendTransaction, BackendWriteTransaction, DbBackup, IdList,
-        IdxKey, OperationError,
+        Backend, BackendConfig, BackendTransaction, BackendWriteTransaction, DbBackup, DbEntry,
+        IdList, IdxKey, OperationError,
     };
+    use crate::be::dbentry::DbEntryVers;
+    use crate::be::dbrepl::DbEntryChangeState;
+    use crate::be::dbvalue::{DbCidV1, DbValueSetV2};
     use crate::prelude::*;
     use crate::repl::cid::Cid;
     use crate::value::{IndexType, PartialValue, Value};
@@ -2890,6 +2911,83 @@ mod tests {
                 .expect("Restore failed!");
 
             assert!(be.verify().is_empty());
+        });
+    }
+
+    #[test]
+    fn test_be_backup_semantic_validation_rejects_invalid_entry() {
+        run_test!(|be: &mut BackendWriteTransaction| {
+            be.reset_db_s_uuid().unwrap();
+            be.reset_db_d_uuid().unwrap();
+            be.set_db_ts_max(Duration::from_secs(1)).unwrap();
+
+            let mut e1: Entry<EntryInit, EntryNew> = Entry::new();
+            e1.add_ava(Attribute::UserId, Value::from("william"));
+            e1.add_ava(
+                Attribute::Uuid,
+                Value::from("db237e8a-0079-4b8c-8a56-593b22aa44d1"),
+            );
+
+            let ve1 = e1.clone().into_sealed_new();
+            assert!(be.create(&CID_ZERO, vec![ve1]).is_ok());
+
+            let mut buf = std::io::Cursor::new(Vec::new());
+            be.backup(&mut buf, BackupCompression::NoCompression)
+                .expect("Initial backup failed!");
+
+            buf.set_position(0);
+            let mut dbbak: DbBackup = serde_json::from_reader(&mut buf).unwrap();
+
+            let sid = Uuid::new_v4();
+            let mut bad_attrs = std::collections::BTreeMap::new();
+            bad_attrs.insert(Attribute::Uuid, DbValueSetV2::Uuid(vec![Uuid::new_v4()]));
+            bad_attrs.insert(
+                Attribute::Description,
+                DbValueSetV2::PhoneNumber(
+                    "+1234567890".to_string(),
+                    vec!["+1234567890".to_string()],
+                ),
+            );
+
+            let bad_entry = DbEntry {
+                ent: DbEntryVers::V3 {
+                    changestate: DbEntryChangeState::V1Live {
+                        at: DbCidV1 {
+                            timestamp: Duration::from_secs(0),
+                            server_id: sid,
+                        },
+                        changes: std::collections::BTreeMap::new(),
+                    },
+                    attrs: bad_attrs,
+                },
+            };
+
+            match &mut dbbak {
+                DbBackup::V5 { entries, .. } => {
+                    entries.push(bad_entry);
+                }
+                _ => unreachable!(),
+            };
+
+            buf.get_mut().clear();
+            buf.set_position(0);
+            serde_json::to_writer(&mut buf, &dbbak).unwrap();
+            buf.set_position(0);
+
+            be.restore(&mut buf, BackupCompression::NoCompression)
+                .expect("Restore failed!");
+
+            let mut backup_buf = std::io::Cursor::new(Vec::new());
+            let result = be.backup(&mut backup_buf, BackupCompression::NoCompression);
+
+            assert!(
+                matches!(
+                    result,
+                    Err(OperationError::DB0005BackupEntrySemanticInvalid { .. })
+                ),
+                "Expected DB0005BackupEntrySemanticInvalid, got: {:?}",
+                result
+            );
         });
     }
 

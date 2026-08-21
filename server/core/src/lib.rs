@@ -1442,9 +1442,8 @@ async fn launch_server_tasks(
 
     maybe_tls_acceptor: Option<TlsAcceptor>,
 ) -> Result<(), ()> {
-    // Similar, create a stats task which aggregates statistics from the
-    // server as they come in.
     let status_ref = StatusActor::start();
+    let tracker = status_ref.get_tracker_clone();
 
     // Delayed actions
     let mut broadcast_rx = broadcast_tx.subscribe();
@@ -1513,6 +1512,10 @@ async fn launch_server_tasks(
     if config.integration_test_config.is_none() {
         let eventid = Uuid::new_v4();
         migration_apply(eventid, server_write_ref, migration_path.as_path()).await;
+
+        let replication_configured = config.repl_config.is_some();
+        tracker.mark_startup_complete(replication_configured);
+
         // Skip all these handles in integration test mode.
 
         // Setup the Migration Reload Trigger.
@@ -1552,9 +1555,13 @@ async fn launch_server_tasks(
         let maybe_repl_ctrl_tx = match &config.repl_config {
             Some(rc) => {
                 // ⚠️  only start the sockets and listeners in non-config-test modes.
-                let repl_server_handles =
-                    repl::create_repl_server(idms_arc.clone(), rc, broadcast_tx.subscribe())
-                        .await?;
+                let repl_server_handles = repl::create_repl_server(
+                    idms_arc.clone(),
+                    rc,
+                    broadcast_tx.subscribe(),
+                    tracker.clone(),
+                )
+                .await?;
 
                 let ReplicationServerHandles {
                     repl_handle,
@@ -1583,6 +1590,9 @@ async fn launch_server_tasks(
         .await?;
 
         handles.push((TaskName::AdminSocket, admin_handle));
+    } else {
+        let replication_configured = config.repl_config.is_some();
+        tracker.mark_startup_complete(replication_configured);
     }
 
     // Setup a TLS Acceptor Reload trigger.

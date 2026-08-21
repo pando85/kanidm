@@ -399,11 +399,11 @@ async fn scripting_command(cmd: ScriptingCommand, config: Configuration) -> Exit
             check_origin,
         } => {
             let healthcheck_url = match check_origin {
-                true => format!("{}/status", config.origin),
+                true => format!("{}/healthz", config.origin),
                 false => {
                     // the replace covers when you specify an ipv6-capable "all" address
                     format!(
-                        "https://{}/status",
+                        "https://{}/healthz",
                         config.address[0].replace("[::]", "localhost")
                     )
                 }
