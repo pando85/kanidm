@@ -7,13 +7,14 @@
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 /// Replication state machine for a Kubidm replica.
 ///
 /// This represents the health of replication from the perspective of this node,
 /// independent of whether it can serve traffic (see `ServingReadiness`).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ReplicationState {
     /// Replication is healthy and up-to-date (or within acceptable lag window).
@@ -56,7 +57,7 @@ impl std::fmt::Display for ReplicationState {
 /// Readiness state for serving traffic, independent of raw replication state.
 ///
 /// This is what Kubernetes readiness probes should check.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ServingReadiness {
     /// Ready to serve traffic.
@@ -81,7 +82,7 @@ impl std::fmt::Display for ServingReadiness {
 }
 
 /// Information about a replication peer.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct PeerInfo {
     /// URL of the peer.
     pub url: String,
@@ -94,7 +95,7 @@ pub struct PeerInfo {
 }
 
 /// Local database health status.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum DatabaseHealth {
     /// Database is healthy and consistent.
@@ -104,7 +105,7 @@ pub enum DatabaseHealth {
 }
 
 /// Comprehensive status response for the readiness endpoint.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct ReadinessStatus {
     /// Overall serving readiness (what Kubernetes should check).
     pub serving_ready: ServingReadiness,
@@ -121,7 +122,7 @@ pub struct ReadinessStatus {
 }
 
 /// Simple liveness response (process is alive).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct LivenessStatus {
     /// Always true if the endpoint responds.
     pub alive: bool,
