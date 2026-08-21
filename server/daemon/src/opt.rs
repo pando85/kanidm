@@ -16,18 +16,13 @@ struct RestoreOpt {
     path: PathBuf,
 }
 
-#[derive(Debug, Clone, Copy, clap::ValueEnum)]
+#[derive(Debug, Default, Clone, Copy, clap::ValueEnum)]
 enum VerifyBackupLevel {
     /// Validate backup format, structure, and version compatibility
     Structural,
     /// Full restore into a temporary backend with semantic consistency checks
+    #[default]
     Full,
-}
-
-impl Default for VerifyBackupLevel {
-    fn default() -> Self {
-        Self::Full
-    }
 }
 
 #[derive(Debug, Args)]
