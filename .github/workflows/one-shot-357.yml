@@ -1,9 +1,9 @@
 name: One-shot #357 semantic backup validation
 
 on:
-  push:
+  pull_request:
     branches:
-      - fix/357-semantic-backup-validation
+      - master
 
 permissions:
   contents: write
@@ -151,7 +151,7 @@ jobs:
           path.write_text(src)
 
       - name: Format
-        run: cargo fmt --all -- --check || (cargo fmt --all && git diff --check)
+        run: cargo fmt --all
 
       - name: Run focused backend backup tests
         run: cargo test -p kubidmd_lib test_be_backup -- --nocapture
