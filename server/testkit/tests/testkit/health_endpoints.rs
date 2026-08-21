@@ -3,7 +3,7 @@
 use kubidmd_lib::status::{DatabaseHealth, ReplicationState, ServingReadiness};
 
 #[kubidmd_testkit::test]
-async fn test_healthz_endpoint() {
+async fn test_healthz_endpoint(_rsclient: &kubidm_client::KubidmClient) {
     let rsclient = reqwest::Client::builder()
         .danger_accept_invalid_certs(true)
         .build()
@@ -22,7 +22,7 @@ async fn test_healthz_endpoint() {
 }
 
 #[kubidmd_testkit::test]
-async fn test_readyz_endpoint_after_startup() {
+async fn test_readyz_endpoint_after_startup(_rsclient: &kubidm_client::KubidmClient) {
     let rsclient = reqwest::Client::builder()
         .danger_accept_invalid_certs(true)
         .build()
@@ -47,7 +47,7 @@ async fn test_readyz_endpoint_after_startup() {
 }
 
 #[kubidmd_testkit::test]
-async fn test_status_endpoint_legacy() {
+async fn test_status_endpoint_legacy(_rsclient: &kubidm_client::KubidmClient) {
     let rsclient = reqwest::Client::builder()
         .danger_accept_invalid_certs(true)
         .build()
