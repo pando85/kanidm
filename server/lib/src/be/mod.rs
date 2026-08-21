@@ -1130,7 +1130,10 @@ impl BackendReadTransaction<'_> {
         };
 
         let dbbak = dbbak_option.map_err(|err| {
-            error!(?err, "Backup structural validation failed: JSON deserialization error");
+            error!(
+                ?err,
+                "Backup structural validation failed: JSON deserialization error"
+            );
             OperationError::SerdeJsonError
         })?;
 

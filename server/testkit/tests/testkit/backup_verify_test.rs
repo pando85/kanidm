@@ -163,10 +163,7 @@ async fn populate_test_data(rsclient: &KubidmClient) {
         .expect("Failed to delete recycle test group");
 }
 
-async fn create_backup_from_server(
-    db_path: &std::path::Path,
-    backup_path: &std::path::Path,
-) {
+async fn create_backup_from_server(db_path: &std::path::Path, backup_path: &std::path::Path) {
     let schema = kubidmd_lib::schema::Schema::new().expect("Failed to create schema");
     let schema_txn = schema.write();
     let idxmeta = schema_txn.reload_idxmeta();
