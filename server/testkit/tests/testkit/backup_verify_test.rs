@@ -204,7 +204,7 @@ fn test_backup_verify_structural_valid() {
         let backup_dir = temp_dir.path().join("backups");
         std::fs::create_dir(&backup_dir).expect("Failed to create backup dir");
 
-        let (rsclient, core_handle, _addr) = setup_test_server(Some(db_path.clone())).await;
+        let (rsclient, mut core_handle, _addr) = setup_test_server(Some(db_path.clone())).await;
 
         populate_test_data(&rsclient).await;
 
@@ -243,7 +243,7 @@ fn test_backup_verify_full_restore() {
         let backup_dir = temp_dir.path().join("backups");
         std::fs::create_dir(&backup_dir).expect("Failed to create backup dir");
 
-        let (rsclient, core_handle, _addr) = setup_test_server(Some(db_path.clone())).await;
+        let (rsclient, mut core_handle, _addr) = setup_test_server(Some(db_path.clone())).await;
 
         populate_test_data(&rsclient).await;
 
@@ -303,7 +303,7 @@ fn test_backup_verify_restored_server_is_functional() {
         let backup_dir = temp_dir.path().join("backups");
         std::fs::create_dir(&backup_dir).expect("Failed to create backup dir");
 
-        let (rsclient, core_handle, _addr) = setup_test_server(Some(db_path.clone())).await;
+        let (rsclient, mut core_handle, _addr) = setup_test_server(Some(db_path.clone())).await;
 
         populate_test_data(&rsclient).await;
 
@@ -333,7 +333,7 @@ fn test_backup_verify_restored_server_is_functional() {
 
         assert!(restore_db_path.exists(), "Restored database should exist");
 
-        let (restored_client, restored_handle, _restored_addr) =
+        let (restored_client, mut restored_handle, _restored_addr) =
             setup_test_server(Some(restore_db_path.clone())).await;
 
         login_put_admin_idm_admins(&restored_client).await;
