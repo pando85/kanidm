@@ -162,17 +162,15 @@ async fn populate_test_data(rsclient: &KubidmClient) {
 }
 
 async fn create_backup_from_server(
-    rsclient: &KubidmClient,
+    db_path: &std::path::Path,
     backup_path: &std::path::Path,
 ) {
-    let _ = rsclient;
-
     let schema = kubidmd_lib::schema::Schema::new().expect("Failed to create schema");
     let schema_txn = schema.write();
     let idxmeta = schema_txn.reload_idxmeta();
 
     let cfg = kubidmd_lib::be::BackendConfig::new(
-        None,
+        Some(db_path),
         1,
         kubidm_proto::internal::FsType::Generic,
         None,
@@ -207,7 +205,7 @@ fn test_backup_verify_structural_valid() {
 
         populate_test_data(&rsclient).await;
 
-        create_backup_from_server(&rsclient, &backup_path).await;
+        create_backup_from_server(&db_path, &backup_path).await;
 
         assert!(backup_path.exists(), "Backup file should exist");
         assert!(
@@ -245,7 +243,7 @@ fn test_backup_verify_full_restore() {
 
         populate_test_data(&rsclient).await;
 
-        create_backup_from_server(&rsclient, &backup_path).await;
+        create_backup_from_server(&db_path, &backup_path).await;
 
         core_handle.shutdown().await;
 
@@ -310,39 +308,47 @@ fn test_backup_verify_restored_server_is_functional() {
 
         populate_test_data(&rsclient).await;
 
-        create_backup_from_server(&rsclient, &backup_path).await;
+        create_backup_from_server(&db_path, &backup_path).await;
 
         core_handle.shutdown().await;
 
         let restore_dir = tempfile::tempdir().expect("Failed to create restore temp dir");
         let restore_db_path = restore_dir.path().join("restored.db");
 
-        std::fs::copy(&backup_path, restore_dir.path().join("to_restore.json"))
-            .expect("Failed to copy backup");
+        let mut verify_config = Configuration::new_for_test();
+        verify_config.db_path = Some(restore_db_path.clone());
+
+        let result = verify_backup_server_core(&verify_config, &backup_path, true).await;
+        assert!(result, "Full restore verification should pass");
 
         let (restored_client, restored_handle, _restored_addr) =
             setup_test_server(Some(restore_db_path.clone())).await;
 
-        let restore_result = {
-            let schema = kubidmd_lib::schema::Schema::new().expect("schema");
-            let schema_txn = schema.write();
-            let idxmeta = schema_txn.reload_idxmeta();
-            let cfg = kubidmd_lib::be::BackendConfig::new(
-                Some(restore_db_path.as_path()),
-                1,
-                kubidm_proto::internal::FsType::Generic,
-                None,
-            );
-            let be = kubidmd_lib::be::Backend::new(cfg, idxmeta, false)
-                .expect("backend");
-            let mut be_wr = be.write().expect("write txn");
-            let input = std::fs::File::open(restore_dir.path().join("to_restore.json"))
-                .expect("open backup");
-            be_wr
-                .restore(input, BackupCompression::NoCompression)
-                .and_then(|_| be_wr.commit())
-        };
-        assert!(restore_result.is_ok(), "Restore should succeed");
+        login_put_admin_idm_admins(&restored_client).await;
+
+        let user = restored_client
+            .idm_person_account_get(NOT_ADMIN_TEST_USERNAME)
+            .await
+            .expect("Failed to get restored user");
+        assert!(user.is_some(), "Restored user should exist");
+
+        let group = restored_client
+            .idm_group_get("backup_test_group")
+            .await
+            .expect("Failed to get restored group");
+        assert!(group.is_some(), "Restored group should exist");
+
+        let engineers = restored_client
+            .idm_group_get("backup_engineers")
+            .await
+            .expect("Failed to get restored engineers group");
+        assert!(engineers.is_some(), "Restored engineers group should exist");
+
+        let oauth2 = restored_client
+            .idm_oauth2_rs_get(TEST_INTEGRATION_RS_ID)
+            .await
+            .expect("Failed to get restored oauth2 config");
+        assert!(oauth2.is_some(), "Restored OAuth2 config should exist");
 
         restored_handle.shutdown().await;
     });
