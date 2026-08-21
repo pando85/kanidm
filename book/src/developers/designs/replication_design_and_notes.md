@@ -191,11 +191,14 @@ replication, different modes handle missing references differently based on the 
 
 ### Reference Classification
 
-References are classified into two categories:
+References are classified into categories that determine how they are handled during replication:
 
-- **Derived references**: Attributes that are automatically rebuilt by the server. These include `DynMember` (dynamic
-  group membership) and `MemberOf` (reverse group membership). These references are recalculated from other data and
-  can be safely discarded if their target is missing.
+- **Always-derived references**: Attributes that are unconditionally rebuilt by the server. `MemberOf` (reverse group
+  membership) is always regenerated from `Member` attributes and can be safely discarded if their target is missing.
+
+- **Conditionally-derived references**: Attributes that are rebuilt only for specific entry classes. `DynMember`
+  (dynamic group membership) is regenerated only for entries with the `DynGroup` class. For other entry classes,
+  `DynMember` is treated as an authoritative reference.
 
 - **Authoritative references**: All other reference attributes that represent intentional, user-supplied links between
   entries. These include `Member` (group membership), `EntryManagedBy`, OAuth2 scope maps, etc.
@@ -205,27 +208,32 @@ References are classified into two categories:
 **Normal local writes (create/modify)**:
 - Missing authoritative references cause the operation to be rejected with a detailed error identifying the source
   entry UUID, entry name (if available), the attribute containing the dangling reference, and the missing target UUID.
-- Derived references are ignored during validation since they are rebuilt by subsequent plugin passes.
+- Derived references (always-derived and conditionally-derived for the entry's class) are ignored during validation
+  since they are rebuilt by subsequent plugin passes.
 
 **Incremental replication**:
-- Missing references (both derived and authoritative) are silently removed from the affected entries. This allows
-  the database to self-heal as nodes converge. The removal is logged at debug level.
+- Missing authoritative references are silently removed from the affected entries. This allows the database to
+  self-heal as nodes converge. The removal is logged at debug level.
+- Derived references are skipped during validation since they are rebuilt by subsequent plugin passes.
 - Conflict entries (entries that could not be merged) have their references cleaned up to prevent group membership
   from leaking to unintended recipients.
 - Entries that transition from live to recycled/tombstoned state have their references cleaned up.
 
 **Full replication refresh**:
-- All missing references (including derived) are detected and removed from the refreshed entries. This ensures
-  the consumer starts with a clean, consistent database state.
-- Derived references with dangling targets are removed and will be rebuilt by subsequent plugin passes.
-- This self-healing behavior ensures that a refresh never fails due to missing reference targets, unlike normal
-  local writes which reject the operation.
+- Missing references are detected and classified by schema constraints:
+  - **Optional (MAY) references**: Silently removed from the affected entries. The entry remains schema-valid after
+    removal. A warning is logged identifying the source entry UUID, entry name, attribute, and missing target UUID.
+  - **Required (MUST) references**: The refresh is rejected with a precise error identifying the source entry UUID,
+    entry name, attribute, and missing target UUID. This prevents silently breaking security-critical or
+    identity-critical references (e.g., access control target groups).
+- Derived references are skipped during validation since they are rebuilt by subsequent plugin passes.
 
 ### Database Verification
 
 The `verify` operation checks database consistency and reports refint violations. It skips derived references
-(`DynMember`, `MemberOf`) since these are expected to be temporarily inconsistent and are rebuilt by plugin passes.
-Only authoritative references with missing targets are reported as `RefintNotUpheld` errors.
+(`MemberOf` always; `DynMember` only for `DynGroup` entries) since these are expected to be temporarily inconsistent
+and are rebuilt by plugin passes. Only authoritative references with missing targets are reported as `RefintNotUpheld`
+errors.
 
 Verification errors include structured diagnostics: the internal entry ID, the entry's UUID, the entry's name
 (if available), the attribute containing the dangling reference, and the missing target UUID. This enables
