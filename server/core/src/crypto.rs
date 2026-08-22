@@ -311,9 +311,9 @@ impl BuilderProfile for RootProfile {
 struct LeafProfile {
     issuer: Name,
     subject: Name,
-    enable_key_agreement: bool,
-    enable_key_encipherment: bool,
-    include_subject_key_identifier: bool,
+    _enable_key_agreement: bool,
+    _enable_key_encipherment: bool,
+    _include_subject_key_identifier: bool,
 }
 
 impl BuilderProfile for LeafProfile {
@@ -504,9 +504,9 @@ pub(crate) fn build_cert(domain_name: &str, ca_handle: &CaHandle) -> Result<Cert
     let profile = LeafProfile {
         issuer: ca_handle.cert.tbs_certificate().subject().clone(),
         subject: root_subject,
-        enable_key_agreement: true,
-        enable_key_encipherment: true,
-        include_subject_key_identifier: true,
+        _enable_key_agreement: true,
+        _enable_key_encipherment: true,
+        _include_subject_key_identifier: true,
     };
 
     let private_key = crypto_glue::ecdsa_p256::new_key();
@@ -538,10 +538,7 @@ pub(crate) fn build_cert(domain_name: &str, ca_handle: &CaHandle) -> Result<Cert
     })?;
 
     let cert = builder
-        .build_with_rng::<_, EcdsaP384DerSignature, _>(
-            &ca_handle.key,
-            &mut rng,
-        )
+        .build_with_rng::<_, EcdsaP384DerSignature, _>(&ca_handle.key, &mut rng)
         .map_err(|err| {
             error!(?err, "Unable to sign certificate request");
         })?;
