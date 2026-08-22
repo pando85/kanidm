@@ -261,7 +261,10 @@ impl KeyObjectInternalJweA128GCM {
         let valid_from = valid_from.as_secs();
 
         let key = aes128::new_key();
-        let key_bytes: [u8; 16] = key.as_slice().try_into().unwrap();
+        let key_bytes: [u8; 16] = key
+            .as_slice()
+            .try_into()
+            .expect("aes128 key is always 16 bytes");
         let key_v1 = crypto_glue_v1::aes128::key_from_bytes(key_bytes);
 
         let mut cipher = JweA128KWEncipher::from(key_v1);
@@ -351,7 +354,10 @@ impl KeyObjectInternalJweA128GCM {
                     error!(?id, "Unable to load A128GCM retained cipher");
                     OperationError::KP0037KeyObjectImportJweA128GCMInvalid
                 })?;
-                let key_bytes: [u8; 16] = key.as_slice().try_into().unwrap();
+                let key_bytes: [u8; 16] = key
+                    .as_slice()
+                    .try_into()
+                    .expect("aes128 key is always 16 bytes");
                 let key_v1 = crypto_glue_v1::aes128::key_from_bytes(key_bytes);
 
                 let mut cipher = JweA128KWEncipher::from(key_v1);
@@ -368,7 +374,10 @@ impl KeyObjectInternalJweA128GCM {
                     error!(?id, "Unable to load A128GCM retained cipher");
                     OperationError::KP0038KeyObjectImportJweA128GCMInvalid
                 })?;
-                let key_bytes: [u8; 16] = key.as_slice().try_into().unwrap();
+                let key_bytes: [u8; 16] = key
+                    .as_slice()
+                    .try_into()
+                    .expect("aes128 key is always 16 bytes");
                 let key_v1 = crypto_glue_v1::aes128::key_from_bytes(key_bytes);
 
                 let mut cipher = JweA128KWEncipher::from(key_v1);

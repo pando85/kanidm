@@ -14,9 +14,9 @@ use crypto_glue::{
         self, oiddb, Builder, Certificate, CertificateBuilder, ExtendedKeyUsage, GeneralName,
         GeneralizedTime, Ia5String, OctetString, SubjectAltName, SubjectPublicKeyInfoOwned,
     },
+    x509::profile::BuilderProfile,
+    x509::{Time, Validity},
 };
-use crypto_glue::x509::profile::BuilderProfile;
-use crypto_glue::x509::{Time, Validity};
 use rustls::pki_types::{IpAddr, ServerName};
 use std::str::FromStr;
 use x509_cert::ext::Extension;
@@ -80,23 +80,19 @@ impl QueryServerWriteTransaction<'_> {
 
         let serial_number = x509::uuid_to_serial(s_uuid);
         let subject =
-            crypto_glue::x509::Name::from_str(&format!("O=Kubidm Replication,CN={s_uuid}")).map_err(|err| {
-                error!(?err, "Unable to parse subject dn");
-                OperationError::CryptographyError
-            })?;
+            crypto_glue::x509::Name::from_str(&format!("O=Kubidm Replication,CN={s_uuid}"))
+                .map_err(|err| {
+                    error!(?err, "Unable to parse subject dn");
+                    OperationError::CryptographyError
+                })?;
 
         let profile = SelfSignedProfile { subject };
 
-        let mut x509_builder = CertificateBuilder::new(
-            profile,
-            serial_number,
-            validity,
-            pub_key,
-        )
-        .map_err(|err| {
-            error!(?err, "Unable to construct certificate builder");
-            OperationError::CryptographyError
-        })?;
+        let mut x509_builder = CertificateBuilder::new(profile, serial_number, validity, pub_key)
+            .map_err(|err| {
+                error!(?err, "Unable to construct certificate builder");
+                OperationError::CryptographyError
+            })?;
 
         // Key Usage (server + client )
         let eku_extension = ExtendedKeyUsage(vec![
