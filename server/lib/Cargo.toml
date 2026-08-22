@@ -33,6 +33,7 @@ chrono = { workspace = true }
 compact_jwt = { workspace = true }
 concread = { workspace = true }
 crypto-glue = { workspace = true }
+crypto-glue-v1 = { workspace = true }
 dhat = { workspace = true, optional = true }
 dyn-clone = { workspace = true }
 hashbrown = { workspace = true }
@@ -77,6 +78,7 @@ webauthn-rs = { workspace = true, features = [
     "preview-features",
     "danger-credential-internals",
 ] }
+x509-cert = { workspace = true }
 webauthn-rs-core = { workspace = true }
 zxcvbn = { workspace = true }
 serde_with = { workspace = true, features = ["time_0_3", "base64"] }

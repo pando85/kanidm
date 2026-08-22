@@ -17,7 +17,7 @@ use crypto_glue::{
     aes128,
     hkdf_s256::HkdfSha256,
     hmac_s256::{self, HmacSha256, HmacSha256Key},
-    traits::{Mac, Zeroizing},
+    traits::{KeyInit, Mac, Zeroizing},
 };
 use smolset::SmolSet;
 use std::cmp::Reverse;
@@ -261,8 +261,10 @@ impl KeyObjectInternalJweA128GCM {
         let valid_from = valid_from.as_secs();
 
         let key = aes128::new_key();
+        let key_bytes: [u8; 16] = key.as_slice().try_into().unwrap();
+        let key_v1 = crypto_glue_v1::aes128::key_from_bytes(key_bytes);
 
-        let mut cipher = JweA128KWEncipher::from(key);
+        let mut cipher = JweA128KWEncipher::from(key_v1);
         cipher.set_sign_option_embed_kid(true);
         let kid = cipher.get_kid().to_string();
         let kid = KeyId::from(kid);
@@ -349,8 +351,10 @@ impl KeyObjectInternalJweA128GCM {
                     error!(?id, "Unable to load A128GCM retained cipher");
                     OperationError::KP0037KeyObjectImportJweA128GCMInvalid
                 })?;
+                let key_bytes: [u8; 16] = key.as_slice().try_into().unwrap();
+                let key_v1 = crypto_glue_v1::aes128::key_from_bytes(key_bytes);
 
-                let mut cipher = JweA128KWEncipher::from(key);
+                let mut cipher = JweA128KWEncipher::from(key_v1);
                 cipher.set_sign_option_embed_kid(true);
                 // Ensure we have a coherent kid
                 cipher.set_kid(id.as_str());
@@ -364,8 +368,10 @@ impl KeyObjectInternalJweA128GCM {
                     error!(?id, "Unable to load A128GCM retained cipher");
                     OperationError::KP0038KeyObjectImportJweA128GCMInvalid
                 })?;
+                let key_bytes: [u8; 16] = key.as_slice().try_into().unwrap();
+                let key_v1 = crypto_glue_v1::aes128::key_from_bytes(key_bytes);
 
-                let mut cipher = JweA128KWEncipher::from(key);
+                let mut cipher = JweA128KWEncipher::from(key_v1);
                 cipher.set_sign_option_embed_kid(true);
                 // Ensure we have a coherent kid
                 cipher.set_kid(id.as_str());
