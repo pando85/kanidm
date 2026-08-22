@@ -466,7 +466,7 @@ mod tests {
 
         let key = key_from_slice(key).expect("Invalid key length");
         let cipher = Aes256Gcm::new(&*key);
-        let nonce = Aes256GcmNonce::from_slice(nonce_bytes);
+        let nonce = Aes256GcmNonce::try_from(nonce_bytes.as_slice()).expect("invalid nonce length");
         let encrypted_data = cipher.encrypt(nonce, data).unwrap();
 
         let header_json = serde_json::to_string(&header).unwrap();
