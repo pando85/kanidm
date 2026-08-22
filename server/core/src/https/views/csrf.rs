@@ -7,6 +7,7 @@ use crypto_glue::{
     rand,
     traits::{KeyInit, Mac},
 };
+use rand::RngExt;
 use kubidm_proto::internal::COOKIE_CSRF_NONCE;
 use serde::Deserialize;
 use std::time::Duration;

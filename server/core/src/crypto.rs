@@ -502,7 +502,7 @@ pub(crate) fn build_cert(domain_name: &str, ca_handle: &CaHandle) -> Result<Cert
         })?;
 
     let profile = LeafProfile {
-        issuer: ca_handle.cert.tbs_certificate().subject.clone(),
+        issuer: ca_handle.cert.tbs_certificate().subject().clone(),
         subject: root_subject,
         enable_key_agreement: true,
         enable_key_encipherment: true,
@@ -538,7 +538,7 @@ pub(crate) fn build_cert(domain_name: &str, ca_handle: &CaHandle) -> Result<Cert
     })?;
 
     let cert = builder
-        .build_with_rng::<_, crypto_glue::ecdsa_p256::EcdsaP256DerSignature, _>(
+        .build_with_rng::<_, EcdsaP384DerSignature, _>(
             &ca_handle.key,
             &mut rng,
         )

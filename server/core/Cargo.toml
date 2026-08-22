@@ -84,6 +84,7 @@ tracing = { workspace = true, features = ["attributes"] }
 tracing-opentelemetry = { workspace = true }
 url = { workspace = true, features = ["serde"] }
 uuid = { workspace = true, features = ["serde", "v4"] }
+x509-cert = { workspace = true }
 utoipa = { workspace = true, features = [
     "axum_extras",
     "openapi_extensions",
