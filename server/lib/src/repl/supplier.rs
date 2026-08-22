@@ -10,11 +10,11 @@ use crypto_glue::{
     ecdsa_p256::{self, EcdsaP256DerSignature, EcdsaP256SigningKey, EcdsaP256VerifyingKey},
     rand,
     traits::Pkcs8EncodePrivateKey,
+    x509::profile::BuilderProfile,
     x509::{
         self, oiddb, Builder, Certificate, CertificateBuilder, ExtendedKeyUsage, GeneralName,
         GeneralizedTime, Ia5String, OctetString, SubjectAltName, SubjectPublicKeyInfoOwned,
     },
-    x509::profile::BuilderProfile,
     x509::{Time, Validity},
 };
 use rustls::pki_types::{IpAddr, ServerName};
@@ -90,9 +90,9 @@ impl QueryServerWriteTransaction<'_> {
 
         let mut x509_builder = CertificateBuilder::new(profile, serial_number, validity, pub_key)
             .map_err(|err| {
-                error!(?err, "Unable to construct certificate builder");
-                OperationError::CryptographyError
-            })?;
+            error!(?err, "Unable to construct certificate builder");
+            OperationError::CryptographyError
+        })?;
 
         // Key Usage (server + client )
         let eku_extension = ExtendedKeyUsage(vec![

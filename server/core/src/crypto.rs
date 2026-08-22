@@ -358,7 +358,9 @@ pub(crate) fn build_ca() -> Result<CaHandle, ()> {
             error!(?err, "Invalid root subject DN - THIS IS A BUG.");
         })?;
 
-    let profile = RootProfile { subject: root_subject.clone() };
+    let profile = RootProfile {
+        subject: root_subject.clone(),
+    };
 
     let private_key = crypto_glue::ecdsa_p384::new_key();
     let signing_key = EcdsaP384SigningKey::from(&private_key);
@@ -367,8 +369,8 @@ pub(crate) fn build_ca() -> Result<CaHandle, ()> {
         error!(?err, "Unable to access subject public key information");
     })?;
 
-    let builder = CertificateBuilder::new(profile, serial_number, validity, pub_key)
-        .map_err(|err| {
+    let builder =
+        CertificateBuilder::new(profile, serial_number, validity, pub_key).map_err(|err| {
             error!(?err, "Unable to create certificate builder");
         })?;
 
@@ -514,8 +516,8 @@ pub(crate) fn build_cert(domain_name: &str, ca_handle: &CaHandle) -> Result<Cert
         error!(?err, "Unable to access subject public key information");
     })?;
 
-    let mut builder = CertificateBuilder::new(profile, serial_number, validity, pub_key)
-        .map_err(|err| {
+    let mut builder =
+        CertificateBuilder::new(profile, serial_number, validity, pub_key).map_err(|err| {
             error!(?err, "Unable to create certificate builder");
         })?;
 
@@ -536,7 +538,10 @@ pub(crate) fn build_cert(domain_name: &str, ca_handle: &CaHandle) -> Result<Cert
     })?;
 
     let cert = builder
-        .build_with_rng::<_, crypto_glue::ecdsa_p256::EcdsaP256DerSignature, _>(&ca_handle.key, &mut rng)
+        .build_with_rng::<_, crypto_glue::ecdsa_p256::EcdsaP256DerSignature, _>(
+            &ca_handle.key,
+            &mut rng,
+        )
         .map_err(|err| {
             error!(?err, "Unable to sign certificate request");
         })?;
