@@ -13,9 +13,7 @@ use crate::prelude::*;
 use crate::schema::SchemaTransaction;
 use crate::value::{IntentTokenState, PartialValue, SessionState, Value};
 use kubidm_lib_crypto::CryptoPolicy;
-use kubidm_proto::internal::{
-    CredentialStatus, PasskeyDetail, UatPurpose, UiHint, UserAuthToken,
-};
+use kubidm_proto::internal::{CredentialStatus, PasskeyDetail, UatPurpose, UiHint, UserAuthToken};
 use kubidm_proto::v1::{UatStatus, UatStatusState, UnixGroupToken, UnixUserToken};
 use sshkey_attest::proto::PublicKey as SshPublicKey;
 use std::collections::{BTreeMap, BTreeSet};
@@ -1166,7 +1164,7 @@ mod tests {
     #[test]
     fn test_passkey_details_preserve_uuid_and_tag() {
         let uuid = Uuid::new_v4();
-        let passkeys = std::collections::BTreeMap::from([(uuid, ("test passkey".to_string(), ())) ]);
+        let passkeys = std::collections::BTreeMap::from([(uuid, ("test passkey".to_string(), ()))]);
 
         let details = super::passkey_details(&passkeys);
 
