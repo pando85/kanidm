@@ -2186,6 +2186,27 @@ pub async fn group_get(
 }
 
 #[utoipa::path(
+    post,
+    path = "/v1/group",
+    responses(
+        DefaultApiResponse,
+    ),
+    request_body=ProtoEntry,
+    security(("token_jwt" = [])),
+    tag = "group",
+    operation_id = "group_post",
+)]
+pub async fn group_post(
+    State(state): State<ServerState>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+    Json(obj): Json<ProtoEntry>,
+) -> Result<Json<()>, WebError> {
+    let classes: Vec<String> = vec![EntryClass::Group.into(), EntryClass::Object.into()];
+    json_rest_event_post(state, classes, obj, kopid, client_auth_info).await
+}
+
+#[utoipa::path(
     get,
     path = "/v1/group/_search/{id}",
     responses(
@@ -2856,74 +2877,75 @@ fn auth_session_state_management(
         Ok(AuthResult {
             state: auth_state,
             sessionid,
-        }) => {
-            match auth_state {
-                AuthState::Choose(allowed) => {
-                    debug!("🧩 -> AuthState::Choose");
-                    let kref = &state.jws_signer;
-                    let jws = Jws::into_json(&sessionid).map_err(|e| {
+        }) => match auth_state {
+            AuthState::Choose(allowed) => {
+                debug!("🧩 -> AuthState::Choose");
+                let kref = &state.jws_signer;
+                let jws = Jws::into_json(&sessionid).map_err(|e| {
+                    error!(?e);
+                    OperationError::InvalidSessionState
+                })?;
+                kref.sign(&jws)
+                    .map(|jwss| {
+                        auth_session_id_tok = Some(jwss.to_string());
+                    })
+                    .map_err(|e| {
                         error!(?e);
                         OperationError::InvalidSessionState
-                    })?;
-                    kref.sign(&jws)
-                        .map(|jwss| {
-                            auth_session_id_tok = Some(jwss.to_string());
-                        })
-                        .map_err(|e| {
-                            error!(?e);
-                            OperationError::InvalidSessionState
-                        })
-                        .map(|_| ProtoAuthState::Choose(allowed))
-                }
-                AuthState::Continue(allowed) => {
-                    debug!("🧩 -> AuthState::Continue");
-                    let kref = &state.jws_signer;
-                    let jws = Jws::into_json(&sessionid).map_err(|e| {
+                    })
+                    .map(|_| ProtoAuthState::Choose(allowed))
+            }
+            AuthState::Continue(allowed) => {
+                debug!("🧩 -> AuthState::Continue");
+                let kref = &state.jws_signer;
+                let jws = Jws::into_json(&sessionid).map_err(|e| {
+                    error!(?e);
+                    OperationError::InvalidSessionState
+                })?;
+                kref.sign(&jws)
+                    .map(|jwss| {
+                        auth_session_id_tok = Some(jwss.to_string());
+                    })
+                    .map_err(|e| {
                         error!(?e);
                         OperationError::InvalidSessionState
-                    })?;
-                    kref.sign(&jws)
-                        .map(|jwss| {
-                            auth_session_id_tok = Some(jwss.to_string());
-                        })
-                        .map_err(|e| {
-                            error!(?e);
-                            OperationError::InvalidSessionState
-                        })
-                        .map(|_| ProtoAuthState::Continue(allowed))
-                }
-                AuthState::Success(token, issue) => {
-                    debug!("🧩 -> AuthState::Success");
+                    })
+                    .map(|_| ProtoAuthState::Continue(allowed))
+            }
+            AuthState::Success(token, issue) => {
+                debug!("🧩 -> AuthState::Success");
 
-                    match issue {
-                        AuthIssueSession::Token => Ok(ProtoAuthState::Success(token.to_string())),
-                        AuthIssueSession::Cookie => {
-                            let token_str = token.to_string();
-                            let mut bearer_cookie =
-                                Cookie::new(COOKIE_BEARER_TOKEN, token_str.clone());
-                            bearer_cookie.set_secure(state.secure_cookies);
-                            bearer_cookie.set_same_site(SameSite::Lax);
-                            bearer_cookie.set_http_only(true);
-                            bearer_cookie.set_domain(state.domain.clone());
-                            bearer_cookie.set_path("/");
-                            jar = jar
-                                .add(bearer_cookie)
-                                .remove(Cookie::from(COOKIE_AUTH_SESSION_ID));
-                            Ok(ProtoAuthState::Success(token_str))
-                        }
+                match issue {
+                    AuthIssueSession::Token => Ok(ProtoAuthState::Success(token.to_string())),
+                    AuthIssueSession::Cookie => {
+                        let token_str = token.to_string();
+                        let mut bearer_cookie = Cookie::new(COOKIE_BEARER_TOKEN, token_str.clone());
+                        bearer_cookie.set_secure(state.secure_cookies);
+                        bearer_cookie.set_same_site(SameSite::Lax);
+                        bearer_cookie.set_http_only(true);
+                        bearer_cookie.set_domain(state.domain.clone());
+                        bearer_cookie.set_path("/");
+                        jar = jar
+                            .add(bearer_cookie)
+                            .remove(Cookie::from(COOKIE_AUTH_SESSION_ID));
+                        Ok(ProtoAuthState::Success(token_str))
                     }
                 }
-                AuthState::External(_) => {
-                    warn!("🧩 -> AuthState::Denied - we tried to use an external handler within an API");
-                    Ok(ProtoAuthState::Denied("unable to use external authentication handler from this API.".into()))
-                }
-                AuthState::Denied(reason) => {
-                    debug!("🧩 -> AuthState::Denied");
-                    Ok(ProtoAuthState::Denied(reason))
-                }
             }
-            .map(|state| AuthResponse { sessionid, state })
+            AuthState::External(_) => {
+                warn!(
+                    "🧩 -> AuthState::Denied - we tried to use an external handler within an API"
+                );
+                Ok(ProtoAuthState::Denied(
+                    "unable to use external authentication handler from this API.".into(),
+                ))
+            }
+            AuthState::Denied(reason) => {
+                debug!("🧩 -> AuthState::Denied");
+                Ok(ProtoAuthState::Denied(reason))
+            }
         }
+        .map(|state| AuthResponse { sessionid, state }),
         Err(e) => Err(e),
     };
 
@@ -3116,22 +3138,13 @@ pub(crate) fn route_setup(state: ServerState) -> Router<ServerState> {
         .route("/v1/raw/delete", post(raw_delete))
         .route("/v1/raw/search", post(raw_search))
         .route("/v1/schema", get(schema_get))
-        .route(
-            "/v1/schema/attributetype",
-            get(schema_attributetype_get),
-        )
+        .route("/v1/schema/attributetype", get(schema_attributetype_get))
         .route(
             "/v1/schema/attributetype/{id}",
             get(schema_attributetype_get_id),
         )
-        .route(
-            "/v1/schema/classtype",
-            get(schema_classtype_get),
-        )
-        .route(
-            "/v1/schema/classtype/{id}",
-            get(schema_classtype_get_id),
-        )
+        .route("/v1/schema/classtype", get(schema_classtype_get))
+        .route("/v1/schema/classtype/{id}", get(schema_classtype_get_id))
         .route("/v1/self", get(whoami))
         .route("/v1/self/_uat", get(whoami_uat))
         .route("/v1/self/_applinks", get(applinks_get))
@@ -3528,7 +3541,7 @@ pub async fn approval_request_list(
 ) -> Result<Json<Vec<kubidm_proto::v1::ApprovalRequest>>, WebError> {
     state
         .qe_r_ref
-        .handle_approval_policy_list(client_auth_info, kopid.eventid)
+        .handle_approval_request_list(client_auth_info, None, kopid.eventid)
         .await
         .map(Json::from)
         .map_err(WebError::from)
