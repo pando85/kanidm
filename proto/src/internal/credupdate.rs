@@ -468,6 +468,7 @@ impl fmt::Display for PasswordFeedback {
 #[cfg(test)]
 mod tests {
     use super::{CredentialStatus, PasskeyDetail, TotpAlgo, TotpSecret};
+    use uuid::Uuid;
 
     #[test]
     fn totp_to_string() {
