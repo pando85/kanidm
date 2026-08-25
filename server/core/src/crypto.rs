@@ -316,7 +316,7 @@ impl crypto_glue::x509::Profile for CaProfile {
                 key_identifier: Some(ski.0.clone()),
                 ..Default::default()
             }
-            .to_extension(&tbs.subject(), &extensions)?,
+            .to_extension(tbs.subject(), &extensions)?,
         );
 
         extensions.push(
@@ -324,13 +324,13 @@ impl crypto_glue::x509::Profile for CaProfile {
                 ca: true,
                 path_len_constraint: None,
             }
-            .to_extension(&tbs.subject(), &extensions)?,
+            .to_extension(tbs.subject(), &extensions)?,
         );
 
         let key_usage = KeyUsages::KeyCertSign | KeyUsages::CRLSign;
-        extensions.push(KeyUsage(key_usage).to_extension(&tbs.subject(), &extensions)?);
+        extensions.push(KeyUsage(key_usage).to_extension(tbs.subject(), &extensions)?);
 
-        extensions.push(ski.to_extension(&tbs.subject(), &extensions)?);
+        extensions.push(ski.to_extension(tbs.subject(), &extensions)?);
 
         Ok(extensions)
     }
@@ -365,7 +365,7 @@ impl crypto_glue::x509::Profile for LeafProfile {
 
         extensions.push(
             AuthorityKeyIdentifier::try_from(issuer_spk)?
-                .to_extension(&tbs.subject(), &extensions)?,
+                .to_extension(tbs.subject(), &extensions)?,
         );
 
         extensions.push(
@@ -373,15 +373,15 @@ impl crypto_glue::x509::Profile for LeafProfile {
                 ca: false,
                 path_len_constraint: None,
             }
-            .to_extension(&tbs.subject(), &extensions)?,
+            .to_extension(tbs.subject(), &extensions)?,
         );
 
         let key_usage =
             KeyUsages::DigitalSignature | KeyUsages::KeyAgreement | KeyUsages::KeyEncipherment;
-        extensions.push(KeyUsage(key_usage).to_extension(&tbs.subject(), &extensions)?);
+        extensions.push(KeyUsage(key_usage).to_extension(tbs.subject(), &extensions)?);
 
         let ski = SubjectKeyIdentifier::try_from(spk)?;
-        extensions.push(ski.to_extension(&tbs.subject(), &extensions)?);
+        extensions.push(ski.to_extension(tbs.subject(), &extensions)?);
 
         Ok(extensions)
     }
