@@ -219,6 +219,16 @@ pub struct CUStatus {
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct CredentialStatus {
     pub creds: Vec<CredentialDetail>,
+    #[serde(default)]
+    pub passkeys: Vec<PasskeyDetail>,
+    #[serde(default)]
+    pub attested_passkeys: Vec<PasskeyDetail>,
+}
+
+impl CredentialStatus {
+    pub fn has_credentials(&self) -> bool {
+        !self.creds.is_empty() || !self.passkeys.is_empty() || !self.attested_passkeys.is_empty()
+    }
 }
 
 impl fmt::Display for CredentialStatus {
@@ -457,7 +467,8 @@ impl fmt::Display for PasswordFeedback {
 
 #[cfg(test)]
 mod tests {
-    use super::{TotpAlgo, TotpSecret};
+    use super::{CredentialStatus, PasskeyDetail, TotpAlgo, TotpSecret};
+    use uuid::Uuid;
 
     #[test]
     fn totp_to_string() {
@@ -542,5 +553,30 @@ mod tests {
         assert_eq!(deserialized.issuer, "TestIssuer");
         assert!(matches!(deserialized.algo, TotpAlgo::Sha512));
         assert_eq!(deserialized.digits, 6);
+    }
+
+    #[test]
+    fn credential_status_deserializes_legacy_payload() {
+        let status: CredentialStatus =
+            serde_json::from_str(r#"{"creds":[]}"#).expect("Failed to deserialize status");
+
+        assert!(status.creds.is_empty());
+        assert!(status.passkeys.is_empty());
+        assert!(status.attested_passkeys.is_empty());
+        assert!(!status.has_credentials());
+    }
+
+    #[test]
+    fn credential_status_detects_standalone_passkeys() {
+        let status = CredentialStatus {
+            creds: Vec::new(),
+            passkeys: vec![PasskeyDetail {
+                uuid: Uuid::nil(),
+                tag: "test passkey".to_string(),
+            }],
+            attested_passkeys: Vec::new(),
+        };
+
+        assert!(status.has_credentials());
     }
 }

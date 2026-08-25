@@ -156,7 +156,6 @@ pub async fn whoami(
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
 ) -> Result<Json<WhoamiResponse>, WebError> {
-    // New event, feed current auth data from the token to it.
     state
         .qe_r_ref
         .handle_whoami(client_auth_info, kopid.eventid)
@@ -357,15 +356,6 @@ pub async fn json_rest_event_post_id_attr(
         .map_err(WebError::from)
 }
 
-// Okay, so a put normally needs
-///  * filter of what we are working on (id + class)
-///  * a `Map<String, Vec<String>>` that we turn into a modlist.
-///
-/// OR
-///  * filter of what we are working on (id + class)
-///  * a `Vec<String>` that we are changing
-///  * the attr name  (as a param to this in path)
-///
 pub async fn json_rest_event_put_attr(
     state: ServerState,
     id: String,
@@ -456,16 +446,11 @@ pub async fn json_rest_event_delete_attr(
     tag = "schema",
     operation_id = "schema_get",
 )]
-// Whoami?
 pub async fn schema_get(
     State(state): State<ServerState>,
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
 ) -> Result<Json<Vec<ProtoEntry>>, WebError> {
-    // NOTE: This is filter_all, because from_internal_message will still do the alterations
-    // needed to make it safe. This is needed because there may be aci's that block access
-    // to the recycle/ts types in the filter, and we need the aci to only eval on this
-    // part of the filter!
     let filter = filter_all!(f_or!([
         f_eq(Attribute::Class, EntryClass::AttributeType.into()),
         f_eq(Attribute::Class, EntryClass::ClassType.into())
@@ -510,7 +495,6 @@ pub async fn schema_attributetype_get_id(
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
 ) -> Result<Json<Option<ProtoEntry>>, WebError> {
-    // These can't use get_id because the attribute name and class name aren't ... well name.
     let filter = filter_all!(f_and!([
         f_eq(Attribute::Class, EntryClass::AttributeType.into()),
         f_eq(
@@ -565,7 +549,6 @@ pub async fn schema_classtype_get_id(
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
     Path(id): Path<String>,
 ) -> Result<Json<Option<ProtoEntry>>, WebError> {
-    // These can't use get_id because they attribute name and class name aren't ... well name.
     let filter = filter_all!(f_and!([
         f_eq(Attribute::Class, EntryClass::ClassType.into()),
         f_eq(Attribute::ClassName, PartialValue::new_iutf8(id.as_str()))
@@ -610,7 +593,6 @@ pub async fn person_get(
     tag = "person",
     operation_id = "person_post",
 )]
-/// Expects the following fields in the attrs field of the req: [name, displayname]
 pub async fn person_post(
     State(state): State<ServerState>,
     Extension(kopid): Extension<KOpId>,
@@ -690,8 +672,6 @@ pub async fn person_id_delete(
     json_rest_event_delete_id(state, id, filter, kopid, client_auth_info).await
 }
 
-// == person -> certificates
-
 #[utoipa::path(
     get,
     path = "/v1/person/{id}/_certificate",
@@ -724,9 +704,6 @@ pub async fn person_get_id_certificate(
     tag = "person/certificate",
     operation_id = "person_post_id_certificate",
 )]
-/// Expects the following fields in the attrs field of the req: [certificate]
-///
-/// The person's id will be added implicitly as a reference.
 pub async fn person_post_id_certificate(
     State(state): State<ServerState>,
     Path(id): Path<String>,
@@ -742,8 +719,6 @@ pub async fn person_post_id_certificate(
 
     json_rest_event_post(state, classes, obj, kopid, client_auth_info).await
 }
-
-// // == account ==
 
 #[utoipa::path(
     get,
@@ -808,7 +783,6 @@ pub async fn service_account_id_patch(
     Path(id): Path<String>,
     Json(obj): Json<ProtoEntry>,
 ) -> Result<Json<()>, WebError> {
-    // Update a value / attrs
     let filter = filter_all!(f_eq(Attribute::Class, EntryClass::Account.into()));
     let filter = Filter::join_parts_and(filter, filter_all!(f_id(id.as_str())));
     state
@@ -863,7 +837,7 @@ pub async fn service_account_id_delete(
     get,
     path = "/v1/service_account/{id}/_credential/_generate",
     responses(
-        (status=200), // TODO: define response
+        (status=200),
         ApiResponseWithout200,
     ),
     security(("token_jwt" = [])),
@@ -892,11 +866,6 @@ pub async fn service_account_credential_generate(
     security(("token_jwt" = [])),
     tag = "service_account",
 )]
-/// Due to how the migrations work in 6 -> 7, we can accidentally
-/// mark "accounts" as service accounts when they are persons. This
-/// allows migrating them to the person type due to its similarities.
-///
-/// In the future this will be REMOVED!
 #[deprecated]
 pub async fn service_account_into_person(
     State(state): State<ServerState>,
@@ -1183,7 +1152,6 @@ pub async fn person_id_patch(
     Path(id): Path<String>,
     Json(obj): Json<ProtoEntry>,
 ) -> Result<Json<()>, WebError> {
-    // Update a value / attrs
     let filter = filter_all!(f_eq(Attribute::Class, EntryClass::Account.into()));
     let filter = Filter::join_parts_and(filter, filter_all!(f_id(id.as_str())));
     state
@@ -1198,7 +1166,7 @@ pub async fn person_id_patch(
     get,
     path = "/v1/person/{id}/_credential/_update",
     responses(
-        (status=200), // TODO: define response
+        (status=200),
         ApiResponseWithout200,
     ),
     security(("token_jwt" = [])),
@@ -1231,8 +1199,6 @@ pub async fn person_id_credential_update_get(
     security(("token_jwt" = [])),
     tag = "person/credential",
 )]
-// TODO: this shouldn't be a get, we're making changes!
-// fy: Ahhh yes, APIs - where regrets become enshrined in code.
 #[instrument(level = "trace", skip(state, kopid))]
 pub async fn person_id_credential_update_intent_ttl_get(
     State(state): State<ServerState>,
@@ -1257,7 +1223,7 @@ pub async fn person_id_credential_update_intent_ttl_get(
     get,
     path = "/v1/person/{id}/_credential/_update_intent",
     responses(
-        (status=200), // TODO: define response
+        (status=200),
         ApiResponseWithout200,
     ),
     security(("token_jwt" = [])),
@@ -1314,7 +1280,7 @@ pub async fn person_id_credential_update_intent_send_post(
     get,
     path = "/v1/account/{id}/_user_auth_token",
     responses(
-        (status=200), // TODO: define response
+        (status=200),
         ApiResponseWithout200,
     ),
     security(("token_jwt" = [])),
@@ -1360,15 +1326,13 @@ pub async fn account_user_auth_token_delete(
 #[utoipa::path(
     post,
     path = "/v1/credential/_exchange_intent",
-    params(
-    ),
     responses(
-        (status=200), // TODO: define response
+        (status=200),
         ApiResponseWithout200,
     ),
     security(("token_jwt" = [])),
     tag = "credential",
-)] // TODO: post body
+)]
 pub async fn credential_update_exchange_intent(
     State(state): State<ServerState>,
     Extension(kopid): Extension<KOpId>,
@@ -1386,12 +1350,12 @@ pub async fn credential_update_exchange_intent(
     post,
     path = "/v1/credential/_status",
     responses(
-        (status=200), // TODO: define response
+        (status=200),
         ApiResponseWithout200,
     ),
     security(("token_jwt" = [])),
     tag = "credential",
-)] // TODO: post body
+)]
 pub async fn credential_update_status(
     State(state): State<ServerState>,
     Extension(kopid): Extension<KOpId>,
@@ -1409,12 +1373,12 @@ pub async fn credential_update_status(
     post,
     path = "/v1/credential/_update",
     responses(
-        (status=200, body=CUStatus), // TODO: define response
+        (status=200, body=CUStatus),
         ApiResponseWithout200,
     ),
     security(("token_jwt" = [])),
     tag = "credential",
-)] // TODO: post body
+)]
 #[instrument(level = "debug", skip(state, kopid))]
 pub async fn credential_update_update(
     State(state): State<ServerState>,
@@ -1426,7 +1390,6 @@ pub async fn credential_update_update(
         return Err(WebError::InternalServerError(errmsg));
     }
 
-    // Remove in reverse order to prevent items being shifted.
     let cuvalue_1 = cubody.remove(1);
     let cuvalue_0 = cubody.remove(0);
 
@@ -1466,7 +1429,7 @@ pub async fn credential_update_update(
     ),
     security(("token_jwt" = [])),
     tag = "credential",
-)] // TODO: post body
+)]
 pub async fn credential_update_commit(
     State(state): State<ServerState>,
     Extension(kopid): Extension<KOpId>,
@@ -1507,7 +1470,7 @@ pub async fn credential_update_cancel(
     get,
     path = "/v1/service_account/{id}/_credential/_status",
     responses(
-        (status=200), // TODO: define response
+        (status=200),
         ApiResponseWithout200,
     ),
     security(("token_jwt" = [])),
@@ -1529,7 +1492,11 @@ pub async fn service_account_id_credential_status_get(
         Err(err) => {
             if let OperationError::NoMatchingAttributes = err {
                 debug!("No credentials set on account {}, returning empty list", id);
-                Ok(Json(CredentialStatus { creds: Vec::new() }))
+                Ok(Json(CredentialStatus {
+                    creds: Vec::new(),
+                    passkeys: Vec::new(),
+                    attested_passkeys: Vec::new(),
+                }))
             } else {
                 Err(WebError::from(err))
             }
@@ -1541,7 +1508,7 @@ pub async fn service_account_id_credential_status_get(
     get,
     path = "/v1/person/{id}/_credential/_status",
     responses(
-        (status=200), // TODO: define response
+        (status=200),
         ApiResponseWithout200,
     ),
     security(("token_jwt" = [])),
@@ -1563,7 +1530,11 @@ pub async fn person_get_id_credential_status(
         Err(err) => {
             if let OperationError::NoMatchingAttributes = err {
                 debug!("No credentials set on person {}, returning empty list", id);
-                Ok(Json(CredentialStatus { creds: Vec::new() }))
+                Ok(Json(CredentialStatus {
+                    creds: Vec::new(),
+                    passkeys: Vec::new(),
+                    attested_passkeys: Vec::new(),
+                }))
             } else {
                 Err(WebError::from(err))
             }
@@ -1666,7 +1637,6 @@ pub async fn person_id_ssh_pubkeys_post(
     Json((tag, key)): Json<(String, String)>,
 ) -> Result<Json<()>, WebError> {
     let filter = filter_all!(f_eq(Attribute::Class, EntryClass::Account.into()));
-    // Add a msg here
     state
         .qe_w_ref
         .handle_sshkeycreate(client_auth_info, id, &tag, &key, filter, kopid.eventid)
@@ -1695,7 +1665,6 @@ pub async fn service_account_id_ssh_pubkeys_post(
     Json((tag, key)): Json<(String, String)>,
 ) -> Result<Json<()>, WebError> {
     let filter = filter_all!(f_eq(Attribute::Class, EntryClass::Account.into()));
-    // Add a msg here
     state
         .qe_w_ref
         .handle_sshkeycreate(client_auth_info, id, &tag, &key, filter, kopid.eventid)
@@ -1728,6 +1697,7 @@ pub async fn person_id_ssh_pubkeys_tag_get(
         .map(Json::from)
         .map_err(WebError::from)
 }
+
 #[utoipa::path(
     get,
     path = "/v1/account/{id}/_ssh_pubkeys/{tag}",
@@ -1854,21 +1824,19 @@ pub async fn service_account_id_ssh_pubkeys_tag_delete(
     get,
     path = "/v1/person/{id}/_radius",
     responses(
-        (status=200), // TODO: define response
+        (status=200),
         ApiResponseWithout200,
     ),
     security(("token_jwt" = [])),
     tag = "person/radius",
     operation_id = "person_id_radius_get"
 )]
-/// Get and return a single str
 pub async fn person_id_radius_get(
     State(state): State<ServerState>,
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
     Path(id): Path<String>,
 ) -> Result<Json<Option<String>>, WebError> {
-    // TODO: string
     state
         .qe_r_ref
         .handle_internalradiusread(client_auth_info, id, kopid.eventid)
@@ -1881,7 +1849,7 @@ pub async fn person_id_radius_get(
     post,
     path = "/v1/person/{id}/_radius",
     responses(
-        (status=200), // TODO: define response
+        (status=200),
         ApiResponseWithout200,
     ),
     security(("token_jwt" = [])),
@@ -1894,7 +1862,6 @@ pub async fn person_id_radius_post(
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
     Path(id): Path<String>,
 ) -> Result<Json<String>, WebError> {
-    // Need to to send the regen msg
     state
         .qe_w_ref
         .handle_regenerateradius(client_auth_info, id, kopid.eventid)
@@ -2068,7 +2035,6 @@ pub async fn account_id_unix_token(
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
     Path(id): Path<String>,
 ) -> Result<Json<UnixUserToken>, WebError> {
-    // no point asking for an empty id
     if id.is_empty() {
         return Err(OperationError::EmptyRequest.into());
     }
@@ -2079,13 +2045,11 @@ pub async fn account_id_unix_token(
         .await
         .map(Json::from);
 
-    // if they're not a posix user we should just hide them
     if let Err(OperationError::MissingClass(class)) = &res {
         if class == ENTRYCLASS_POSIX_ACCOUNT {
             return Err(OperationError::NoMatchingEntries.into());
         }
     };
-    // the was returning a 500 error which wasn't right
     if let Err(OperationError::InvalidValueState) = &res {
         return Err(OperationError::NoMatchingEntries.into());
     };
@@ -2212,7 +2176,6 @@ pub async fn person_identify_user_post(
     tag = "group",
     operation_id = "group_get",
 )]
-/// Returns all groups visible  to the user
 pub async fn group_get(
     State(state): State<ServerState>,
     Extension(kopid): Extension<KOpId>,
@@ -2220,6 +2183,27 @@ pub async fn group_get(
 ) -> Result<Json<Vec<ProtoEntry>>, WebError> {
     let filter = filter_all!(f_eq(Attribute::Class, EntryClass::Group.into()));
     json_rest_event_get(state, None, filter, kopid, client_auth_info).await
+}
+
+#[utoipa::path(
+    post,
+    path = "/v1/group",
+    responses(
+        DefaultApiResponse,
+    ),
+    request_body=ProtoEntry,
+    security(("token_jwt" = [])),
+    tag = "group",
+    operation_id = "group_post",
+)]
+pub async fn group_post(
+    State(state): State<ServerState>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+    Json(obj): Json<ProtoEntry>,
+) -> Result<Json<()>, WebError> {
+    let classes: Vec<String> = vec![EntryClass::Group.into(), EntryClass::Object.into()];
+    json_rest_event_post(state, classes, obj, kopid, client_auth_info).await
 }
 
 #[utoipa::path(
@@ -2244,26 +2228,6 @@ pub async fn group_search_id(
         f_sub(Attribute::Name, PartialValue::new_iname(&id))
     ]));
     json_rest_event_get(state, None, filter, kopid, client_auth_info).await
-}
-
-#[utoipa::path(
-    post,
-    path = "/v1/group",
-    responses(
-        DefaultApiResponse,
-    ),
-    security(("token_jwt" = [])),
-    tag = "group",
-    operation_id = "group_post",
-)]
-pub async fn group_post(
-    State(state): State<ServerState>,
-    Extension(kopid): Extension<KOpId>,
-    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
-    Json(obj): Json<ProtoEntry>,
-) -> Result<Json<()>, WebError> {
-    let classes = vec!["group".to_string(), "object".to_string()];
-    json_rest_event_post(state, classes, obj, kopid, client_auth_info).await
 }
 
 #[utoipa::path(
@@ -2305,7 +2269,6 @@ pub async fn group_id_patch(
     Path(id): Path<String>,
     Json(obj): Json<ProtoEntry>,
 ) -> Result<Json<()>, WebError> {
-    // Update a value / attrs
     let filter = filter_all!(f_eq(Attribute::Class, EntryClass::Group.into()));
     let filter = Filter::join_parts_and(filter, filter_all!(f_id(id.as_str())));
     state
@@ -2791,7 +2754,8 @@ pub async fn recycle_bin_id_get(
     post,
     path = "/v1/recycle_bin/{id}/_revive",
     responses(
-        DefaultApiResponse,
+        (status=200),
+        ApiResponseWithout200,
     ),
     security(("token_jwt" = [])),
     tag = "recycle_bin",
@@ -2823,7 +2787,6 @@ pub async fn recycle_bin_revive_id_post(
     tag = "self",
     operation_id = "self_applinks_get",
 )]
-/// Returns your OAuth2 app links for the Web UI
 pub async fn applinks_get(
     State(state): State<ServerState>,
     Extension(kopid): Extension<KOpId>,
@@ -2848,7 +2811,7 @@ pub async fn applinks_get(
     security(("token_jwt" = [])),
     tag = "auth",
     operation_id = "reauth_post",
-)] // TODO: post body stuff
+)]
 pub async fn reauth(
     State(state): State<ServerState>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
@@ -2856,7 +2819,6 @@ pub async fn reauth(
     Extension(kopid): Extension<KOpId>,
     Json(obj): Json<AuthIssueSession>,
 ) -> Result<Response, WebError> {
-    // This may change in the future ...
     let inter = state
         .qe_r_ref
         .handle_reauth(
@@ -2890,20 +2852,12 @@ pub async fn auth(
     Extension(kopid): Extension<KOpId>,
     Json(auth_req): Json<AuthRequest>,
 ) -> Result<Response, WebError> {
-    // First, deal with some state management.
-    // Do anything here first that's needed like getting the session details
-    // out of the req cookie.
-
     let maybe_sessionid = state.get_current_auth_session_id(&headers, &jar);
     debug!("Session ID: {:?}", maybe_sessionid);
 
-    // Transform the external protocol version to an internal version.
     let auth_step = AuthStep::from(auth_req.step);
 
-    // We probably need to know if we allocate the cookie, that this is a
-    // new session, and in that case, anything *except* authrequest init is
-    // invalid.
-    let inter = state // This may change in the future ...
+    let inter = state
         .qe_r_ref
         .handle_auth(maybe_sessionid, auth_step, kopid.eventid, client_auth_info)
         .await;
@@ -2911,7 +2865,6 @@ pub async fn auth(
     auth_session_state_management(&state, jar, inter)
 }
 
-// Disable on any level except trace to stop leaking tokens
 #[instrument(level = "trace", skip_all)]
 fn auth_session_state_management(
     state: &ServerState,
@@ -2924,95 +2877,84 @@ fn auth_session_state_management(
         Ok(AuthResult {
             state: auth_state,
             sessionid,
-        }) => {
-            // Do some response/state management.
-            match auth_state {
-                AuthState::Choose(allowed) => {
-                    debug!("🧩 -> AuthState::Choose");
-                    let kref = &state.jws_signer;
-                    let jws = Jws::into_json(&sessionid).map_err(|e| {
+        }) => match auth_state {
+            AuthState::Choose(allowed) => {
+                debug!("🧩 -> AuthState::Choose");
+                let kref = &state.jws_signer;
+                let jws = Jws::into_json(&sessionid).map_err(|e| {
+                    error!(?e);
+                    OperationError::InvalidSessionState
+                })?;
+                kref.sign(&jws)
+                    .map(|jwss| {
+                        auth_session_id_tok = Some(jwss.to_string());
+                    })
+                    .map_err(|e| {
                         error!(?e);
                         OperationError::InvalidSessionState
-                    })?;
-
-                    // Get the header token ready.
-                    kref.sign(&jws)
-                        .map(|jwss| {
-                            auth_session_id_tok = Some(jwss.to_string());
-                        })
-                        .map_err(|e| {
-                            error!(?e);
-                            OperationError::InvalidSessionState
-                        })
-                        .map(|_| ProtoAuthState::Choose(allowed))
-                }
-                AuthState::Continue(allowed) => {
-                    debug!("🧩 -> AuthState::Continue");
-                    let kref = &state.jws_signer;
-                    // Get the header token ready.
-                    let jws = Jws::into_json(&sessionid).map_err(|e| {
+                    })
+                    .map(|_| ProtoAuthState::Choose(allowed))
+            }
+            AuthState::Continue(allowed) => {
+                debug!("🧩 -> AuthState::Continue");
+                let kref = &state.jws_signer;
+                let jws = Jws::into_json(&sessionid).map_err(|e| {
+                    error!(?e);
+                    OperationError::InvalidSessionState
+                })?;
+                kref.sign(&jws)
+                    .map(|jwss| {
+                        auth_session_id_tok = Some(jwss.to_string());
+                    })
+                    .map_err(|e| {
                         error!(?e);
                         OperationError::InvalidSessionState
-                    })?;
-                    kref.sign(&jws)
-                        .map(|jwss| {
-                            auth_session_id_tok = Some(jwss.to_string());
-                        })
-                        .map_err(|e| {
-                            error!(?e);
-                            OperationError::InvalidSessionState
-                        })
-                        .map(|_| ProtoAuthState::Continue(allowed))
-                }
-                AuthState::Success(token, issue) => {
-                    debug!("🧩 -> AuthState::Success");
+                    })
+                    .map(|_| ProtoAuthState::Continue(allowed))
+            }
+            AuthState::Success(token, issue) => {
+                debug!("🧩 -> AuthState::Success");
 
-                    match issue {
-                        AuthIssueSession::Token => Ok(ProtoAuthState::Success(token.to_string())),
-                        AuthIssueSession::Cookie => {
-                            // Update jar
-                            let token_str = token.to_string();
-                            let mut bearer_cookie =
-                                Cookie::new(COOKIE_BEARER_TOKEN, token_str.clone());
-                            bearer_cookie.set_secure(state.secure_cookies);
-                            bearer_cookie.set_same_site(SameSite::Lax);
-                            bearer_cookie.set_http_only(true);
-                            // We set a domain here because it allows subdomains
-                            // of the idm to share the cookie. If domain was incorrect
-                            // then webauthn won't work anyway!
-                            bearer_cookie.set_domain(state.domain.clone());
-                            bearer_cookie.set_path("/");
-                            jar = jar
-                                .add(bearer_cookie)
-                                .remove(Cookie::from(COOKIE_AUTH_SESSION_ID));
-                            Ok(ProtoAuthState::Success(token_str))
-                        }
+                match issue {
+                    AuthIssueSession::Token => Ok(ProtoAuthState::Success(token.to_string())),
+                    AuthIssueSession::Cookie => {
+                        let token_str = token.to_string();
+                        let mut bearer_cookie = Cookie::new(COOKIE_BEARER_TOKEN, token_str.clone());
+                        bearer_cookie.set_secure(state.secure_cookies);
+                        bearer_cookie.set_same_site(SameSite::Lax);
+                        bearer_cookie.set_http_only(true);
+                        bearer_cookie.set_domain(state.domain.clone());
+                        bearer_cookie.set_path("/");
+                        jar = jar
+                            .add(bearer_cookie)
+                            .remove(Cookie::from(COOKIE_AUTH_SESSION_ID));
+                        Ok(ProtoAuthState::Success(token_str))
                     }
                 }
-                AuthState::External(_) => {
-                    warn!("🧩 -> AuthState::Denied - we tried to use an external handler within an API");
-                    Ok(ProtoAuthState::Denied("unable to use external authentication handler from this API.".into()))
-                }
-                AuthState::Denied(reason) => {
-                    debug!("🧩 -> AuthState::Denied");
-                    Ok(ProtoAuthState::Denied(reason))
-                }
             }
-            .map(|state| AuthResponse { sessionid, state })
+            AuthState::External(_) => {
+                warn!(
+                    "🧩 -> AuthState::Denied - we tried to use an external handler within an API"
+                );
+                Ok(ProtoAuthState::Denied(
+                    "unable to use external authentication handler from this API.".into(),
+                ))
+            }
+            AuthState::Denied(reason) => {
+                debug!("🧩 -> AuthState::Denied");
+                Ok(ProtoAuthState::Denied(reason))
+            }
         }
+        .map(|state| AuthResponse { sessionid, state }),
         Err(e) => Err(e),
     };
 
-    // if the sessionid was injected into our cookie, set it in the header too.
     res.map(|response| {
         jar = if let Some(token) = auth_session_id_tok.clone() {
             let mut token_cookie = Cookie::new(COOKIE_AUTH_SESSION_ID, token);
             token_cookie.set_secure(state.secure_cookies);
             token_cookie.set_same_site(SameSite::Strict);
             token_cookie.set_http_only(true);
-            // Not setting domains limits the cookie to precisely this
-            // url that was used.
-            // token_cookie.set_domain(state.domain.clone());
             jar.add(token_cookie)
         } else {
             jar
@@ -3082,7 +3024,6 @@ pub async fn debug_ipinfo(
 
 #[derive(utoipa::ToSchema)]
 #[schema [value_type=HashMap<String, String>]]
-/// Used entirely to trick Utoipa into generating the correct schema for JWK
 #[allow(dead_code)]
 struct SchemaJwk(Jwk);
 
@@ -3103,7 +3044,6 @@ pub async fn public_jwk_key_id_get(
     Extension(kopid): Extension<KOpId>,
 ) -> Result<Json<Jwk>, WebError> {
     if key_id.len() > 64 {
-        // Fast path to reject long KeyIDs
         return Err(WebError::from(OperationError::NoMatchingEntries));
     }
     state
@@ -3198,44 +3138,16 @@ pub(crate) fn route_setup(state: ServerState) -> Router<ServerState> {
         .route("/v1/raw/delete", post(raw_delete))
         .route("/v1/raw/search", post(raw_search))
         .route("/v1/schema", get(schema_get))
-        .route(
-            "/v1/schema/attributetype",
-            get(schema_attributetype_get), // post(|| async { "TODO" })
-        )
+        .route("/v1/schema/attributetype", get(schema_attributetype_get))
         .route(
             "/v1/schema/attributetype/{id}",
             get(schema_attributetype_get_id),
         )
-        // .route("/schema/attributetype/{id}", put(|| async { "TODO" }).patch(|| async { "TODO" }))
-        .route(
-            "/v1/schema/classtype",
-            get(schema_classtype_get), // .post(|| async { "TODO" })
-        )
-        .route(
-            "/v1/schema/classtype/{id}",
-            get(schema_classtype_get_id), //         .put(|| async { "TODO" })
-                                          //         .patch(|| async { "TODO" }),
-        )
+        .route("/v1/schema/classtype", get(schema_classtype_get))
+        .route("/v1/schema/classtype/{id}", get(schema_classtype_get_id))
         .route("/v1/self", get(whoami))
         .route("/v1/self/_uat", get(whoami_uat))
-        // .route("/v1/self/_attr/{attr}", get(|| async { "TODO" }))
-        // .route("/v1/self/_credential", get(|| async { "TODO" }))
-        // .route("/v1/self/_credential/{cid}/_lock", get(|| async { "TODO" }))
-        // .route(
-        //     "/v1/self/_radius",
-        //     get(|| async { "TODO" })
-        //         .delete(|| async { "TODO" })
-        //         .post(|| async { "TODO" }),
-        // )
-        // .route("/v1/self/_radius/_config", post(|| async { "TODO" }))
-        // .route("/v1/self/_radius/_config/{token}", get(|| async { "TODO" }))
-        // .route(
-        //     "/v1/self/_radius/_config/{token}/apple",
-        //     get(|| async { "TODO" }),
-        // )
-        // Applinks are the list of apps this account can access.
         .route("/v1/self/_applinks", get(applinks_get))
-        // Person routes
         .route("/v1/person", get(person_get).post(person_post))
         .route("/v1/person/_search/{id}", get(person_search_id))
         .route(
@@ -3298,7 +3210,6 @@ pub(crate) fn route_setup(state: ServerState) -> Router<ServerState> {
             "/v1/person/{id}/_identify_user",
             post(person_identify_user_post),
         )
-        // Service accounts
         .route(
             "/v1/service_account",
             get(service_account_get).post(service_account_post),
@@ -3320,7 +3231,6 @@ pub(crate) fn route_setup(state: ServerState) -> Router<ServerState> {
                 .post(service_account_id_post_attr)
                 .delete(service_account_id_delete_attr),
         )
-        // .route("/v1/service_account/{id}/_lock", get(|| async { "TODO" }))
         .route(
             "/v1/service_account/{id}/_into_person",
             #[allow(deprecated)]
@@ -3334,10 +3244,6 @@ pub(crate) fn route_setup(state: ServerState) -> Router<ServerState> {
             "/v1/service_account/{id}/_api_token/{token_id}",
             delete(service_account_api_token_delete),
         )
-        // .route(
-        //     "/v1/service_account/{id}/_credential",
-        //     get(|| async { "TODO" }),
-        // )
         .route(
             "/v1/service_account/{id}/_credential/_generate",
             get(service_account_credential_generate),
@@ -3346,10 +3252,6 @@ pub(crate) fn route_setup(state: ServerState) -> Router<ServerState> {
             "/v1/service_account/{id}/_credential/_status",
             get(service_account_id_credential_status_get),
         )
-        // .route(
-        //     "/v1/service_account/{id}/_credential/{cid}/_lock",
-        //     get(|| async { "TODO" }),
-        // )
         .route(
             "/v1/service_account/{id}/_ssh_pubkeys",
             get(service_account_id_ssh_pubkeys_get).post(service_account_id_ssh_pubkeys_post),
@@ -3397,7 +3299,6 @@ pub(crate) fn route_setup(state: ServerState) -> Router<ServerState> {
         .route("/v1/credential/_update", post(credential_update_update))
         .route("/v1/credential/_commit", post(credential_update_commit))
         .route("/v1/credential/_cancel", post(credential_update_cancel))
-        // domain-things
         .route("/v1/domain", get(domain_get))
         .route(
             "/v1/domain/_image",
@@ -3466,12 +3367,6 @@ pub(crate) fn route_setup(state: ServerState) -> Router<ServerState> {
             "/v1/approval/request/{uuid}/_decision",
             post(approval_request_decision),
         )
-        // .route("/v1/access_profile", get(|| async { "TODO" }))
-        // .route("/v1/access_profile/{id}", get(|| async { "TODO" }))
-        // .route(
-        //     "/v1/access_profile/{id}/_attr/{attr}",
-        //     get(|| async { "TODO" }),
-        // )
         .route("/v1/auth", post(auth))
         .route(V1_AUTH_VALID, get(auth_valid))
         .route("/v1/logout", get(logout))

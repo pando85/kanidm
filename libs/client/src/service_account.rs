@@ -186,16 +186,8 @@ impl KubidmClient {
         &self,
         id: &str,
     ) -> Result<CredentialStatus, ClientError> {
-        let res: Result<CredentialStatus, ClientError> = self
-            .perform_get_request(format!("/v1/service_account/{id}/_credential/_status").as_str())
-            .await;
-        res.and_then(|cs| {
-            if cs.creds.is_empty() {
-                Err(ClientError::EmptyResponse)
-            } else {
-                Ok(cs)
-            }
-        })
+        self.perform_get_request(format!("/v1/service_account/{id}/_credential/_status").as_str())
+            .await
     }
 
     pub async fn idm_service_account_generate_password(
