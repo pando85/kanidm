@@ -4,7 +4,7 @@ use axum_extra::extract::cookie::{CookieJar, SameSite};
 use crypto_glue::{
     hex,
     hmac_s256::HmacSha256,
-    rand,
+    rand::{self, RngExt},
     traits::{KeyInit, Mac},
 };
 use kubidm_proto::internal::COOKIE_CSRF_NONCE;

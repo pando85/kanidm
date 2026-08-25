@@ -4,7 +4,7 @@
 use crate::config::TlsConfiguration;
 use crypto_glue::{
     ec::EcPrivateKey,
-    ecdsa_p256::{EcdsaP256DerSignature, EcdsaP256SigningKey, EcdsaP256VerifyingKey},
+    ecdsa_p256::{EcdsaP256SigningKey, EcdsaP256VerifyingKey},
     ecdsa_p384::{EcdsaP384DerSignature, EcdsaP384SigningKey, EcdsaP384VerifyingKey},
     pkcs8::PrivateKeyInfo,
     rand,
@@ -305,7 +305,7 @@ pub(crate) fn build_ca() -> Result<CaHandle, ()> {
             error!(?err, "Invalid root subject DN - THIS IS A BUG.");
         })?;
 
-    let signing_key = EcdsaP384SigningKey::generate(&mut rng);
+    let signing_key = EcdsaP384SigningKey::generate();
     let verifying_key = EcdsaP384VerifyingKey::from(&signing_key);
     let pub_key = SubjectPublicKeyInfoOwned::from_key(&verifying_key).map_err(|err| {
         error!(?err, "Unable to access subject public key information");
@@ -447,7 +447,7 @@ pub(crate) fn build_cert(domain_name: &str, ca_handle: &CaHandle) -> Result<Cert
             error!(?err, "Invalid cert subject DN - THIS IS A BUG.");
         })?;
 
-    let signing_key = EcdsaP256SigningKey::generate(&mut rng);
+    let signing_key = EcdsaP256SigningKey::generate();
     let verifying_key = EcdsaP256VerifyingKey::from(&signing_key);
     let pub_key = SubjectPublicKeyInfoOwned::from_key(&verifying_key).map_err(|err| {
         error!(?err, "Unable to access subject public key information");
