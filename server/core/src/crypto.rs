@@ -441,8 +441,8 @@ pub(crate) fn build_cert(domain_name: &str, ca_handle: &CaHandle) -> Result<Cert
             error!(?err, "Unable to convert system time");
         })?;
 
-    let root_subject = Name::from_str("C=AU,CN=Kubidm Generated Server Certificate")
-        .map_err(|err| {
+    let root_subject =
+        Name::from_str("C=AU,CN=Kubidm Generated Server Certificate").map_err(|err| {
             error!(?err, "Invalid cert subject DN - THIS IS A BUG.");
         })?;
 
