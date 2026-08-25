@@ -161,7 +161,7 @@ mod tests {
     use crypto_glue::s256::Sha256Output;
 
     fn make_hash(val: u8) -> Sha256Output {
-        Sha256Output::from_exact_iter(std::iter::repeat_n(val, 32)).expect("exact 32 bytes")
+        Sha256Output::try_from_iter(std::iter::repeat_n(val, 32)).expect("exact 32 bytes")
     }
 
     #[test]
