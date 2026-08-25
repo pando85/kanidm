@@ -1,14 +1,10 @@
 use super::cookies;
 use crate::https::ServerState;
 use axum_extra::extract::cookie::{CookieJar, SameSite};
-use crypto_glue::{
-    hex,
-    hmac_s256::HmacSha256,
-    rand::{self, Rng},
-    traits::{KeyInit, Mac},
-};
+use crypto_glue::{hex, hmac_s256::HmacSha256, rand, traits::Mac};
 use kubidm_proto::internal::COOKIE_CSRF_NONCE;
 use serde::Deserialize;
+use sha2::digest::KeyInit;
 use std::time::Duration;
 
 const SUBMISSION_WINDOW: Duration = Duration::from_secs(30);

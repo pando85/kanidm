@@ -303,7 +303,9 @@ impl crypto_glue::x509::Profile for CaProfile {
         _issuer_spk: crypto_glue::spki::SubjectPublicKeyInfoRef<'_>,
         tbs: &x509_cert::TbsCertificate,
     ) -> Result<Vec<x509_cert::ext::Extension>, x509_cert::builder::Error> {
-        use x509_cert::ext::pkix::{AuthorityKeyIdentifier, BasicConstraints, KeyUsage, KeyUsages, SubjectKeyIdentifier};
+        use x509_cert::ext::pkix::{
+            AuthorityKeyIdentifier, BasicConstraints, KeyUsage, KeyUsages, SubjectKeyIdentifier,
+        };
         use x509_cert::ext::ToExtension;
 
         let mut extensions = Vec::new();
@@ -326,9 +328,7 @@ impl crypto_glue::x509::Profile for CaProfile {
         );
 
         let key_usage = KeyUsages::KeyCertSign | KeyUsages::CRLSign;
-        extensions.push(
-            KeyUsage(key_usage).to_extension(&tbs.subject, &extensions)?,
-        );
+        extensions.push(KeyUsage(key_usage).to_extension(&tbs.subject, &extensions)?);
 
         extensions.push(ski.to_extension(&tbs.subject, &extensions)?);
 
@@ -356,7 +356,9 @@ impl crypto_glue::x509::Profile for LeafProfile {
         issuer_spk: crypto_glue::spki::SubjectPublicKeyInfoRef<'_>,
         tbs: &x509_cert::TbsCertificate,
     ) -> Result<Vec<x509_cert::ext::Extension>, x509_cert::builder::Error> {
-        use x509_cert::ext::pkix::{AuthorityKeyIdentifier, BasicConstraints, KeyUsage, KeyUsages, SubjectKeyIdentifier};
+        use x509_cert::ext::pkix::{
+            AuthorityKeyIdentifier, BasicConstraints, KeyUsage, KeyUsages, SubjectKeyIdentifier,
+        };
         use x509_cert::ext::ToExtension;
 
         let mut extensions = Vec::new();
@@ -374,10 +376,9 @@ impl crypto_glue::x509::Profile for LeafProfile {
             .to_extension(&tbs.subject, &extensions)?,
         );
 
-        let key_usage = KeyUsages::DigitalSignature | KeyUsages::KeyAgreement | KeyUsages::KeyEncipherment;
-        extensions.push(
-            KeyUsage(key_usage).to_extension(&tbs.subject, &extensions)?,
-        );
+        let key_usage =
+            KeyUsages::DigitalSignature | KeyUsages::KeyAgreement | KeyUsages::KeyEncipherment;
+        extensions.push(KeyUsage(key_usage).to_extension(&tbs.subject, &extensions)?);
 
         let ski = SubjectKeyIdentifier::try_from(spk)?;
         extensions.push(ski.to_extension(&tbs.subject, &extensions)?);
@@ -420,15 +421,10 @@ pub(crate) fn build_ca() -> Result<CaHandle, ()> {
         error!(?err, "Unable to access subject public key information");
     })?;
 
-    let builder = CertificateBuilder::new(
-        profile,
-        serial_number,
-        validity,
-        pub_key,
-    )
-    .map_err(|err| {
-        error!(?err, "Unable to create certificate builder");
-    })?;
+    let builder =
+        CertificateBuilder::new(profile, serial_number, validity, pub_key).map_err(|err| {
+            error!(?err, "Unable to create certificate builder");
+        })?;
 
     let cert = builder
         .build_with_rng::<_, EcdsaP384DerSignature, _>(&signing_key, &mut rng)
@@ -569,15 +565,10 @@ pub(crate) fn build_cert(domain_name: &str, ca_handle: &CaHandle) -> Result<Cert
         error!(?err, "Unable to access subject public key information");
     })?;
 
-    let mut builder = CertificateBuilder::new(
-        profile,
-        serial_number,
-        validity,
-        pub_key,
-    )
-    .map_err(|err| {
-        error!(?err, "Unable to create certificate builder");
-    })?;
+    let mut builder =
+        CertificateBuilder::new(profile, serial_number, validity, pub_key).map_err(|err| {
+            error!(?err, "Unable to create certificate builder");
+        })?;
 
     let eku_extension = ExtendedKeyUsage(vec![rfc5280::ID_KP_SERVER_AUTH]);
 
