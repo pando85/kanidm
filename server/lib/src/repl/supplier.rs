@@ -86,13 +86,8 @@ impl QueryServerWriteTransaction<'_> {
             subject: subject.clone(),
         };
 
-        let mut x509_builder = CertificateBuilder::new(
-            profile,
-            serial_number,
-            validity,
-            pub_key,
-        )
-        .map_err(|err| {
+        let mut x509_builder = CertificateBuilder::new(profile, serial_number, validity, pub_key)
+            .map_err(|err| {
             error!(?err, "Unable to construct certificate builder");
             OperationError::CryptographyError
         })?;

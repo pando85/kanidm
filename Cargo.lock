@@ -4806,6 +4806,7 @@ dependencies = [
  "uuid",
  "walkdir",
  "webauthn-rs",
+ "x509-cert 0.3.0",
 ]
 
 [[package]]
