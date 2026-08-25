@@ -300,7 +300,7 @@ pub(crate) fn build_ca() -> Result<CaHandle, ()> {
             error!(?err, "Unable to convert system time");
         })?;
 
-    let root_subject = Name::from_str("C=AU,ST=QLD,O=Kubidm,CN=Kubidm Generated CA,OU=Development and Evaluation - NOT FOR PRODUCTION")
+    let root_subject = Name::from_str("C=AU,ST=QLD,CN=Kubidm Generated CA")
         .map_err(|err| {
             error!(?err, "Invalid root subject DN - THIS IS A BUG.");
         })?;
@@ -442,7 +442,7 @@ pub(crate) fn build_cert(domain_name: &str, ca_handle: &CaHandle) -> Result<Cert
             error!(?err, "Unable to convert system time");
         })?;
 
-    let root_subject = Name::from_str("C=AU,ST=QLD,O=Kubidm,CN=Kubidm Generated Server Certificate,OU=Development and Evaluation - NOT FOR PRODUCTION")
+    let root_subject = Name::from_str("C=AU,ST=QLD,CN=Kubidm Generated Server Certificate")
         .map_err(|err| {
             error!(?err, "Invalid cert subject DN - THIS IS A BUG.");
         })?;
