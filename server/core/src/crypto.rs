@@ -4,7 +4,7 @@
 use crate::config::TlsConfiguration;
 use crypto_glue::{
     ec::EcPrivateKey,
-    ecdsa_p256::{self, EcdsaP256DerSignature, EcdsaP256SigningKey, EcdsaP256VerifyingKey},
+    ecdsa_p256::{self, EcdsaP256SigningKey, EcdsaP256VerifyingKey},
     ecdsa_p384::{self, EcdsaP384DerSignature, EcdsaP384SigningKey, EcdsaP384VerifyingKey},
     pkcs8::PrivateKeyInfo,
     rand,
@@ -587,7 +587,7 @@ pub(crate) fn build_cert(domain_name: &str, ca_handle: &CaHandle) -> Result<Cert
     })?;
 
     let cert = builder
-        .build_with_rng::<_, EcdsaP256DerSignature, _>(&signing_key, &mut rng)
+        .build_with_rng::<_, EcdsaP384DerSignature, _>(&ca_handle.key, &mut rng)
         .map_err(|err| {
             error!(?err, "Unable to sign certificate request");
         })?;
