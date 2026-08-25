@@ -10,7 +10,7 @@ use crypto_glue::{
     rand,
     rsa::RS256PrivateKey,
     traits::{
-        DecodeDer, DecodePem, EncodePem, Pkcs1DecodeRsaPrivateKey, Pkcs8DecodePrivateKey,
+        DecodeDer, DecodePem, EncodePem, Generate, Pkcs1DecodeRsaPrivateKey, Pkcs8DecodePrivateKey,
         Pkcs8EncodePrivateKey, PublicKeyParts,
     },
     x509::{
@@ -286,7 +286,7 @@ pub(crate) fn write_ca(
 
 /// build up a CA certificate and key.
 pub(crate) fn build_ca() -> Result<CaHandle, ()> {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     let root_serial_uuid = Uuid::new_v4();
     let serial_number = uuid_to_serial(root_serial_uuid);
@@ -305,7 +305,7 @@ pub(crate) fn build_ca() -> Result<CaHandle, ()> {
             error!(?err, "Invalid root subject DN - THIS IS A BUG.");
         })?;
 
-    let signing_key = EcdsaP384SigningKey::random(&mut rng);
+    let signing_key = EcdsaP384SigningKey::generate(&mut rng);
     let verifying_key = EcdsaP384VerifyingKey::from(&signing_key);
     let pub_key = SubjectPublicKeyInfoOwned::from_key(&verifying_key).map_err(|err| {
         error!(?err, "Unable to access subject public key information");
@@ -428,7 +428,7 @@ pub(crate) fn write_cert(
 }
 
 pub(crate) fn build_cert(domain_name: &str, ca_handle: &CaHandle) -> Result<CertHandle, ()> {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     let root_serial_uuid = Uuid::new_v4();
     let serial_number = uuid_to_serial(root_serial_uuid);
@@ -447,7 +447,7 @@ pub(crate) fn build_cert(domain_name: &str, ca_handle: &CaHandle) -> Result<Cert
             error!(?err, "Invalid cert subject DN - THIS IS A BUG.");
         })?;
 
-    let signing_key = EcdsaP256SigningKey::random(&mut rng);
+    let signing_key = EcdsaP256SigningKey::generate(&mut rng);
     let verifying_key = EcdsaP256VerifyingKey::from(&signing_key);
     let pub_key = SubjectPublicKeyInfoOwned::from_key(&verifying_key).map_err(|err| {
         error!(?err, "Unable to access subject public key information");
@@ -481,7 +481,7 @@ pub(crate) fn build_cert(domain_name: &str, ca_handle: &CaHandle) -> Result<Cert
     })?;
 
     let cert = builder
-        .build_with_rng::<_, EcdsaP256DerSignature, _>(&ca_handle.key, &mut rng)
+        .build_with_rng::<_, EcdsaP384DerSignature, _>(&ca_handle.key, &mut rng)
         .map_err(|err| {
             error!(?err, "Unable to sign certificate request");
         })?;

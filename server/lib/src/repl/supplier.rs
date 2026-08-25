@@ -65,11 +65,11 @@ impl QueryServerWriteTransaction<'_> {
             OperationError::CryptographyError
         })?;
 
-        let mut x509_builder =
-            CertificateBuilder::new(profile, serial_number, validity, pub_key).map_err(|err| {
-                error!(?err, "Unable to construct certificate builder");
-                OperationError::CryptographyError
-            })?;
+        let mut x509_builder = CertificateBuilder::new(profile, serial_number, validity, pub_key)
+            .map_err(|err| {
+            error!(?err, "Unable to construct certificate builder");
+            OperationError::CryptographyError
+        })?;
 
         // Key Usage (server + client )
         let eku_extension = ExtendedKeyUsage(vec![
