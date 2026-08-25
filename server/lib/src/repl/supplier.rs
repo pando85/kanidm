@@ -54,11 +54,10 @@ impl QueryServerWriteTransaction<'_> {
         let validity = x509::Validity::new(not_before, not_after);
 
         let serial_number = x509::uuid_to_serial(s_uuid);
-        let subject =
-            x509::Name::from_str(&format!("CN={s_uuid}")).map_err(|err| {
-                error!(?err, "Unable to parse subject dn");
-                OperationError::CryptographyError
-            })?;
+        let subject = x509::Name::from_str(&format!("CN={s_uuid}")).map_err(|err| {
+            error!(?err, "Unable to parse subject dn");
+            OperationError::CryptographyError
+        })?;
 
         let profile = profile::cabf::Root::new(false, subject.clone()).map_err(|err| {
             error!(?err, "Unable to create certificate profile");

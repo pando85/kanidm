@@ -300,10 +300,9 @@ pub(crate) fn build_ca() -> Result<CaHandle, ()> {
             error!(?err, "Unable to convert system time");
         })?;
 
-    let root_subject = Name::from_str("C=AU,ST=QLD,CN=Kubidm Generated CA")
-        .map_err(|err| {
-            error!(?err, "Invalid root subject DN - THIS IS A BUG.");
-        })?;
+    let root_subject = Name::from_str("C=AU,ST=QLD,CN=Kubidm Generated CA").map_err(|err| {
+        error!(?err, "Invalid root subject DN - THIS IS A BUG.");
+    })?;
 
     let signing_key = EcdsaP384SigningKey::generate();
     let verifying_key = EcdsaP384VerifyingKey::from(&signing_key);
