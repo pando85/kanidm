@@ -19,6 +19,31 @@ async fn test_healthz_endpoint(rsclient: &kubidm_client::KubidmClient) {
 }
 
 #[kubidmd_testkit::test]
+async fn test_maintenance_endpoint_after_startup(rsclient: &kubidm_client::KubidmClient) {
+    let client = rsclient.client();
+
+    let res = client
+        .get(rsclient.make_url("/maintenance"))
+        .send()
+        .await
+        .expect("Failed to send request");
+
+    assert_eq!(res.status(), 200);
+
+    let body: serde_json::Value = res.json().await.expect("Failed to parse JSON");
+    assert_eq!(body["state"], "serving");
+    assert!(body["active_operation_id"].is_null());
+    assert_eq!(body["capabilities"]["api_version"], "v1");
+    assert_eq!(body["capabilities"]["drain"], true);
+    assert_eq!(body["capabilities"]["replication_fence"], true);
+    assert_eq!(body["capabilities"]["sync_until"], true);
+    assert_eq!(body["capabilities"]["reindex"], true);
+    assert_eq!(body["capabilities"]["verify"], true);
+    assert_eq!(body["capabilities"]["vacuum"], false);
+    assert_eq!(body["capabilities"]["restore"], false);
+}
+
+#[kubidmd_testkit::test]
 async fn test_readyz_endpoint_after_startup(rsclient: &kubidm_client::KubidmClient) {
     let client = rsclient.client();
 
