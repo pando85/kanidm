@@ -394,18 +394,30 @@ impl AuthoriseReject {
     pub fn build_redirect_uri(&self) -> Url {
         let mut redirect_uri = self.redirect_uri.clone();
 
-        // Always clear query and fragment, regardless of the response mode
-        redirect_uri.set_query(None);
         redirect_uri.set_fragment(None);
 
-        // We can't set query pairs on fragments, only query.
-        let encoded = url::form_urlencoded::Serializer::new(String::new())
-            .append_pair("error", self.error.as_ref())
-            .finish();
-
         match self.response_mode {
-            SupportedResponseMode::Query => redirect_uri.set_query(Some(&encoded)),
-            SupportedResponseMode::Fragment => redirect_uri.set_fragment(Some(&encoded)),
+            SupportedResponseMode::Query => {
+                redirect_uri
+                    .query_pairs_mut()
+                    .append_pair("error", self.error.as_ref());
+
+                if let Some(state) = self.state.as_ref() {
+                    redirect_uri.query_pairs_mut().append_pair("state", state);
+                };
+            }
+            SupportedResponseMode::Fragment => {
+                redirect_uri.set_query(None);
+
+                let mut uri_builder = url::form_urlencoded::Serializer::new(String::new());
+                uri_builder.append_pair("error", self.error.as_ref());
+                if let Some(state) = self.state.as_ref() {
+                    uri_builder.append_pair("state", state);
+                };
+                let encoded = uri_builder.finish();
+
+                redirect_uri.set_fragment(Some(&encoded));
+            }
         }
 
         redirect_uri
@@ -8829,4 +8841,121 @@ mod tests {
     //         "prompt=consent must force the consent screen even when consent was previously granted"
     //     );
     // }
+
+    #[test]
+    fn test_authorise_reject_build_redirect_uri_query_mode_preserves_query_and_state() {
+        use super::{AuthoriseReject, SupportedResponseMode};
+        use url::Url;
+
+        let reject = AuthoriseReject {
+            redirect_uri: Url::parse("https://example.com/callback?existing=param").unwrap(),
+            state: Some("csrf_token_123".to_string()),
+            error: Oauth2Error::LoginRequired,
+            response_mode: SupportedResponseMode::Query,
+        };
+
+        let result = reject.build_redirect_uri();
+
+        assert_eq!(result.scheme(), "https");
+        assert_eq!(result.host_str(), Some("example.com"));
+        assert_eq!(result.path(), "/callback");
+        assert!(result.fragment().is_none());
+
+        let query_pairs: BTreeMap<String, String> = result.query_pairs().into_owned().collect();
+        assert_eq!(
+            query_pairs.get("existing").map(|s| s.as_str()),
+            Some("param")
+        );
+        assert_eq!(
+            query_pairs.get("error").map(|s| s.as_str()),
+            Some("login_required")
+        );
+        assert_eq!(
+            query_pairs.get("state").map(|s| s.as_str()),
+            Some("csrf_token_123")
+        );
+    }
+
+    #[test]
+    fn test_authorise_reject_build_redirect_uri_fragment_mode_includes_state() {
+        use super::{AuthoriseReject, SupportedResponseMode};
+        use url::Url;
+
+        let reject = AuthoriseReject {
+            redirect_uri: Url::parse("https://example.com/callback").unwrap(),
+            state: Some("csrf_abc".to_string()),
+            error: Oauth2Error::InteractionRequired,
+            response_mode: SupportedResponseMode::Fragment,
+        };
+
+        let result = reject.build_redirect_uri();
+
+        assert_eq!(result.scheme(), "https");
+        assert_eq!(result.host_str(), Some("example.com"));
+        assert_eq!(result.path(), "/callback");
+        assert!(result.query().is_none());
+
+        let fragment = result.fragment().expect("fragment must be present");
+        let fragment_pairs: BTreeMap<String, String> =
+            url::form_urlencoded::parse(fragment.as_bytes())
+                .map(|(k, v)| (k.into_owned(), v.into_owned()))
+                .collect();
+        assert_eq!(
+            fragment_pairs.get("error").map(|s| s.as_str()),
+            Some("interaction_required")
+        );
+        assert_eq!(
+            fragment_pairs.get("state").map(|s| s.as_str()),
+            Some("csrf_abc")
+        );
+    }
+
+    #[test]
+    fn test_authorise_reject_build_redirect_uri_query_mode_no_state() {
+        use super::{AuthoriseReject, SupportedResponseMode};
+        use url::Url;
+
+        let reject = AuthoriseReject {
+            redirect_uri: Url::parse("https://example.com/callback").unwrap(),
+            state: None,
+            error: Oauth2Error::AccessDenied,
+            response_mode: SupportedResponseMode::Query,
+        };
+
+        let result = reject.build_redirect_uri();
+
+        let query_pairs: BTreeMap<String, String> = result.query_pairs().into_owned().collect();
+        assert_eq!(
+            query_pairs.get("error").map(|s| s.as_str()),
+            Some("access_denied")
+        );
+        assert!(query_pairs.get("state").is_none());
+    }
+
+    #[test]
+    fn test_authorise_reject_build_redirect_uri_fragment_mode_no_state() {
+        use super::{AuthoriseReject, SupportedResponseMode};
+        use url::Url;
+
+        let reject = AuthoriseReject {
+            redirect_uri: Url::parse("https://example.com/callback").unwrap(),
+            state: None,
+            error: Oauth2Error::AccessDenied,
+            response_mode: SupportedResponseMode::Fragment,
+        };
+
+        let result = reject.build_redirect_uri();
+
+        assert!(result.query().is_none());
+        let fragment = result.fragment().expect("fragment must be present");
+        let fragment_pairs: BTreeMap<String, String> =
+            url::form_urlencoded::parse(fragment.as_bytes())
+                .map(|(k, v)| (k.into_owned(), v.into_owned()))
+                .collect();
+        assert_eq!(
+            fragment_pairs.get("error").map(|s| s.as_str()),
+            Some("access_denied")
+        );
+        assert!(fragment_pairs.get("state").is_none());
+    }
 }
