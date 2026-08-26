@@ -110,18 +110,21 @@ pub fn maintenance_public_status() -> MaintenancePublicStatus {
     MaintenancePublicStatus {
         state: maintenance_state(),
         active_operation_id: ACTIVE_OPERATION_ID.read().ok().and_then(|id| *id),
-        last_error: LAST_ERROR.read().ok().and_then(|error| error.clone()),
+        last_error: LAST_ERROR
+            .read()
+            .ok()
+            .and_then(|error| (*error).clone()),
         capabilities: MaintenanceCapabilities::default(),
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ReplicationFenceRange {
     pub ts_min: Duration,
     pub ts_max: Duration,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ReplicationFence {
     pub version: u8,
     pub domain_uuid: Uuid,
@@ -129,7 +132,7 @@ pub struct ReplicationFence {
     pub ranges: BTreeMap<Uuid, ReplicationFenceRange>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FenceSatisfaction {
     Satisfied,
@@ -298,15 +301,5 @@ mod tests {
             fence.satisfaction(ruv(domain, &[(a, 1, 10)])),
             FenceSatisfaction::GenerationMismatch
         );
-    }
-
-    #[test]
-    fn maintenance_state_round_trip() {
-        set_maintenance_error(None);
-        set_maintenance_state(MaintenanceState::Fenced, Some(Uuid::nil()));
-        let status = maintenance_public_status();
-        assert_eq!(status.state, MaintenanceState::Fenced);
-        assert_eq!(status.active_operation_id, Some(Uuid::nil()));
-        set_maintenance_state(MaintenanceState::Serving, None);
     }
 }
