@@ -2,8 +2,11 @@ use axum::extract::State;
 use axum::http::{header::CONTENT_TYPE, StatusCode};
 use axum::response::{IntoResponse, Redirect};
 use axum::{Extension, Json};
+use kubidmd_lib::maintenance::maintenance_public_status;
 use kubidmd_lib::prelude::APPLICATION_JSON;
-use kubidmd_lib::status::{LivenessStatus, ReadinessStatus, StatusRequestEvent};
+use kubidmd_lib::status::{
+    LivenessStatus, ReadinessStatus, ServingReadiness, StatusRequestEvent,
+};
 use url::Url;
 
 use super::middleware::KOpId;
@@ -63,7 +66,21 @@ pub async fn healthz(State(state): State<ServerState>) -> Json<LivenessStatus> {
 /// Readiness probe endpoint for Kubernetes. Returns 200 if the replica is ready to serve traffic,
 /// 503 otherwise. Includes detailed replication state and database health information.
 pub async fn readyz(State(state): State<ServerState>) -> impl IntoResponse {
-    let status = state.status_ref.get_readiness_status();
+    let mut status = state.status_ref.get_readiness_status();
+    let maintenance = maintenance_public_status();
+
+    // Serving readiness and administrative maintenance readiness answer different
+    // questions. A node can have healthy replication and still be intentionally
+    // drained/fenced. Never let it re-enter a Kubernetes Service while an exclusive
+    // node operation is active.
+    if !maintenance.state.is_serving() {
+        status.serving_ready = ServingReadiness::NotReady;
+        status.message = format!(
+            "Node is unavailable for maintenance (state: {:?}, operation: {:?})",
+            maintenance.state, maintenance.active_operation_id
+        );
+    }
+
     let status_code = if status.serving_ready.is_ready() {
         StatusCode::OK
     } else {
