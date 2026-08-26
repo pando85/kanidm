@@ -1,0 +1,132 @@
+name: Temporary PR 389 production fix
+
+on:
+  push:
+    branches:
+      - sync/upstream-parity-2026-08-26
+    paths:
+      - .github/workflows/pr389-production-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: sync/upstream-parity-2026-08-26
+
+      - name: Preserve OAuth rejection state and redirect query
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("server/lib/src/idm/oauth2.rs")
+          text = path.read_text()
+
+          old = '''        // Always clear query and fragment, regardless of the response mode
+          redirect_uri.set_query(None);
+          redirect_uri.set_fragment(None);
+
+          // We can't set query pairs on fragments, only query.
+          let encoded = url::form_urlencoded::Serializer::new(String::new())
+              .append_pair("error", self.error.as_ref())
+              .finish();
+
+          match self.response_mode {
+              SupportedResponseMode::Query => redirect_uri.set_query(Some(&encoded)),
+              SupportedResponseMode::Fragment => redirect_uri.set_fragment(Some(&encoded)),
+          }
+'''
+
+          new = '''        // A registered redirect URI may contain a query component. RFC 6749
+          // requires that component to be retained when adding response parameters.
+          // Registered redirect URIs may not contain fragments, but clear one defensively.
+          redirect_uri.set_fragment(None);
+
+          match self.response_mode {
+              SupportedResponseMode::Query => {
+                  redirect_uri
+                      .query_pairs_mut()
+                      .append_pair("error", self.error.as_ref());
+                  if let Some(state) = self.state.as_ref() {
+                      redirect_uri.query_pairs_mut().append_pair("state", state);
+                  }
+              }
+              SupportedResponseMode::Fragment => {
+                  let mut uri_builder = url::form_urlencoded::Serializer::new(String::new());
+                  uri_builder.append_pair("error", self.error.as_ref());
+                  if let Some(state) = self.state.as_ref() {
+                      uri_builder.append_pair("state", state);
+                  }
+                  redirect_uri.set_fragment(Some(&uri_builder.finish()));
+              }
+          }
+'''
+
+          if old not in text:
+              raise SystemExit("expected AuthoriseReject::build_redirect_uri block not found")
+          text = text.replace(old, new, 1)
+
+          marker = '''#[derive(Clone)]
+          struct CtSecret {
+'''
+
+          tests = '''#[cfg(test)]
+          mod authorise_reject_tests {
+              use super::*;
+
+              #[test]
+              fn query_response_preserves_redirect_query_and_state() {
+                  let rejection = AuthoriseReject {
+                      redirect_uri: Url::parse("https://client.example/callback?tenant=acme").unwrap(),
+                      state: Some("csrf-state".to_string()),
+                      error: Oauth2Error::AccessDenied,
+                      response_mode: SupportedResponseMode::Query,
+                  };
+
+                  assert_eq!(
+                      rejection.build_redirect_uri().as_str(),
+                      "https://client.example/callback?tenant=acme&error=access_denied&state=csrf-state"
+                  );
+              }
+
+              #[test]
+              fn fragment_response_preserves_redirect_query_and_state() {
+                  let rejection = AuthoriseReject {
+                      redirect_uri: Url::parse("https://client.example/callback?tenant=acme").unwrap(),
+                      state: Some("csrf-state".to_string()),
+                      error: Oauth2Error::InteractionRequired,
+                      response_mode: SupportedResponseMode::Fragment,
+                  };
+
+                  assert_eq!(
+                      rejection.build_redirect_uri().as_str(),
+                      "https://client.example/callback?tenant=acme#error=interaction_required&state=csrf-state"
+                  );
+              }
+          }
+
+          #[derive(Clone)]
+          struct CtSecret {
+'''
+
+          if marker not in text:
+              raise SystemExit("expected CtSecret marker not found")
+          text = text.replace(marker, tests, 1)
+          path.write_text(text)
+          PY
+
+          cargo fmt --all
+          git add server/lib/src/idm/oauth2.rs
+          git rm .github/workflows/pr389-production-fix.yml
+          git commit -m "fix: preserve OAuth state on authorisation rejection"
+          git push origin HEAD:sync/upstream-parity-2026-08-26
