@@ -28,7 +28,10 @@ async function loginAsFixture(page) {
 }
 
 async function clickSettings(page, label) {
-    await page.getByRole("link", { name: label, exact: true }).click();
+    await page
+        .locator('main[data-guide-scene="settings"]')
+        .getByRole("link", { name: label, exact: true })
+        .click();
 }
 
 async function assertStableGuide(page, expectedAction) {
