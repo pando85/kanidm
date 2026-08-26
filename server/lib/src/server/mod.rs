@@ -2084,10 +2084,21 @@ impl QueryServer {
         &self,
         curtime: Duration,
     ) -> Result<QueryServerWriteTransaction<'_>, OperationError> {
+        if !crate::maintenance::maintenance_write_allowed() {
+            return Err(OperationError::InvalidState);
+        }
+
         let (write_ticket, db_ticket) = self
             .write_acquire_ticket()
             .await
             .ok_or(OperationError::DatabaseLockAcquisitionTimeout)?;
+
+        // Drain may have started while this writer was queued. Re-check only
+        // after owning the single-writer permit so no pre-drain waiter can slip
+        // through when a maintenance fence is released.
+        if !crate::maintenance::maintenance_write_allowed() {
+            return Err(OperationError::InvalidState);
+        }
 
         // Point of no return - we now have a DB thread AND the write ticket, we MUST complete
         // as soon as possible! The following locks and elements below are SYNCHRONOUS but

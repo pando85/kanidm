@@ -376,6 +376,9 @@ pub async fn create_https_server(
 
     let app = app
         .route("/status", get(generic::status))
+        .route("/healthz", get(generic::healthz))
+        .route("/maintenance", get(generic::maintenance_status))
+        .route("/readyz", get(generic::readyz))
         // 404 handler
         .fallback(handler_404)
         // This must be the LAST middleware.

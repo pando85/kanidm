@@ -295,6 +295,37 @@ async fn submit_admin_req_human(path: &str, req: AdminTaskRequest) -> ExitCode {
             info!("domain_uuid   : {}", uuid);
             info!("domain_level  : {}", level);
         }
+        Some(Ok(AdminTaskResponse::MaintenanceCapabilities { capabilities })) => {
+            info!(?capabilities, "maintenance capabilities")
+        }
+        Some(Ok(AdminTaskResponse::MaintenanceStatus { status, fence })) => {
+            info!(?status, ?fence, "maintenance status")
+        }
+        Some(Ok(AdminTaskResponse::MaintenanceDrain {
+            operation_id,
+            fence,
+        })) => {
+            info!(?operation_id, ?fence, "maintenance drain")
+        }
+        Some(Ok(AdminTaskResponse::MaintenanceRun { result })) => {
+            info!(?result, "maintenance run")
+        }
+        Some(Ok(AdminTaskResponse::ReplicationFence { fence })) => {
+            info!(?fence, "replication fence")
+        }
+        Some(Ok(AdminTaskResponse::ReplicationSyncUntil {
+            result,
+            current_fence,
+        })) => {
+            info!(?result, ?current_fence, "replication sync until")
+        }
+        Some(Ok(AdminTaskResponse::MaintenanceResume { operation_id })) => {
+            info!(?operation_id, "maintenance resume")
+        }
+        Some(Ok(AdminTaskResponse::MaintenanceError { code, message })) => {
+            error!(?code, ?message, "maintenance error");
+            return ExitCode::FAILURE;
+        }
         Some(Ok(AdminTaskResponse::Success)) => info!("success"),
         Some(Ok(AdminTaskResponse::Error)) => {
             info!("Error - you should inspect the logs.");
@@ -399,11 +430,11 @@ async fn scripting_command(cmd: ScriptingCommand, config: Configuration) -> Exit
             check_origin,
         } => {
             let healthcheck_url = match check_origin {
-                true => format!("{}/status", config.origin),
+                true => format!("{}/healthz", config.origin),
                 false => {
                     // the replace covers when you specify an ipv6-capable "all" address
                     format!(
-                        "https://{}/status",
+                        "https://{}/healthz",
                         config.address[0].replace("[::]", "localhost")
                     )
                 }
