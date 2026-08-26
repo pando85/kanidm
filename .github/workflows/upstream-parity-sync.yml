@@ -27,8 +27,23 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote add kanidm-upstream https://github.com/kanidm/kanidm.git
           git fetch kanidm-upstream c8a9ccb77b65d32ff2cbcb33343bd31c885d5095 6666b8f692d3c176d8854d44e8af7236409aa65d
-          git cherry-pick -x c8a9ccb77b65d32ff2cbcb33343bd31c885d5095
+
+          if ! git cherry-pick -x c8a9ccb77b65d32ff2cbcb33343bd31c885d5095; then
+            conflicts="$(git diff --name-only --diff-filter=U)"
+            if [ "$conflicts" != "server/lib/src/idm/serviceaccount.rs" ]; then
+              echo "Unexpected account-signup conflicts:"
+              printf '%s\n' "$conflicts"
+              exit 1
+            fi
+            # Upstream only reorders imports in serviceaccount.rs in this commit.
+            # Preserve Kubidm's current fork-specific implementation.
+            git checkout --ours server/lib/src/idm/serviceaccount.rs
+            git add server/lib/src/idm/serviceaccount.rs
+            GIT_EDITOR=true git cherry-pick --continue
+          fi
+
           git cherry-pick -x 6666b8f692d3c176d8854d44e8af7236409aa65d
+
           git rm .github/workflows/upstream-parity-sync.yml
           git commit -m "chore: remove temporary upstream sync helper"
           git push origin HEAD:sync/upstream-parity-2026-08-26
