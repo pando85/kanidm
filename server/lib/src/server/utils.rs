@@ -4,7 +4,7 @@ use crate::valueset::{ValueSetDateTime, ValueSetEmailAddress, ValueSetIutf8, Val
 use kubidm_proto::internal::ConsistencyError;
 use kubidm_proto::v1::OutboundMessage;
 
-impl QueryServerWriteTransaction<'_> {
+impl<'a> QueryServerWriteTransaction<'a> {
     pub(crate) fn queue_message(
         &mut self,
         ident: &Identity,
@@ -39,7 +39,7 @@ impl QueryServerWriteTransaction<'_> {
     /// This is the node-drain primitive: reads remain possible (including
     /// replication supplier reads), while all new local/replication writes queue
     /// behind the returned RAII fence.
-    pub fn into_maintenance_write_fence(self) -> QueryServerMaintenanceWriteFence<'_> {
+    pub fn into_maintenance_write_fence(self) -> QueryServerMaintenanceWriteFence<'a> {
         QueryServerMaintenanceWriteFence::new(self._write_ticket)
     }
 }
