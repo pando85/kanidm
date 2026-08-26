@@ -110,10 +110,7 @@ pub fn maintenance_public_status() -> MaintenancePublicStatus {
     MaintenancePublicStatus {
         state: maintenance_state(),
         active_operation_id: ACTIVE_OPERATION_ID.read().ok().and_then(|id| *id),
-        last_error: LAST_ERROR
-            .read()
-            .ok()
-            .and_then(|error| (*error).clone()),
+        last_error: LAST_ERROR.read().ok().and_then(|error| (*error).clone()),
         capabilities: MaintenanceCapabilities::default(),
     }
 }

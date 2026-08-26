@@ -40,8 +40,12 @@ const SYNC_UNTIL_POLL_INTERVAL: Duration = Duration::from_secs(1);
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum AdminTaskRequest {
-    RecoverAccount { name: String },
-    DisableAccount { name: String },
+    RecoverAccount {
+        name: String,
+    },
+    DisableAccount {
+        name: String,
+    },
     ShowReplicationCertificate,
     ShowReplicationCertificateMetadata,
     RenewReplicationCertificate,
@@ -49,10 +53,14 @@ pub enum AdminTaskRequest {
     DomainShow,
     DomainUpgradeCheck,
     DomainRaise,
-    DomainRemigrate { level: Option<u32> },
+    DomainRemigrate {
+        level: Option<u32>,
+    },
     MaintenanceCapabilities,
     MaintenanceStatus,
-    MaintenanceDrain { operation_id: Uuid },
+    MaintenanceDrain {
+        operation_id: Uuid,
+    },
     MaintenanceRun {
         operation_id: Uuid,
         operation: MaintenanceOperation,
@@ -63,7 +71,9 @@ pub enum AdminTaskRequest {
         fence: ReplicationFence,
         timeout_seconds: Option<u64>,
     },
-    MaintenanceResume { operation_id: Uuid },
+    MaintenanceResume {
+        operation_id: Uuid,
+    },
     Reload,
 }
 
@@ -181,7 +191,11 @@ impl std::fmt::Debug for AdminTaskResponse {
                 write!(f, "MaintenanceCapabilities {{ {:?} }}", capabilities)
             }
             AdminTaskResponse::MaintenanceStatus { status, fence } => {
-                write!(f, "MaintenanceStatus {{ status: {:?}, fence: {:?} }}", status, fence)
+                write!(
+                    f,
+                    "MaintenanceStatus {{ status: {:?}, fence: {:?} }}",
+                    status, fence
+                )
             }
             AdminTaskResponse::MaintenanceDrain {
                 operation_id,
@@ -209,7 +223,11 @@ impl std::fmt::Debug for AdminTaskResponse {
                 write!(f, "MaintenanceResume {{ operation_id: {} }}", operation_id)
             }
             AdminTaskResponse::MaintenanceError { code, message } => {
-                write!(f, "MaintenanceError {{ code: {:?}, message: {:?} }}", code, message)
+                write!(
+                    f,
+                    "MaintenanceError {{ code: {:?}, message: {:?} }}",
+                    code, message
+                )
             }
             AdminTaskResponse::Success => write!(f, "Success"),
             AdminTaskResponse::Error => write!(f, "Error"),
@@ -823,7 +841,8 @@ async fn maintenance_run(
         set_maintenance_error(None);
         set_maintenance_state(MaintenanceState::Fenced, Some(operation_id));
     } else {
-        let message = operation_error.unwrap_or_else(|| "consistency verification failed".to_string());
+        let message =
+            operation_error.unwrap_or_else(|| "consistency verification failed".to_string());
         set_maintenance_error(Some(message));
         set_maintenance_state(MaintenanceState::Failed, Some(operation_id));
     }

@@ -4,9 +4,7 @@ use axum::response::{IntoResponse, Redirect};
 use axum::{Extension, Json};
 use kubidmd_lib::maintenance::maintenance_public_status;
 use kubidmd_lib::prelude::APPLICATION_JSON;
-use kubidmd_lib::status::{
-    LivenessStatus, ReadinessStatus, ServingReadiness, StatusRequestEvent,
-};
+use kubidmd_lib::status::{LivenessStatus, ReadinessStatus, ServingReadiness, StatusRequestEvent};
 use url::Url;
 
 use super::middleware::KOpId;

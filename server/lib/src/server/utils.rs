@@ -47,7 +47,8 @@ impl<'a> QueryServerWriteTransaction<'a> {
 impl QueryServerReadTransaction<'_> {
     /// Capture the current replication history as an opaque handoff fence.
     pub fn maintenance_replication_fence(&mut self) -> Result<ReplicationFence, OperationError> {
-        self.consumer_get_state().map(ReplicationFence::from_ruv_range)
+        self.consumer_get_state()
+            .map(ReplicationFence::from_ruv_range)
     }
 
     /// Run the normal full QueryServer consistency verification without the
