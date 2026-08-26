@@ -482,7 +482,6 @@ async fn repl_run_consumer_inner(
             error!("Consumer connection closed, unable to continue.");
             return None;
         }
-
         Err(_) => {
             error!("consumer response timeout, unable to continue");
             return None;
@@ -1061,7 +1060,12 @@ async fn repl_acceptor(
             Some(TlsAcceptor::from(Arc::new(tls_server_config)))
         };
 
-        loop {
+        // IMPORTANT: We have to drop the retry timeout else the renew
+        // cert times out. This is a HACK until I swap in the new actors
+        // framework.
+        retry_timeout = Duration::from_secs(1);
+
+        'event_inner: loop {
             // This is great to diagnose when spans are entered or present and they capture
             // things incorrectly.
             // eprintln!("🔥 C ---> {:?}", tracing::Span::current());
@@ -1071,7 +1075,7 @@ async fn repl_acceptor(
                 Ok(action) = rx.recv() => {
                     match action {
                         CoreAction::Shutdown => break 'event,
-                        CoreAction::Reload => {}
+                        CoreAction::Reload => continue 'event,
                     }
                 }
                 Some(ctrl_msg) = ctrl_rx.recv() => {
@@ -1085,6 +1089,7 @@ async fn repl_acceptor(
                             } else {
                                 trace!("Sent server certificate via control channel");
                             }
+                            continue 'event_inner
                         }
                         ReplCtrl::RenewCertificate {
                             respond
@@ -1145,6 +1150,7 @@ async fn repl_acceptor(
                             } else {
                                 trace!("Sent refresh comms channel to requester");
                             }
+                            continue 'event_inner
                         }
                     }
                 }
@@ -1177,6 +1183,7 @@ async fn repl_acceptor(
                             error!("replication acceptor error, continuing -> {:?}", e);
                         }
                     }
+                    continue 'event_inner
                 }
             } // end select
               // Continue to poll/loop
