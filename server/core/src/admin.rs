@@ -552,7 +552,7 @@ async fn acquire_write_fence(
     let (release_tx, release_rx) = oneshot::channel();
     let (ready_tx, ready_rx) = oneshot::channel::<Result<ReplicationFence, String>>();
 
-    let mut task = tokio::spawn(async move {
+    let task = tokio::spawn(async move {
         let qs_write = {
             let proxy_write = match idms.proxy_write(duration_from_epoch_now()).await {
                 Ok(txn) => txn,
