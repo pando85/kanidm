@@ -1,3 +1,4 @@
+# Triggered after workflow registration on the branch.
 name: Temporary PR 389 production fix
 
 on:
