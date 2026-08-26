@@ -342,3 +342,30 @@ The implementation following this ADR will land in the same branch, with this AD
 - Safe in-process SQLite vacuum/backend pool reopen lifecycle.
 - Native restore/DR control operations; these must obey replication-generation recovery semantics rather than this ordinary rolling-maintenance protocol.
 - Kaniop `KanidmMaintenance` CRD/controller and scheduling policy, documented separately in the companion Kaniop design proposal.
+
+
+## Implementation refinement
+
+The implementation keeps the safety invariants above but deliberately uses a smaller
+lock/control surface than the initial plan described.
+
+- `QueryServer::write` is the hard admission boundary. It rejects ordinary writes in every
+  non-`Serving` maintenance state, both before waiting for and after acquiring the writer
+  permit. The second check closes the race with writers that entered the semaphore queue just
+  before a drain began.
+- Privileged maintenance work uses a Tokio task-local bypass. Because the bypass is scoped to
+  one directly-awaited future, it cannot admit unrelated client/background writers in another
+  task.
+- The replication consumer is idle while a node is `Draining`, `Fenced`, `Maintenance`, or
+  `Failed`. In `Recovering` only replication apply receives the task-local bypass; ordinary
+  writes remain rejected while the node catches up to the supplied fence.
+- This makes explicit `ReplCtrl` pause/resume messages unnecessary for the first implementation:
+  write admission itself provides the pause acknowledgement once the maintenance fence owns the
+  writer permit.
+- `sync-until` currently observes the existing periodic incremental replication loop instead of
+  forcing a new replication tick. This can add up to one configured replication interval of
+  latency but does not weaken the fence proof. An immediate-sync control is an optimisation, not
+  a correctness requirement.
+
+The original plan remains in the first commit for design history; this section records the final
+mechanism implemented by the branch.

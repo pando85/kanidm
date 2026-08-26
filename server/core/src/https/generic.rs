@@ -2,7 +2,7 @@ use axum::extract::State;
 use axum::http::{header::CONTENT_TYPE, StatusCode};
 use axum::response::{IntoResponse, Redirect};
 use axum::{Extension, Json};
-use kubidmd_lib::maintenance::maintenance_public_status;
+use kubidmd_lib::maintenance::{maintenance_public_status, MaintenancePublicStatus};
 use kubidmd_lib::prelude::APPLICATION_JSON;
 use kubidmd_lib::status::{LivenessStatus, ReadinessStatus, ServingReadiness, StatusRequestEvent};
 use url::Url;
@@ -49,6 +49,20 @@ pub async fn status(
 /// This does NOT indicate readiness to serve traffic.
 pub async fn healthz(State(state): State<ServerState>) -> Json<LivenessStatus> {
     state.status_ref.get_liveness_status().into()
+}
+
+#[utoipa::path(
+    get,
+    path = "/maintenance",
+    responses(
+        (status = 200, description = "Node maintenance state and capabilities", content_type = APPLICATION_JSON, body=MaintenancePublicStatus),
+    ),
+    tag = "system",
+    operation_id = "maintenance_status"
+)]
+/// Read-only node-local maintenance state and capability discovery.
+pub async fn maintenance_status() -> Json<MaintenancePublicStatus> {
+    maintenance_public_status().into()
 }
 
 #[utoipa::path(

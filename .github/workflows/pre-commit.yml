@@ -7,9 +7,6 @@ name: Pre-commit
   pull_request:
     branches: [master]
 
-permissions:
-  contents: write
-
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
@@ -37,32 +34,3 @@ jobs:
 
       - name: Run pre-commit (skip Rust hooks - run in separate jobs)
         run: SKIP=fmt,clippy pre-commit run --all-files --verbose
-
-  apply-maintenance:
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feat/maintenance-control-plane'
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Checkout maintenance branch
-        uses: actions/checkout@v7
-        with:
-          ref: feat/maintenance-control-plane
-          fetch-depth: 0
-
-      - name: Apply maintenance implementation patch
-        run: python3 scripts/maintenance_patch.py
-
-      - name: Format and validate patch
-        run: |
-          rustup component add rustfmt
-          cargo fmt --all
-          git diff --check
-
-      - name: Commit completed implementation
-        run: |
-          git show origin/master:.github/workflows/pre-commit.yml > .github/workflows/pre-commit.yml
-          rm -f .github/workflows/maintenance-gate-patch.yml scripts/maintenance_patch.py
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "fix: enforce maintenance write gate and complete control surface"
-          git push origin HEAD:feat/maintenance-control-plane

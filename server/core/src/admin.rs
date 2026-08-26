@@ -10,9 +10,9 @@ pub use kubidm_proto::internal::{
 };
 use kubidm_utils_users::get_current_uid;
 use kubidmd_lib::maintenance::{
-    maintenance_public_status, set_maintenance_error, set_maintenance_state, FenceSatisfaction,
-    MaintenanceCapabilities, MaintenanceOperation, MaintenancePublicStatus, MaintenanceState,
-    ReplicationFence,
+    maintenance_public_status, set_maintenance_error, set_maintenance_state,
+    with_maintenance_write_bypass, FenceSatisfaction, MaintenanceCapabilities,
+    MaintenanceOperation, MaintenancePublicStatus, MaintenanceState, ReplicationFence,
 };
 use kubidmd_lib::prelude::{duration_from_epoch_now, IdmServer};
 use serde::{Deserialize, Serialize};
@@ -572,15 +572,18 @@ async fn acquire_write_fence(
 
     let task = tokio::spawn(async move {
         let qs_write = {
-            let proxy_write = match idms.proxy_write(duration_from_epoch_now()).await {
-                Ok(txn) => txn,
-                Err(err) => {
-                    let _ = ready_tx.send(Err(format!(
-                        "unable to acquire maintenance writer permit: {err:?}"
-                    )));
-                    return;
-                }
-            };
+            let proxy_write =
+                match with_maintenance_write_bypass(idms.proxy_write(duration_from_epoch_now()))
+                    .await
+                {
+                    Ok(txn) => txn,
+                    Err(err) => {
+                        let _ = ready_tx.send(Err(format!(
+                            "unable to acquire maintenance writer permit: {err:?}"
+                        )));
+                        return;
+                    }
+                };
             proxy_write.qs_write
         };
 
@@ -728,10 +731,10 @@ async fn run_verification(idms: &IdmServer) -> Result<Vec<String>, String> {
 
 async fn run_reindex(idms: &IdmServer) -> Result<(), String> {
     let result = {
-        let proxy_write = idms
-            .proxy_write(duration_from_epoch_now())
-            .await
-            .map_err(|err| format!("unable to acquire reindex write transaction: {err:?}"))?;
+        let proxy_write =
+            with_maintenance_write_bypass(idms.proxy_write(duration_from_epoch_now()))
+                .await
+                .map_err(|err| format!("unable to acquire reindex write transaction: {err:?}"))?;
         let mut qs_write = proxy_write.qs_write;
         qs_write
             .reindex(true)
@@ -1134,4 +1137,47 @@ async fn handle_client(
 
     debug!("Disconnecting client ...");
     Ok(())
+}
+
+#[cfg(test)]
+mod maintenance_protocol_tests {
+    use super::*;
+
+    #[test]
+    fn maintenance_request_json_round_trip_preserves_operation_id() {
+        let operation_id = Uuid::new_v4();
+        let encoded = serde_json::to_vec(&AdminTaskRequest::MaintenanceDrain { operation_id })
+            .expect("maintenance request should serialize");
+        let decoded: AdminTaskRequest =
+            serde_json::from_slice(&encoded).expect("maintenance request should deserialize");
+
+        match decoded {
+            AdminTaskRequest::MaintenanceDrain {
+                operation_id: decoded_id,
+            } => assert_eq!(decoded_id, operation_id),
+            other => panic!("unexpected decoded request: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn maintenance_run_result_json_is_structured() {
+        let operation_id = Uuid::new_v4();
+        let response = AdminTaskResponse::MaintenanceRun {
+            result: MaintenanceRunResult {
+                operation_id,
+                operation: MaintenanceOperation::Verify,
+                success: true,
+                verification_errors: Vec::new(),
+                fence: None,
+                error: None,
+            },
+        };
+
+        let value = serde_json::to_value(response).expect("maintenance response should serialize");
+        assert_eq!(
+            value["MaintenanceRun"]["result"]["operation_id"],
+            operation_id.to_string()
+        );
+        assert_eq!(value["MaintenanceRun"]["result"]["success"], true);
+    }
 }

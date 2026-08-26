@@ -7,6 +7,7 @@
 use crate::repl::proto::ReplRuvRange;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::future::Future;
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::RwLock;
 use std::time::Duration;
@@ -88,6 +89,38 @@ pub struct MaintenancePublicStatus {
 static MAINTENANCE_STATE: AtomicU8 = AtomicU8::new(MaintenanceState::Serving as u8);
 static ACTIVE_OPERATION_ID: RwLock<Option<Uuid>> = RwLock::new(None);
 static LAST_ERROR: RwLock<Option<String>> = RwLock::new(None);
+
+tokio::task_local! {
+    static MAINTENANCE_WRITE_BYPASS: ();
+}
+
+fn write_allowed_for_state(state: MaintenanceState, bypass: bool) -> bool {
+    state.is_serving() || bypass
+}
+
+/// Whether the current async task may start a QueryServer write transaction.
+///
+/// Ordinary tasks are admitted only while the node is serving. Privileged
+/// maintenance work and replication recovery are scoped with
+/// [`with_maintenance_write_bypass`], which is task-local and therefore can not
+/// accidentally admit unrelated concurrent writers.
+pub fn maintenance_write_allowed() -> bool {
+    let bypass = MAINTENANCE_WRITE_BYPASS
+        .try_with(|()| true)
+        .unwrap_or(false);
+    write_allowed_for_state(maintenance_state(), bypass)
+}
+
+/// Run one future with privileged access to QueryServer writes.
+///
+/// The scope is inherited only by the future being directly awaited; unrelated
+/// Tokio tasks remain subject to the normal maintenance write gate.
+pub async fn with_maintenance_write_bypass<F>(future: F) -> F::Output
+where
+    F: Future,
+{
+    MAINTENANCE_WRITE_BYPASS.scope((), future).await
+}
 
 pub fn maintenance_state() -> MaintenanceState {
     MaintenanceState::from_u8(MAINTENANCE_STATE.load(Ordering::Acquire))
@@ -280,6 +313,24 @@ mod tests {
             fence.satisfaction(ruv(domain, &[(a, 1, 9), (b, 2, 20)])),
             FenceSatisfaction::Unsatisfied
         );
+    }
+
+    #[test]
+    fn write_gate_allows_only_serving_or_privileged_tasks() {
+        assert!(write_allowed_for_state(MaintenanceState::Serving, false));
+        assert!(write_allowed_for_state(MaintenanceState::Serving, true));
+        assert!(!write_allowed_for_state(MaintenanceState::Draining, false));
+        assert!(!write_allowed_for_state(MaintenanceState::Fenced, false));
+        assert!(!write_allowed_for_state(
+            MaintenanceState::Maintenance,
+            false
+        ));
+        assert!(!write_allowed_for_state(
+            MaintenanceState::Recovering,
+            false
+        ));
+        assert!(!write_allowed_for_state(MaintenanceState::Failed, false));
+        assert!(write_allowed_for_state(MaintenanceState::Recovering, true));
     }
 
     #[test]
