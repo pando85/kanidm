@@ -1,0 +1,34 @@
+name: Temporary upstream parity sync
+
+on:
+  push:
+    branches:
+      - sync/upstream-parity-2026-08-26
+    paths:
+      - .github/workflows/upstream-parity-sync.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-upstream:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: sync/upstream-parity-2026-08-26
+
+      - name: Apply remaining functional upstream commits
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add kanidm-upstream https://github.com/kanidm/kanidm.git
+          git fetch kanidm-upstream c8a9ccb77b65d32ff2cbcb33343bd31c885d5095 6666b8f692d3c176d8854d44e8af7236409aa65d
+          git cherry-pick -x c8a9ccb77b65d32ff2cbcb33343bd31c885d5095
+          git cherry-pick -x 6666b8f692d3c176d8854d44e8af7236409aa65d
+          git rm .github/workflows/upstream-parity-sync.yml
+          git commit -m "chore: remove temporary upstream sync helper"
+          git push origin HEAD:sync/upstream-parity-2026-08-26
