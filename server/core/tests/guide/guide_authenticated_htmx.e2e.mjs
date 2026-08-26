@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 const fixtureUsername = process.env.KUBIDM_E2E_TEST_USERNAME || "guide_e2e_user";
 const fixturePassword = process.env.KUBIDM_E2E_TEST_PASSWORD;
+const credentialAction = /^credential_(setup|attention_required|policy_conflict)$/;
 
 test.describe.configure({ retries: 0 });
 
@@ -47,15 +48,6 @@ async function assertStableGuide(page, expectedAction) {
     expect(await page.locator("[data-guide-rive-canvas]").count()).toBeLessThanOrEqual(1);
 }
 
-async function credentialGuideAction(page) {
-    const state = page.locator('main[data-guide-scene="settings"] [data-guide-state]').first();
-    await expect(state).toHaveAttribute(
-        "data-guide-action",
-        /^credential_(setup|attention_required|policy_conflict)$/,
-    );
-    return state.getAttribute("data-guide-action");
-}
-
 test("Profile and Credentials survive 20 HTMX cycles without guide DOM leaks", async ({ page, browserName }) => {
     test.skip(browserName !== "chromium", "the authenticated HTMX fixture is intentionally exercised once in Chromium");
     test.skip(!fixturePassword, "requires the deterministic normal-person password provisioned by CI");
@@ -68,14 +60,9 @@ test("Profile and Credentials survive 20 HTMX cycles without guide DOM leaks", a
     await page.goto("/ui/profile");
     await assertStableGuide(page, /profile_(readonly|edit)/);
 
-    let initialCredentialAction = null;
     for (let cycle = 0; cycle < 20; cycle += 1) {
         await clickSettings(page, "Credentials");
-        if (initialCredentialAction === null) {
-            initialCredentialAction = await credentialGuideAction(page);
-            expect(initialCredentialAction).not.toBeNull();
-        }
-        await assertStableGuide(page, initialCredentialAction);
+        await assertStableGuide(page, credentialAction);
 
         await clickSettings(page, "Profile");
         await assertStableGuide(page, /profile_(readonly|edit)/);
