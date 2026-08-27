@@ -618,7 +618,7 @@ impl LogoutOpt {
                     // There are no session tokens, so return a success.
                     std::process::exit(0);
                 }
-                Err(ToClientError::NeedReauth(_, _))
+                Err(ToClientError::NeedReauth(_))
                 | Err(ToClientError::ReadOnly)
                 | Err(ToClientError::Other) => {
                     // This can only occur in bad cases, so fail.

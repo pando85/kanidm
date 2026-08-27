@@ -11,10 +11,9 @@ use crate::session::{process_auth_state, read_tokens};
 use crate::{KubidmClientParser, LoginOpt};
 
 #[derive(Debug)]
-#[allow(clippy::large_enum_variant)]
 pub enum ToClientError {
     NeedLogin(String),
-    NeedReauth(String, KubidmClient),
+    NeedReauth(String),
     ReadOnly,
     Other,
 }
@@ -280,7 +279,7 @@ impl KubidmClientParser {
                                     "Privileges have expired for {} - you need to re-authenticate again.",
                                     uat.spn
                                 );
-                                return Err(ToClientError::NeedReauth(spn, client));
+                                return Err(ToClientError::NeedReauth(spn));
                             }
                             PrivilegesActive::False => {
                                 error!("The current session for {} is read-only.", uat.spn);
@@ -326,7 +325,7 @@ impl KubidmClientParser {
                     continue;
                 }
 
-                Err(ToClientError::NeedReauth(username, _client)) => {
+                Err(ToClientError::NeedReauth(username)) => {
                     if !Confirm::new()
                         .with_prompt("Would you like to re-authenticate?")
                         .default(true)
