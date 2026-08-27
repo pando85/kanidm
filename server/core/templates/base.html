@@ -25,7 +25,8 @@
 
 		(% block head %)(% endblock %)
 	</head>
-	<body class="flex-column d-flex h-100">
+	<body class="flex-column d-flex h-100"
+		(% if crate::https::views::guide::guided_ui_enabled() %)data-guide-motion-config="(( crate::https::views::guide::guided_motion_mode() ))"(% endif %)>
 		(% block body %)(% endblock %)
 		<footer class="footer mt-auto py-3 bg-body-tertiary text-end">
 			<div class="container">

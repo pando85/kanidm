@@ -1,10 +1,11 @@
 (% extends "login_base.html" %)
 
 (% block logincontainer %)
+<div data-guide-state="protect" data-guide-action="totp">
 <label for="totp" class="form-label">Two-factor authentication code</label>
 (% match errors %)
 	(% when LoginTotpError::Syntax %)
-	<div class="alert alert-danger" role="alert">
+	<div class="alert alert-danger" role="alert" data-guide-severity="caution">
 		<p>Invalid Value</p>
 		<p>Code must only consist of numbers, please try again.</p>
 	</div>
@@ -42,4 +43,5 @@
 		>Submit</button>
 	</div>
 </form>
+</div>
 (% endblock %)

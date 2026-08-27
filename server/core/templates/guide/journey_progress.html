@@ -1,0 +1,13 @@
+<ol class="guide-progress" aria-label="Identity setup progress">
+    (% for item in items %)
+    <li data-complete="(( item.complete ))">
+        <span class="guide-progress-marker" aria-hidden="true"></span>
+        <span>
+            <strong>(( item.label ))</strong>
+            (% if let Some(detail) = item.detail %)
+            <small>(( detail ))</small>
+            (% endif %)
+        </span>
+    </li>
+    (% endfor %)
+</ol>

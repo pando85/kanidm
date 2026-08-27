@@ -1,6 +1,6 @@
 # Kubidm - Simple and Secure Identity Management
 
-> **This repository is an independent fork of [Kanidm](https://github.com/kanidm/kubidm).**
+> **This repository is an independent fork of [Kanidm](https://github.com/kanidm/kanidm).**
 > 
 > We started this fork because our product direction and development priorities have diverged from the upstream project.
 > 

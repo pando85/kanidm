@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "asset": "/pkg/img/guide/kubidm-guide.riv",
+  "runtime": {
+    "package": "@rive-app/canvas-lite",
+    "version": "2.39.1",
+    "javascript": "/pkg/rive/rive.js",
+    "wasm": "/pkg/rive/rive.wasm",
+    "selfHosted": true,
+    "cdnAllowed": false
+  },
+  "artboard": "KubidmGuide",
+  "stateMachine": "ProductGuide",
+  "viewModel": "GuideState",
+  "properties": {
+    "state": {
+      "type": "enum",
+      "values": [
+        "idle",
+        "welcome",
+        "guide",
+        "protect",
+        "working",
+        "success",
+        "warning",
+        "goodbye",
+        "travel"
+      ]
+    },
+    "motion": {
+      "type": "enum",
+      "values": ["full", "reduced", "static"]
+    },
+    "severity": {
+      "type": "enum",
+      "values": ["neutral", "positive", "caution", "critical"]
+    },
+    "travelDirection": {
+      "type": "enum",
+      "values": ["left", "right"]
+    },
+    "lookX": {
+      "type": "number",
+      "min": -1,
+      "max": 1,
+      "default": 0
+    },
+    "lookY": {
+      "type": "number",
+      "min": -1,
+      "max": 1,
+      "default": 0
+    },
+    "attention": {
+      "type": "trigger"
+    },
+    "successSmall": {
+      "type": "trigger"
+    },
+    "successMajor": {
+      "type": "trigger"
+    },
+    "goodbye": {
+      "type": "trigger"
+    }
+  },
+  "visualInvariants": {
+    "secondaryShellAllowed": false,
+    "visibleLegCount": 6,
+    "shortEyeStalks": true,
+    "asymmetricClaws": true,
+    "identityBand": true,
+    "identityBandStripe": true,
+    "identityBandTail": true,
+    "identityBadge": true,
+    "extraChestFaceAllowed": false,
+    "extraEyesAllowed": false,
+    "extraClothingAllowed": false
+  },
+  "motionInvariants": {
+    "travelLegCyclesPerSecond": {
+      "min": 2.5,
+      "max": 3.5
+    },
+    "travelBodyVerticalOscillationPercentMax": 3,
+    "travelBodyRotationDegreesMax": 2,
+    "bandTailLagMsTarget": {
+      "min": 100,
+      "max": 150
+    },
+    "repeatedPointingAllowed": false,
+    "repeatedSuccessBounceAllowed": false,
+    "criticalIdleAnimationAllowed": false,
+    "staticContinuousAnimationAllowed": false
+  },
+  "rendererPolicy": {
+    "full": "rive",
+    "reduced": "static",
+    "static": "static",
+    "riveFailure": "static"
+  },
+  "requiredScenarios": [
+    "first_encounter",
+    "method_choice",
+    "passkey_teaching",
+    "webauthn_pending",
+    "confirmed_success",
+    "applications_travel",
+    "applications_idle",
+    "password_works_ok",
+    "webauthn_cancelled",
+    "oauth_context",
+    "reauthentication",
+    "policy_required",
+    "returning_user",
+    "credential_progress",
+    "logout_goodbye"
+  ],
+  "verification": {
+    "consecutiveStateChanges": 100,
+    "htmxNavigationCycles": 20,
+    "requireRive404FallbackTest": true,
+    "requireWasmFailureFallbackTest": true,
+    "requireReducedMotionTest": true,
+    "requireStaticModeTest": true,
+    "requireIndependentVisualReview": true,
+    "visualReviewSchema": "tests/guide/visual_review.schema.json",
+    "visualReviewPrompt": "tests/guide/visual_review_prompt.md",
+    "minimumVisualScore": 4,
+    "requireHumanApprovalForCanonicalSilhouette": true,
+    "requireHumanApprovalForTravelGait": true
+  }
+}
