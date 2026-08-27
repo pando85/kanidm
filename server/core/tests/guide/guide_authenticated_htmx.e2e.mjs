@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 const fixtureUsername = process.env.KUBIDM_E2E_TEST_USERNAME || "guide_e2e_user";
 const fixturePassword = process.env.KUBIDM_E2E_TEST_PASSWORD;
+// Each settled HTMX response may expose any credential state that the server policy derives.
 const credentialAction = /^credential_(setup|attention_required|policy_conflict)$/;
 
 test.describe.configure({ retries: 0 });
@@ -34,7 +35,7 @@ async function clickSettings(page, label) {
 
 async function assertStableGuide(page, expectedAction) {
     await expect(page.locator('main[data-guide-scene="settings"]')).toHaveCount(1);
-    await expect(page.locator("[data-guide-slot]")).toHaveCount(1);
+    await expect(page.locator("[data-guide-slot] ")).toHaveCount(1);
     await expect(page.locator('main[data-guide-scene="settings"] [data-guide-state]').first()).toHaveAttribute(
         "data-guide-action",
         expectedAction,
