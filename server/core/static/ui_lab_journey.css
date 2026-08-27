@@ -1,0 +1,133 @@
+.ui-lab-scenario-control {
+  display: grid;
+  grid-template-columns: minmax(15rem, 1fr) minmax(12rem, auto) auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.7rem 1.2rem;
+  border-bottom: 1px solid var(--bs-border-color);
+  background: var(--bs-tertiary-bg);
+}
+
+.ui-lab-scenario-select {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0;
+  color: var(--bs-secondary-color);
+  font-size: 0.7rem;
+}
+
+.ui-lab-scenario-select select {
+  width: 100%;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.45rem;
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  padding: 0.35rem 0.55rem;
+}
+
+.ui-lab-scenario-progress {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 12rem;
+}
+
+.ui-lab-scenario-progress strong {
+  font-size: 0.82rem;
+}
+
+.ui-lab-scenario-progress span {
+  color: var(--bs-secondary-color);
+  font-size: 0.72rem;
+}
+
+.ui-lab-scenario-actions {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+
+.ui-lab-event-panel {
+  margin: 0 1.2rem 1.2rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.7rem;
+  background: var(--bs-body-bg);
+  overflow: hidden;
+}
+
+.ui-lab-event-panel > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0.85rem;
+  border-bottom: 1px solid var(--bs-border-color);
+  background: var(--bs-tertiary-bg);
+}
+
+.ui-lab-event-panel > header > div {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.ui-lab-event-panel ol {
+  max-height: 14rem;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.ui-lab-event-panel li {
+  display: grid;
+  grid-template-columns: minmax(10rem, 0.3fr) minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.55rem 0.85rem;
+  border-bottom: 1px solid var(--bs-border-color-translucent);
+  font-size: 0.75rem;
+}
+
+.ui-lab-event-panel li:last-child {
+  border-bottom: 0;
+}
+
+.ui-lab-event-panel code {
+  overflow-wrap: anywhere;
+  color: var(--bs-secondary-color);
+}
+
+.ui-lab-event-panel .ui-lab-event-empty {
+  display: block;
+  color: var(--bs-secondary-color);
+}
+
+@media (max-width: 70rem) {
+  .ui-lab-scenario-control {
+    grid-template-columns: 1fr auto;
+  }
+
+  .ui-lab-scenario-progress {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+
+@media (max-width: 48rem) {
+  .ui-lab-scenario-control {
+    grid-template-columns: 1fr;
+  }
+
+  .ui-lab-scenario-progress,
+  .ui-lab-scenario-actions {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .ui-lab-scenario-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .ui-lab-event-panel li {
+    grid-template-columns: 1fr;
+  }
+}
