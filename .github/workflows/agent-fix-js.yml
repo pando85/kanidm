@@ -39,9 +39,7 @@ jobs:
 
           https_mod = Path('server/core/src/https/mod.rs')
           text = https_mod.read_text()
-          duplicate = '''            // https://datatracker.ietf.org/doc/html/rfc9700#name-clickjacking
-            "frame-ancestors 'none'; ",
-'''
+          duplicate = "            // https://datatracker.ietf.org/doc/html/rfc9700#name-clickjacking\n            \"frame-ancestors 'none'; \",\n"
           assert text.count(duplicate) == 2, text.count(duplicate)
           https_mod.write_text(text.replace(duplicate, ''))
           PY
