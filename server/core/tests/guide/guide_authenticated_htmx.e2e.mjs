@@ -35,7 +35,7 @@ async function clickSettings(page, label) {
 
 async function assertStableGuide(page, expectedAction) {
     await expect(page.locator('main[data-guide-scene="settings"]')).toHaveCount(1);
-    await expect(page.locator("[data-guide-slot] ")).toHaveCount(1);
+    await expect(page.locator("[data-guide-slot]")).toHaveCount(1);
     await expect(page.locator('main[data-guide-scene="settings"] [data-guide-state]').first()).toHaveAttribute(
         "data-guide-action",
         expectedAction,
