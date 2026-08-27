@@ -314,7 +314,7 @@ function mascotMarkup(state) {
 function storyContent(story) {
     switch (story.content) {
         case "identify":
-            return `<form class="ui-lab-form" onsubmit="return false">
+            return `<form class="ui-lab-form">
                 <label>Username<input class="form-control" value="alex" /></label>
                 <label class="form-check"><input type="checkbox" class="form-check-input" checked /> Remember my username</label>
                 <button type="button" class="btn ui-lab-primary-action" data-go-story="method-choice">Continue</button>
@@ -342,7 +342,7 @@ function storyContent(story) {
             return `${noticeMarkup("Identity verified", "Authentication was confirmed by Kubidm.", "positive")}
                 <button type="button" class="btn ui-lab-primary-action" data-go-story="applications-arrival">Continue</button>`;
         case "password":
-            return `<form class="ui-lab-form" onsubmit="return false">
+            return `<form class="ui-lab-form">
                 <label>Password<input type="password" class="form-control" value="example-password" /></label>
                 <button type="button" class="btn ui-lab-primary-action" data-go-story="success">Sign in</button>
             </form>`;
