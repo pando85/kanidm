@@ -1,3 +1,4 @@
+#![recursion_limit = "256"]
 #![deny(warnings)]
 #![warn(unused_extern_crates)]
 #![deny(clippy::todo)]

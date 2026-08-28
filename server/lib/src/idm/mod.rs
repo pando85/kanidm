@@ -4,7 +4,6 @@
 //! is implemented.
 
 pub mod account;
-pub mod account_signup;
 pub(crate) mod accountpolicy;
 pub mod application;
 pub(crate) mod applinks;

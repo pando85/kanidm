@@ -7,7 +7,8 @@ The intent of the Kubidm project is to:
 
 - Provide a single source of truth for authorisation and authentication.
 - Make system, network, application and web authentication easy and accessible.
-- Secure and reliable by default, aiming for the highest levels of quality and stability.
+- Be secure and reliable by default, aiming for the highest levels of quality and stability.
+- Be straightforward to automate and reconcile through machine-oriented operational interfaces.
 
 ## Why do I want Kubidm?
 
@@ -59,6 +60,11 @@ be revoked.
 
 Due to this model, and the design of Kubidm to centre the device and to have more per-service credentials, workflows and
 automation are added or designed to reduce human handling.
+
+The same automation-first principle applies to operating Kubidm itself. Kubidm owns identity, database, replication,
+and recovery correctness, while deployment-level policy and reconciliation can be delegated to an external control
+plane. See the [Operational Model](operational_model.md) for how this boundary applies to simple and distributed
+deployments.
 
 ## For Developers
 

@@ -137,6 +137,27 @@ not limited to:
   [`proto/src/internal.rs`](https://github.com/kubidm/kubidm/blob/master/proto/src/internal.rs)
 - SCIM operations from [`proto/src/scim_v1`](https://github.com/kubidm/kubidm/blob/master/proto/src/scim_v1)
 
+#### Operator-facing control interfaces
+
+Kubidm's operational architecture is intended to support external reconcilers. Existing internal and Unix-admin
+interfaces remain subject to the stability rules above unless explicitly documented otherwise; their presence alone does
+not make them a stable operator API.
+
+When an operator-facing control protocol is declared for external use, it should provide the compatibility properties
+needed by a reconciler rather than relying on release-string assumptions or human-oriented output. In particular,
+operator-facing capabilities should be versioned or discoverable, mutating operations should be idempotent or carry a
+stable operation identity, and progress/failure state should be machine-readable.
+
+External automation should depend on documented semantic interfaces. It should not treat log messages, CLI text,
+process state, or timing as stable proofs of database or replication correctness.
+
+Until a particular operator-facing interface is explicitly declared stable, controllers must perform capability/version
+negotiation and should retain a conservative fallback or refuse an operation when the required semantic primitive is not
+available.
+
+See the [Operational Model](operational_model.md) and
+[Orchestration Boundary](developers/designs/orchestration_boundary.md) for the architectural rationale.
+
 ### Deprecation Policy
 
 Features or APIs may be removed with 1 release versions notice. Deprecations will be announced in

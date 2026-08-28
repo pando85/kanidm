@@ -102,9 +102,9 @@ pub enum Oauth2Error {
     ExpiredToken,
 }
 
-impl AsRef<str> for Oauth2Error {
-    fn as_ref(&self) -> &'static str {
-        match self {
+impl std::fmt::Display for Oauth2Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
             Oauth2Error::AuthenticationRequired => "authentication_required",
             Oauth2Error::InvalidClientId => "invalid_client_id",
             Oauth2Error::InvalidOrigin => "invalid_origin",
@@ -125,13 +125,7 @@ impl AsRef<str> for Oauth2Error {
             Oauth2Error::SlowDown => "slow_down",
             Oauth2Error::AuthorizationPending => "authorization_pending",
             Oauth2Error::ExpiredToken => "expired_token",
-        }
-    }
-}
-
-impl std::fmt::Display for Oauth2Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.as_ref())
+        })
     }
 }
 
@@ -322,8 +316,6 @@ pub enum AuthoriseResponse {
         consent_token: String,
     },
     Permitted(AuthorisePermitSuccess),
-
-    Reject(AuthoriseReject),
 }
 
 #[derive(Debug)]
@@ -380,10 +372,6 @@ impl AuthorisePermitSuccess {
 pub struct AuthoriseReject {
     // Where the client wants us to go back to.
     pub redirect_uri: Url,
-    // The CSRF as a string
-    pub state: Option<String>,
-    /// The error we are returning.
-    pub error: Oauth2Error,
     /// The format the response should be returned to the application in.
     response_mode: SupportedResponseMode,
 }
@@ -394,30 +382,19 @@ impl AuthoriseReject {
     pub fn build_redirect_uri(&self) -> Url {
         let mut redirect_uri = self.redirect_uri.clone();
 
+        // Always clear query and fragment, regardless of the response mode
+        redirect_uri.set_query(None);
         redirect_uri.set_fragment(None);
 
+        // We can't set query pairs on fragments, only query.
+        let encoded = url::form_urlencoded::Serializer::new(String::new())
+            .append_pair("error", "access_denied")
+            .append_pair("error_description", "authorisation rejected")
+            .finish();
+
         match self.response_mode {
-            SupportedResponseMode::Query => {
-                redirect_uri
-                    .query_pairs_mut()
-                    .append_pair("error", self.error.as_ref());
-
-                if let Some(state) = self.state.as_ref() {
-                    redirect_uri.query_pairs_mut().append_pair("state", state);
-                };
-            }
-            SupportedResponseMode::Fragment => {
-                redirect_uri.set_query(None);
-
-                let mut uri_builder = url::form_urlencoded::Serializer::new(String::new());
-                uri_builder.append_pair("error", self.error.as_ref());
-                if let Some(state) = self.state.as_ref() {
-                    uri_builder.append_pair("state", state);
-                };
-                let encoded = uri_builder.finish();
-
-                redirect_uri.set_fragment(Some(&encoded));
-            }
+            SupportedResponseMode::Query => redirect_uri.set_query(Some(&encoded)),
+            SupportedResponseMode::Fragment => redirect_uri.set_fragment(Some(&encoded)),
         }
 
         redirect_uri
@@ -2442,20 +2419,14 @@ impl IdmServerProxyReadTransaction<'_> {
         // TODO: id_token_hint - a past token which can be used as a hint.
 
         let Some(ident) = maybe_ident else {
+            debug!("No identity available, assume authentication required");
+
             // OIDC Core 1.0 §3.1.2.1
             // prompt=none - The Authorization Server MUST NOT display any authentication or consent user interface pages
             if auth_req.prompt.contains(&Prompt::None) {
-                warn!("prompt=none was requested by the client, but no authenticated identity is available, returning authorise reject.");
-
-                return Ok(AuthoriseResponse::Reject(AuthoriseReject {
-                    redirect_uri: auth_req.redirect_uri.clone(),
-                    error: Oauth2Error::LoginRequired,
-                    state: auth_req.state.clone(),
-                    response_mode,
-                }));
+                debug!("prompt=none was requested, but no identity is available, returning error");
+                return Err(Oauth2Error::LoginRequired);
             } else {
-                debug!("No identity available, assume authentication required");
-
                 return Ok(AuthoriseResponse::AuthenticationRequired {
                     client_name: o2rs.displayname.clone(),
                     login_hint: auth_req.oidc_ext.login_hint.clone(),
@@ -2610,12 +2581,7 @@ impl IdmServerProxyReadTransaction<'_> {
             // consent user interface pages.
             if auth_req.prompt.contains(&Prompt::None) {
                 debug!("prompt=none was requested, but consent is required, returning error");
-                return Ok(AuthoriseResponse::Reject(AuthoriseReject {
-                    redirect_uri: auth_req.redirect_uri.clone(),
-                    error: Oauth2Error::InteractionRequired,
-                    state: auth_req.state.clone(),
-                    response_mode,
-                }));
+                return Err(Oauth2Error::InteractionRequired);
             }
 
             //  Check that the scopes are the same as a previous consent (if any)
@@ -2752,8 +2718,6 @@ impl IdmServerProxyReadTransaction<'_> {
         // All good, now confirm the rejection to the client application.
         Ok(AuthoriseReject {
             redirect_uri: consent_req.redirect_uri,
-            error: Oauth2Error::AccessDenied,
-            state: consent_req.state,
             response_mode: consent_req.response_mode,
         })
     }
@@ -8633,22 +8597,11 @@ mod tests {
         let auth_req = auth_req_with_prompt(pkce_secret.to_request(), Vec::from([Prompt::None]));
 
         // No identity provided (None) - user is not authenticated.
-        let result = idms_prox_read
-            .check_oauth2_authorisation(None, &auth_req, &auth_req_ctx, ct)
-            .unwrap();
-
-        let result = match result {
-            AuthoriseResponse::Reject(rejection)
-                if rejection.error == Oauth2Error::LoginRequired =>
-            {
-                true
-            }
-            _ => false,
-        };
+        let result = idms_prox_read.check_oauth2_authorisation(None, &auth_req, &auth_req_ctx, ct);
 
         assert!(
-            result,
-            "prompt=none without authentication must return a rejection for login_required"
+            result.unwrap_err() == Oauth2Error::LoginRequired,
+            "prompt=none without authentication must return login_required"
         );
     }
 
@@ -8676,21 +8629,11 @@ mod tests {
         let auth_req = auth_req_with_prompt(pkce_secret.to_request(), Vec::from([Prompt::None]));
 
         // Ident is authenticated but has never granted consent.
-        let result = idms_prox_read
-            .check_oauth2_authorisation(Some(&ident), &auth_req, &auth_req_ctx, ct)
-            .unwrap();
-
-        let result = match result {
-            AuthoriseResponse::Reject(rejection)
-                if rejection.error == Oauth2Error::InteractionRequired =>
-            {
-                true
-            }
-            _ => false,
-        };
+        let result =
+            idms_prox_read.check_oauth2_authorisation(Some(&ident), &auth_req, &auth_req_ctx, ct);
 
         assert!(
-            result,
+            result.unwrap_err() == Oauth2Error::InteractionRequired,
             "prompt=none with authenticated user but no prior consent must return interaction_required"
         );
     }
@@ -8841,121 +8784,4 @@ mod tests {
     //         "prompt=consent must force the consent screen even when consent was previously granted"
     //     );
     // }
-
-    #[test]
-    fn test_authorise_reject_build_redirect_uri_query_mode_preserves_query_and_state() {
-        use super::{AuthoriseReject, SupportedResponseMode};
-        use url::Url;
-
-        let reject = AuthoriseReject {
-            redirect_uri: Url::parse("https://example.com/callback?existing=param").unwrap(),
-            state: Some("csrf_token_123".to_string()),
-            error: Oauth2Error::LoginRequired,
-            response_mode: SupportedResponseMode::Query,
-        };
-
-        let result = reject.build_redirect_uri();
-
-        assert_eq!(result.scheme(), "https");
-        assert_eq!(result.host_str(), Some("example.com"));
-        assert_eq!(result.path(), "/callback");
-        assert!(result.fragment().is_none());
-
-        let query_pairs: BTreeMap<String, String> = result.query_pairs().into_owned().collect();
-        assert_eq!(
-            query_pairs.get("existing").map(|s| s.as_str()),
-            Some("param")
-        );
-        assert_eq!(
-            query_pairs.get("error").map(|s| s.as_str()),
-            Some("login_required")
-        );
-        assert_eq!(
-            query_pairs.get("state").map(|s| s.as_str()),
-            Some("csrf_token_123")
-        );
-    }
-
-    #[test]
-    fn test_authorise_reject_build_redirect_uri_fragment_mode_includes_state() {
-        use super::{AuthoriseReject, SupportedResponseMode};
-        use url::Url;
-
-        let reject = AuthoriseReject {
-            redirect_uri: Url::parse("https://example.com/callback").unwrap(),
-            state: Some("csrf_abc".to_string()),
-            error: Oauth2Error::InteractionRequired,
-            response_mode: SupportedResponseMode::Fragment,
-        };
-
-        let result = reject.build_redirect_uri();
-
-        assert_eq!(result.scheme(), "https");
-        assert_eq!(result.host_str(), Some("example.com"));
-        assert_eq!(result.path(), "/callback");
-        assert!(result.query().is_none());
-
-        let fragment = result.fragment().expect("fragment must be present");
-        let fragment_pairs: BTreeMap<String, String> =
-            url::form_urlencoded::parse(fragment.as_bytes())
-                .map(|(k, v)| (k.into_owned(), v.into_owned()))
-                .collect();
-        assert_eq!(
-            fragment_pairs.get("error").map(|s| s.as_str()),
-            Some("interaction_required")
-        );
-        assert_eq!(
-            fragment_pairs.get("state").map(|s| s.as_str()),
-            Some("csrf_abc")
-        );
-    }
-
-    #[test]
-    fn test_authorise_reject_build_redirect_uri_query_mode_no_state() {
-        use super::{AuthoriseReject, SupportedResponseMode};
-        use url::Url;
-
-        let reject = AuthoriseReject {
-            redirect_uri: Url::parse("https://example.com/callback").unwrap(),
-            state: None,
-            error: Oauth2Error::AccessDenied,
-            response_mode: SupportedResponseMode::Query,
-        };
-
-        let result = reject.build_redirect_uri();
-
-        let query_pairs: BTreeMap<String, String> = result.query_pairs().into_owned().collect();
-        assert_eq!(
-            query_pairs.get("error").map(|s| s.as_str()),
-            Some("access_denied")
-        );
-        assert!(query_pairs.get("state").is_none());
-    }
-
-    #[test]
-    fn test_authorise_reject_build_redirect_uri_fragment_mode_no_state() {
-        use super::{AuthoriseReject, SupportedResponseMode};
-        use url::Url;
-
-        let reject = AuthoriseReject {
-            redirect_uri: Url::parse("https://example.com/callback").unwrap(),
-            state: None,
-            error: Oauth2Error::AccessDenied,
-            response_mode: SupportedResponseMode::Fragment,
-        };
-
-        let result = reject.build_redirect_uri();
-
-        assert!(result.query().is_none());
-        let fragment = result.fragment().expect("fragment must be present");
-        let fragment_pairs: BTreeMap<String, String> =
-            url::form_urlencoded::parse(fragment.as_bytes())
-                .map(|(k, v)| (k.into_owned(), v.into_owned()))
-                .collect();
-        assert_eq!(
-            fragment_pairs.get("error").map(|s| s.as_str()),
-            Some("access_denied")
-        );
-        assert!(fragment_pairs.get("state").is_none());
-    }
 }
