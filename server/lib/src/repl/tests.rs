@@ -4102,6 +4102,19 @@ async fn test_repl_refresh_self_heals_optional_authoritative_references(
 
     server_b_txn.commit().expect("Failed to commit");
     drop(server_a_txn);
+
+    let ct = duration_from_epoch_now();
+    let mut server_a_txn = server_a.write(ct).await.unwrap();
+
+    let filt = filter!(f_eq(Attribute::Uuid, PartialValue::Uuid(g_uuid)));
+    let mut work_set = server_a_txn.internal_search_writeable(&filt).unwrap();
+
+    for (_, entry) in work_set.iter_mut() {
+        entry.remove_ava(Attribute::Member, &PartialValue::Uuid(dangling_uuid));
+    }
+
+    assert!(server_a_txn.internal_apply_writable(work_set).is_ok());
+    server_a_txn.commit().expect("Failed to commit");
 }
 
 #[qs_pair_test]

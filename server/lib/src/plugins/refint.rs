@@ -1975,5 +1975,20 @@ mod tests {
         let (_, attr, target) = refint_errors[0];
         assert_eq!(attr.as_deref(), Some("member"));
         assert_eq!(*target, Some(dangling_uuid));
+
+        drop(server_txn);
+
+        let curtime = duration_from_epoch_now();
+        let mut server_txn = server.write(curtime).await.unwrap();
+
+        let filt = filter!(f_eq(Attribute::Uuid, PartialValue::Uuid(g_uuid)));
+        let mut work_set = server_txn.internal_search_writeable(&filt).unwrap();
+
+        for (_, entry) in work_set.iter_mut() {
+            entry.remove_ava(Attribute::Member, &PartialValue::Uuid(dangling_uuid));
+        }
+
+        assert!(server_txn.internal_apply_writable(work_set).is_ok());
+        assert!(server_txn.commit().is_ok());
     }
 }
