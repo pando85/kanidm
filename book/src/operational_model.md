@@ -156,8 +156,8 @@ binary from being started directly on a host.
 
 The goal is narrower and more durable:
 
-> **A serious external reconciler should be able to operate Kubidm through supported semantic
-> primitives instead of pretending to be a human system administrator.**
+> **An external reconciler should be able to operate Kubidm through supported semantic primitives
+> instead of pretending to be a human system administrator.**
 
 For the developer-level architectural decision behind this model, see
 [Orchestration Boundary](developers/designs/orchestration_boundary.md).
