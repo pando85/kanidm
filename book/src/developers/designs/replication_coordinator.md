@@ -1,5 +1,22 @@
 # Replication Coordinator
 
+Status: **Superseded**
+
+> This document is retained as architectural history. Kubidm no longer plans to implement a
+> cluster-wide Replication Coordinator as described below. The current architecture keeps
+> Kubidm-specific correctness and node-local operational mechanisms in the server while delegating
+> cluster policy and reconciliation to an external control plane. See
+> [Orchestration Boundary](orchestration_boundary.md) and the
+> [Operational Model](../../operational_model.md).
+>
+> The problems identified by this design—manual certificate exchange, static topology management,
+> difficult replica lifecycle, and human-driven replication administration—remain relevant. What
+> changed is the chosen control-plane boundary: Kubidm should expose the semantic primitives an
+> external reconciler needs instead of embedding a second generic orchestration layer into the
+> identity server.
+
+## Historical design
+
 Many other IDM systems configure replication on each node of the topology. This means that the administrator is
 responsible for ensuring all nodes are connected properly, and that agreements are bidirectional. As well this requires
 manual work for administrators to configure each node individually, as well as monitoring individually. This adds a

@@ -3,6 +3,7 @@
 # Kubidm
 
 - [Introduction to Kubidm](introduction_to_kubidm.md)
+- [Operational Model](operational_model.md)
 
 - [Evaluation Quickstart](evaluation_quickstart.md)
 
@@ -90,12 +91,15 @@
   - [Cryptography Key Domains (2024)](developers/designs/cryptography_key_domains.md)
   - [Domain Join - Machine Accounts](developers/designs/domain_join_machine_accounts.md)
   - [Elevated Priv Mode](developers/designs/elevated_priv_mode.md)
+  - [Node Drain, Replication Fences, and Maintenance Control Plane](developers/designs/node_drain_replication_fences_maintenance.md)
   - [OAuth2 Device Flow](developers/designs/oauth2_device_flow.md)
   - [OAuth2 Refresh Tokens](developers/designs/oauth2_refresh_tokens.md)
-  - [Replication Coordinator](developers/designs/replication_coordinator.md)
+  - [Orchestration Boundary](developers/designs/orchestration_boundary.md)
   - [Replication Design and Notes](developers/designs/replication_design_and_notes.md)
   - [REST Interface](developers/designs/rest_interface.md)
   - [Unixd Multi Resolver 2024](developers/designs/unixd_multi_resolver_2024.md)
+- [Historical / Superseded Designs]()
+  - [Replication Coordinator](developers/designs/replication_coordinator.md)
 - [Python Module](developers/python_module.md)
 - [RADIUS Module Development](developers/radius.md)
 - [Release Checklist](developers/release_checklist.md)
