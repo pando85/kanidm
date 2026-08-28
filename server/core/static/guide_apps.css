@@ -1,0 +1,42 @@
+.guide-applications-scene {
+  position: relative;
+  min-height: 20rem;
+  padding-bottom: 8rem;
+}
+
+.guide-applications-slot {
+  position: absolute;
+  right: 1rem;
+  bottom: 0;
+  width: min(11rem, 26vw);
+  min-height: 5.5rem;
+  display: grid;
+  place-items: end center;
+  pointer-events: none;
+}
+
+.guide-applications-slot[hidden] {
+  display: none;
+}
+
+.guide-applications-slot img {
+  display: block;
+  max-width: 100%;
+  max-height: 8rem;
+}
+
+@media (max-width: 44rem) {
+  .guide-applications-scene {
+    padding-bottom: 5rem;
+  }
+
+  .guide-applications-slot {
+    right: 0.5rem;
+    width: 6.5rem;
+    min-height: 3.5rem;
+  }
+
+  .guide-applications-slot img {
+    max-height: 5rem;
+  }
+}

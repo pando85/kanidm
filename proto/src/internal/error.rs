@@ -44,7 +44,13 @@ pub enum ConsistencyError {
     EntryUuidCorrupt(u64),
     UuidIndexCorrupt(String),
     UuidNotUnique(String),
-    RefintNotUpheld(u64),
+    RefintNotUpheld {
+        entry_id: u64,
+        entry_uuid: Option<Uuid>,
+        entry_name: Option<String>,
+        attribute: Option<String>,
+        missing_target: Option<Uuid>,
+    },
     MemberOfInvalid(u64),
     InvalidAttributeType(String),
     DuplicateUniqueAttribute,
@@ -56,9 +62,16 @@ pub enum ConsistencyError {
     ChangeStateDesynchronised(u64),
     RuvInconsistent(String),
     DeniedName(Uuid),
-    KeyProviderUuidMissing { key_object: Uuid },
-    KeyProviderNoKeys { key_object: Uuid },
-    KeyProviderNotFound { key_object: Uuid, provider: Uuid },
+    KeyProviderUuidMissing {
+        key_object: Uuid,
+    },
+    KeyProviderNoKeys {
+        key_object: Uuid,
+    },
+    KeyProviderNotFound {
+        key_object: Uuid,
+        provider: Uuid,
+    },
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
@@ -833,7 +846,17 @@ mod tests {
             .contains("QueryServerSearchFailure"));
         assert!(format!("{:?}", ConsistencyError::EntryUuidCorrupt(42)).contains("42"));
         assert!(format!("{:?}", ConsistencyError::UuidIndexCorrupt("idx".into())).contains("idx"));
-        assert!(format!("{:?}", ConsistencyError::RefintNotUpheld(99)).contains("99"));
+        assert!(format!(
+            "{:?}",
+            ConsistencyError::RefintNotUpheld {
+                entry_id: 99,
+                entry_uuid: None,
+                entry_name: None,
+                attribute: None,
+                missing_target: None,
+            }
+        )
+        .contains("99"));
         assert!(format!("{:?}", ConsistencyError::MemberOfInvalid(7)).contains("7"));
         assert!(
             format!("{:?}", ConsistencyError::InvalidAttributeType("ty".into())).contains("ty")

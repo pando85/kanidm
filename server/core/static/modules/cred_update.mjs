@@ -140,9 +140,11 @@ function beforeUnloadHandler(event) {
     try {
         const form = document.getElementById("credentialUpdateStatusForm");
         if (form.dataset.dirty == "false") {
-            return
+            return;
         }
-    } catch (e) { };
+    } catch {
+        // Treat missing/partial form state as dirty so the unload warning remains conservative.
+    }
 
     const confirmationMessage = "Unsaved changes will be lost.";
 

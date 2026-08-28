@@ -1,0 +1,4 @@
+# Vendored runtime bytes are integrity-checked against the upstream npm package.
+# Never apply Git text/EOL normalization to generated Rive runtime or asset bytes.
+server/core/static/rive/rive.js -text
+server/core/static/img/guide/*.riv -text

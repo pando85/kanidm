@@ -224,8 +224,6 @@ pub async fn create_https_server(
             "img-src 'self' data:; ",
             "worker-src 'none'; ",
             "script-src 'self' 'unsafe-eval'{};",
-            // https://datatracker.ietf.org/doc/html/rfc9700#name-clickjacking
-            "frame-ancestors 'none'; ",
         ),
         js_checksums
     );
@@ -249,8 +247,6 @@ pub async fn create_https_server(
             "img-src 'self' data:; ",
             "worker-src 'none'; ",
             "script-src 'self' 'unsafe-eval'{};",
-            // https://datatracker.ietf.org/doc/html/rfc9700#name-clickjacking
-            "frame-ancestors 'none'; ",
         ),
         js_checksums
     );
@@ -377,6 +373,7 @@ pub async fn create_https_server(
     let app = app
         .route("/status", get(generic::status))
         .route("/healthz", get(generic::healthz))
+        .route("/maintenance", get(generic::maintenance_status))
         .route("/readyz", get(generic::readyz))
         // 404 handler
         .fallback(handler_404)

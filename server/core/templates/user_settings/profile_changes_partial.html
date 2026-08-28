@@ -8,7 +8,14 @@ Profile Difference
 
 (% block settings_window %)
 
-<form>
+<form (% if crate::https::views::guide::guided_ui_enabled() %)data-guide-scene="profile" data-guide-mode="(% if crate::https::views::guide::guided_ui_subtle() %)subtle(% else %)full(% endif %)" data-guide-state="(% if can_rw %)guide(% else %)protect(% endif %)" data-guide-action="profile_review"(% endif %)>
+    (% if crate::https::views::guide::guided_ui_full() %)
+    <section class="crab-dialog" data-variant="orient" data-guide-story-id="profile-review">
+        <strong class="crab-dialog-title">Review before applying</strong>
+        <p>Kubidm is showing the exact profile differences below. Confirm only when the old and new values match what you intended.</p>
+    </section>
+    (% endif %)
+
     (% if person.name != new_attrs.account_name %)
     <input type="hidden" name="account_name" value="(( new_attrs.account_name ))"/>
     (% endif %)
@@ -92,12 +99,12 @@ Profile Difference
             Changes
         </button>
         <button class="btn btn-primary" type="button" hx-post="/ui/api/user_settings/confirm_profile" hx-target="body"
-                hx-swap="outerHTML">Confirm Changes
+                hx-swap="outerHTML" data-guide-target="primary-action">Confirm Changes
         </button>
         (% else %)
         <a href="/ui/unlock">
             <!-- TODO: at the moment, session expiring here means progress is lost. Do we just show an error screen ? We can't pass the update state through the reauth session, and we don't have profile update sessions like cred update. -->
-            <button class="btn btn-primary" type="button">Unlock Confirm 🔓</button>
+            <button class="btn btn-primary" type="button" data-guide-target="primary-action">Unlock Confirm 🔓</button>
         </a>
         (% endif %)
     </div>
@@ -105,4 +112,3 @@ Profile Difference
 </form>
 
 (% endblock %)
-

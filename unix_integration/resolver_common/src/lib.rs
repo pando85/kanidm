@@ -1,3 +1,4 @@
+#![recursion_limit = "256"]
 #![deny(warnings)]
 #![warn(unused_extern_crates)]
 #![deny(clippy::todo)]
@@ -8,6 +9,7 @@
 #![deny(clippy::unreachable)]
 #![deny(clippy::await_holding_lock)]
 #![deny(clippy::needless_pass_by_value)]
+#![allow(clippy::result_unit_err)]
 #![deny(clippy::trivially_copy_pass_by_ref)]
 
 #[cfg(target_family = "unix")]

@@ -47,6 +47,7 @@ impl Modify for SecurityAddon {
 
     paths(
         super::generic::status,
+        super::generic::maintenance_status,
         super::generic::robots_txt,
 
         super::oauth2::oauth2_image_get,

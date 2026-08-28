@@ -4,12 +4,12 @@ use axum_extra::extract::cookie::{CookieJar, SameSite};
 use crypto_glue::{
     hex,
     hmac_s256::HmacSha256,
-    rand,
-    traits::{KeyInit, Mac},
+    rand::{self, Rng},
+    traits::Mac,
 };
 use kubidm_proto::internal::COOKIE_CSRF_NONCE;
-use rand::RngExt;
 use serde::Deserialize;
+use sha2::digest::KeyInit;
 use std::time::Duration;
 
 const SUBMISSION_WINDOW: Duration = Duration::from_secs(30);
@@ -47,7 +47,7 @@ pub(crate) fn generate_parameters(
 
     {
         let mut rng = rand::rng();
-        rng.fill(&mut nonce);
+        rng.fill_bytes(&mut nonce);
     }
 
     let jar = cookies::make_signed(state, COOKIE_CSRF_NONCE, &nonce)

@@ -4,8 +4,8 @@
 use crate::config::TlsConfiguration;
 use crypto_glue::{
     ec::EcPrivateKey,
-    ecdsa_p256::{EcdsaP256SigningKey, EcdsaP256VerifyingKey},
-    ecdsa_p384::{EcdsaP384DerSignature, EcdsaP384SigningKey, EcdsaP384VerifyingKey},
+    ecdsa_p256::{self, EcdsaP256SigningKey, EcdsaP256VerifyingKey},
+    ecdsa_p384::{self, EcdsaP384DerSignature, EcdsaP384SigningKey, EcdsaP384VerifyingKey},
     pkcs8::PrivateKeyInfo,
     rand,
     rsa::RS256PrivateKey,
@@ -15,7 +15,6 @@ use crypto_glue::{
     },
     x509::{
         oiddb::{rfc5280, rfc5912},
-        profile::BuilderProfile,
         uuid_to_serial, Builder, Certificate, CertificateBuilder, ExtendedKeyUsage, GeneralName,
         Ia5String, Name, SubjectAltName, SubjectPublicKeyInfoOwned, Time, Validity,
     },
@@ -285,11 +284,11 @@ pub(crate) fn write_ca(
         })
 }
 
-struct RootProfile {
+struct CaProfile {
     subject: Name,
 }
 
-impl BuilderProfile for RootProfile {
+impl crypto_glue::x509::Profile for CaProfile {
     fn get_issuer(&self, subject: &Name) -> Name {
         subject.clone()
     }
@@ -300,23 +299,49 @@ impl BuilderProfile for RootProfile {
 
     fn build_extensions(
         &self,
-        _spk: crypto_glue::spki::SubjectPublicKeyInfoRef<'_>,
+        spk: crypto_glue::spki::SubjectPublicKeyInfoRef<'_>,
         _issuer_spk: crypto_glue::spki::SubjectPublicKeyInfoRef<'_>,
-        _tbs: &x509_cert::TbsCertificate,
+        tbs: &x509_cert::TbsCertificate,
     ) -> Result<Vec<x509_cert::ext::Extension>, x509_cert::builder::Error> {
-        Ok(Vec::new())
+        use x509_cert::ext::pkix::{
+            AuthorityKeyIdentifier, BasicConstraints, KeyUsage, KeyUsages, SubjectKeyIdentifier,
+        };
+        use x509_cert::ext::ToExtension;
+
+        let mut extensions = Vec::new();
+        let ski = SubjectKeyIdentifier::try_from(spk)?;
+
+        extensions.push(
+            AuthorityKeyIdentifier {
+                key_identifier: Some(ski.0.clone()),
+                ..Default::default()
+            }
+            .to_extension(tbs.subject(), &extensions)?,
+        );
+
+        extensions.push(
+            BasicConstraints {
+                ca: true,
+                path_len_constraint: None,
+            }
+            .to_extension(tbs.subject(), &extensions)?,
+        );
+
+        let key_usage = KeyUsages::KeyCertSign | KeyUsages::CRLSign;
+        extensions.push(KeyUsage(key_usage).to_extension(tbs.subject(), &extensions)?);
+
+        extensions.push(ski.to_extension(tbs.subject(), &extensions)?);
+
+        Ok(extensions)
     }
 }
 
 struct LeafProfile {
     issuer: Name,
     subject: Name,
-    _enable_key_agreement: bool,
-    _enable_key_encipherment: bool,
-    _include_subject_key_identifier: bool,
 }
 
-impl BuilderProfile for LeafProfile {
+impl crypto_glue::x509::Profile for LeafProfile {
     fn get_issuer(&self, _subject: &Name) -> Name {
         self.issuer.clone()
     }
@@ -327,11 +352,38 @@ impl BuilderProfile for LeafProfile {
 
     fn build_extensions(
         &self,
-        _spk: crypto_glue::spki::SubjectPublicKeyInfoRef<'_>,
-        _issuer_spk: crypto_glue::spki::SubjectPublicKeyInfoRef<'_>,
-        _tbs: &x509_cert::TbsCertificate,
+        spk: crypto_glue::spki::SubjectPublicKeyInfoRef<'_>,
+        issuer_spk: crypto_glue::spki::SubjectPublicKeyInfoRef<'_>,
+        tbs: &x509_cert::TbsCertificate,
     ) -> Result<Vec<x509_cert::ext::Extension>, x509_cert::builder::Error> {
-        Ok(Vec::new())
+        use x509_cert::ext::pkix::{
+            AuthorityKeyIdentifier, BasicConstraints, KeyUsage, KeyUsages, SubjectKeyIdentifier,
+        };
+        use x509_cert::ext::ToExtension;
+
+        let mut extensions = Vec::new();
+
+        extensions.push(
+            AuthorityKeyIdentifier::try_from(issuer_spk)?
+                .to_extension(tbs.subject(), &extensions)?,
+        );
+
+        extensions.push(
+            BasicConstraints {
+                ca: false,
+                path_len_constraint: None,
+            }
+            .to_extension(tbs.subject(), &extensions)?,
+        );
+
+        let key_usage =
+            KeyUsages::DigitalSignature | KeyUsages::KeyAgreement | KeyUsages::KeyEncipherment;
+        extensions.push(KeyUsage(key_usage).to_extension(tbs.subject(), &extensions)?);
+
+        let ski = SubjectKeyIdentifier::try_from(spk)?;
+        extensions.push(ski.to_extension(tbs.subject(), &extensions)?);
+
+        Ok(extensions)
     }
 }
 
@@ -358,11 +410,11 @@ pub(crate) fn build_ca() -> Result<CaHandle, ()> {
             error!(?err, "Invalid root subject DN - THIS IS A BUG.");
         })?;
 
-    let profile = RootProfile {
+    let profile = CaProfile {
         subject: root_subject.clone(),
     };
 
-    let private_key = crypto_glue::ecdsa_p384::new_key();
+    let private_key = ecdsa_p384::new_key();
     let signing_key = EcdsaP384SigningKey::from(&private_key);
     let verifying_key = EcdsaP384VerifyingKey::from(&signing_key);
     let pub_key = SubjectPublicKeyInfoOwned::from_key(&verifying_key).map_err(|err| {
@@ -503,13 +555,10 @@ pub(crate) fn build_cert(domain_name: &str, ca_handle: &CaHandle) -> Result<Cert
 
     let profile = LeafProfile {
         issuer: ca_handle.cert.tbs_certificate().subject().clone(),
-        subject: root_subject,
-        _enable_key_agreement: true,
-        _enable_key_encipherment: true,
-        _include_subject_key_identifier: true,
+        subject: root_subject.clone(),
     };
 
-    let private_key = crypto_glue::ecdsa_p256::new_key();
+    let private_key = ecdsa_p256::new_key();
     let signing_key = EcdsaP256SigningKey::from(&private_key);
     let verifying_key = EcdsaP256VerifyingKey::from(&signing_key);
     let pub_key = SubjectPublicKeyInfoOwned::from_key(&verifying_key).map_err(|err| {

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 72" role="img" aria-labelledby="title desc">
+  <title id="title">Kubidm identity badge</title>
+  <desc id="desc">The dark hexagonal identity badge worn on the Kubidm crab identity band.</desc>
+  <path d="M32 2 59 17.5v37L32 70 5 54.5v-37Z" fill="#071228" stroke="#f7f4ef" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M32 5.5 56 19.2v33.6L32 66.5 8 52.8V19.2Z" fill="none" stroke="#cb4f32" stroke-width="2" stroke-linejoin="round"/>
+  <circle cx="32" cy="27" r="9" fill="#f7f4ef"/>
+  <path d="M21 37h22l-2.8 20H23.8Z" fill="#f7f4ef" stroke="#f7f4ef" stroke-width="2" stroke-linejoin="round"/>
+  <circle cx="32" cy="45" r="4" fill="#071228"/>
+  <path d="M30.5 48h3L35 54h-6Z" fill="#071228"/>
+</svg>

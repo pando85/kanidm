@@ -1,0 +1,47 @@
+.ui-lab-preview[data-guide-mode="subtle"] .ui-lab-auth-shell {
+  grid-template-columns: minmax(8rem, 0.22fr) minmax(24rem, 0.78fr);
+}
+
+.ui-lab-preview[data-guide-mode="subtle"] .ui-lab-product-zone {
+  padding: 1.25rem;
+}
+
+.ui-lab-preview[data-guide-mode="subtle"] .ui-lab-product-copy,
+.ui-lab-preview[data-guide-mode="subtle"] .ui-lab-dialog[data-variant="orient"],
+.ui-lab-preview[data-guide-mode="subtle"] .ui-lab-dialog[data-variant="teach"] {
+  display: none;
+}
+
+.ui-lab-preview[data-guide-mode="subtle"] .ui-lab-mascot-slot img,
+.ui-lab-preview[data-guide-mode="subtle"] .ui-lab-app-guide-slot img {
+  max-width: 7rem;
+  max-height: 5rem;
+}
+
+.ui-lab-preview[data-guide-mode="off"] .ui-lab-auth-shell {
+  grid-template-columns: 1fr;
+}
+
+.ui-lab-preview[data-guide-mode="off"] .ui-lab-product-zone,
+.ui-lab-preview[data-guide-mode="off"] .ui-lab-dialog,
+.ui-lab-preview[data-guide-mode="off"] .ui-lab-app-guide-slot {
+  display: none;
+}
+
+.ui-lab-preview[data-guide-mode="off"] .ui-lab-task-zone {
+  min-height: 38rem;
+}
+
+.ui-lab-preview[data-guide-mode="off"] .ui-lab-applications {
+  padding-bottom: 2rem;
+}
+
+@media (max-width: 48rem) {
+  .ui-lab-preview[data-guide-mode="subtle"] .ui-lab-auth-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .ui-lab-preview[data-guide-mode="subtle"] .ui-lab-product-zone {
+    min-height: 4rem;
+  }
+}

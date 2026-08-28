@@ -20,6 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict
 from typing import Any, ClassVar, Dict, List
 from kubidm_openapi_client.models.credential_detail import CredentialDetail
+from kubidm_openapi_client.models.passkey_detail import PasskeyDetail
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -28,7 +29,9 @@ class CredentialStatus(BaseModel):
     CredentialStatus
     """ # noqa: E501
     creds: List[CredentialDetail]
-    __properties: ClassVar[List[str]] = ["creds"]
+    passkeys: Optional[List[PasskeyDetail]] = None
+    attested_passkeys: Optional[List[PasskeyDetail]] = None
+    __properties: ClassVar[List[str]] = ["creds", "passkeys", "attested_passkeys"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -75,6 +78,20 @@ class CredentialStatus(BaseModel):
                 if _item_creds:
                     _items.append(_item_creds.to_dict())
             _dict['creds'] = _items
+        # override the default output from pydantic by calling `to_dict()` of each item in passkeys (list)
+        _items = []
+        if self.passkeys:
+            for _item_passkeys in self.passkeys:
+                if _item_passkeys:
+                    _items.append(_item_passkeys.to_dict())
+            _dict['passkeys'] = _items
+        # override the default output from pydantic by calling `to_dict()` of each item in attested_passkeys (list)
+        _items = []
+        if self.attested_passkeys:
+            for _item_attested_passkeys in self.attested_passkeys:
+                if _item_attested_passkeys:
+                    _items.append(_item_attested_passkeys.to_dict())
+            _dict['attested_passkeys'] = _items
         return _dict
 
     @classmethod
@@ -87,6 +104,8 @@ class CredentialStatus(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "creds": [CredentialDetail.from_dict(_item) for _item in obj["creds"]] if obj.get("creds") is not None else None
+            "creds": [CredentialDetail.from_dict(_item) for _item in obj["creds"]] if obj.get("creds") is not None else None,
+            "passkeys": [PasskeyDetail.from_dict(_item) for _item in obj["passkeys"]] if obj.get("passkeys") is not None else None,
+            "attested_passkeys": [PasskeyDetail.from_dict(_item) for _item in obj["attested_passkeys"]] if obj.get("attested_passkeys") is not None else None
         })
         return _obj

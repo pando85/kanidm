@@ -4,6 +4,9 @@ use config::{RepNodeConfig, ReplicationConfiguration};
 use crypto_glue::{traits::EncodeDer, x509::Certificate};
 use futures_util::sink::SinkExt;
 use futures_util::stream::StreamExt;
+use kubidmd_lib::maintenance::{
+    maintenance_state, with_maintenance_write_bypass, MaintenanceState,
+};
 use kubidmd_lib::prelude::duration_from_epoch_now;
 use kubidmd_lib::prelude::IdmServer;
 use kubidmd_lib::repl::proto::ConsumerState;
@@ -326,8 +329,13 @@ async fn repl_run_consumer_refresh_inner(
     {
         // Scope the transaction.
         let ct = duration_from_epoch_now();
-        idms.proxy_write(ct)
-            .await
+        let write_txn = if maintenance_state() == MaintenanceState::Recovering {
+            with_maintenance_write_bypass(idms.proxy_write(ct)).await
+        } else {
+            idms.proxy_write(ct).await
+        };
+
+        write_txn
             .and_then(|mut write_txn| {
                 write_txn
                     .qs_write
@@ -484,7 +492,13 @@ async fn repl_run_consumer_inner(
     // Now apply the changes if possible
     let consumer_state = {
         let ct = duration_from_epoch_now();
-        match idms.proxy_write(ct).await.and_then(|mut write_txn| {
+        let write_txn = if maintenance_state() == MaintenanceState::Recovering {
+            with_maintenance_write_bypass(idms.proxy_write(ct)).await
+        } else {
+            idms.proxy_write(ct).await
+        };
+
+        match write_txn.and_then(|mut write_txn| {
             write_txn
                 .qs_write
                 .consumer_apply_changes(changes)
@@ -697,6 +711,18 @@ async fn repl_task(
                 }
             }
             _ = repl_interval.tick() => {
+                // A drained/fenced node remains a replication supplier, but its
+                // consumer must not start new apply work. Recovering is the sole
+                // non-serving state where replication writes receive the scoped
+                // maintenance bypass.
+                if !matches!(
+                    maintenance_state(),
+                    MaintenanceState::Serving | MaintenanceState::Recovering
+                ) {
+                    debug!("Skipping replication consumer while node is maintenance-fenced");
+                    continue;
+                }
+
                 // Interval passed, attempt a replication run.
                 repl_run_consumer(
                     &server_name,

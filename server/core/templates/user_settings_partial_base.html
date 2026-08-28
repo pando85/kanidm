@@ -13,7 +13,9 @@
 </li>
 (% endmacro %)
 
-<main id="main" class="container-lg pb-5">
+<main id="main"
+      class="container-lg pb-5(% if crate::https::views::guide::guided_ui_enabled() %) guide-settings-shell(% endif %)"
+      (% if crate::https::views::guide::guided_ui_enabled() %)data-guide-scene="settings" data-guide-mode="(% if crate::https::views::guide::guided_ui_subtle() %)subtle(% else %)full(% endif %)"(% endif %)>
     <div class="d-flex flex-sm-row flex-column">
         <ul
             class="side-menu list-unstyled flex-shrink-0 row-gap-1 d-flex flex-column"
@@ -37,4 +39,10 @@
             (% endblock %)
         </div>
     </div>
+    (% if crate::https::views::guide::guided_ui_enabled() %)
+    <div class="guide-settings-slot"
+         data-guide-slot
+         aria-hidden="true"
+         hidden></div>
+    (% endif %)
 </main>

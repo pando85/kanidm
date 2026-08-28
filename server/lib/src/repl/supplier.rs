@@ -10,27 +10,24 @@ use crypto_glue::{
     ecdsa_p256::{self, EcdsaP256DerSignature, EcdsaP256SigningKey, EcdsaP256VerifyingKey},
     rand,
     traits::Pkcs8EncodePrivateKey,
-    x509::profile::BuilderProfile,
     x509::{
         self, oiddb, Builder, Certificate, CertificateBuilder, ExtendedKeyUsage, GeneralName,
         GeneralizedTime, Ia5String, OctetString, SubjectAltName, SubjectPublicKeyInfoOwned,
     },
-    x509::{Time, Validity},
 };
 use rustls::pki_types::{IpAddr, ServerName};
 use std::str::FromStr;
-use x509_cert::ext::Extension;
 
-struct SelfSignedProfile {
-    subject: crypto_glue::x509::Name,
+struct ReplicationProfile {
+    subject: x509::Name,
 }
 
-impl BuilderProfile for SelfSignedProfile {
-    fn get_issuer(&self, subject: &crypto_glue::x509::Name) -> crypto_glue::x509::Name {
+impl x509::Profile for ReplicationProfile {
+    fn get_issuer(&self, subject: &x509::Name) -> x509::Name {
         subject.clone()
     }
 
-    fn get_subject(&self) -> crypto_glue::x509::Name {
+    fn get_subject(&self) -> x509::Name {
         self.subject.clone()
     }
 
@@ -39,8 +36,8 @@ impl BuilderProfile for SelfSignedProfile {
         _spk: crypto_glue::spki::SubjectPublicKeyInfoRef<'_>,
         _issuer_spk: crypto_glue::spki::SubjectPublicKeyInfoRef<'_>,
         _tbs: &x509_cert::TbsCertificate,
-    ) -> Result<Vec<Extension>, x509_cert::builder::Error> {
-        Ok(Vec::new())
+    ) -> Result<Vec<x509_cert::ext::Extension>, x509_cert::builder::Error> {
+        Ok(vec![])
     }
 }
 
@@ -62,7 +59,7 @@ impl QueryServerWriteTransaction<'_> {
         })?;
 
         let not_before = GeneralizedTime::from_unix_duration(self.get_curtime())
-            .map(Time::from)
+            .map(x509::Time::from)
             .map_err(|err| {
                 error!(?err, "Unable to convert current time to GeneralizedTime");
                 OperationError::CryptographyError
@@ -70,23 +67,24 @@ impl QueryServerWriteTransaction<'_> {
         let not_after = GeneralizedTime::from_unix_duration(
             self.get_curtime() + Duration::from_secs(REPL_MTLS_CERTIFICATE_EXPIRY),
         )
-        .map(Time::from)
+        .map(x509::Time::from)
         .map_err(|err| {
             error!(?err, "Unable to convert current time to GeneralizedTime");
             OperationError::CryptographyError
         })?;
 
-        let validity = Validity::new(not_before, not_after);
-
         let serial_number = x509::uuid_to_serial(s_uuid);
         let subject =
-            crypto_glue::x509::Name::from_str(&format!("O=Kubidm Replication,CN={s_uuid}"))
-                .map_err(|err| {
-                    error!(?err, "Unable to parse subject dn");
-                    OperationError::CryptographyError
-                })?;
+            x509::Name::from_str(&format!("O=Kubidm Replication,CN={s_uuid}")).map_err(|err| {
+                error!(?err, "Unable to parse subject dn");
+                OperationError::CryptographyError
+            })?;
 
-        let profile = SelfSignedProfile { subject };
+        let validity = x509::Validity::new(not_before, not_after);
+
+        let profile = ReplicationProfile {
+            subject: subject.clone(),
+        };
 
         let mut x509_builder = CertificateBuilder::new(profile, serial_number, validity, pub_key)
             .map_err(|err| {
@@ -122,14 +120,14 @@ impl QueryServerWriteTransaction<'_> {
                 SubjectAltName(vec![GeneralName::DnsName(alt_name)])
             }
             ServerName::IpAddress(IpAddr::V4(ipv4_addr)) => {
-                let ip_address = OctetString::new(ipv4_addr.as_ref().to_vec()).map_err(|err| {
+                let ip_address = OctetString::new(*ipv4_addr.as_ref()).map_err(|err| {
                     error!(?err, "Unable to convert ipv4 address to octet string");
                     OperationError::CryptographyError
                 })?;
                 SubjectAltName(vec![GeneralName::IpAddress(ip_address)])
             }
             ServerName::IpAddress(IpAddr::V6(ipv6_addr)) => {
-                let ip_address = OctetString::new(ipv6_addr.as_ref().to_vec()).map_err(|err| {
+                let ip_address = OctetString::new(*ipv6_addr.as_ref()).map_err(|err| {
                     error!(?err, "Unable to convert ipv6 address to octet string");
                     OperationError::CryptographyError
                 })?;

@@ -163,11 +163,11 @@ impl BackupEncryptor {
 
         let key = key_from_slice(&key).ok_or(BackupEncryptionError::InvalidKeyLength)?;
         let cipher = Aes256Gcm::new(&*key);
-        let nonce = Aes256GcmNonce::try_from(nonce_bytes.as_slice())
+        let nonce = <&Aes256GcmNonce>::try_from(nonce_bytes.as_slice())
             .map_err(|_| BackupEncryptionError::InvalidNonceLength)?;
 
         let encrypted_data = cipher
-            .encrypt(&nonce, data)
+            .encrypt(nonce, data)
             .map_err(|e| BackupEncryptionError::EncryptionFailed(e.to_string()))?;
 
         let header_json = serde_json::to_string(&header)
@@ -248,11 +248,11 @@ impl BackupEncryptor {
 
         let key = key_from_slice(&key).ok_or(BackupEncryptionError::InvalidKeyLength)?;
         let cipher = Aes256Gcm::new(&*key);
-        let nonce = Aes256GcmNonce::try_from(header.nonce.as_slice())
+        let nonce = <&Aes256GcmNonce>::try_from(header.nonce.as_slice())
             .map_err(|_| BackupEncryptionError::InvalidNonceLength)?;
 
         let decrypted_data = cipher
-            .decrypt(&nonce, encrypted_data)
+            .decrypt(nonce, encrypted_data)
             .map_err(|e| BackupEncryptionError::DecryptionFailed(e.to_string()))?;
 
         Ok((decrypted_data, header))
@@ -282,11 +282,11 @@ impl BackupEncryptor {
 
         let key = key_from_slice(key).ok_or(BackupEncryptionError::InvalidKeyLength)?;
         let cipher = Aes256Gcm::new(&*key);
-        let nonce = Aes256GcmNonce::try_from(header.nonce.as_slice())
+        let nonce = <&Aes256GcmNonce>::try_from(header.nonce.as_slice())
             .map_err(|_| BackupEncryptionError::InvalidNonceLength)?;
 
         let decrypted_data = cipher
-            .decrypt(&nonce, encrypted_data)
+            .decrypt(nonce, encrypted_data)
             .map_err(|e| BackupEncryptionError::DecryptionFailed(e.to_string()))?;
 
         Ok((decrypted_data, header))
@@ -466,8 +466,8 @@ mod tests {
 
         let key = key_from_slice(key).expect("Invalid key length");
         let cipher = Aes256Gcm::new(&*key);
-        let nonce = Aes256GcmNonce::try_from(nonce_bytes.as_slice()).expect("invalid nonce length");
-        let encrypted_data = cipher.encrypt(&nonce, data).unwrap();
+        let nonce = <&Aes256GcmNonce>::try_from(&nonce_bytes[..]).expect("Invalid nonce length");
+        let encrypted_data = cipher.encrypt(nonce, data).unwrap();
 
         let header_json = serde_json::to_string(&header).unwrap();
         let header_len = header_json.len() as u32;
