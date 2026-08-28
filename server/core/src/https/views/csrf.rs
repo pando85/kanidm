@@ -45,7 +45,7 @@ pub(crate) fn generate_parameters(
     let mut nonce: Nonce = [0; _];
 
     {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         rng.fill(&mut nonce);
     }
 

@@ -286,7 +286,7 @@ pub(crate) fn write_ca(
 
 /// build up a CA certificate and key.
 pub(crate) fn build_ca() -> Result<CaHandle, ()> {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     let root_serial_uuid = Uuid::new_v4();
     let serial_number = uuid_to_serial(root_serial_uuid);
@@ -435,7 +435,7 @@ pub(crate) fn write_cert(
 }
 
 pub(crate) fn build_cert(domain_name: &str, ca_handle: &CaHandle) -> Result<CertHandle, ()> {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     let root_serial_uuid = Uuid::new_v4();
     let serial_number = uuid_to_serial(root_serial_uuid);

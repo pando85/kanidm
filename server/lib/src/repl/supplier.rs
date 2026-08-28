@@ -130,7 +130,7 @@ impl QueryServerWriteTransaction<'_> {
                 OperationError::CryptographyError
             })?;
 
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let x509 = x509_builder
             .build_with_rng::<EcdsaP256DerSignature>(&mut rng)
             .map_err(|err| {
