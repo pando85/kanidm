@@ -45,7 +45,7 @@ impl ValueSetScimPut for ValueSetSha256 {
             .set
             .into_iter()
             .map(|bytes| {
-                Sha256Output::from_exact_iter(bytes).ok_or_else(|| {
+                Sha256Output::try_from(bytes.as_slice()).map_err(|_| {
                     error!("SCIM SHA256 Syntax Invalid");
                     OperationError::SC0030Sha256SyntaxInvalid
                 })
@@ -161,7 +161,8 @@ mod tests {
     use crypto_glue::s256::Sha256Output;
 
     fn make_hash(val: u8) -> Sha256Output {
-        Sha256Output::from_exact_iter(std::iter::repeat_n(val, 32)).expect("exact 32 bytes")
+        let bytes: [u8; 32] = [val; 32];
+        Sha256Output::try_from(bytes.as_slice()).expect("exact 32 bytes")
     }
 
     #[test]
