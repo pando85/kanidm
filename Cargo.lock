@@ -4827,6 +4827,7 @@ dependencies = [
  "chrono",
  "compact_jwt",
  "concread",
+ "crypto-glue 0.1.15",
  "crypto-glue 0.2.0",
  "dhat",
  "dyn-clone",
