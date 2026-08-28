@@ -15,12 +15,20 @@
   "homepage": "https://github.com/pando85/kubidm",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "1.62.1",
     "eslint": "^10.3.0",
     "globals": "^17.6.0",
     "prettier": "^3.8.3"
   },
   "scripts": {
-    "prettier": "pnpx prettier  --ignore-path 'prettier-ignore' ./static --check",
-    "prettier:fix": "pnpx prettier --ignore-path 'prettier-ignore' ./static --write"
+    "prettier": "prettier --ignore-path 'prettier-ignore' ./static ./tests ./scripts --check",
+    "prettier:fix": "prettier --ignore-path 'prettier-ignore' ./static ./tests ./scripts --write",
+    "test:guide": "node --test tests/guide/*.test.mjs",
+    "test:guide:e2e": "playwright test -c tests/guide/playwright.config.mjs",
+    "guide:evidence": "node tests/guide/capture_evidence.mjs",
+    "guide:performance": "node tests/guide/measure_performance.mjs",
+    "guide:review:validate": "node tests/guide/validate_visual_review.mjs",
+    "guide:release:validate": "node tests/guide/validate_release_readiness.mjs",
+    "vendor:rive": "node scripts/vendor_rive.mjs"
   }
 }

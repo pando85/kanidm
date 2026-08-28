@@ -1,6 +1,7 @@
 (% extends "login_base.html" %)
 
 (% block logincontainer %)
+<div data-guide-state="protect" data-guide-action="backup_code">
 <label for="Backup Code" class="form-label">Backup Code</label>
 <form id="login" action="/ui/login/backup_code" method="post">
 	<div class="input-group mb-3">
@@ -21,4 +22,5 @@
 		>Submit</button>
 	</div>
 </form>
+</div>
 (% endblock %)

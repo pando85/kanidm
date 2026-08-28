@@ -1,0 +1,12 @@
+<button type="button"
+        class="guide-option"
+        data-recommendation="(( recommendation ))"
+        (% if disabled %)disabled(% endif %)>
+    <span>
+        <span class="guide-option-title">(( title ))</span>
+        <span class="guide-option-reason">(( reason ))</span>
+    </span>
+    (% if recommendation != "none" %)
+    <span class="guide-chip" data-kind="(( recommendation ))">(( recommendation_label ))</span>
+    (% endif %)
+</button>

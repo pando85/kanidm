@@ -3,6 +3,9 @@ name: Javascript Linting
 "on":
   - push
   - pull_request
+concurrency:
+  group: javascript-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   javascript_lint:
     runs-on: ubuntu-latest
@@ -11,7 +14,149 @@ jobs:
       - uses: pnpm/action-setup@v6
         with:
           version: 11
-      - name: Run ESLint to check Javascript files
-        run: make eslint
-      - name: Run Prettier to check Javascript files
-        run: make prettier
+      - name: Install Javascript dependencies
+        working-directory: server/core
+        run: pnpm install --frozen-lockfile
+      - name: Run ESLint
+        working-directory: server/core
+        run: pnpm exec eslint static tests scripts --no-warn-ignored
+      - name: Run Prettier check
+        working-directory: server/core
+        run: pnpm run prettier
+      - name: Run guide verification tests
+        working-directory: server/core
+        run: pnpm test:guide
+
+  guide_browser:
+    name: Guide browser and Rive verification
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
+      CARGO_INCREMENTAL: 0
+      CARGO_TERM_COLOR: always
+      KUBIDM_BUILD_PROFILE: developer
+      KUBIDM_UI_LAB: 1
+      KUBIDM_GUIDED_UI: full
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.11
+      - name: Install server dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libpam0g-dev \
+            libudev-dev \
+            libssl-dev \
+            libsystemd-dev
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11
+      - name: Install Javascript dependencies
+        working-directory: server/core
+        run: pnpm install --frozen-lockfile
+      - name: Install Playwright browsers
+        working-directory: server/core
+        run: pnpm exec playwright install --with-deps chromium firefox webkit
+      - name: Start debug UI Lab server
+        run: |
+          ./server/daemon/run_insecure_dev_server.sh \
+            > /tmp/kubidm-guide-server.log 2>&1 &
+          echo $! > /tmp/kubidm-guide-server.pid
+          for attempt in $(seq 1 300); do
+            if curl --fail --silent --show-error --insecure \
+              "https://localhost:8443/ui/_lab?rive=mock" >/dev/null; then
+              exit 0
+            fi
+            if ! kill -0 "$(cat /tmp/kubidm-guide-server.pid)" 2>/dev/null; then
+              cat /tmp/kubidm-guide-server.log
+              exit 1
+            fi
+            sleep 2
+          done
+          cat /tmp/kubidm-guide-server.log
+          exit 1
+      - name: Provision masked normal-person browser fixture
+        working-directory: server/daemon
+        env:
+          KUBIDM_CONFIG: ../../scripts/insecure_server.toml
+          KUBIDM_URL: https://localhost:8443
+          KUBIDM_CA_PATH: /tmp/kubidm/chain.pem
+        run: |
+          admin_recovery="$({ cargo run -p daemon --bin kubidmd -- scripting recover-account idm_admin; } 2>&1)"
+          admin_password="$(printf '%s\n' "$admin_recovery" | grep '"output"' | tail -n 1 | jq -r '.output // empty')"
+          if test -z "$admin_password"; then
+            echo "Unable to recover idm_admin for browser fixture provisioning" >&2
+            exit 1
+          fi
+          echo "::add-mask::$admin_password"
+
+          KUBIDM=(cargo run --manifest-path ../../Cargo.toml --bin kubidm --)
+          "${KUBIDM[@]}" login -D idm_admin@localhost --password "$admin_password"
+          "${KUBIDM[@]}" person create guide_e2e_user "Guide E2E User" -D idm_admin@localhost
+          "${KUBIDM[@]}" group add-members idm_ui_enable_experimental_features guide_e2e_user -D idm_admin@localhost
+
+          user_recovery="$({ cargo run -p daemon --bin kubidmd -- scripting recover-account guide_e2e_user; } 2>&1)"
+          test_password="$(printf '%s\n' "$user_recovery" | grep '"output"' | tail -n 1 | jq -r '.output // empty')"
+          if test -z "$test_password"; then
+            echo "Unable to recover normal-person browser fixture password" >&2
+            exit 1
+          fi
+          echo "::add-mask::$test_password"
+          echo "KUBIDM_E2E_TEST_USERNAME=guide_e2e_user" >> "$GITHUB_ENV"
+          echo "KUBIDM_E2E_TEST_PASSWORD=$test_password" >> "$GITHUB_ENV"
+      - name: Run mock browser scenarios, authenticated HTMX stress and CSP gates
+        working-directory: server/core
+        run: pnpm test:guide:e2e
+      - name: Run mock performance and leak gate
+        working-directory: server/core
+        env:
+          KUBIDM_RIVE_TEST_MODE: mock
+        run: pnpm guide:performance
+      - name: Generate mock visual evidence smoke bundle
+        working-directory: server/core
+        env:
+          KUBIDM_RIVE_TEST_MODE: mock
+        run: pnpm guide:evidence
+      - name: Detect production Rive asset
+        id: rive_asset
+        working-directory: server/core
+        run: |
+          if test -s static/img/guide/kubidm-guide.riv; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "Production Rive asset is not present; real-runtime gates remain pending." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Run real Rive browser, contract and failure gates
+        if: steps.rive_asset.outputs.present == 'true'
+        working-directory: server/core
+        env:
+          KUBIDM_EXPECT_REAL_RIVE: 1
+        run: pnpm test:guide:e2e
+      - name: Run real Rive performance and leak gate
+        if: steps.rive_asset.outputs.present == 'true'
+        working-directory: server/core
+        run: pnpm guide:performance
+      - name: Generate full production visual evidence matrix
+        if: steps.rive_asset.outputs.present == 'true'
+        working-directory: server/core
+        env:
+          KUBIDM_GUIDE_FULL_MATRIX: 1
+        run: pnpm guide:evidence
+      - name: Upload guide verification artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: guide-verification-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: ignore
+          path: |
+            server/core/artifacts/
+            server/core/playwright-report/
+            server/core/test-results/
+            /tmp/kubidm-guide-server.log

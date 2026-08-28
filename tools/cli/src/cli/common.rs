@@ -14,7 +14,7 @@ use crate::{KubidmClientParser, LoginOpt};
 #[allow(clippy::large_enum_variant)]
 pub enum ToClientError {
     NeedLogin(String),
-    NeedReauth(String, KubidmClient),
+    NeedReauth(String, Box<KubidmClient>),
     ReadOnly,
     Other,
 }
@@ -280,7 +280,7 @@ impl KubidmClientParser {
                                     "Privileges have expired for {} - you need to re-authenticate again.",
                                     uat.spn
                                 );
-                                return Err(ToClientError::NeedReauth(spn, client));
+                                return Err(ToClientError::NeedReauth(spn, Box::new(client)));
                             }
                             PrivilegesActive::False => {
                                 error!("The current session for {} is read-only.", uat.spn);

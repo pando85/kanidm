@@ -11,13 +11,36 @@ use crypto_glue::{
     rand,
     traits::Pkcs8EncodePrivateKey,
     x509::{
-        self, oiddb, profile, Builder, Certificate, CertificateBuilder, ExtendedKeyUsage,
+        self, oiddb, Builder, Certificate, CertificateBuilder, ExtendedKeyUsage,
         GeneralName, GeneralizedTime, Ia5String, OctetString, SubjectAltName,
         SubjectPublicKeyInfoOwned,
     },
 };
 use rustls::pki_types::{IpAddr, ServerName};
 use std::str::FromStr;
+
+struct ReplicationProfile {
+    subject: x509::Name,
+}
+
+impl x509::Profile for ReplicationProfile {
+    fn get_issuer(&self, subject: &x509::Name) -> x509::Name {
+        subject.clone()
+    }
+
+    fn get_subject(&self) -> x509::Name {
+        self.subject.clone()
+    }
+
+    fn build_extensions(
+        &self,
+        _spk: crypto_glue::spki::SubjectPublicKeyInfoRef<'_>,
+        _issuer_spk: crypto_glue::spki::SubjectPublicKeyInfoRef<'_>,
+        _tbs: &x509_cert::TbsCertificate,
+    ) -> Result<Vec<x509_cert::ext::Extension>, x509_cert::builder::Error> {
+        Ok(vec![])
+    }
+}
 
 impl QueryServerWriteTransaction<'_> {
     fn supplier_generate_key_cert(
@@ -51,18 +74,17 @@ impl QueryServerWriteTransaction<'_> {
             OperationError::CryptographyError
         })?;
 
-        let validity = x509::Validity::new(not_before, not_after);
-
         let serial_number = x509::uuid_to_serial(s_uuid);
         let subject = x509::Name::from_str(&format!("CN={s_uuid}")).map_err(|err| {
             error!(?err, "Unable to parse subject dn");
             OperationError::CryptographyError
         })?;
 
-        let profile = profile::cabf::Root::new(false, subject.clone()).map_err(|err| {
-            error!(?err, "Unable to create certificate profile");
-            OperationError::CryptographyError
-        })?;
+        let validity = x509::Validity::new(not_before, not_after);
+
+        let profile = ReplicationProfile {
+            subject: subject.clone(),
+        };
 
         let mut x509_builder = CertificateBuilder::new(profile, serial_number, validity, pub_key)
             .map_err(|err| {
