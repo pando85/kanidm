@@ -9,6 +9,7 @@ use crypto_glue::{
 };
 use kubidm_proto::internal::COOKIE_CSRF_NONCE;
 use serde::Deserialize;
+use sha2::digest::KeyInit;
 use std::time::Duration;
 
 const SUBMISSION_WINDOW: Duration = Duration::from_secs(30);
@@ -45,8 +46,8 @@ pub(crate) fn generate_parameters(
     let mut nonce: Nonce = [0; _];
 
     {
-        let mut rng = rand::thread_rng();
-        rng.fill(&mut nonce);
+        let mut rng = rand::rng();
+        rng.fill_bytes(&mut nonce);
     }
 
     let jar = cookies::make_signed(state, COOKIE_CSRF_NONCE, &nonce)

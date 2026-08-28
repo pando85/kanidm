@@ -13,7 +13,7 @@ use crate::prelude::*;
 use crate::schema::SchemaTransaction;
 use crate::value::{IntentTokenState, PartialValue, SessionState, Value};
 use kubidm_lib_crypto::CryptoPolicy;
-use kubidm_proto::internal::{CredentialStatus, UatPurpose, UiHint, UserAuthToken};
+use kubidm_proto::internal::{CredentialStatus, PasskeyDetail, UatPurpose, UiHint, UserAuthToken};
 use kubidm_proto::v1::{UatStatus, UatStatusState, UnixGroupToken, UnixUserToken};
 use sshkey_attest::proto::PublicKey as SshPublicKey;
 use std::collections::{BTreeMap, BTreeSet};
@@ -72,6 +72,16 @@ pub struct Account {
     pub apps_pwds: BTreeMap<Uuid, Vec<ApplicationPassword>>,
     pub(crate) oauth2_client_provider: Option<OAuth2AccountCredential>,
     pub updated_at: Option<Cid>,
+}
+
+fn passkey_details<T>(passkeys: &BTreeMap<Uuid, (String, T)>) -> Vec<PasskeyDetail> {
+    passkeys
+        .iter()
+        .map(|(uuid, (tag, _))| PasskeyDetail {
+            uuid: *uuid,
+            tag: tag.clone(),
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -742,14 +752,15 @@ impl Account {
     }
 
     pub(crate) fn to_credentialstatus(&self) -> Result<CredentialStatus, OperationError> {
-        // In the future this will need to handle multiple credentials, not just single.
-
-        self.primary
-            .as_ref()
-            .map(|cred| CredentialStatus {
-                creds: vec![cred.into()],
-            })
-            .ok_or(OperationError::NoMatchingAttributes)
+        Ok(CredentialStatus {
+            creds: self
+                .primary
+                .as_ref()
+                .map(|cred| vec![cred.into()])
+                .unwrap_or_default(),
+            passkeys: passkey_details(&self.passkeys),
+            attested_passkeys: passkey_details(&self.attested_passkeys),
+        })
     }
 
     pub(crate) fn existing_credential_id_list(&self) -> Option<Vec<CredentialID>> {
@@ -1140,6 +1151,27 @@ mod tests {
     use crate::idm::accountpolicy::ResolvedAccountPolicy;
     use crate::prelude::*;
     use kubidm_proto::internal::UiHint;
+
+    #[test]
+    fn test_empty_credential_status_is_valid() {
+        let status = super::Account::default()
+            .to_credentialstatus()
+            .expect("empty accounts should have a valid credential status");
+
+        assert!(!status.has_credentials());
+    }
+
+    #[test]
+    fn test_passkey_details_preserve_uuid_and_tag() {
+        let uuid = Uuid::new_v4();
+        let passkeys = std::collections::BTreeMap::from([(uuid, ("test passkey".to_string(), ()))]);
+
+        let details = super::passkey_details(&passkeys);
+
+        assert_eq!(details.len(), 1);
+        assert_eq!(details[0].uuid, uuid);
+        assert_eq!(details[0].tag, "test passkey");
+    }
 
     #[idm_test]
     async fn test_idm_account_ui_hints(idms: &IdmServer, _idms_delayed: &mut IdmServerDelayed) {

@@ -17,7 +17,7 @@ use crypto_glue::{
     aes128,
     hkdf_s256::HkdfSha256,
     hmac_s256::{self, HmacSha256, HmacSha256Key},
-    traits::{Mac, Zeroizing},
+    traits::{KeyInit, Mac, Zeroizing},
 };
 use smolset::SmolSet;
 use std::cmp::Reverse;
@@ -262,7 +262,9 @@ impl KeyObjectInternalJweA128GCM {
 
         let key = aes128::new_key();
 
-        let mut cipher = JweA128KWEncipher::from(key);
+        let key_v01 = crypto_glue_v01::aes128::key_from_slice(key.as_ref())
+            .ok_or(OperationError::CryptographyError)?;
+        let mut cipher = JweA128KWEncipher::from(key_v01);
         cipher.set_sign_option_embed_kid(true);
         let kid = cipher.get_kid().to_string();
         let kid = KeyId::from(kid);
@@ -345,7 +347,7 @@ impl KeyObjectInternalJweA128GCM {
     ) -> Result<(), OperationError> {
         let status = match status {
             KeyStatus::Valid => {
-                let key = aes128::key_from_slice(der).ok_or_else(|| {
+                let key = crypto_glue_v01::aes128::key_from_slice(der).ok_or_else(|| {
                     error!(?id, "Unable to load A128GCM retained cipher");
                     OperationError::KP0037KeyObjectImportJweA128GCMInvalid
                 })?;
@@ -360,7 +362,7 @@ impl KeyObjectInternalJweA128GCM {
                 InternalJweA128GCMStatus::Valid { cipher }
             }
             KeyStatus::Retained => {
-                let key = aes128::key_from_slice(der).ok_or_else(|| {
+                let key = crypto_glue_v01::aes128::key_from_slice(der).ok_or_else(|| {
                     error!(?id, "Unable to load A128GCM retained cipher");
                     OperationError::KP0038KeyObjectImportJweA128GCMInvalid
                 })?;

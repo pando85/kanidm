@@ -1,20 +1,22 @@
 # Kubidm - Simple and Secure Identity Management
 
-> **This repository is an independent fork of [Kanidm](https://github.com/kanidm/kubidm).**
-> 
+> **This repository is an independent fork of [Kanidm](https://github.com/kanidm/kanidm).**
+>
 > We started this fork because our product direction and development priorities have diverged from the upstream project.
-> 
+>
 > Our focus is on:
-> 
-> - **Cloud-native and Kubernetes-friendly operations**: including modern deployment patterns, object-store backups, and tighter Kubernetes integration.
-> - **Contemporary development practices**: including LLM-assisted workflows and tooling that support faster iteration.
+>
+> - **Modern distributed operations**: machine-readable, idempotent lifecycle, replication, recovery, and maintenance primitives designed for external reconciliation rather than human-only runbooks.
+> - **Cloud-native and Kubernetes-friendly operations**: including modern deployment patterns, object-store backups, health and capability interfaces, and tighter Kubernetes integration.
 > - **Enterprise-ready Workforce IAM**: extending the platform toward the requirements of larger production deployments.
-> 
-> This fork reflects a different roadmap, not a lack of appreciation for upstream. We are grateful to the original maintainers for building and sustaining Kubidm, and this work would not exist without that foundation.
-> 
-> If you are using this fork, please report bugs, request features, and seek support through this repository and its associated community channels. As our implementation and priorities differ from upstream, fork-specific issues are best handled here rather than in the upstream Kubidm project. We aim to respond to feedback as quickly as possible and to keep our release cycle fast so fixes and improvements can reach users sooner.
-> 
-> **Special thanks to** [@firstyear](https://github.com/firstyear) and [@yaleman](https://github.com/yaleman) for creating and maintaining Kubidm.
+>
+> We also embrace contemporary development practices, including LLM-assisted workflows and tooling that support faster iteration. These are development methods rather than a runtime requirement or product architecture dependency.
+>
+> This fork reflects a different roadmap, not a lack of appreciation for upstream. We are grateful to the original maintainers for building and sustaining Kanidm, and this work would not exist without that foundation.
+>
+> If you are using this fork, please report bugs, request features, and seek support through this repository and its associated community channels. As our implementation and priorities differ from upstream, fork-specific issues are best handled here rather than in the upstream Kanidm project. We aim to respond to feedback as quickly as possible and to keep our release cycle fast so fixes and improvements can reach users sooner.
+>
+> **Special thanks to** [@firstyear](https://github.com/firstyear) and [@yaleman](https://github.com/yaleman) for creating and maintaining Kanidm.
 
 ![Kubidm Logo](artwork/logo-small.png)
 
@@ -27,10 +29,31 @@ The goal of this project is to be a complete identity provider, covering the bro
 integrations. You should not need any other components (like Keycloak) when you use Kubidm - we already have everything
 you need!
 
-To achieve this we rely heavily on strict defaults, simple configuration, and self-healing components. This allows
-Kubidm to support small home labs, families, small businesses, and all the way to the largest enterprise needs.
+To achieve this we rely heavily on strict defaults, simple configuration, safe recovery semantics, and
+automation-friendly operational interfaces. This allows Kubidm to support small home labs, families, small businesses,
+and all the way to the largest enterprise needs.
 
 If you want to host your own authentication service, then Kubidm is for you!
+
+## Operational Direction
+
+Kubidm separates distributed-system correctness from infrastructure orchestration.
+
+**Kubidm owns identity, database, replication, recovery, and maintenance semantics. External control planes own desired
+topology, placement, workload lifecycle, rollout sequencing, and reconciliation.**
+
+The project therefore prefers small, explicit, machine-oriented operational primitives over embedding a second generic
+cluster orchestration system into the identity server. Controllers should be able to observe and request safe Kubidm
+state transitions without parsing logs, depending on CLI formatting, sleeping for assumed convergence intervals, or
+reimplementing replication logic.
+
+Kubernetes is a primary orchestration environment for Kubidm, but it is not a runtime dependency of `kubidmd`. Simple
+deployments can continue to use systemd or containers directly, while distributed automation can compose the same
+server-side semantic primitives from Kubernetes operators or other reconcilers.
+
+See the [Operational Model](book/src/operational_model.md) for the user-facing model and the
+[Orchestration Boundary](book/src/developers/designs/orchestration_boundary.md) design decision for the detailed
+responsibility split.
 
 <details>
   <summary>Supported Features</summary>

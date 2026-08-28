@@ -1,0 +1,61 @@
+@import url("/pkg/guide_modes.css");
+
+[data-guide-slot],
+[data-lab-mascot] {
+  position: relative;
+}
+
+[data-guide-rive-canvas] {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+[data-guide-slot] img,
+[data-lab-mascot-image] {
+  display: block;
+}
+
+[data-guide-rive-canvas][hidden],
+[data-guide-image][hidden],
+[data-lab-mascot-image][hidden],
+[data-guide-fallback][hidden],
+[data-lab-mascot-fallback][hidden] {
+  display: none !important;
+}
+
+[data-guide-mode="subtle"] .crab-dialog[data-variant="orient"],
+[data-guide-mode="subtle"] .crab-dialog[data-variant="teach"],
+[data-guide-mode="subtle"] .guide-story {
+  display: none;
+}
+
+/* Internal character animation belongs exclusively to the Rive state machine.
+ * Static/reduced/failure assets are intentionally still. */
+[data-motion="reduced"] [data-guide-rive-canvas],
+[data-motion="static"] [data-guide-rive-canvas] {
+  display: none !important;
+}
+
+[data-motion="reduced"] img,
+[data-motion="static"] img {
+  animation: none !important;
+  transition: none !important;
+  filter: none !important;
+  transform: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-guide-rive-canvas] {
+    display: none !important;
+  }
+
+  [data-guide-slot] img,
+  [data-lab-mascot-image] {
+    animation: none !important;
+    transition: none !important;
+    filter: none !important;
+    transform: none !important;
+  }
+}

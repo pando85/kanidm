@@ -3,9 +3,77 @@
 (% block title %)Login(% endblock %)
 
 (% block head %)
+(% if crate::https::views::guide::guided_ui_enabled() %)
+<link rel="stylesheet"
+      href="/pkg/guide.css?v=((crate::https::cache_buster::get_cache_buster_key()))" />
+<link rel="stylesheet"
+      href="/pkg/guide_auth.css?v=((crate::https::cache_buster::get_cache_buster_key()))" />
+<script type="module"
+        src="/pkg/modules/guide_controller.mjs?v=((crate::https::cache_buster::get_cache_buster_key()))"></script>
+(% endif %)
 (% endblock %)
 
 (% block body %)
+(% if crate::https::views::guide::guided_ui_enabled() %)
+<main id="main"
+      class="form-signin m-auto guide-auth-shell"
+      data-guide-scene="auth"
+      data-guide-mode="(% if crate::https::views::guide::guided_ui_subtle() %)subtle(% else %)full(% endif %)"
+      data-guide-auth-arrival="(% if display_ctx.reauth.is_some() %)reauth(% else if display_ctx.oauth2.is_some() %)oauth2(% else %)applications(% endif %)">
+    <aside class="guide-auth-product-zone" aria-label="Kubidm">
+        <div class="guide-auth-product-brand">
+            <img class="guide-auth-product-mark"
+                 src="/pkg/img/logo-square.svg?v=((crate::https::cache_buster::get_cache_buster_key()))"
+                 alt="" />
+            <span>Kubidm</span>
+        </div>
+
+        <div class="guide-auth-product-copy">
+            <h1>Identity that guides every step.</h1>
+            <p>Secure sign-in and identity setup, with clear recommendations when there is a choice to make.</p>
+        </div>
+
+        <div class="guide-mascot-slot"
+             data-guide-slot
+             aria-hidden="true"
+             hidden></div>
+    </aside>
+
+    <section class="guide-auth-task-zone">
+        <div class="guide-auth-card">
+            <header class="guide-auth-tenant-brand">
+                (% if display_ctx.domain_info.image().is_some() %)
+                <img src="/ui/images/domain"
+                     alt="(( display_ctx.domain_info.display_name() ))"
+                     class="kubidm_logo" />
+                (% endif %)
+                <h2>(( display_ctx.domain_info.display_name() ))</h2>
+            </header>
+
+            (% if let Some(reauth) = display_ctx.reauth %)
+            <div class="guide-auth-context alert alert-info" role="status">
+                Confirm your identity as (( reauth.username )) to access (( reauth.purpose )).
+            </div>
+            (% if crate::https::views::guide::guided_ui_full() %)
+            <section class="crab-dialog" data-variant="orient" data-guide-story-id="reauth-context">
+                <strong class="crab-dialog-title">Why another check?</strong>
+                <p>You’re already signed in, but this action is sensitive enough to verify your identity again. The requested action remains blocked until Kubidm confirms it.</p>
+            </section>
+            (% endif %)
+            (% else if let Some(oauth2) = display_ctx.oauth2 %)
+            <div class="guide-auth-context alert alert-info" role="status">
+                Sign in to continue to (( oauth2.client_name )).
+            </div>
+            (% if crate::https::views::guide::guided_ui_full() %)
+            <section class="crab-dialog" data-variant="orient" data-guide-story-id="oauth-context">
+                <strong class="crab-dialog-title">Two identities, one hand-off</strong>
+                <p>(( display_ctx.domain_info.display_name() )) verifies who you are here. After that, Kubidm returns the result to (( oauth2.client_name )) so the application can decide what you may access.</p>
+            </section>
+            (% endif %)
+            (% endif %)
+
+            <div class="guide-auth-content">
+(% else %)
 <main id="main" class="form-signin m-auto align-items-center d-flex flex-column">
 	(% if display_ctx.domain_info.image().is_some() %)
 	<img src="/ui/images/domain"
@@ -26,8 +94,18 @@
 	</div>
 	(% endif %)
 	<div>
-		(% block logincontainer %)
-		(% endblock %)
+(% endif %)
+
+        (% block logincontainer %)
+        (% endblock %)
+
+(% if crate::https::views::guide::guided_ui_enabled() %)
+            </div>
+        </div>
+    </section>
+</main>
+(% else %)
 	</div>
 </main>
+(% endif %)
 (% endblock %)

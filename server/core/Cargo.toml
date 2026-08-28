@@ -11,6 +11,10 @@ license = { workspace = true }
 homepage = { workspace = true }
 repository = { workspace = true }
 
+[lints.clippy]
+result_large_err = "allow"
+result_unit_err = "allow"
+
 [lib]
 test = true
 doctest = false
@@ -94,6 +98,7 @@ utoipa = { workspace = true, features = [
     "uuid",
 ] }
 utoipa-swagger-ui = { workspace = true, default-features = false, features = ["axum"] }
+x509-cert = { workspace = true }
 
 webauthn-rs = { workspace = true, features = [
     "resident-key-support",
