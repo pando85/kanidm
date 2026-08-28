@@ -9,6 +9,7 @@ use crypto_glue::{
 };
 use kubidm_proto::internal::COOKIE_CSRF_NONCE;
 use serde::Deserialize;
+use sha2::digest::KeyInit;
 use std::time::Duration;
 
 const SUBMISSION_WINDOW: Duration = Duration::from_secs(30);
