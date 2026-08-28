@@ -33,7 +33,7 @@ chrono = { workspace = true }
 compact_jwt = { workspace = true }
 concread = { workspace = true }
 crypto-glue = { workspace = true }
-crypto-glue-v01 = { package = "crypto-glue", version = "0.1" }
+crypto-glue-v01 = { package = "crypto-glue", version = "0.2" }
 x509-cert = { workspace = true }
 dhat = { workspace = true, optional = true }
 dyn-clone = { workspace = true }
