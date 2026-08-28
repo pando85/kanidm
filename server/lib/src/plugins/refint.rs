@@ -315,7 +315,7 @@ impl Plugin for ReferentialIntegrity {
         for entry in &affected_entries {
             let entry_uuid = entry.get_uuid();
             let entry_name = entry
-                .get_ava_single_utf8(Attribute::Name)
+                .get_ava_single_iname(Attribute::Name)
                 .map(|s| s.to_string());
 
             for rtype in ref_types.values() {
@@ -549,7 +549,7 @@ impl Plugin for ReferentialIntegrity {
         for c in &all_cand {
             let entry_uuid = c.get_uuid();
             let entry_name = c
-                .get_ava_single_utf8(Attribute::Name)
+                .get_ava_single_iname(Attribute::Name)
                 .map(|s| s.to_string());
 
             for rtype in ref_types.values() {
@@ -687,7 +687,7 @@ impl ReferentialIntegrity {
             for cand in post_cand {
                 let entry_uuid = cand.get_uuid();
                 let entry_name = cand
-                    .get_ava_single_utf8(Attribute::Name)
+                    .get_ava_single_iname(Attribute::Name)
                     .map(|s| s.to_string());
                 let schema = qs.get_schema();
                 let ref_types = schema.get_reference_types();
