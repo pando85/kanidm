@@ -14,12 +14,12 @@ use crypto_glue::{
         GeneralizedTime, Ia5String, OctetString, SubjectAltName, SubjectPublicKeyInfoOwned,
     },
 };
+use rustls::pki_types::{IpAddr, ServerName};
+use std::str::FromStr;
 use x509_cert::builder::profile::BuilderProfile;
 use x509_cert::certificate::TbsCertificate;
 use x509_cert::ext::Extension;
 use x509_cert::spki::SubjectPublicKeyInfoRef;
-use rustls::pki_types::{IpAddr, ServerName};
-use std::str::FromStr;
 
 struct ManualProfile {
     subject: x509::Name,
@@ -89,13 +89,8 @@ impl QueryServerWriteTransaction<'_> {
 
         let validity = x509::Validity::new(not_before, not_after);
 
-        let mut x509_builder = CertificateBuilder::new(
-            profile,
-            serial_number,
-            validity,
-            pub_key,
-        )
-        .map_err(|err| {
+        let mut x509_builder = CertificateBuilder::new(profile, serial_number, validity, pub_key)
+            .map_err(|err| {
             error!(?err, "Unable to construct certificate builder");
             OperationError::CryptographyError
         })?;
