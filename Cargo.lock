@@ -1115,17 +1115,6 @@ checksum = "2af50177e190e07a26ab74f8b1efbfe2ef87da2116221318cb1c2e82baf7de06"
 
 [[package]]
 name = "base64urlsafedata"
-version = "0.5.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b08e33815c87d8cadcddb1e74ac307368a3751fbe40c961538afa21a1899f21c"
-dependencies = [
- "base64 0.21.7",
- "pastey",
- "serde",
-]
-
-[[package]]
-name = "base64urlsafedata"
 version = "0.6.1-dev"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9283b2d58cdc7bb808295ff4cd7063701b13818a2680e1584ba61e948ab83229"
@@ -1558,17 +1547,17 @@ dependencies = [
 
 [[package]]
 name = "compact_jwt"
-version = "0.5.7"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8faea2ff793c0275ebf23a1bf472e273daaf567debcaa6cda19e7017cd265fa"
+checksum = "df92276dad9974530bd01a54740e0cdeac37c0d17d391ea635529f7d708f7bfe"
 dependencies = [
  "base64 0.22.1",
- "base64urlsafedata 0.5.5",
- "crypto-glue 0.1.15",
+ "crypto-glue 0.2.0",
  "hex",
- "kanidm-hsm-crypto 0.3.6",
+ "kanidm-hsm-crypto",
  "serde",
  "serde_json",
+ "serde_with",
  "time",
  "tracing",
  "url",
@@ -4462,17 +4451,6 @@ dependencies = [
 
 [[package]]
 name = "kanidm-hsm-crypto"
-version = "0.3.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bfb9c43ea17ed7eafbb4af596fa366aad5d1dcfb5e0b5a0c8603797d37ee43f9"
-dependencies = [
- "crypto-glue 0.1.15",
- "serde",
- "tracing",
-]
-
-[[package]]
-name = "kanidm-hsm-crypto"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c43150dbe23367186bb3374b2a1a1548f83531ecd60456f0dbe3463423e7ef02"
@@ -4660,10 +4638,10 @@ name = "kubidm_lib_crypto"
 version = "1.12.0-dev"
 dependencies = [
  "base64 0.23.1",
- "base64urlsafedata 0.6.1-dev",
+ "base64urlsafedata",
  "crypto-glue 0.2.0",
  "hex",
- "kanidm-hsm-crypto 0.4.0",
+ "kanidm-hsm-crypto",
  "md-5 0.11.0",
  "md4",
  "rand 0.10.2",
@@ -4835,7 +4813,7 @@ version = "1.12.0-dev"
 dependencies = [
  "async-trait",
  "base64 0.23.1",
- "base64urlsafedata 0.6.1-dev",
+ "base64urlsafedata",
  "bitflags 2.13.1",
  "chrono",
  "compact_jwt",
@@ -4886,6 +4864,7 @@ dependencies = [
  "webauthn-rs",
  "webauthn-rs-core",
  "whoami",
+ "x509-cert 0.3.0",
  "zxcvbn",
 ]
 
@@ -7224,7 +7203,7 @@ dependencies = [
 name = "scim_proto"
 version = "1.12.0-dev"
 dependencies = [
- "base64urlsafedata 0.6.1-dev",
+ "base64urlsafedata",
  "peg",
  "serde",
  "serde_json",
@@ -7792,7 +7771,7 @@ dependencies = [
  "dialoguer",
  "futures",
  "hashbrown 0.17.1",
- "kanidm-hsm-crypto 0.4.0",
+ "kanidm-hsm-crypto",
  "kubidm_build_profiles",
  "kubidm_client",
  "kubidm_lib_crypto",
