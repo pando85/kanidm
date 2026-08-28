@@ -4083,7 +4083,12 @@ async fn test_repl_refresh_self_heals_optional_authoritative_references(
     let mut server_a_txn = server_a.read().await.unwrap();
     let mut server_b_txn = server_b.write(ct).await.unwrap();
 
-    assert!(repl_initialise(&mut server_a_txn, &mut server_b_txn).is_ok());
+    let refresh_context = server_a_txn.supplier_provide_refresh().unwrap();
+    assert!(server_b_txn.consumer_apply_refresh(refresh_context).is_ok());
+    assert_eq!(
+        server_a_txn.get_domain_uuid(),
+        server_b_txn.get_domain_uuid()
+    );
 
     let group = server_b_txn
         .internal_search_uuid(g_uuid)
@@ -4110,7 +4115,7 @@ async fn test_repl_refresh_self_heals_optional_authoritative_references(
     let mut work_set = server_a_txn.internal_search_writeable(&filt).unwrap();
 
     for (_, entry) in work_set.iter_mut() {
-        entry.remove_ava(Attribute::Member, &PartialValue::Uuid(dangling_uuid));
+        entry.remove_ava(Attribute::Member, &PartialValue::Refer(dangling_uuid));
     }
 
     assert!(server_a_txn.internal_apply_writable(work_set).is_ok());

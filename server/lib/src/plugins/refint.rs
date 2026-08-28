@@ -1985,7 +1985,7 @@ mod tests {
         let mut work_set = server_txn.internal_search_writeable(&filt).unwrap();
 
         for (_, entry) in work_set.iter_mut() {
-            entry.remove_ava(Attribute::Member, &PartialValue::Uuid(dangling_uuid));
+            entry.remove_ava(Attribute::Member, &PartialValue::Refer(dangling_uuid));
         }
 
         assert!(server_txn.internal_apply_writable(work_set).is_ok());
