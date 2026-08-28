@@ -315,7 +315,7 @@ impl Plugin for ReferentialIntegrity {
         for entry in &affected_entries {
             let entry_uuid = entry.get_uuid();
             let entry_name = entry
-                .get_ava_single_utf8(Attribute::Name)
+                .get_ava_single_iname(Attribute::Name)
                 .map(|s| s.to_string());
 
             for rtype in ref_types.values() {
@@ -549,7 +549,7 @@ impl Plugin for ReferentialIntegrity {
         for c in &all_cand {
             let entry_uuid = c.get_uuid();
             let entry_name = c
-                .get_ava_single_utf8(Attribute::Name)
+                .get_ava_single_iname(Attribute::Name)
                 .map(|s| s.to_string());
 
             for rtype in ref_types.values() {
@@ -687,7 +687,7 @@ impl ReferentialIntegrity {
             for cand in post_cand {
                 let entry_uuid = cand.get_uuid();
                 let entry_name = cand
-                    .get_ava_single_utf8(Attribute::Name)
+                    .get_ava_single_iname(Attribute::Name)
                     .map(|s| s.to_string());
                 let schema = qs.get_schema();
                 let ref_types = schema.get_reference_types();
@@ -1975,5 +1975,20 @@ mod tests {
         let (_, attr, target) = refint_errors[0];
         assert_eq!(attr.as_deref(), Some("member"));
         assert_eq!(*target, Some(dangling_uuid));
+
+        drop(server_txn);
+
+        let curtime = duration_from_epoch_now();
+        let mut server_txn = server.write(curtime).await.unwrap();
+
+        let filt = filter!(f_eq(Attribute::Uuid, PartialValue::Uuid(g_uuid)));
+        let mut work_set = server_txn.internal_search_writeable(&filt).unwrap();
+
+        for (_, entry) in work_set.iter_mut() {
+            entry.remove_ava(Attribute::Member, &PartialValue::Refer(dangling_uuid));
+        }
+
+        assert!(server_txn.internal_apply_writable(work_set).is_ok());
+        assert!(server_txn.commit().is_ok());
     }
 }
