@@ -167,7 +167,7 @@ impl BackupEncryptor {
             .map_err(|_| BackupEncryptionError::InvalidNonceLength)?;
 
         let encrypted_data = cipher
-            .encrypt(&nonce, data)
+            .encrypt(nonce, data)
             .map_err(|e| BackupEncryptionError::EncryptionFailed(e.to_string()))?;
 
         let header_json = serde_json::to_string(&header)

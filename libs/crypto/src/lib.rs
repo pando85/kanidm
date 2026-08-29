@@ -1139,18 +1139,12 @@ impl Password {
                 Ok(chal_key == *h)
             }
             (Kdf::CRYPT_SHA256 { h }, _) => {
-                use sha_crypt::{PasswordVerifier, ShaCrypt};
-                let is_valid = ShaCrypt::SHA256
-                    .verify_password(cleartext.as_bytes(), h.as_str())
-                    .is_ok();
+                let is_valid = sha_crypt::sha256_check(cleartext, h.as_str()).is_ok();
 
                 Ok(is_valid)
             }
             (Kdf::CRYPT_SHA512 { h }, _) => {
-                use sha_crypt::{PasswordVerifier, ShaCrypt};
-                let is_valid = ShaCrypt::SHA512
-                    .verify_password(cleartext.as_bytes(), h.as_str())
-                    .is_ok();
+                let is_valid = sha_crypt::sha512_check(cleartext, h.as_str()).is_ok();
 
                 Ok(is_valid)
             }

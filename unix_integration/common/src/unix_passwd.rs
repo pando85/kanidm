@@ -102,18 +102,8 @@ impl CryptPw {
 
     pub fn check_pw(&self, cred: &str) -> bool {
         match &self {
-            CryptPw::Sha256(crypt) => {
-                use sha_crypt::{PasswordVerifier, ShaCrypt};
-                ShaCrypt::SHA256
-                    .verify_password(cred.as_bytes(), crypt.as_str())
-                    .is_ok()
-            }
-            CryptPw::Sha512(crypt) => {
-                use sha_crypt::{PasswordVerifier, ShaCrypt};
-                ShaCrypt::SHA512
-                    .verify_password(cred.as_bytes(), crypt.as_str())
-                    .is_ok()
-            }
+            CryptPw::Sha256(crypt) => sha_crypt::sha256_check(cred, crypt.as_str()).is_ok(),
+            CryptPw::Sha512(crypt) => sha_crypt::sha512_check(cred, crypt.as_str()).is_ok(),
             CryptPw::YesCrypt(crypt) => {
                 use yescrypt::{PasswordHash, PasswordVerifier, Yescrypt};
                 let password_hash = match PasswordHash::new(crypt.as_str()) {

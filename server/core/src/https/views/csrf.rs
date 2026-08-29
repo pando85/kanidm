@@ -5,7 +5,7 @@ use crypto_glue::{
     hex,
     hmac_s256::HmacSha256,
     rand::{self, RngExt},
-    traits::{KeyInit, Mac},
+    traits::Mac,
 };
 use kubidm_proto::internal::COOKIE_CSRF_NONCE;
 use serde::Deserialize;
@@ -47,7 +47,7 @@ pub(crate) fn generate_parameters(
 
     {
         let mut rng = rand::rng();
-        rng.fill_bytes(&mut nonce);
+        rng.fill(&mut nonce);
     }
 
     let jar = cookies::make_signed(state, COOKIE_CSRF_NONCE, &nonce)

@@ -10,7 +10,7 @@ use crypto_glue::{
     rand,
     rsa::RS256PrivateKey,
     traits::{
-        DecodeDer, DecodePem, EncodePem, Generate, Pkcs1DecodeRsaPrivateKey, Pkcs8DecodePrivateKey,
+        DecodeDer, DecodePem, EncodePem, Pkcs1DecodeRsaPrivateKey, Pkcs8DecodePrivateKey,
         Pkcs8EncodePrivateKey, PublicKeyParts,
     },
     x509::{
