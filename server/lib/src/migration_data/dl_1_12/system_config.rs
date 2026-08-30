@@ -79,7 +79,6 @@ pub fn e_account_signup_feature() -> EntryInitNew {
     ])
 }
 
-
 // This is a function instead of a static/lazylock because otherwise it entirely blows up the stack, and we only use it at migration time.
 pub fn e_system_config_v1() -> EntryInitNew {
     let mut entry = entry_init_fn([
