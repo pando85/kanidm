@@ -242,6 +242,7 @@ async fn oauth2_authorise(
                 .body(body)
                 .unwrap()
         }
+
         Ok(AuthoriseResponse::ReauthenticationRequired { .. })
         | Ok(AuthoriseResponse::AuthenticationRequired { .. })
         | Err(Oauth2Error::AuthenticationRequired) =>
