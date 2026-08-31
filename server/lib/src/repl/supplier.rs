@@ -8,7 +8,6 @@ use crate::prelude::*;
 use crypto_glue::{
     der::SecretDocument,
     ecdsa_p256::{self, EcdsaP256DerSignature, EcdsaP256SigningKey, EcdsaP256VerifyingKey},
-    rand,
     traits::Pkcs8EncodePrivateKey,
     x509::{
         self, oiddb, Builder, Certificate, CertificateBuilder, ExtendedKeyUsage, GeneralName,
@@ -17,12 +16,16 @@ use crypto_glue::{
 };
 use rustls::pki_types::{IpAddr, ServerName};
 use std::str::FromStr;
+use x509_cert::builder::profile::BuilderProfile;
+use x509_cert::certificate::TbsCertificate;
+use x509_cert::ext::Extension;
+use x509_cert::spki::SubjectPublicKeyInfoRef;
 
-struct ReplicationProfile {
+struct ManualProfile {
     subject: x509::Name,
 }
 
-impl x509::Profile for ReplicationProfile {
+impl BuilderProfile for ManualProfile {
     fn get_issuer(&self, subject: &x509::Name) -> x509::Name {
         subject.clone()
     }
@@ -33,11 +36,11 @@ impl x509::Profile for ReplicationProfile {
 
     fn build_extensions(
         &self,
-        _spk: crypto_glue::spki::SubjectPublicKeyInfoRef<'_>,
-        _issuer_spk: crypto_glue::spki::SubjectPublicKeyInfoRef<'_>,
-        _tbs: &x509_cert::TbsCertificate,
-    ) -> Result<Vec<x509_cert::ext::Extension>, x509_cert::builder::Error> {
-        Ok(vec![])
+        _spk: SubjectPublicKeyInfoRef<'_>,
+        _issuer_spk: SubjectPublicKeyInfoRef<'_>,
+        _tbs: &TbsCertificate,
+    ) -> x509_cert::builder::Result<Vec<Extension>> {
+        Ok(Vec::new())
     }
 }
 
@@ -58,6 +61,17 @@ impl QueryServerWriteTransaction<'_> {
             OperationError::CryptographyError
         })?;
 
+        let serial_number = x509::uuid_to_serial(s_uuid);
+        let subject =
+            x509::Name::from_str(&format!("O=Kubidm Replication,CN={s_uuid}")).map_err(|err| {
+                error!(?err, "Unable to parse subject dn");
+                OperationError::CryptographyError
+            })?;
+
+        let profile = ManualProfile {
+            subject: subject.clone(),
+        };
+
         let not_before = GeneralizedTime::from_unix_duration(self.get_curtime())
             .map(x509::Time::from)
             .map_err(|err| {
@@ -73,18 +87,7 @@ impl QueryServerWriteTransaction<'_> {
             OperationError::CryptographyError
         })?;
 
-        let serial_number = x509::uuid_to_serial(s_uuid);
-        let subject =
-            x509::Name::from_str(&format!("O=Kubidm Replication,CN={s_uuid}")).map_err(|err| {
-                error!(?err, "Unable to parse subject dn");
-                OperationError::CryptographyError
-            })?;
-
         let validity = x509::Validity::new(not_before, not_after);
-
-        let profile = ReplicationProfile {
-            subject: subject.clone(),
-        };
 
         let mut x509_builder = CertificateBuilder::new(profile, serial_number, validity, pub_key)
             .map_err(|err| {
@@ -120,14 +123,14 @@ impl QueryServerWriteTransaction<'_> {
                 SubjectAltName(vec![GeneralName::DnsName(alt_name)])
             }
             ServerName::IpAddress(IpAddr::V4(ipv4_addr)) => {
-                let ip_address = OctetString::new(*ipv4_addr.as_ref()).map_err(|err| {
+                let ip_address = OctetString::new(ipv4_addr.as_ref().to_vec()).map_err(|err| {
                     error!(?err, "Unable to convert ipv4 address to octet string");
                     OperationError::CryptographyError
                 })?;
                 SubjectAltName(vec![GeneralName::IpAddress(ip_address)])
             }
             ServerName::IpAddress(IpAddr::V6(ipv6_addr)) => {
-                let ip_address = OctetString::new(*ipv6_addr.as_ref()).map_err(|err| {
+                let ip_address = OctetString::new(ipv6_addr.as_ref().to_vec()).map_err(|err| {
                     error!(?err, "Unable to convert ipv6 address to octet string");
                     OperationError::CryptographyError
                 })?;
@@ -144,9 +147,8 @@ impl QueryServerWriteTransaction<'_> {
                 OperationError::CryptographyError
             })?;
 
-        let mut rng = rand::rng();
         let x509 = x509_builder
-            .build_with_rng::<_, EcdsaP256DerSignature, _>(&signing_key, &mut rng)
+            .build::<EcdsaP256SigningKey, EcdsaP256DerSignature>(&signing_key)
             .map_err(|err| {
                 error!(?err, "Unable to generate self signed key/cert");
                 OperationError::CryptographyError

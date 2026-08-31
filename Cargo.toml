@@ -170,7 +170,7 @@ aws-sdk-s3 = { version = "1.68.0", default-features = false, features = [
 ] }
 
 anyhow = { version = "1.0.102" }
-argon2 = { version = "0.5.3", features = ["alloc"] }
+argon2 = { version = "0.6.0", features = ["alloc"] }
 askama = { version = "0.16.0" }
 askama_web = { version = "0.16.0", features = ["axum-0.8"] }
 async-trait = "^0.1.89"
@@ -197,7 +197,7 @@ clap = { version = "4.6.0", features = ["derive", "env"] }
 clap_complete = "^4.6.5"
 # Forced by saffron/cron
 chrono = "^0.4.45"
-compact_jwt = "^0.5.6"
+compact_jwt = "^0.6.0"
 concread = "^0.5.10"
 cron = "0.17.0"
 crossbeam = "0.8.4"
@@ -228,7 +228,7 @@ image = { version = "0.25.9", default-features = false, features = [
     "webp",
 ] }
 itertools = "0.15.0"
-jsonschema = "0.51.0"
+jsonschema = "0.52.0"
 ldap3_client = "^0.8.0"
 ldap3_proto = { version = "^0.8.0", features = ["serde"] }
 lettre = { version = "0.11.22", default-features = false }
