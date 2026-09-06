@@ -32,6 +32,14 @@ jobs:
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.11
+        continue-on-error: true
+      - name: Fallback if sccache unavailable
+        run: |
+          if ! command -v sccache &>/dev/null; then
+            echo "sccache not available, disabling RUSTC_WRAPPER"
+            echo "RUSTC_WRAPPER=" >> $env:GITHUB_ENV
+          fi
+        shell: pwsh
       - run: cargo build --locked -p kubidm_client -p kubidm_tools --bin kubidm
       # yamllint disable-line rule:line-length
       - run: cargo test -p kubidm_client -p kubidm_tools
